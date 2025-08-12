@@ -5,7 +5,7 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
 	return (
 		<div className="app-layout">
 			<Header userEmail={userEmail} onLogout={onLogout} />
-			<main className="app-content" style={{maxWidth:1200,margin:'20px auto',padding:'0 16px'}}>
+			<main className="app-content">
 				{children}
 			</main>
 		</div>
