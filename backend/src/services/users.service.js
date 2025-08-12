@@ -40,3 +40,29 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName 
     agencyId: agencyData,
   };
 };
+
+/**
+ * Completa el perfil de un usuario existente en Auth creando su agencia y perfil.
+ * @param {object} profileData - Los datos del perfil.
+ * @param {string} profileData.userId - El ID del usuario autenticado.
+ * @param {string} profileData.fullName - El nombre completo del usuario.
+ * @param {string} profileData.agencyName - El nombre de la nueva agencia.
+ * @returns {Promise<object>} Los datos de la nueva agencia.
+ */
+export const completeUserProfile = async ({ userId, fullName, agencyName }) => {
+  // Llamamos a la misma función SQL que usamos en el registro original.
+  // Esta función es perfecta porque solo necesita el ID del usuario.
+  const { data, error } = await supabase.rpc('create_new_agency_and_admin', {
+    user_id: userId,
+    agency_name: agencyName,
+    user_full_name: fullName,
+  });
+
+  if (error) {
+    throw new Error(`Error al completar el perfil: ${error.message}`);
+  }
+
+  return {
+    agencyId: data,
+  };
+};
