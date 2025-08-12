@@ -1,113 +1,94 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient.js';
-import { Onboarding } from './components/Onboarding.jsx'; // Importamos el nuevo componente
+import { Onboarding } from './components/Onboarding.jsx';
+import { MainLayout } from './components/layout/MainLayout.jsx';
+import { DashboardPage } from './pages/DashboardPage.jsx';
 import './App.css';
 
+// Componente para la lógica de la aplicación principal post-autenticación
+const MainApp = ({ session, profile }) => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  return (
+    <BrowserRouter>
+      <MainLayout userEmail={session.user.email} onLogout={handleLogout}>
+        <Routes>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          {/* Futuras rutas como /clients/:id se añadirán aquí */}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </MainLayout>
+    </BrowserRouter>
+  );
+};
+
+// Componente para la página de login
+const LoginPage = () => {
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({ provider: 'google' });
+  };
+
+  return (
+    <div className="container">
+      <h1>Software Rambla</h1>
+      <div className="card">
+        <p>Inicia sesión para continuar.</p>
+        <button onClick={handleGoogleLogin}>Iniciar sesión con Google</button>
+      </div>
+    </div>
+  );
+};
+
+// Componente Raíz que gestiona el estado de autenticación
 function App() {
   const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null); // Nuevo estado para guardar el perfil
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Esta función revisa si el usuario logueado ya tiene un perfil en nuestra tabla 'profiles'
   const getProfile = async (user) => {
     try {
       setLoading(true);
-
-      // ✅ CAMBIO CLAVE: Quitamos .single() para que no dé error si no encuentra nada.
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`*`)
-        .eq('id', user.id);
-
-      // Si hay un error real de base de datos, lo mostramos.
-      if (error) {
-        throw error;
-      }
-
-      // Si 'data' tiene al menos un elemento, significa que encontramos el perfil.
-      if (data && data.length > 0) {
-        setProfile(data[0]); // Guardamos el primer (y único) perfil encontrado.
-      } else {
-        setProfile(null); // Si no, nos aseguramos de que el perfil sea nulo.
-      }
+      const { data, error } = await supabase.from('profiles').select(`*`).eq('id', user.id);
+      if (error) throw error;
+      setProfile(data?.[0] || null);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
-      alert('Error al obtener el perfil. Revisa la consola.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Al cargar, obtenemos la sesión
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // Si hay sesión, intentamos obtener el perfil del usuario
-      if (session) {
-        getProfile(session.user);
-      } else {
-        setLoading(false);
-      }
+      if (session) getProfile(session.user);
+      else setLoading(false);
     });
 
-    // Escuchamos cambios en la autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setProfile(null); // Limpiamos el perfil anterior al cambiar de sesión
-      // Si hay una nueva sesión, obtenemos su perfil
-      if (session) {
-        getProfile(session.user);
-      } else {
-        setLoading(false);
-      }
+      setProfile(null);
+      if (session) getProfile(session.user);
+      else setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google' });
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-  
-  // Mientras carga la sesión o el perfil, mostramos un mensaje
   if (loading) {
     return <div className="container">Cargando...</div>;
   }
-  
-  // Renderizado condicional principal
-  let content;
   if (!session) {
-    // VISTA 1: Usuario no logueado
-    content = (
-      <div className="card">
-        <p>Inicia sesión para continuar.</p>
-        <button onClick={handleGoogleLogin}>Iniciar sesión con Google</button>
-      </div>
-    );
-  } else if (session && !profile) {
-    // VISTA 2: Usuario logueado pero sin perfil (Onboarding)
-    content = <Onboarding session={session} onProfileComplete={() => getProfile(session.user)} />;
-  } else {
-    // VISTA 3: Usuario logueado y con perfil (App principal)
-    content = (
-      <div className="card">
-        <h2>¡Bienvenido a tu agencia, {profile.full_name}!</h2>
-        <p>Tu ID de agencia es: {profile.agency_id}</p>
-        <button onClick={handleLogout}>Cerrar Sesión</button>
-      </div>
-    );
+    return <LoginPage />;
+  }
+  if (!profile) {
+    return <Onboarding session={session} onProfileComplete={() => getProfile(session.user)} />;
   }
 
-  return (
-    <div className="container">
-      <h1>Software Rambla</h1>
-      {content}
-    </div>
-  );
+  return <MainApp session={session} profile={profile} />;
 }
 
 export default App;
