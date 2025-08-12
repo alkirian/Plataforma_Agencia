@@ -1,10 +1,20 @@
-import { supabase } from '../config/supabaseClient.js';
+// ✅ CAMBIO: Importamos 'supabaseAdmin' en lugar del 'supabase' público.
+import { supabaseAdmin as supabase } from '../config/supabaseClient.js'; 
 import { createClient, getClientsByAgency } from '../services/clients.service.js';
 
 // Función auxiliar para obtener el perfil del usuario logueado
 const getUserProfile = async (userId) => {
-  const { data, error } = await supabase.from('profiles').select('agency_id').eq('id', userId).single();
-  if (error) throw new Error('No se pudo encontrar el perfil del usuario.');
+  // Ahora esta consulta se ejecuta con permisos de administrador, por lo que no será bloqueada por RLS.
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('agency_id')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    console.error("Error en getUserProfile:", error); // Añadimos un log para ver el error real de la BD
+    throw new Error('No se pudo encontrar el perfil del usuario.');
+  }
   return data;
 };
 
