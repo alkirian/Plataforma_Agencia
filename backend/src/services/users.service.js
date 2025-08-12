@@ -50,10 +50,9 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName 
  * @returns {Promise<object>} Los datos de la nueva agencia.
  */
 export const completeUserProfile = async ({ userId, fullName, agencyName }) => {
-  // Llamamos a la misma función SQL que usamos en el registro original.
-  // Esta función es perfecta porque solo necesita el ID del usuario.
+  // ✅ ASEGÚRATE DE QUE LA LLAMADA INCLUYA 'user_id'
   const { data, error } = await supabase.rpc('create_new_agency_and_admin', {
-    user_id: userId,
+    user_id: userId, // <-- Esta línea es importante
     agency_name: agencyName,
     user_full_name: fullName,
   });

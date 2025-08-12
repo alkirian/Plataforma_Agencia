@@ -12,21 +12,27 @@ function App() {
   const getProfile = async (user) => {
     try {
       setLoading(true);
+
+      // ✅ CAMBIO CLAVE: Quitamos .single() para que no dé error si no encuentra nada.
       const { data, error } = await supabase
         .from('profiles')
         .select(`*`)
-        .eq('id', user.id)
-        .single(); // .single() hace que devuelva un solo objeto o null si no lo encuentra
+        .eq('id', user.id);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 es el código para "cero filas encontradas", lo cual no es un error para nosotros.
+      // Si hay un error real de base de datos, lo mostramos.
+      if (error) {
         throw error;
       }
 
-      if (data) {
-        setProfile(data);
+      // Si 'data' tiene al menos un elemento, significa que encontramos el perfil.
+      if (data && data.length > 0) {
+        setProfile(data[0]); // Guardamos el primer (y único) perfil encontrado.
+      } else {
+        setProfile(null); // Si no, nos aseguramos de que el perfil sea nulo.
       }
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
+      alert('Error al obtener el perfil. Revisa la consola.');
     } finally {
       setLoading(false);
     }

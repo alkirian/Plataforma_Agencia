@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient.js';
+import { supabaseAdmin } from '../config/supabaseClient.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -9,13 +9,14 @@ export const protect = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error) {
+      // Este es el error que te estaba apareciendo
       return res.status(401).json({ success: false, message: 'No autorizado. Token inválido.' });
     }
 
-    req.user = user; // Adjuntamos el usuario a la petición
+    req.user = user;
     next();
   } catch (error) {
     next(error);
