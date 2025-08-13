@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient.js';
 import { Onboarding } from './components/Onboarding.jsx';
 import { MainLayout } from './components/layout/MainLayout.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
+import { ClientDetailPage } from './pages/ClientDetailPage.jsx';
 import './App.css';
 
 // Componente para la lógica de la aplicación principal post-autenticación
@@ -17,7 +18,8 @@ const MainApp = ({ session, profile }) => {
       <MainLayout userEmail={session.user.email} onLogout={handleLogout}>
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
-          {/* Futuras rutas como /clients/:id se añadirán aquí */}
+          {/* Ruta dinámica para detalle de cliente */}
+          <Route path="/clients/:id" element={<ClientDetailPage />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </MainLayout>

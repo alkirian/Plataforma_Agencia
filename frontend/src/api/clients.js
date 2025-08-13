@@ -34,3 +34,6 @@ export const createClient = (clientData) => apiFetch('/clients', {
   method: 'POST',
   body: JSON.stringify(clientData),
 });
+
+// Obtiene los detalles de un solo cliente por su ID
+export const fetchClientById = (clientId) => apiFetch(`/clients/${clientId}`);

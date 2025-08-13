@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchClients, createClient } from '../api/clients.js';
+import { Link } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const [clients, setClients] = useState([]);
@@ -74,10 +75,12 @@ export const DashboardPage = () => {
       <div className="clients-grid">
         {clients.length > 0 ? (
           clients.map((client) => (
-            <div key={client.id} className="client-card">
-              <h3>{client.name}</h3>
-              <p>{client.industry || 'Sin industria especificada'}</p>
-            </div>
+            <Link to={`/clients/${client.id}`} key={client.id} className="client-card-link">
+              <div className="client-card">
+                <h3>{client.name}</h3>
+                <p>{client.industry || 'Sin industria especificada'}</p>
+              </div>
+            </Link>
           ))
         ) : (
           <p>Aún no has añadido ningún cliente. ¡Crea el primero!</p>
