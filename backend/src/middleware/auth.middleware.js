@@ -8,7 +8,7 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'No autorizado. Token no proporcionado.' });
     }
 
-    const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error) {
@@ -16,7 +16,8 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'No autorizado. Token inválido.' });
     }
 
-    req.user = user;
+  req.user = user;
+  req.token = token; // Guardamos el JWT para uso posterior en controladores/servicios
     next();
   } catch (error) {
     next(error);

@@ -1,20 +1,20 @@
-import { supabase } from '../config/supabaseClient.js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_KEY;
 
 /**
- * Crea un nuevo cliente en la base de datos, asegurando que esté asociado a la agencia correcta.
- * @param {object} clientData - Datos del nuevo cliente (ej. { name, industry }).
- * @param {string} agencyId - El UUID de la agencia a la que pertenece el cliente.
- * @returns {Promise<object>} El objeto del cliente recién creado.
+ * Llama a una función de la base de datos para crear un nuevo cliente.
  */
-export const createClient = async (clientData, agencyId) => {
-  const { data, error } = await supabase
-    .from('clients')
-    .insert({
-      ...clientData,
-      agency_id: agencyId, // Vinculamos el cliente a la agencia del usuario.
-    })
-    .select()
-    .single(); // .single() para devolver el objeto creado directamente.
+export const createClient = async (clientData, token) => {
+  const supabaseAuth = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+
+  const { data, error } = await supabaseAuth.rpc('create_new_client', {
+    client_name: clientData.name,
+    client_industry: clientData.industry,
+  });
 
   if (error) {
     throw new Error(`Error al crear el cliente: ${error.message}`);
@@ -24,11 +24,13 @@ export const createClient = async (clientData, agencyId) => {
 
 /**
  * Obtiene todos los clientes que pertenecen a una agencia específica.
- * @param {string} agencyId - El UUID de la agencia.
- * @returns {Promise<Array>} Una lista de los clientes de la agencia.
  */
-export const getClientsByAgency = async (agencyId) => {
-  const { data, error } = await supabase
+export const getClientsByAgency = async (agencyId, token) => {
+  const supabaseAuth = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+
+  const { data, error } = await supabaseAuth
     .from('clients')
     .select('*')
     .eq('agency_id', agencyId);
