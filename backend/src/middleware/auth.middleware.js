@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabaseClient.js';
+import { supabase } from '../config/supabaseClient.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -9,7 +9,7 @@ export const protect = async (req, res, next) => {
     }
 
   const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error) {
       // Este es el error que te estaba apareciendo
