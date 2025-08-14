@@ -1,6 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../../supabaseClient';
+import toast from 'react-hot-toast';
 
 const inputClass = 'w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-glow-cyan focus:outline-none focus:ring-2 focus:ring-glow-cyan/30';
 const primaryBtn = 'w-full rounded-md bg-rambla-accent px-4 py-2 font-semibold text-white transition hover:opacity-90';
@@ -20,6 +21,7 @@ export const LoginForm = () => {
       reset();
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
+      toast.error('Email o contraseña incorrectos.');
     }
   };
 
@@ -28,6 +30,7 @@ export const LoginForm = () => {
       await supabase.auth.signInWithOAuth({ provider: 'google' });
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
+      toast.error('No se pudo iniciar con Google');
     }
   };
 

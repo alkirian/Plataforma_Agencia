@@ -5,6 +5,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Dialog, Transition } from '@headlessui/react';
+import toast from 'react-hot-toast';
 
 const localizer = momentLocalizer(moment);
 
@@ -85,15 +86,22 @@ export const ScheduleSection = ({ clientId }) => {
     try {
       if (!formTitle || !formDate || !formTime) return;
       const iso = new Date(`${formDate}T${formTime}:00`).toISOString();
-      await createScheduleItem(clientId, {
-        title: formTitle,
-        scheduled_at: iso,
-        status: formStatus,
-      });
+      await toast.promise(
+        createScheduleItem(clientId, {
+          title: formTitle,
+          scheduled_at: iso,
+          status: formStatus,
+        }),
+        {
+          loading: 'Creando evento…',
+          success: 'Evento creado',
+          error: (e) => e.message || 'No se pudo crear el evento',
+        }
+      );
       closeModal();
       loadData();
     } catch (err) {
-      alert(`Error al crear el evento: ${err.message}`);
+      // El toast.promise ya maneja el error visual
     }
   };
 

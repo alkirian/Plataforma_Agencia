@@ -4,9 +4,13 @@ import { fetchClients, createClient } from '../api/clients.js';
 import { Link } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { WelcomeEmptyState } from '../components/dashboard/WelcomeEmptyState.jsx';
+import { ClientCreationModal } from '../components/dashboard/ClientCreationModal.jsx';
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const { data: clients, isLoading, isError, error } = useQuery({
     queryKey: ['clients'],
@@ -14,7 +18,16 @@ export const DashboardPage = () => {
   });
 
   const createClientMutation = useMutation({
-    mutationFn: createClient,
+    mutationFn: async (payload) => {
+      return await toast.promise(
+        createClient(payload),
+        {
+          loading: 'Creando cliente…',
+          success: 'Cliente creado',
+          error: (e) => e.message || 'No se pudo crear el cliente',
+        }
+      );
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
   });
 
@@ -38,13 +51,11 @@ export const DashboardPage = () => {
         <div className="h-16 w-16 rounded-full border border-white/20 bg-white/5 backdrop-blur flex items-center justify-center text-2xl font-bold text-white">
           R
         </div>
-        <form onSubmit={handleCreateClient} className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-          <input name="name" type="text" placeholder="Nombre del nuevo cliente" required className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" />
-          <input name="industry" type="text" placeholder="Industria (opcional)" className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" />
-          <button type="submit" disabled={createClientMutation.isPending} className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 min-w-[160px]">
-            {createClientMutation.isPending ? 'Añadiendo…' : 'Añadir Cliente'}
+        <div className="flex justify-center">
+          <button id="add-client-button" onClick={() => setIsModalOpen(true)} className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+            + Añadir Cliente
           </button>
-        </form>
+        </div>
       </section>
 
       {/* Separador y título */}
@@ -58,9 +69,15 @@ export const DashboardPage = () => {
       </div>
 
       {/* Grid de tarjetas */}
-      <motion.div layout className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <AnimatePresence>
-          {clients?.length ? clients.map((client, index) => (
+      {(!clients || clients.length === 0) ? (
+        <WelcomeEmptyState onActionClick={() => {
+          const el = document.querySelector('#add-client-button');
+          if (el) el.click();
+        }} />
+  ) : (
+        <motion.div layout className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <AnimatePresence>
+            {clients.map((client, index) => (
             <motion.div
               key={client.id}
               layout
@@ -85,13 +102,17 @@ export const DashboardPage = () => {
                 </div>
               </Link>
             </motion.div>
-          )) : (
-            <motion.div className="flex flex-col items-center gap-3 py-10 text-center col-span-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <p className="text-rambla-text-secondary">Aún no has añadido ningún cliente.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      <ClientCreationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={(payload) => createClientMutation.mutate(payload)}
+        isSubmitting={createClientMutation.isPending}
+      />
 
   {/* Se elimina el modal de creación; ahora usamos el formulario superior */}
     </div>
