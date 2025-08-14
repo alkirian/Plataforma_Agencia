@@ -1,56 +1,35 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { Fragment } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchClients, createClient } from '../api/clients.js';
 import { Link } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const DashboardPage = () => {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
 
-  // Estados para el formulario de nuevo cliente
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientIndustry, setNewClientIndustry] = useState('');
-  const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  const { data: clients, isLoading, isError, error } = useQuery({
+    queryKey: ['clients'],
+    queryFn: fetchClients,
+  });
 
-  // Función para cargar los clientes desde el backend
-  const loadClients = async () => {
-    try {
-      setLoading(true);
-      const clientsData = await fetchClients();
-      setClients(clientsData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const createClientMutation = useMutation({
+    mutationFn: createClient,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
+  });
+
+  const handleCreateClient = (e) => {
+    e.preventDefault();
+    const form = new FormData(e.target);
+    const name = form.get('name');
+    const industry = form.get('industry');
+    if (!name) return;
+    createClientMutation.mutate({ name, industry });
+    e.target.reset();
   };
 
-  // useEffect para cargar los clientes cuando el componente se monta
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  // Manejador para el envío del formulario de nuevo cliente
-  const handleCreateClient = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!newClientName) return;
-
-    try {
-      await createClient({ name: newClientName, industry: newClientIndustry });
-      // Limpiar formulario y recargar la lista de clientes
-      setNewClientName('');
-      setNewClientIndustry('');
-      loadClients(); 
-      setIsNewClientOpen(false);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  if (loading) return <div className="text-center text-rambla-text-secondary">Cargando...</div>;
-  if (error) return <div className="text-center text-red-500">Error: {error}</div>;
+  if (isLoading) return <div className="text-center text-rambla-text-secondary">Cargando clientes...</div>;
+  if (isError) return <div className="text-center text-red-500">Error: {error.message}</div>;
 
   return (
     <div className="space-y-8">
@@ -59,21 +38,13 @@ export const DashboardPage = () => {
         <div className="h-16 w-16 rounded-full border border-white/20 bg-white/5 backdrop-blur flex items-center justify-center text-2xl font-bold text-white">
           R
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={() => {
-              setNewClientName('');
-              setNewClientIndustry('');
-              setIsNewClientOpen(true);
-            }}
-            className="rounded-full bg-glow-cyan/20 px-5 py-2 text-white border border-glow-cyan/40 hover:bg-glow-cyan/30 hover:border-glow-cyan/60 transition"
-          >
-            Nuevo cliente
+        <form onSubmit={handleCreateClient} className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+          <input name="name" type="text" placeholder="Nombre del nuevo cliente" required className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" />
+          <input name="industry" type="text" placeholder="Industria (opcional)" className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" />
+          <button type="submit" disabled={createClientMutation.isPending} className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 min-w-[160px]">
+            {createClientMutation.isPending ? 'Añadiendo…' : 'Añadir Cliente'}
           </button>
-          <button className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-white hover:bg-white/10 transition">
-            Invitar personas
-          </button>
-        </div>
+        </form>
       </section>
 
       {/* Separador y título */}
@@ -87,91 +58,42 @@ export const DashboardPage = () => {
       </div>
 
       {/* Grid de tarjetas */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {clients.length > 0 ? clients.map((client) => (
-          <Link to={`/clients/${client.id}`} key={client.id} className="group">
-            <div className="
-  rounded-xl border border-white/10 bg-glow-card-bg p-5 
-  backdrop-blur-lg shadow-lg
-  transition-all duration-300 ease-in-out
-  hover:!border-glow-cyan hover:scale-105 hover:shadow-glow-cyan/20
-">
-              <div className="mb-2 text-[10px] uppercase tracking-wider text-white/60">
-                Team
-              </div>
-              <h3 className="font-bold text-white">{client.name}</h3>
-              <p className="text-sm text-rambla-text-secondary">{client.industry || 'Sin industria'}</p>
-              <div className="mt-3 flex -space-x-2">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-6 w-6 rounded-full border border-white/10 bg-white/10" />
-                ))}
-                {clients.length > 4 && (
-                  <div className="ml-2 text-xs text-white/60">+{Math.max(0, clients.length - 4)}</div>
-                )}
-              </div>
-            </div>
-          </Link>
-        )) : (
-          <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <p className="text-rambla-text-secondary">Aún no has añadido ningún cliente.</p>
-            <button
-              onClick={() => {
-                setNewClientName('');
-                setNewClientIndustry('');
-                setIsNewClientOpen(true);
-              }}
-              className="rounded-full bg-glow-cyan/20 px-5 py-2 text-white border border-glow-cyan/40 hover:bg-glow-cyan/30 hover:border-glow-cyan/60 transition"
+      <motion.div layout className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <AnimatePresence>
+          {clients?.length ? clients.map((client, index) => (
+            <motion.div
+              key={client.id}
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-              Crear el primero
-            </button>
-          </div>
-        )}
-      </div>
+              <Link to={`/clients/${client.id}`} className="group block">
+                <div className="rounded-xl border border-white/10 bg-glow-card-bg p-5 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out hover:!border-glow-cyan hover:scale-105 hover:shadow-glow-cyan/20">
+                  <div className="mb-2 text-[10px] uppercase tracking-wider text-white/60">Team</div>
+                  <h3 className="font-bold text-white">{client.name}</h3>
+                  <p className="text-sm text-rambla-text-secondary">{client.industry || 'Sin industria'}</p>
+                  <div className="mt-3 flex -space-x-2">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="h-6 w-6 rounded-full border border-white/10 bg-white/10" />
+                    ))}
+                    {clients.length > 4 && (
+                      <div className="ml-2 text-xs text-white/60">+{Math.max(0, clients.length - 4)}</div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          )) : (
+            <motion.div className="flex flex-col items-center gap-3 py-10 text-center col-span-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <p className="text-rambla-text-secondary">Aún no has añadido ningún cliente.</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-      {/* Modal para crear nuevo cliente */}
-      <Transition appear show={isNewClientOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsNewClientOpen(false)}>
-          <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <div className="fixed inset-0 bg-black/50" />
-          </Transition.Child>
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                <Dialog.Panel className="w-full max-w-md rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg">
-                  <Dialog.Title className="mb-2 text-lg font-semibold text-white">Nuevo cliente</Dialog.Title>
-                  <form onSubmit={handleCreateClient} className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm text-rambla-text-secondary">Nombre</label>
-                      <input
-                        type="text"
-                        value={newClientName}
-                        onChange={(e) => setNewClientName(e.target.value)}
-                        className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none"
-                        placeholder="Nombre del cliente"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm text-rambla-text-secondary">Industria (opcional)</label>
-                      <input
-                        type="text"
-                        value={newClientIndustry}
-                        onChange={(e) => setNewClientIndustry(e.target.value)}
-                        className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none"
-                        placeholder="Industria"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => setIsNewClientOpen(false)} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-rambla-accent">Cancelar</button>
-                      <button type="submit" className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Crear</button>
-                    </div>
-                  </form>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+  {/* Se elimina el modal de creación; ahora usamos el formulario superior */}
     </div>
   );
 };
