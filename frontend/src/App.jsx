@@ -34,11 +34,16 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="container">
-      <h1>Software Rambla</h1>
-      <div className="card">
-        <p>Inicia sesión para continuar.</p>
-        <button onClick={handleGoogleLogin}>Iniciar sesión con Google</button>
+    <div className="min-h-screen bg-rambla-bg text-rambla-text-primary flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-xl border border-rambla-border bg-rambla-surface p-6 shadow">
+        <h1 className="mb-2 text-3xl font-bold text-white">Software Rambla</h1>
+        <p className="mb-6 text-sm text-rambla-text-secondary">Inicia sesión para continuar.</p>
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full rounded-md bg-rambla-accent px-4 py-2 font-semibold text-white transition hover:opacity-90"
+        >
+          Iniciar sesión con Google
+        </button>
       </div>
     </div>
   );

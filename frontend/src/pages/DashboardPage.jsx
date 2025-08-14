@@ -46,20 +46,20 @@ export const DashboardPage = () => {
     }
   };
 
-  if (loading) return <div>Cargando clientes...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="text-center text-rambla-text-secondary">Cargando...</div>;
+  if (error) return <div className="text-center text-red-500">Error: {error}</div>;
 
   return (
-    <div>
-      <div className="dashboard-header">
-        <h2>Mis Clientes</h2>
-        {/* Formulario para añadir un nuevo cliente */}
-        <form onSubmit={handleCreateClient} className="new-client-form">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-white">Mis Clientes</h2>
+        <form onSubmit={handleCreateClient} className="flex space-x-2">
           <input
             type="text"
             placeholder="Nombre del nuevo cliente"
             value={newClientName}
             onChange={(e) => setNewClientName(e.target.value)}
+            className="rounded-md border border-rambla-border bg-rambla-surface px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none"
             required
           />
           <input
@@ -67,23 +67,24 @@ export const DashboardPage = () => {
             placeholder="Industria (opcional)"
             value={newClientIndustry}
             onChange={(e) => setNewClientIndustry(e.target.value)}
+            className="rounded-md border border-rambla-border bg-rambla-surface px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none"
           />
-          <button type="submit">Añadir Cliente</button>
+          <button type="submit" className="rounded-md bg-rambla-accent px-4 py-2 font-semibold text-white transition hover:opacity-90">
+            Añadir Cliente
+          </button>
         </form>
       </div>
 
-      <div className="clients-grid">
-        {clients.length > 0 ? (
-          clients.map((client) => (
-            <Link to={`/clients/${client.id}`} key={client.id} className="client-card-link">
-              <div className="client-card">
-                <h3>{client.name}</h3>
-                <p>{client.industry || 'Sin industria especificada'}</p>
-              </div>
-            </Link>
-          ))
-        ) : (
-          <p>Aún no has añadido ningún cliente. ¡Crea el primero!</p>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {clients.length > 0 ? clients.map((client) => (
+          <Link to={`/clients/${client.id}`} key={client.id} className="group">
+            <div className="rounded-lg border border-rambla-border bg-rambla-surface p-5 transition duration-300 ease-in-out group-hover:-translate-y-1 group-hover:border-rambla-accent">
+              <h3 className="font-bold text-white">{client.name}</h3>
+              <p className="text-sm text-rambla-text-secondary">{client.industry || 'Sin industria'}</p>
+            </div>
+          </Link>
+        )) : (
+          <p className="text-rambla-text-secondary">Aún no has añadido ningún cliente.</p>
         )}
       </div>
     </div>
