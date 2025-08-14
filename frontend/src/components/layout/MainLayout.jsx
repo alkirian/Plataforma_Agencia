@@ -1,19 +1,14 @@
 import React from 'react';
 import { Header } from './Header';
-import { Sidebar } from './Sidebar';
 
 export const MainLayout = ({ children, userEmail, onLogout }) => {
 	return (
-		<div className="flex h-screen bg-rambla-bg text-rambla-text-primary">
-			<Sidebar />
-			<div className="flex flex-1 flex-col overflow-y-auto">
-				<Header userEmail={userEmail} onLogout={onLogout} />
-				<main className="flex-1 p-6">
-					<div className="mx-auto w-full max-w-7xl px-2 sm:px-4">
-						{children}
-					</div>
-				</main>
-			</div>
+		// El fondo y el texto principal se definen aquí
+		<div className="min-h-screen bg-glow-bg-end text-rambla-text-primary">
+			<Header userEmail={userEmail} onLogout={onLogout} />
+			<main className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+				{children}
+			</main>
 		</div>
 	);
 };
