@@ -9,7 +9,9 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
 			<div className="flex flex-1 flex-col overflow-y-auto">
 				<Header userEmail={userEmail} onLogout={onLogout} />
 				<main className="flex-1 p-6">
-					{children}
+					<div className="mx-auto w-full max-w-7xl px-2 sm:px-4">
+						{children}
+					</div>
 				</main>
 			</div>
 		</div>

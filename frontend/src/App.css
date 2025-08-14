@@ -16,23 +16,80 @@ body {
 	border: 1px solid theme('colors.rambla-border') !important;
 	border-radius: theme('borderRadius.lg') !important;
 }
+.rbc-month-view,
+.rbc-time-view {
+	background: transparent !important;
+	border-color: theme('colors.rambla-border') !important;
+	border-radius: theme('borderRadius.lg') !important;
+	overflow: hidden;
+}
 .rbc-toolbar {
 	color: theme('colors.rambla-text-primary') !important;
 	margin-bottom: theme('spacing.4') !important;
 }
 .rbc-toolbar button {
-	color: theme('colors.rambla-accent') !important;
+	color: theme('colors.rambla-text-primary') !important;
+	background: transparent !important;
+	border: 1px solid transparent !important;
+	border-radius: theme('borderRadius.md') !important;
+	padding: 0.25rem 0.5rem !important;
+	transition: background-color .15s ease, border-color .15s ease, color .15s ease !important;
+}
+.rbc-toolbar button:hover {
+	background: theme('colors.white / 5%') !important;
+	border-color: theme('colors.white / 10%') !important;
+	color: theme('colors.white') !important;
 }
 .rbc-header {
 	color: theme('colors.rambla-text-secondary') !important;
-	border-bottom: 1px solid theme('colors.rambla-border') !important;
+	border-bottom: 1px solid theme('colors.white / 6%') !important;
 }
 .rbc-off-range-bg {
 	background-color: theme('colors.rambla-bg') !important;
 }
-.rbc-day-bg:not(.rbc-off-range-bg) {
+.rbc-month-view .rbc-date-cell {
+	color: theme('colors.rambla-text-secondary') !important;
+	transition: color .15s ease, text-shadow .15s ease !important;
+}
+.rbc-month-view .rbc-date-cell > a,
+.rbc-month-view .rbc-date-cell > span {
+	color: inherit !important;
+}
+.rbc-month-view .rbc-date-cell:hover {
+	color: theme('colors.glow-cyan') !important;
+	text-shadow: 0 0 8px rgba(0, 246, 255, 0.35);
+}
+.rbc-day-bg,
+.rbc-time-slot {
 	background-color: theme('colors.rambla-surface') !important;
+	transition: background-color .15s ease, box-shadow .15s ease !important;
+}
+.rbc-day-bg:hover,
+.rbc-time-slot:hover {
+	background-image: linear-gradient(180deg, theme('colors.glow-cyan / 6%'), transparent) !important;
+	box-shadow: inset 0 0 0 1px theme('colors.glow-cyan / 15%');
 }
 .rbc-today {
-	background-color: #58a6ff20 !important; /* Usamos un color con transparencia */
+	background-color: theme('colors.glow-cyan / 10%') !important;
+	box-shadow: inset 0 0 0 1px theme('colors.glow-cyan / 20%');
+}
+.rbc-selected-cell {
+	background-color: theme('colors.glow-cyan / 15%') !important;
+}
+.rbc-month-row + .rbc-month-row {
+	border-top-color: theme('colors.rambla-border') !important;
+}
+.rbc-event {
+	border-radius: 10px !important;
+	border: 1px solid theme('colors.white / 8%') !important;
+	box-shadow: 0 4px 14px -6px theme('colors.black / 50%') !important;
+	backdrop-filter: blur(2px);
+	transition: transform .15s ease, box-shadow .15s ease !important;
+}
+.rbc-event:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 10px 24px -8px theme('colors.glow-cyan / 25%') !important;
+}
+.rbc-event-content {
+	color: theme('colors.rambla-text-primary') !important;
 }
