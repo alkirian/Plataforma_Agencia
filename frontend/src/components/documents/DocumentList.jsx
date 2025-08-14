@@ -23,6 +23,15 @@ export const DocumentList = ({ documents = [] }) => {
                   {doc.created_at ? ' - ' + new Date(doc.created_at).toLocaleDateString() : ''}
                 </p>
               </div>
+              {doc.ai_status && (
+                <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                  doc.ai_status === 'ready' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                  doc.ai_status === 'processing' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
+                  'bg-white/10 text-white/70 border border-white/20'
+                }`}>
+                  {doc.ai_status === 'ready' ? 'Listo' : doc.ai_status === 'processing' ? 'Procesando' : 'Pendiente'}
+                </span>
+              )}
             </div>
             <div className="flex space-x-2">
               <button className="text-rambla-text-secondary hover:text-rambla-accent" title="Descargar">

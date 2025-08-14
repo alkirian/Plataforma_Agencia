@@ -3,6 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchClientById } from '../api/clients';
 import { ScheduleSection } from '../components/schedule/ScheduleSection';
 import { DocumentsSection } from '../components/documents/DocumentsSection';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { generateIdeas } from '../api/ai';
+import toast from 'react-hot-toast';
+import { createScheduleItem } from '../api/schedule';
 
 export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
@@ -10,6 +16,35 @@ export const ClientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const aiMutation = useMutation({
+    mutationFn: async () => {
+      return await toast.promise(
+        generateIdeas({ clientId, userPrompt: aiPrompt, monthContext: [] }),
+        {
+          loading: 'Nuestro asistente está creando... 🧠',
+          success: '¡Ideas generadas! Añadiendo al calendario...',
+          error: (e) => e.message || 'No se pudieron generar ideas',
+        }
+      );
+    },
+    onSuccess: async (ideas) => {
+      // Crear eventos en el backend
+      for (const idea of ideas) {
+        try {
+          await createScheduleItem(clientId, idea);
+        } catch (e) {
+          console.error('Error creando evento de idea', e);
+        }
+      }
+      setIsAIModalOpen(false);
+      setAiPrompt('');
+      setRefreshKey((k) => k + 1);
+      toast.success('¡Nuevas ideas han sido añadidas a tu calendario!');
+    },
+  });
 
   useEffect(() => {
     const run = async () => {
@@ -35,7 +70,12 @@ export const ClientDetailPage = () => {
     <div>
       <div className="mb-6">
         <Link to="/dashboard" className="text-sm text-rambla-accent hover:underline">&larr; Volver al Dashboard</Link>
-        <h1 className="text-4xl font-bold text-white">{client.name}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-4xl font-bold text-white">{client.name}</h1>
+          <button onClick={() => setIsAIModalOpen(true)} className="rounded-md bg-glow-cyan px-4 py-2 text-sm font-semibold text-black hover:opacity-90">
+            ✨ Generar con IA
+          </button>
+        </div>
         <p className="text-rambla-text-secondary">{client.industry || 'No especificada'}</p>
       </div>
       <hr className="border-rambla-border" />
@@ -64,12 +104,37 @@ export const ClientDetailPage = () => {
         </div>
         <div className="rounded-lg border border-rambla-border bg-rambla-surface p-4">
           {activeTab === 'schedule' ? (
-            <ScheduleSection clientId={clientId} />
+            <ScheduleSection key={refreshKey} clientId={clientId} />
           ) : (
             <DocumentsSection clientId={clientId} />
           )}
         </div>
       </div>
+
+      <Transition appear show={isAIModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setIsAIModalOpen(false)}>
+          <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
+            <div className="fixed inset-0 bg-black/50" />
+          </Transition.Child>
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                <Dialog.Panel className="w-full max-w-lg rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg">
+                  <Dialog.Title className="mb-2 text-lg font-semibold text-white">Generar ideas con IA</Dialog.Title>
+                  <p className="mb-4 text-sm text-rambla-text-secondary">¿Sobre qué tema te gustaría generar ideas para este mes?</p>
+                  <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" placeholder="Ej. ideas para el Día del Padre" />
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button onClick={() => setIsAIModalOpen(false)} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-rambla-accent">Cancelar</button>
+                    <button onClick={() => aiMutation.mutate()} disabled={!aiPrompt || aiMutation.isPending} className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+                      {aiMutation.isPending ? 'Creando…' : 'Generar Ideas'}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };
