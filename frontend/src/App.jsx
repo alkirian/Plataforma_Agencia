@@ -34,8 +34,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-rambla-bg text-rambla-text-primary flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-rambla-border bg-rambla-surface p-6 shadow">
+    <div className="min-h-screen text-rambla-text-primary flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg">
         <h1 className="mb-2 text-3xl font-bold text-white">Software Rambla</h1>
         <p className="mb-6 text-sm text-rambla-text-secondary">Inicia sesión para continuar.</p>
         <button

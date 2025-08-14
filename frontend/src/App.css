@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+	background-color: theme('colors.glow-bg-end');
+	background-image: radial-gradient(circle at top right, theme('colors.glow-cyan / 15%'), transparent 40%),
+										radial-gradient(circle at bottom left, theme('colors.rambla-accent / 10%'), transparent 50%);
+	background-attachment: fixed;
+}
+
 /* src/App.css */
 /* Estilos Personalizados para React Big Calendar */
 .rbc-calendar {

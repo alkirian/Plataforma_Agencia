@@ -78,7 +78,12 @@ export const DashboardPage = () => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {clients.length > 0 ? clients.map((client) => (
           <Link to={`/clients/${client.id}`} key={client.id} className="group">
-            <div className="rounded-lg border border-rambla-border bg-rambla-surface p-5 transition duration-300 ease-in-out group-hover:-translate-y-1 group-hover:border-rambla-accent">
+            <div className="
+  rounded-xl border border-white/10 bg-glow-card-bg p-5 
+  backdrop-blur-lg shadow-lg
+  transition-all duration-300 ease-in-out
+  hover:!border-glow-cyan hover:scale-105 hover:shadow-glow-cyan/20
+">
               <h3 className="font-bold text-white">{client.name}</h3>
               <p className="text-sm text-rambla-text-secondary">{client.industry || 'Sin industria'}</p>
             </div>

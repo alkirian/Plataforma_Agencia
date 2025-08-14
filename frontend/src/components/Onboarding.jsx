@@ -38,8 +38,8 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-rambla-bg text-rambla-text-primary flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-rambla-border bg-rambla-surface p-6 shadow">
+    <div className="min-h-screen text-rambla-text-primary flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg">
         <h2 className="mb-1 text-2xl font-bold text-white">Completa tu registro</h2>
         <p className="mb-6 text-sm text-rambla-text-secondary">¡Bienvenido! Solo un paso más para empezar.</p>
         <form onSubmit={handleCompleteProfile} className="space-y-4">
