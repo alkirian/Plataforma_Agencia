@@ -1,3 +1,5 @@
+// src/controllers/documents.controller.js
+
 import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById } from '../services/documents.service.js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
 
@@ -36,28 +38,53 @@ export const handleGetDocumentsForClient = async (req, res, next) => {
   }
 };
 
+// src/controllers/documents.controller.js
+
+// ... (el resto del archivo se mantiene igual)
+
 export const handleUploadDocument = async (req, res, next) => {
   try {
     const { clientId } = req.params;
+    const token = req.token;
     const { file_name, storage_path, file_type, file_size } = req.body || {};
     if (!clientId || !storage_path || !file_name) {
       return res.status(400).json({ success: false, message: 'Faltan campos requeridos.' });
     }
     const agencyId = await getUserAgencyId(req.user.id);
-    const created = await createDocument({
+
+    // Creamos el objeto que vamos a insertar
+    const documentData = {
       client_id: clientId,
-      agency_id: agencyId,
+      agency_id: agencyId, // <-- Sospechamos que este valor puede ser null
       file_name,
       storage_path,
       file_type,
       file_size,
       ai_status: 'pending',
-    });
-    res.status(201).json({ success: true, data: created });
+    };
+    
+    // ✨ LÍNEA DE DEPURACIÓN CLAVE ✨
+    //    Vamos a imprimir este objeto en la consola del backend.
+    console.log('--- DATOS A INSERTAR EN LA TABLA documents ---', documentData);
+
+    // 1. Crea el registro del documento
+    const createdDocument = await createDocument(documentData);
+
+    // ... (el resto de la función se mantiene igual)
+    if (createdDocument) {
+      processDocument(createdDocument.id, token)
+        .catch(err => {
+          console.error(`[ERROR] Fallo en el procesamiento del documento ${createdDocument.id}:`, err.message);
+        });
+    }
+    
+    res.status(201).json({ success: true, data: createdDocument });
   } catch (error) {
     next(error);
   }
 };
+
+// ... (el resto del archivo se mantiene igual)
 
 export const handleDeleteDocument = async (req, res, next) => {
   try {

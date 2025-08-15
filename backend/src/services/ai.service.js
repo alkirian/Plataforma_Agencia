@@ -69,7 +69,60 @@ Tarea: Genera 5 ideas de posteos creativos sobre el tema: "${userPrompt}" para e
 Instrucción de formato: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga: title (string), scheduled_at (string 'YYYY-MM-DD'), y status (string, 'Pendiente').`;
 
   const llmResponse = await callLLM(megaPrompt);
+// src/services/ai.service.js
 
+// ... (El resto de tus importaciones y funciones como embedText, callLLM, etc., se mantienen igual)
+
+/**
+ * Envía una imagen a GPT-4o para que la analice y describa.
+ * @param {string} imageUrl - La URL pública de la imagen en Supabase Storage.
+ * @returns {Promise<string>} Una descripción detallada de la imagen.
+ */
+const analyzeImage = async (imageUrl) => {
+  const prompt = `Analiza esta imagen en detalle. Describe su contenido, los colores predominantes, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.`;
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini', // Usamos un modelo con capacidad de visión
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: { url: imageUrl },
+            },
+          ],
+        },
+      ],
+      max_tokens: 500, // Limitamos la longitud de la descripción
+    }),
+  });
+
+  if (!resp.ok) {
+    const errorDetails = await resp.json();
+    console.error('[ERROR DE OPENAI VISION]:', JSON.stringify(errorDetails, null, 2));
+    throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
+  }
+
+  const json = await resp.json();
+  return json.choices?.[0]?.message?.content || '';
+};
+
+// Asegúrate de exportar la nueva función junto a las demás
+// Esta exportación probablemente está en ai.service.js o en un archivo index de servicios.
+// Si no estás seguro, busca dónde se exporta generateScheduleIdeas y añádela ahí.
+// Por ahora, asumiremos que está en el mismo archivo y la exportamos aquí (ejemplo):
+// export { generateScheduleIdeas, analyzeImage }; 
+// NOTA: La exportación real depende de la estructura de tu proyecto.
+// La clave es que `processDocument` pueda importarla.
+// Para simplificar, vamos a importarla directamente en el otro archivo.
   // Intentar parsear JSON
   let ideas;
   try {
