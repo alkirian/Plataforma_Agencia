@@ -140,3 +140,67 @@ const analyzeImage = async (imageUrl) => {
 
   return ideas;
 };
+
+/**
+ * Maneja conversaciones de chat con el cliente usando RAG
+ */
+export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token }) => {
+  if (!openaiApiKey) throw new Error('OPENAI_API_KEY no configurada');
+
+  // Validar acceso al cliente vía RLS
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data: client, error: clientErr } = await supabaseAuth.from('clients').select('id, name, agency_id').eq('id', clientId).single();
+  if (clientErr) throw new Error(clientErr.message);
+
+  // Embedding de la consulta
+  const queryEmbedding = await embedText(userPrompt);
+
+  // Buscar chunks relevantes
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
+    query_embedding: queryEmbedding,
+    match_client_id: clientId,
+    match_count: 5,
+  });
+  if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
+  const topContext = (matches || []).map(m => m.content).join('\n---\n');
+
+  // Construir historial de conversación
+  const conversationHistory = Array.isArray(chatHistory) 
+    ? chatHistory.map(msg => ({ role: msg.role, content: msg.content }))
+    : [];
+
+  const systemPrompt = `Eres un asistente de marketing digital experto especializado en contenido para redes sociales.
+
+Contexto del cliente ${client.name}:
+${topContext}
+
+Instrucciones:
+- Responde de manera conversacional y útil
+- Usa el contexto del cliente para dar respuestas personalizadas
+- Si no tienes información suficiente, pregunta por más detalles
+- Mantén un tono profesional pero amigable
+- Enfócate en estrategias de marketing y contenido`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: userPrompt }
+  ];
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages,
+      temperature: 0.7,
+      max_tokens: 500,
+    }),
+  });
+
+  if (!resp.ok) throw new Error('Error al generar respuesta del chat');
+  const json = await resp.json();
+  const response = json.choices?.[0]?.message?.content || 'No pude generar una respuesta.';
+
+  return { response };
+};

@@ -7,6 +7,12 @@ import errorHandler from './middleware/errorHandler.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Middleware de logging temporal para debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Middlewares Esenciales
 app.use(cors()); // Habilita Cross-Origin Resource Sharing
 app.use(express.json()); // Parsea cuerpos de petición en formato JSON

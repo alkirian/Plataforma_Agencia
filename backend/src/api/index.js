@@ -13,4 +13,9 @@ router.get('/health', (_req, res) => {
 router.use('/users', userRoutes);
 router.use('/clients', clientRoutes); // Solo registramos la ruta principal de clientes
 
+// LOG TEMPORAL: Verificar rutas registradas
+console.log('🔍 Rutas registradas:');
+console.log('  - /api/v1/users (userRoutes)');
+console.log('  - /api/v1/clients (clientRoutes)');
+
 export default router;

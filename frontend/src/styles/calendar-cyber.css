@@ -1,0 +1,277 @@
+/* Estilos Cyber para React Big Calendar */
+
+/* Contenedor principal del calendario */
+.rbc-calendar {
+  background: transparent;
+  color: #c9d1d9;
+  font-family: inherit;
+}
+
+/* Header del mes/semana */
+.rbc-header {
+  background: linear-gradient(135deg, rgba(0, 246, 255, 0.05) 0%, rgba(0, 170, 255, 0.05) 100%);
+  border: none !important;
+  padding: 12px 0;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 246, 255, 0.2) !important;
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid rgba(0, 246, 255, 0.1) !important;
+}
+
+.rbc-header span {
+  color: #00f6ff;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+/* Toolbar personalizada */
+.rbc-toolbar {
+  background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(0, 246, 255, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 246, 255, 0.1);
+}
+
+.rbc-toolbar button {
+  background: rgba(0, 246, 255, 0.1);
+  color: #00f6ff;
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0 4px;
+}
+
+.rbc-toolbar button:hover:not(:disabled) {
+  background: rgba(0, 246, 255, 0.2);
+  border-color: #00f6ff;
+  box-shadow: 0 0 12px rgba(0, 246, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.rbc-toolbar button.rbc-active {
+  background: #00f6ff;
+  color: #0d1117;
+  box-shadow: 0 0 20px rgba(0, 246, 255, 0.6);
+}
+
+.rbc-toolbar button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Celdas del calendario */
+.rbc-month-view,
+.rbc-time-view {
+  background: rgba(13, 17, 23, 0.5);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(0, 246, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.rbc-day-bg {
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.rbc-day-bg:hover {
+  background: rgba(0, 246, 255, 0.05);
+}
+
+/* Celdas individuales */
+.rbc-date-cell {
+  padding: 8px 12px;
+  text-align: right;
+}
+
+.rbc-date-cell button {
+  color: #8b949e;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.rbc-date-cell button:hover {
+  color: #00f6ff;
+  text-shadow: 0 0 8px rgba(0, 246, 255, 0.6);
+}
+
+/* Día actual */
+.rbc-today {
+  background: rgba(0, 246, 255, 0.1) !important;
+  position: relative;
+}
+
+.rbc-today::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid #00f6ff;
+  border-radius: 8px;
+  animation: pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.02);
+  }
+}
+
+/* Día fuera del mes */
+.rbc-off-range-bg {
+  background: rgba(13, 17, 23, 0.3);
+}
+
+.rbc-off-range .rbc-date-cell button {
+  color: #30363d;
+}
+
+/* Eventos */
+.rbc-event {
+  background: linear-gradient(135deg, #00f6ff 0%, #00aaff 100%);
+  border: none !important;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: #0d1117;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 246, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.rbc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 246, 255, 0.5);
+}
+
+.rbc-event.rbc-selected {
+  background: linear-gradient(135deg, #00ff88 0%, #00f6ff 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+/* Slot seleccionado */
+.rbc-slot-selecting {
+  background: rgba(0, 246, 255, 0.2);
+  border: 1px dashed #00f6ff;
+}
+
+/* Líneas de la grilla - más sutiles */
+.rbc-month-row,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-month-view .rbc-day-bg {
+  border-color: rgba(48, 54, 61, 0.3) !important;
+}
+
+/* Vista de agenda */
+.rbc-agenda-view {
+  background: rgba(22, 27, 34, 0.8);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(0, 246, 255, 0.1);
+}
+
+.rbc-agenda-table {
+  border: none;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell {
+  color: #00f6ff;
+  font-weight: 500;
+  padding: 12px;
+}
+
+.rbc-agenda-event-cell {
+  color: #c9d1d9;
+}
+
+/* Scrollbar personalizada para vistas con scroll */
+.rbc-time-content::-webkit-scrollbar,
+.rbc-agenda-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track,
+.rbc-agenda-content::-webkit-scrollbar-track {
+  background: rgba(13, 17, 23, 0.5);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb,
+.rbc-agenda-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 246, 255, 0.3);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover,
+.rbc-agenda-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 246, 255, 0.5);
+}
+
+/* Mini calendario estilos específicos */
+.mini-calendar .rbc-month-view {
+  padding: 8px;
+}
+
+.mini-calendar .rbc-header {
+  padding: 6px 0;
+  font-size: 0.65rem;
+}
+
+.mini-calendar .rbc-date-cell {
+  padding: 4px;
+}
+
+.mini-calendar .rbc-date-cell button {
+  font-size: 0.75rem;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.mini-calendar .rbc-date-cell button:hover {
+  background: rgba(0, 246, 255, 0.2);
+  color: #00f6ff;
+  transform: scale(1.1);
+}
+
+.mini-calendar .rbc-today .rbc-date-cell button {
+  background: #00f6ff;
+  color: #0d1117;
+  font-weight: bold;
+}
+
+/* Eliminar bordes no deseados */
+.rbc-month-view > * > * > * {
+  border-left: none !important;
+}
+
+.rbc-month-row + .rbc-month-row {
+  border-top: 1px solid rgba(48, 54, 61, 0.2) !important;
+}
+
+/* Hover effect para días */
+.rbc-day-bg:not(.rbc-off-range-bg):hover {
+  background: linear-gradient(135deg, rgba(0, 246, 255, 0.08) 0%, rgba(0, 170, 255, 0.08) 100%);
+  cursor: pointer;
+}
