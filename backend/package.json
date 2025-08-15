@@ -1,27 +1,23 @@
 {
-  "name": "backend",
+  "name": "plataforma-agencia-backend",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Backend para la plataforma de la agencia",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
     "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@supabase/supabase-js": "^2.55.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-  "express": "^5.1.0",
-  "mammoth": "^1.6.0",
-  "pdf-parse": "^1.1.1",
-  "node-fetch": "^3.3.2"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.4"
   }
 }

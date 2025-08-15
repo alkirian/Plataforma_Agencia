@@ -1,7 +1,12 @@
+// src/services/documents.service.js
+
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
-import pdf from 'pdf-parse';
+// ...
+import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
+
+// ... resto del código
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
@@ -96,4 +101,34 @@ export const processDocument = async (documentId, token) => {
 
   // Marcar como listo
   await supabaseAdmin.from('documents').update({ ai_status: 'ready' }).eq('id', documentId);
+};
+
+export const getDocumentsByClient = async (clientId, agencyId) => {
+  const { data, error } = await supabaseAdmin
+    .from('documents')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('agency_id', agencyId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`No se pudieron obtener los documentos: ${error.message}`);
+  return data || [];
+};
+
+export const createDocument = async (doc) => {
+  const { data, error } = await supabaseAdmin
+    .from('documents')
+    .insert(doc)
+    .select()
+    .single();
+  if (error) throw new Error(`No se pudo crear el documento: ${error.message}`);
+  return data;
+};
+
+export const deleteDocumentById = async (documentId, agencyId) => {
+  const { error } = await supabaseAdmin
+    .from('documents')
+    .delete()
+    .eq('id', documentId)
+    .eq('agency_id', agencyId);
+  if (error) throw new Error(`No se pudo eliminar el documento: ${error.message}`);
 };

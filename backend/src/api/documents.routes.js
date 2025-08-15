@@ -1,12 +1,17 @@
+// src/api/documents.routes.js
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
-import { handleProcessDocument } from '../controllers/documents.controller.js';
+import {
+	handleProcessDocument,
+	handleDeleteDocument,
+} from '../controllers/documents.controller.js';
 
 const router = Router();
 
 router.use(protect);
 
-// POST /api/v1/documents/:documentId/process
+// Rutas que operan directamente sobre /documents/:documentId
+router.delete('/:documentId', handleDeleteDocument);
 router.post('/:documentId/process', handleProcessDocument);
 
 export default router;
