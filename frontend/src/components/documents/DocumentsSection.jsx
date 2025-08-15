@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { DocumentList } from './DocumentList';
 import { DocumentUploader } from './DocumentUploader';
-import { fetchDocuments } from '../../api/documents';
+import { getDocumentsForClient } from '../../api/documents';
 
 export const DocumentsSection = ({ clientId }) => {
   const [documents, setDocuments] = useState([]);
@@ -11,8 +11,8 @@ export const DocumentsSection = ({ clientId }) => {
   const loadDocuments = useCallback(async () => {
     try {
       setLoading(true);
-      const docs = await fetchDocuments(clientId);
-      setDocuments(docs || []);
+  const { data: docs } = await getDocumentsForClient(clientId);
+  setDocuments(docs || []);
       setError(null);
     } catch (err) {
       setError(err.message);

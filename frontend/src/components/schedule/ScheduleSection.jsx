@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, Fragment } from 'react';
-import { fetchClientById } from '../../api/clients';
-import { fetchScheduleItems, createScheduleItem } from '../../api/schedule';
+import { getClientById } from '../../api/clients';
+import { getSchedule, createScheduleItem } from '../../api/schedule';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -37,9 +37,9 @@ export const ScheduleSection = ({ clientId }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [clientData, scheduleData] = await Promise.all([
-        fetchClientById(clientId),
-        fetchScheduleItems(clientId)
+      const [{ data: clientData }, { data: scheduleData }] = await Promise.all([
+        getClientById(clientId),
+        getSchedule(clientId)
       ]);
 
       setClient(clientData);

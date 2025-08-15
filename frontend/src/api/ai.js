@@ -1,7 +1,9 @@
-import { apiFetch } from './clients.js';
+// src/api/ai.js
+import { apiFetch } from './apiFetch.js';
 
-export const generateIdeas = ({ clientId, userPrompt, monthContext }) =>
-  apiFetch(`/clients/${clientId}/generate-ideas`, {
+export const generateIdeas = (clientId, promptData) => {
+  return apiFetch(`/clients/${clientId}/generate-ideas`, {
     method: 'POST',
-    body: JSON.stringify({ userPrompt, monthContext }),
+    body: JSON.stringify(promptData),
   });
+};

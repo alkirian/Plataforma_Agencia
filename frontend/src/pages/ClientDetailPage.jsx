@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchClientById } from '../api/clients';
+import { getClientById } from '../api/clients'; // Nombre corregido
 import { ScheduleSection } from '../components/schedule/ScheduleSection';
 import { DocumentsSection } from '../components/documents/DocumentsSection';
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { generateIdeas } from '../api/ai';
 import toast from 'react-hot-toast';
@@ -19,19 +18,18 @@ export const ClientDetailPage = () => {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+
   const aiMutation = useMutation({
-    mutationFn: async () => {
-      return await toast.promise(
-        generateIdeas({ clientId, userPrompt: aiPrompt, monthContext: [] }),
-        {
-          loading: 'Nuestro asistente está creando... 🧠',
-          success: '¡Ideas generadas! Añadiendo al calendario...',
-          error: (e) => e.message || 'No se pudieron generar ideas',
-        }
-      );
-    },
-    onSuccess: async (ideas) => {
-      // Crear eventos en el backend
+    mutationFn: () => toast.promise(
+      generateIdeas(clientId, { userPrompt: aiPrompt, monthContext: [] }),
+      {
+        loading: 'Nuestro asistente está creando... 🧠',
+        success: '¡Ideas generadas! Añadiendo al calendario...',
+        error: (e) => e.message || 'No se pudieron generar ideas',
+      }
+    ),
+    onSuccess: async (response) => {
+      const ideas = response.data || [];
       for (const idea of ideas) {
         try {
           await createScheduleItem(clientId, idea);
@@ -50,8 +48,9 @@ export const ClientDetailPage = () => {
     const run = async () => {
       try {
         setLoading(true);
-        const clientData = await fetchClientById(clientId);
-        setClient(clientData);
+        // Accedemos a la propiedad .data de la respuesta
+        const response = await getClientById(clientId);
+        setClient(response.data);
         setError(null);
       } catch (err) {
         setError(err.message);

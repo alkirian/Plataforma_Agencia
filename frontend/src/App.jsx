@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient.js';
@@ -11,6 +13,11 @@ import './App.css';
 
 // Componente para la lógica de la aplicación principal post-autenticación
 const MainApp = ({ session, profile }) => {
+  // ✅ CORRECCIÓN #2: Añadimos una guarda para asegurarnos que la sesión no es nula.
+  if (!session) {
+    return <Navigate to="/" />; // O mostrar un loader
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -20,7 +27,6 @@ const MainApp = ({ session, profile }) => {
       <MainLayout userEmail={session.user.email} onLogout={handleLogout}>
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
-          {/* Ruta dinámica para detalle de cliente */}
           <Route path="/clients/:id" element={<ClientDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
@@ -30,7 +36,6 @@ const MainApp = ({ session, profile }) => {
   );
 };
 
-// LoginPage ha sido reemplazada por AuthPage
 
 // Componente Raíz que gestiona el estado de autenticación
 function App() {
@@ -38,38 +43,47 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ CORRECCIÓN #1: Movemos getProfile aquí, fuera y antes del useEffect.
   const getProfile = async (user) => {
     try {
-      setLoading(true);
+      // No necesitamos setLoading(true) aquí, ya se maneja fuera.
       const { data, error } = await supabase.from('profiles').select(`*`).eq('id', user.id);
       if (error) throw error;
       setProfile(data?.[0] || null);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     } finally {
+      // El loading general se desactiva en el handleSession
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleSession = (session) => {
       setSession(session);
-      if (session) getProfile(session.user);
-      else setLoading(false);
+      if (session) {
+        localStorage.setItem('authToken', session.access_token);
+        getProfile(session.user); // Ahora 'getProfile' es visible aquí
+      } else {
+        localStorage.removeItem('authToken');
+        setProfile(null);
+        setLoading(false);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setProfile(null);
-      if (session) getProfile(session.user);
-      else setLoading(false);
+      handleSession(session);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {
-    return <div className="container">Cargando...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
   }
   if (!session) {
     return <AuthPage />;

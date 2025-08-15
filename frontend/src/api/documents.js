@@ -1,7 +1,10 @@
+// src/api/documents.js
+import { apiFetch } from './apiFetch.js';
 import { supabase } from '../supabaseClient.js';
-import { apiFetch } from './clients.js';
 
-export const fetchDocuments = (clientId) => apiFetch(`/clients/${clientId}/documents`);
+export const getDocumentsForClient = (clientId) => {
+  return apiFetch(`/clients/${clientId}/documents`);
+};
 
 export const uploadDocument = async (clientId, file) => {
   const fileExt = file.name.split('.').pop();
@@ -23,5 +26,11 @@ export const uploadDocument = async (clientId, file) => {
   return apiFetch(`/clients/${clientId}/documents`, {
     method: 'POST',
     body: JSON.stringify(newDocument),
+  });
+};
+
+export const deleteDocument = (documentId) => {
+  return apiFetch(`/documents/${documentId}`, {
+    method: 'DELETE',
   });
 };
