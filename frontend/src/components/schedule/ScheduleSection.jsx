@@ -3,9 +3,13 @@ import { getClientById } from '../../api/clients';
 import { getSchedule, createScheduleItem } from '../../api/schedule';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Dialog, Transition } from '@headlessui/react';
 import toast from 'react-hot-toast';
+import { MiniMonth } from './MiniMonth.jsx';
+import { CalendarToolbar } from './CalendarToolbar.jsx';
+import { AIAssistant } from '../ai/AIAssistant.jsx';
 
 const localizer = momentLocalizer(moment);
 
@@ -33,6 +37,7 @@ export const ScheduleSection = ({ clientId }) => {
   const [formTime, setFormTime] = useState('09:00');
   const [formStatus, setFormStatus] = useState('Pendiente');
   const [isEditMode, setIsEditMode] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const loadData = useCallback(async () => {
     try {
@@ -60,6 +65,7 @@ export const ScheduleSection = ({ clientId }) => {
   }, [clientId]);
 
   useEffect(() => {
+    moment.locale('es');
     loadData();
   }, [loadData]);
 
@@ -127,16 +133,50 @@ export const ScheduleSection = ({ clientId }) => {
           Nuevo evento
         </button>
       </div>
-      <div className="h-[75vh]">
-        <Calendar
-          localizer={localizer}
-          events={scheduleItems}
-          startAccessor="start"
-          endAccessor="end"
-          selectable
-          onSelectSlot={handleSelectSlot}
-          eventPropGetter={eventStyleGetter}
-        />
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        {/* Columna izquierda: mini calendario */}
+        <div className="xl:col-span-2">
+          <MiniMonth
+            date={currentDate}
+            onNavigate={(date) => setCurrentDate(date)}
+            onSelectDate={(d) => setCurrentDate(d)}
+          />
+        </div>
+
+        {/* Centro: calendario grande */}
+        <div className="xl:col-span-7">
+          <div className="h-[72vh] rounded-lg border border-white/10 bg-rambla-surface p-2">
+            <Calendar
+              localizer={localizer}
+              date={currentDate}
+              onNavigate={(date) => setCurrentDate(date)}
+              events={scheduleItems}
+              startAccessor="start"
+              endAccessor="end"
+              selectable
+              onSelectSlot={handleSelectSlot}
+              eventPropGetter={eventStyleGetter}
+              components={{
+                toolbar: (props) => (
+                  <CalendarToolbar
+                    label={props.label}
+                    view={props.view}
+                    onView={props.onView}
+                    onNavigate={(action) => {
+                      const map = { PREV: () => props.onNavigate('PREV'), NEXT: () => props.onNavigate('NEXT'), TODAY: () => props.onNavigate('TODAY') };
+                      map[action]?.();
+                    }}
+                  />
+                ),
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Derecha: chat con IA */}
+        <div className="xl:col-span-3">
+          <AIAssistant />
+        </div>
       </div>
 
       <Transition appear show={isOpen} as={Fragment}>

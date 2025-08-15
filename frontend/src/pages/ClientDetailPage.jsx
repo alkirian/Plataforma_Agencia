@@ -101,7 +101,7 @@ export const ClientDetailPage = () => {
             Documentos
           </button>
         </div>
-        <div className="rounded-lg border border-rambla-border bg-rambla-surface p-4">
+  <div className="rounded-lg border border-rambla-border bg-rambla-surface p-4">
           {activeTab === 'schedule' ? (
             <ScheduleSection key={refreshKey} clientId={clientId} />
           ) : (

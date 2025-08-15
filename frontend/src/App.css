@@ -40,6 +40,23 @@ body {
 	border-color: theme('colors.white / 10%') !important;
 	color: theme('colors.white') !important;
 }
+
+/* Centro: resplandor turquesa para la página de inicio */
+.bg-center-turquoise {
+	position: absolute;
+	left: 50%;
+	top: 35%;
+	transform: translate(-50%, -50%);
+	width: min(70vw, 900px);
+	height: min(70vw, 900px);
+	border-radius: 9999px;
+	/* halo más claro al centro, difuminado hacia fuera */
+	background-image: radial-gradient(circle at center, theme('colors.glow-cyan / 35%') 0%, theme('colors.glow-cyan / 22%') 25%, transparent 60%);
+	filter: blur(60px);
+	opacity: 0.9;
+	pointer-events: none;
+	z-index: 0;
+}
 .rbc-header {
 	color: theme('colors.rambla-text-secondary') !important;
 	border-bottom: 1px solid theme('colors.white / 6%') !important;
