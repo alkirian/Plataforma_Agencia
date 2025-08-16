@@ -1,15 +1,5 @@
-import { supabaseAdmin } from '../config/supabaseClient.js';
 import { getAgencyActivityFeed } from '../services/activity.service.js';
-
-const getUserAgencyId = async (userId) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('agency_id')
-    .eq('id', userId)
-    .single();
-  if (error) throw new Error('No se pudo obtener el perfil del usuario.');
-  return data.agency_id;
-};
+import { getUserAgencyId } from '../helpers/userHelpers.js';
 
 export const handleGetAgencyActivityFeed = async (req, res, next) => {
   try {

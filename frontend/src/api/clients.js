@@ -14,7 +14,7 @@ export const getClients = () => {
  * @param {string} clientId - El UUID del cliente.
  * @returns {Promise<object>} Los datos del cliente.
  */
-export const getClientById = (clientId) => {
+export const getClientById = clientId => {
   return apiFetch(`/clients/${clientId}`);
 };
 
@@ -23,7 +23,7 @@ export const getClientById = (clientId) => {
  * @param {object} clientData - Los datos del nuevo cliente.
  * @returns {Promise<object>} El cliente recién creado.
  */
-export const createClient = (clientData) => {
+export const createClient = clientData => {
   return apiFetch('/clients', {
     method: 'POST',
     body: JSON.stringify(clientData),

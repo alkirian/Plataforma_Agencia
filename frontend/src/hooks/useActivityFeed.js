@@ -9,7 +9,7 @@ export const useActivityFeed = ({ limit = 20 } = {}) => {
       if (res?.success === false) throw new Error(res.message || 'Error al cargar actividad');
       return { items: res?.data || [], nextCursor: res?.nextCursor || null };
     },
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    getNextPageParam: last => last.nextCursor ?? undefined,
     staleTime: 60 * 1000,
   });
 

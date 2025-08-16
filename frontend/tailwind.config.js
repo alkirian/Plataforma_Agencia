@@ -24,24 +24,10 @@ export default {
           400: '#c084fc',
           500: '#a855f7',
           600: '#9333ea',
-          700: '#7c2d12',
+          700: '#7c3aed', // Fix: was incorrectly brown color
           800: '#6b21a8',
           900: '#581c87',
           950: '#3b0764',
-        },
-
-        // Core brand colors - Purple focused
-        brand: {
-          50: '#faf5ff',
-          100: '#f3e8ff', 
-          200: '#e9d5ff',
-          300: '#d8b4fe', // light purple for backgrounds
-          400: '#c084fc', // hover states
-          500: '#a855f7', // main brand color
-          600: '#9333ea', // primary actions
-          700: '#7c2d12', // selected states
-          800: '#6b21a8', // dark accents
-          900: '#581c87', // deep purple
         },
 
         // Legacy support (will be gradually removed)
@@ -106,16 +92,7 @@ export default {
           '0%': { boxShadow: '0 0 5px rgb(168 85 247 / 0.4), 0 0 20px rgb(168 85 247 / 0.2)' },
           '100%': { boxShadow: '0 0 10px rgb(168 85 247 / 0.5), 0 0 30px rgb(168 85 247 / 0.3)' },
         },
-        purplePulse: {
-          '0%, 100%': { 
-            boxShadow: '0 0 5px rgb(168 85 247 / 0.3), 0 0 15px rgb(168 85 247 / 0.15), inset 0 0 15px rgb(168 85 247 / 0.1)' 
-          },
-          '50%': { 
-            boxShadow: '0 0 10px rgb(168 85 247 / 0.4), 0 0 25px rgb(168 85 247 / 0.2), inset 0 0 25px rgb(168 85 247 / 0.15)' 
-          },
-        },
-        // Legacy mapping
-        cyberPulse: {
+        'cyber-pulse': {
           '0%, 100%': { 
             boxShadow: '0 0 5px rgb(168 85 247 / 0.3), 0 0 15px rgb(168 85 247 / 0.15), inset 0 0 15px rgb(168 85 247 / 0.1)' 
           },

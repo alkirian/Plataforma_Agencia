@@ -11,3 +11,18 @@ if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+/**
+ * Crea un cliente Supabase autenticado con el token del usuario
+ * @param {string} token - JWT token del usuario
+ * @returns {Object} Cliente Supabase autenticado
+ * @throws {Error} Si no se proporciona el token
+ */
+export const createAuthenticatedClient = (token) => {
+  if (!token) {
+    throw new Error('Token de autenticación es requerido.');
+  }
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+};

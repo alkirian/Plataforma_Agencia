@@ -1,18 +1,7 @@
 // src/controllers/documents.controller.js
-
-import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById } from '../services/documents.service.js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
-
-// Helper to fetch user's agency_id
-const getUserAgencyId = async (userId) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('agency_id')
-    .eq('id', userId)
-    .single();
-  if (error) throw new Error('No se pudo obtener el perfil del usuario.');
-  return data.agency_id;
-};
+import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById } from '../services/documents.service.js';
+import { getUserAgencyId } from '../helpers/userHelpers.js';
 
 export const handleProcessDocument = async (req, res, next) => {
   try {

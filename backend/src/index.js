@@ -3,15 +3,13 @@ import 'dotenv/config';
 import cors from 'cors';
 import mainRouter from './api/index.js';
 import errorHandler from './middleware/errorHandler.js';
+import { requestLogger, logger } from './utils/logger.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware de logging temporal para debugging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Middleware de logging
+app.use(requestLogger);
 
 // Middlewares Esenciales
 app.use(cors()); // Habilita Cross-Origin Resource Sharing
@@ -30,5 +28,5 @@ app.get('/', (_req, res) => {
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+    logger.server(`🚀 Servidor escuchando en http://localhost:${PORT}`, { port: PORT });
 });

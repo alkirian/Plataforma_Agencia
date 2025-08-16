@@ -1,15 +1,29 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createAuthenticatedClient } from '../config/supabaseClient.js';
 import { logActivity } from './activity.service.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_KEY;
-
-// Helper para crear un cliente autenticado bajo demanda
-const createAuthenticatedClient = (token) => {
-  if (!token) throw new Error('Token de autenticación es requerido.');
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+// Helper: normaliza el estado al formato esperado por el ENUM de la BD
+const normalizeStatus = (status) => {
+  if (!status) return status;
+  const raw = String(status).trim();
+  const lc = raw.toLowerCase();
+  const map = {
+    // Español (minúsculas) -> Español con mayúsculas
+    'pendiente': 'Pendiente',
+    'en diseño': 'En Diseño',
+    'en diseno': 'En Diseño',
+    'aprobado': 'Aprobado',
+    'publicado': 'Publicado',
+    'cancelado': 'Cancelado',
+    // Inglés comunes -> Español
+    'pending': 'Pendiente',
+    'in_design': 'En Diseño',
+    'in design': 'En Diseño',
+    'approved': 'Aprobado',
+    'published': 'Publicado',
+    'cancelled': 'Cancelado',
+    'canceled': 'Cancelado',
+  };
+  return map[lc] || raw; // si no hay mapeo, devolver como vino
 };
 
 /**
@@ -31,9 +45,19 @@ export const getScheduleItemsByClient = async (clientId, token) => {
  */
 export const createScheduleItem = async (itemData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
+  // Normalizar y validar status antes de insertar
+  const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+  const normalizedStatus = normalizeStatus(itemData.status);
+  if (normalizedStatus && !allowed.includes(normalizedStatus)) {
+    console.warn('[schedule] Status no permitido, recibido:', itemData.status, '-> normalizado:', normalizedStatus);
+  }
+  const payload = {
+    ...itemData,
+    status: normalizedStatus || itemData.status,
+  };
   const { data, error } = await supabaseAuth
     .from('schedule_items')
-    .insert(itemData)
+    .insert(payload)
     .select()
     .single();
 
@@ -79,6 +103,16 @@ export const getScheduleItemById = async (itemId, clientId, token) => {
  */
 export const updateScheduleItem = async (itemId, clientId, updateData, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
+  // Normalizar status si viene en el update
+  let normalizedUpdate = { ...updateData };
+  if (Object.prototype.hasOwnProperty.call(updateData, 'status')) {
+    const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+    const normalizedStatus = normalizeStatus(updateData.status);
+    if (normalizedStatus && !allowed.includes(normalizedStatus)) {
+      console.warn('[schedule] Update status no permitido, recibido:', updateData.status, '-> normalizado:', normalizedStatus);
+    }
+    normalizedUpdate.status = normalizedStatus || updateData.status;
+  }
   
   // Primero verificar que el item existe y pertenece al cliente
   const { data: existingItem, error: fetchError } = await supabaseAuth
@@ -93,7 +127,7 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token) =>
   // Actualizar el item
   const { data, error } = await supabaseAuth
     .from('schedule_items')
-    .update(updateData)
+    .update(normalizedUpdate)
     .eq('id', itemId)
     .eq('client_id', clientId)
     .select()

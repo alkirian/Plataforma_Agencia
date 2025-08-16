@@ -1,17 +1,6 @@
 // src/services/clients.service.js
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_KEY;
-
-// Ayudante para crear un cliente Supabase con el token del usuario
-const createAuthenticatedClient = (token) => {
-  if (!token) throw new Error('Token de autenticación es requerido.');
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-};
+import { createAuthenticatedClient } from '../config/supabaseClient.js';
 
 /**
  * Obtiene todos los clientes de una agencia, usando los permisos del usuario.

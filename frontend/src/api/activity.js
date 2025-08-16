@@ -10,12 +10,12 @@ import { apiFetch } from './apiFetch.js';
  */
 export const getClientActivityFeed = async (clientId, options = {}) => {
   const { limit = 50 } = options;
-  
+
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
-  
+
   const url = `/clients/${clientId}/activity-feed${params.toString() ? '?' + params.toString() : ''}`;
-  
+
   return apiFetch(url);
 };
 

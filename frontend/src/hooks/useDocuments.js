@@ -7,9 +7,9 @@ import {
   downloadDocument,
 } from '../api/documents';
 
-const QUERY_KEY = (clientId) => ['documents', clientId];
+const QUERY_KEY = clientId => ['documents', clientId];
 
-export const useDocuments = (clientId) => {
+export const useDocuments = clientId => {
   const queryClient = useQueryClient();
 
   // Fetch documents list
@@ -57,11 +57,13 @@ export const useDocuments = (clientId) => {
 
   // Delete
   const deleteMut = useMutation({
-    mutationFn: (documentId) => deleteDocument(clientId, documentId),
-    onMutate: async (documentId) => {
+    mutationFn: documentId => deleteDocument(clientId, documentId),
+    onMutate: async documentId => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEY(clientId) });
       const prev = queryClient.getQueryData(QUERY_KEY(clientId));
-      queryClient.setQueryData(QUERY_KEY(clientId), (old = []) => old.filter(d => d.id !== documentId));
+      queryClient.setQueryData(QUERY_KEY(clientId), (old = []) =>
+        old.filter(d => d.id !== documentId)
+      );
       return { prev };
     },
     onError: (err, _id, ctx) => {
@@ -75,8 +77,8 @@ export const useDocuments = (clientId) => {
 
   // Download
   const downloadMut = useMutation({
-    mutationFn: (doc) => downloadDocument(doc),
-    onError: (err) => toast.error(err?.message || 'Error al descargar'),
+    mutationFn: doc => downloadDocument(doc),
+    onError: err => toast.error(err?.message || 'Error al descargar'),
   });
 
   return {

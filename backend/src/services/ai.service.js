@@ -40,12 +40,31 @@ const callLLM = async (prompt) => {
 };
 
 export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext, token }) => {
-  if (!openaiApiKey) throw new Error('OPENAI_API_KEY no configurada');
-
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
-  const { data: client, error: clientErr } = await supabaseAuth.from('clients').select('id, name, agency_id').eq('id', clientId).single();
+  const { data: client, error: clientErr } = await supabaseAuth
+    .from('clients')
+    .select('id, name, agency_id')
+    .eq('id', clientId)
+    .single();
   if (clientErr) throw new Error(clientErr.message);
+
+  // Fallback de desarrollo si no hay OpenAI
+  if (!openaiApiKey) {
+    const baseDate = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const nextDate = (offset) => {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + offset);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const ideas = Array.from({ length: 5 }, (_, i) => ({
+      title: `${userPrompt} — Idea ${i + 1} (${client.name})`,
+      scheduled_at: nextDate(i + 1),
+      status: 'Pendiente',
+    }));
+    return ideas;
+  }
 
   // Embedding de la consulta
   const queryEmbedding = await embedText(userPrompt);
@@ -145,12 +164,24 @@ const analyzeImage = async (imageUrl) => {
  * Maneja conversaciones de chat con el cliente usando RAG
  */
 export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token }) => {
-  if (!openaiApiKey) throw new Error('OPENAI_API_KEY no configurada');
-
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
-  const { data: client, error: clientErr } = await supabaseAuth.from('clients').select('id, name, agency_id').eq('id', clientId).single();
+  const { data: client, error: clientErr } = await supabaseAuth
+    .from('clients')
+    .select('id, name, agency_id')
+    .eq('id', clientId)
+    .single();
   if (clientErr) throw new Error(clientErr.message);
+
+  // Fallback de desarrollo si no hay OpenAI
+  if (!openaiApiKey) {
+    const response = `Soy tu asistente de contenido para ${client.name}. Sobre "${userPrompt}", te sugiero:
+- Define el objetivo del contenido y la audiencia.
+- Crea 2-3 titulares claros y una llamada a la acción.
+- Propón un formato (carrusel, reel, historia) y un calendario de publicación.
+¿Quieres que arme ideas concretas para tu calendario?`;
+    return { response };
+  }
 
   // Embedding de la consulta
   const queryEmbedding = await embedText(userPrompt);

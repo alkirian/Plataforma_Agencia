@@ -7,7 +7,7 @@ import { supabase } from '../supabaseClient.js';
  * @param {string} clientId - El UUID del cliente.
  * @returns {Promise<Array>} Lista de documentos del cliente.
  */
-export const getDocumentsForClient = (clientId) => {
+export const getDocumentsForClient = clientId => {
   return apiFetch(`/clients/${clientId}/documents`);
 };
 
@@ -21,9 +21,7 @@ export const uploadDocument = async (clientId, file) => {
   const fileExt = file.name.split('.').pop();
   const fileName = `${clientId}/${Date.now()}.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('documents')
-    .upload(fileName, file);
+  const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file);
 
   if (uploadError) throw uploadError;
 
@@ -57,10 +55,8 @@ export const deleteDocument = (clientId, documentId) => {
  * @param {object} docData - Los datos del documento con storage_path y file_name.
  * @returns {Promise<object>} Confirmación de descarga.
  */
-export const downloadDocument = async (docData) => {
-  const { data, error } = await supabase.storage
-    .from('documents')
-    .download(docData.storage_path);
+export const downloadDocument = async docData => {
+  const { data, error } = await supabase.storage.from('documents').download(docData.storage_path);
 
   if (error) throw error;
 

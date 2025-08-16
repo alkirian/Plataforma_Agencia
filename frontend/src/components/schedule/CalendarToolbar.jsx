@@ -13,23 +13,31 @@ export const CalendarToolbar = ({ label, onNavigate, onView, view }) => {
   );
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-2">
-      <div className="flex items-center gap-2">
+    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-2'>
+      <div className='flex items-center gap-2'>
         <Button onClick={() => onNavigate('TODAY')}>Hoy</Button>
-        <div className="flex items-center gap-1">
+        <div className='flex items-center gap-1'>
           <Button onClick={() => onNavigate('PREV')}>◀</Button>
-          <div className="px-3 py-1.5 text-white/90 text-sm border border-white/10 rounded-md bg-white/5">
+          <div className='px-3 py-1.5 text-white/90 text-sm border border-white/10 rounded-md bg-white/5'>
             {label}
           </div>
           <Button onClick={() => onNavigate('NEXT')}>▶</Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button onClick={() => onView('month')} active={view === 'month'}>Mes</Button>
-        <Button onClick={() => onView('week')} active={view === 'week'}>Semana</Button>
-        <Button onClick={() => onView('day')} active={view === 'day'}>Día</Button>
-        <Button onClick={() => onView('agenda')} active={view === 'agenda'}>Agenda</Button>
+      <div className='flex items-center gap-2'>
+        <Button onClick={() => onView('month')} active={view === 'month'}>
+          Mes
+        </Button>
+        <Button onClick={() => onView('week')} active={view === 'week'}>
+          Semana
+        </Button>
+        <Button onClick={() => onView('day')} active={view === 'day'}>
+          Día
+        </Button>
+        <Button onClick={() => onView('agenda')} active={view === 'agenda'}>
+          Agenda
+        </Button>
       </div>
     </div>
   );

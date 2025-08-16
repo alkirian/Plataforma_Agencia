@@ -1,0 +1,463 @@
+import React, { useState, useEffect, useCallback, Fragment } from 'react';
+import { getClientById } from '../../api/clients';
+import { getSchedule, createScheduleItem } from '../../api/schedule';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/es';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Dialog, Transition } from '@headlessui/react';
+import toast from 'react-hot-toast';
+import { MiniMonth } from './MiniMonth.jsx';
+import { CalendarToolbar } from './CalendarToolbar.jsx';
+import { AIAssistant } from '../ai/AIAssistant.jsx';
+import { motion } from 'framer-motion';
+
+const localizer = momentLocalizer(moment);
+
+// DEBUGGING: Super simple, highly visible event styling
+const eventStyleGetter = (event) => {
+  console.log('🎨 Event styling DEBUG:', {
+    eventTitle: event.title,
+    eventId: event.id,
+    start: event.start,
+    end: event.end,
+    resource: event.resource
+  });
+  
+  return {
+    style: {
+      backgroundColor: '#ff0000',
+      color: '#ffffff',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      padding: '8px',
+      border: '2px solid #000000',
+      borderRadius: '4px',
+      margin: '2px',
+      display: 'block',
+      minHeight: '30px',
+      opacity: '1',
+      visibility: 'visible',
+      zIndex: '9999',
+      position: 'relative',
+    },
+  };
+};
+
+export const ScheduleSection = ({ clientId }) => {
+  const [client, setClient] = useState(null);
+  const [scheduleItems, setScheduleItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formTime, setFormTime] = useState('09:00');
+  const [formStatus, setFormStatus] = useState('Pendiente');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState('week'); // Default to week view
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [{ data: clientData }, scheduleData] = await Promise.all([
+        getClientById(clientId),
+        getSchedule(clientId)
+      ]);
+
+      setClient(clientData);
+      const formattedEvents = (scheduleData || []).map(item => {
+        const startDate = new Date(item.scheduled_at);
+        const endDate = new Date(item.scheduled_at);
+        // Para eventos de día completo, agregar una hora al final
+        endDate.setHours(endDate.getHours() + 1);
+        
+        return {
+          id: item.id,
+          title: item.title,
+          start: startDate,
+          end: endDate,
+          resource: item,
+        };
+      });
+      
+      // Debug: verificar datos cargados Y fechas
+      console.log('📅 Schedule data loaded:', {
+        rawData: scheduleData,
+        formattedEvents: formattedEvents.map(e => ({
+          ...e,
+          startISO: e.start.toISOString(),
+          endISO: e.end.toISOString(),
+          isValidStart: !isNaN(e.start.getTime()),
+          isValidEnd: !isNaN(e.end.getTime())
+        })),
+        eventCount: formattedEvents.length
+      });
+      
+      setScheduleItems(formattedEvents);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
+
+  useEffect(() => {
+    moment.locale('es');
+    loadData();
+  }, [loadData]);
+
+  const handleSelectSlot = ({ start }) => {
+    const yyyy = start.getFullYear();
+    const mm = String(start.getMonth() + 1).padStart(2, '0');
+    const dd = String(start.getDate()).padStart(2, '0');
+    const hh = String(start.getHours()).padStart(2, '0');
+    const min = String(start.getMinutes()).padStart(2, '0');
+    setFormDate(`${yyyy}-${mm}-${dd}`);
+    setFormTime(`${hh}:${min}`);
+    setIsEditMode(false);
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+    setFormTitle('');
+    setFormStatus('Pendiente');
+  };
+
+  const handleCreateFromModal = async (e) => {
+    e.preventDefault();
+    try {
+      if (!formTitle || !formDate || !formTime) return;
+      const iso = new Date(`${formDate}T${formTime}:00`).toISOString();
+      await toast.promise(
+        createScheduleItem(clientId, {
+          title: formTitle,
+          scheduled_at: iso,
+          status: formStatus,
+        }),
+        {
+          loading: 'Creando evento…',
+          success: 'Evento creado',
+          error: (e) => e.message || 'No se pudo crear el evento',
+        }
+      );
+      closeModal();
+      loadData();
+    } catch (err) {
+      // El toast.promise ya maneja el error visual
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        className="w-8 h-8 border-2 border-accent-500 border-t-transparent rounded-full"
+      />
+      <span className="ml-3 text-gray-400">Cargando calendario...</span>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="text-center py-12">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 max-w-md mx-auto">
+        <p className="text-red-400 font-medium">Error al cargar el calendario</p>
+        <p className="text-red-300 text-sm mt-1">{error}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="calendar-container"
+    >
+      {/* Header con título y botón */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-6 flex items-center justify-between"
+      >
+        <h2 className="text-2xl font-bold text-gray-100">
+          Cronograma de Contenidos
+        </h2>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            setFormDate(`${yyyy}-${mm}-${dd}`);
+            setFormTime('09:00');
+            setIsOpen(true);
+          }}
+          className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white 
+                     font-semibold rounded-lg shadow-sm transition-all duration-200"
+        >
+          Nuevo Evento
+        </motion.button>
+      </motion.div>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Izquierda: mini calendario + agenda de hoy */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="xl:col-span-3 space-y-4"
+        >
+          <MiniMonth 
+            currentDate={currentDate}
+            onNavigate={setCurrentDate}
+            events={scheduleItems}
+          />
+          
+          {/* Today's events panel */}
+          <div className="bg-surface-900/40 backdrop-blur-sm border border-white/10 
+                          rounded-xl p-4 shadow-lg">
+            <div className="text-sm font-semibold text-gray-300 mb-3">Hoy</div>
+            <div className="space-y-2 max-h-64 overflow-auto">
+              {(() => {
+                const today = new Date();
+                const todayEvents = scheduleItems.filter(event => {
+                  const eventDate = new Date(event.start);
+                  return eventDate.getFullYear() === today.getFullYear() &&
+                         eventDate.getMonth() === today.getMonth() &&
+                         eventDate.getDate() === today.getDate();
+                });
+                
+                if (todayEvents.length === 0) {
+                  return <div className="text-gray-500 text-sm">Sin eventos</div>;
+                }
+                
+                return todayEvents.map(event => (
+                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-white/5">
+                    <span className="mt-1 w-2 h-2 rounded-full bg-accent-500" />
+                    <div>
+                      <div className="text-sm text-white">{event.title}</div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(event.start).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                      </div>
+                      {event.resource?.status && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          event.resource.status === 'Pendiente' ? 'bg-slate-700 text-gray-200' :
+                          event.resource.status === 'En Diseño' ? 'bg-indigo-600 text-white' :
+                          event.resource.status === 'Aprobado' ? 'bg-emerald-600 text-white' :
+                          event.resource.status === 'Publicado' ? 'bg-accent-500 text-white' :
+                          'bg-red-600 text-white'
+                        }`}>
+                          {event.resource.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Centro: calendario principal */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="xl:col-span-6"
+        >
+          <div className="bg-surface-900/40 backdrop-blur-sm 
+                          border border-white/10 rounded-xl p-6 shadow-lg">
+            <Calendar
+              localizer={localizer}
+              culture="es"
+              messages={{
+                next: "Siguiente",
+                previous: "Anterior", 
+                today: "Hoy",
+                month: "Mes",
+                week: "Semana",
+                day: "Día",
+                agenda: "Agenda",
+                date: "Fecha",
+                time: "Hora",
+                event: "Evento",
+                noEventsInRange: "Sin eventos"
+              }}
+              date={currentDate}
+              onNavigate={(date) => setCurrentDate(date)}
+              view={view}
+              onView={setView}
+              events={scheduleItems}
+              startAccessor="start"
+              endAccessor="end"
+              selectable
+              onSelectSlot={handleSelectSlot}
+              eventPropGetter={eventStyleGetter}
+              showMultiDayTimes
+              step={30}
+              timeslots={2}
+              dayLayoutAlgorithm="no-overlap"
+              scrollToTime={new Date(1970, 1, 1, 8, 0, 0)}
+              nowIndicator
+              style={{ height: '600px' }}
+              formats={{
+                monthHeaderFormat: 'MMMM YYYY',
+                weekdayFormat: 'ddd',
+                dayHeaderFormat: 'ddd D MMM',
+                dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
+                  `${localizer.format(start, 'D MMM')} – ${localizer.format(end, 'D MMM YYYY')}`,
+              }}
+              components={{
+                toolbar: (props) => (
+                  <CalendarToolbar
+                    label={props.label}
+                    view={props.view}
+                    onView={props.onView}
+                    onNavigate={(action) => {
+                      const map = { 
+                        PREV: () => props.onNavigate('PREV'), 
+                        NEXT: () => props.onNavigate('NEXT'), 
+                        TODAY: () => props.onNavigate('TODAY') 
+                      };
+                      map[action]?.();
+                    }}
+                  />
+                ),
+              }}
+            />
+          </div>
+        </motion.div>
+
+        {/* Derecha: chat con IA */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="xl:col-span-3"
+        >
+          <AIAssistant />
+        </motion.div>
+      </div>
+
+      <Transition appear show={isOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={closeModal}>
+          <Transition.Child 
+            as={Fragment} 
+            enter="ease-out duration-200" 
+            enterFrom="opacity-0" 
+            enterTo="opacity-100" 
+            leave="ease-in duration-150" 
+            leaveFrom="opacity-100" 
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child 
+                as={Fragment} 
+                enter="ease-out duration-200" 
+                enterFrom="opacity-0 scale-95" 
+                enterTo="opacity-100 scale-100" 
+                leave="ease-in duration-150" 
+                leaveFrom="opacity-100 scale-100" 
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md bg-surface-900/90 backdrop-blur-sm
+                                        border border-white/20 rounded-xl p-6 shadow-xl">
+                  <Dialog.Title className="mb-4 text-xl font-bold text-gray-100">
+                    Nuevo Evento
+                  </Dialog.Title>
+                  
+                  <form onSubmit={handleCreateFromModal} className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-300">Título</label>
+                      <input 
+                        type="text" 
+                        value={formTitle} 
+                        onChange={(e) => setFormTitle(e.target.value)} 
+                        className="input-cyber w-full" 
+                        placeholder="Post para Instagram" 
+                        required 
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-300">Fecha</label>
+                        <input 
+                          type="date" 
+                          value={formDate} 
+                          onChange={(e) => setFormDate(e.target.value)} 
+                          className="input-cyber w-full" 
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-300">Hora</label>
+                        <input 
+                          type="time" 
+                          value={formTime} 
+                          onChange={(e) => setFormTime(e.target.value)} 
+                          className="input-cyber w-full" 
+                          required 
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-300">Estado</label>
+                      <select 
+                        value={formStatus} 
+                        onChange={(e) => setFormStatus(e.target.value)} 
+                        className="input-cyber w-full"
+                      >
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Diseño">En Diseño</option>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Publicado">Publicado</option>
+                        <option value="Cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <motion.button 
+                        type="button" 
+                        onClick={closeModal}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 border border-white/20 rounded-lg text-gray-300 
+                                   hover:border-white/40 hover:text-white transition-all duration-300"
+                      >
+                        Cancelar
+                      </motion.button>
+                      <motion.button 
+                        type="submit"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 bg-accent-600 hover:bg-accent-700 
+                                   text-white font-semibold rounded-lg shadow-sm 
+                                   transition-all duration-200"
+                      >
+                        Crear Evento
+                      </motion.button>
+                    </div>
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+    </motion.div>
+  );
+};

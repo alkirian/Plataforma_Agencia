@@ -1,17 +1,6 @@
-import { supabaseAdmin } from '../config/supabaseClient.js';
 import { createClient, getClientsByAgency, getClientById } from '../services/clients.service.js';
 import { getActivityFeedByClient } from '../services/activity.service.js';
-
-// Esta función auxiliar es un caso especial y necesita privilegios para buscar cualquier perfil.
-// La cambiaremos para que use supabaseAdmin.
-const getUserProfile = async (userId) => {
-    const { data, error } = await supabaseAdmin.from('profiles').select('agency_id').eq('id', userId).single();
-    if (error) {
-        console.error("Error en getUserProfile:", error);
-        throw new Error('No se pudo encontrar el perfil del usuario.');
-    }
-    return data;
-};
+import { getUserAgencyId, getUserProfile } from '../helpers/userHelpers.js';
 
 export const handleCreateClient = async (req, res, next) => {
   try {
@@ -37,12 +26,6 @@ export const handleGetClients = async (req, res, next) => {
     next(error);
   }
 };
-// src/controllers/clients.controller.js
-
-// ... (aquí va el código que ya tienes: getUserProfile, handleCreateClient, handleGetClients)
-
-// 👇 AGREGA ESTA NUEVA FUNCIÓN EXPORTADA 👇
-// src/controllers/clients.controller.js
 
 export const handleGetClientById = async (req, res, next) => {
   try {
@@ -66,16 +49,6 @@ export const handleGetClientById = async (req, res, next) => {
   }
 };
 
-// Helper to fetch user's agency_id
-const getUserAgencyId = async (userId) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('agency_id')
-    .eq('id', userId)
-    .single();
-  if (error) throw new Error('No se pudo obtener el perfil del usuario.');
-  return data.agency_id;
-};
 
 export const handleGetActivityFeed = async (req, res, next) => {
   try {

@@ -1,7 +1,8 @@
 // Componentes UI modernos con tema cyber
 export { Card, CardHeader, CardTitle, CardContent, CardFooter } from './Card';
-export { Button, CyberButton, ModernButton } from './Button';
+export { Button, CyberButton } from './Button';
 export { Input, Textarea } from './Input';
+export { AnimatedText, useStaggerDelay } from './AnimatedText';
 
 // Re-exportar utilidades
-export { cn, staggerDelay, formatCyberText } from '../../lib/utils';
+export { cn } from '../../lib/utils';

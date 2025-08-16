@@ -3,117 +3,129 @@
 @tailwind utilities;
 
 body {
-	background-color: theme('colors.glow-bg-end');
-	background-image: radial-gradient(circle at top right, theme('colors.primary.500 / 8%'), transparent 45%),
-										radial-gradient(circle at bottom left, theme('colors.primary.600 / 6%'), transparent 55%),
-										linear-gradient(180deg, theme('colors.primary.900 / 3%'), transparent 30%);
-	background-attachment: fixed;
+  background-color: theme('colors.glow-bg-end');
+  background-image:
+    radial-gradient(circle at top right, theme('colors.primary.500 / 8%'), transparent 45%),
+    radial-gradient(circle at bottom left, theme('colors.primary.600 / 6%'), transparent 55%),
+    linear-gradient(180deg, theme('colors.primary.900 / 3%'), transparent 30%);
+  background-attachment: fixed;
 }
 
 /* src/App.css */
 /* Estilos Personalizados para React Big Calendar */
 .rbc-calendar {
-	background-color: transparent !important;
-	border: 1px solid theme('colors.rambla-border') !important;
-	border-radius: theme('borderRadius.lg') !important;
+  background-color: transparent !important;
+  border: 1px solid theme('colors.rambla-border') !important;
+  border-radius: theme('borderRadius.lg') !important;
 }
 .rbc-month-view,
 .rbc-time-view {
-	background: transparent !important;
-	border-color: theme('colors.rambla-border') !important;
-	border-radius: theme('borderRadius.lg') !important;
-	overflow: hidden;
+  background: transparent !important;
+  border-color: theme('colors.rambla-border') !important;
+  border-radius: theme('borderRadius.lg') !important;
+  overflow: hidden;
 }
 .rbc-toolbar {
-	color: theme('colors.rambla-text-primary') !important;
-	margin-bottom: theme('spacing.4') !important;
+  color: theme('colors.rambla-text-primary') !important;
+  margin-bottom: theme('spacing.4') !important;
 }
 .rbc-toolbar button {
-	color: theme('colors.rambla-text-primary') !important;
-	background: transparent !important;
-	border: 1px solid transparent !important;
-	border-radius: theme('borderRadius.md') !important;
-	padding: 0.25rem 0.5rem !important;
-	transition: background-color .15s ease, border-color .15s ease, color .15s ease !important;
+  color: theme('colors.rambla-text-primary') !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: theme('borderRadius.md') !important;
+  padding: 0.25rem 0.5rem !important;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease !important;
 }
 .rbc-toolbar button:hover {
-	background: theme('colors.white / 5%') !important;
-	border-color: theme('colors.white / 10%') !important;
-	color: theme('colors.white') !important;
+  background: theme('colors.white / 5%') !important;
+  border-color: theme('colors.white / 10%') !important;
+  color: theme('colors.white') !important;
 }
 .rbc-header {
-	color: theme('colors.rambla-text-secondary') !important;
-	border-bottom: 1px solid theme('colors.white / 6%') !important;
+  color: theme('colors.rambla-text-secondary') !important;
+  border-bottom: 1px solid theme('colors.white / 6%') !important;
 }
 .rbc-off-range-bg {
-	background-color: theme('colors.rambla-bg') !important;
+  background-color: theme('colors.rambla-bg') !important;
 }
 .rbc-month-view .rbc-date-cell {
-	color: theme('colors.rambla-text-secondary') !important;
-	transition: color .15s ease, text-shadow .15s ease !important;
+  color: theme('colors.rambla-text-secondary') !important;
+  transition:
+    color 0.15s ease,
+    text-shadow 0.15s ease !important;
 }
 .rbc-month-view .rbc-date-cell > a,
 .rbc-month-view .rbc-date-cell > span {
-	color: inherit !important;
+  color: inherit !important;
 }
 .rbc-month-view .rbc-date-cell:hover {
-	color: theme('colors.primary.400') !important;
-	text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+  color: theme('colors.primary.400') !important;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
 }
 .rbc-day-bg,
 .rbc-time-slot {
-	background-color: theme('colors.rambla-surface') !important;
-	transition: background-color .15s ease, box-shadow .15s ease !important;
+  background-color: theme('colors.rambla-surface') !important;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 .rbc-day-bg:hover,
 .rbc-time-slot:hover {
-	background-image: linear-gradient(180deg, theme('colors.primary.500 / 6%'), transparent) !important;
-	box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 15%');
+  background-image: linear-gradient(
+    180deg,
+    theme('colors.primary.500 / 6%'),
+    transparent
+  ) !important;
+  box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 15%');
 }
 .rbc-today {
-	background-color: theme('colors.primary.500 / 8%') !important;
-	box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 20%');
+  background-color: theme('colors.primary.500 / 8%') !important;
+  box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 20%');
 }
 .rbc-selected-cell {
-	background-color: theme('colors.primary.500 / 12%') !important;
+  background-color: theme('colors.primary.500 / 12%') !important;
 }
 .rbc-month-row + .rbc-month-row {
-	border-top-color: theme('colors.rambla-border') !important;
+  border-top-color: theme('colors.rambla-border') !important;
 }
 .rbc-event {
-	border-radius: 8px !important;
-	border: none !important;
-	backdrop-filter: blur(4px);
-	transition: all .15s ease !important;
-	cursor: pointer !important;
-	font-weight: 500 !important;
-	font-size: 12px !important;
-	padding: 4px 8px !important;
-	min-height: 32px !important;
-	display: flex !important;
-	align-items: center !important;
-	/* Ocupar más espacio en las celdas */
-	margin: 1px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  backdrop-filter: blur(4px);
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  /* Ocupar más espacio en las celdas */
+  margin: 1px !important;
 }
 .rbc-event:hover {
-	transform: translateY(-1px) scale(1.02);
-	filter: brightness(1.1);
-	z-index: 10;
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.1);
+  z-index: 10;
 }
 .rbc-event-content {
-	color: white !important;
-	font-weight: 500 !important;
-	text-overflow: ellipsis !important;
-	overflow: hidden !important;
-	white-space: nowrap !important;
-	width: 100% !important;
+  color: white !important;
+  font-weight: 500 !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  width: 100% !important;
 }
 /* Hacer que los eventos ocupen toda la altura disponible en month view */
 .rbc-month-view .rbc-event {
-	width: calc(100% - 2px) !important;
-	left: 1px !important;
-	right: 1px !important;
+  width: calc(100% - 2px) !important;
+  left: 1px !important;
+  right: 1px !important;
 }
 .rbc-addons-dnd .rbc-event {
-	width: calc(100% - 2px) !important;
+  width: calc(100% - 2px) !important;
 }

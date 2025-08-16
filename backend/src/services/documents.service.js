@@ -1,24 +1,14 @@
 // src/services/documents.service.js
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../config/supabaseClient.js';
+import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 import { get_encoding } from 'tiktoken';
 
 // --- Variables de Entorno ---
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
 
 // --- Funciones Auxiliares ---
-
-const createAuthenticatedClient = (token) => {
-  if (!token) throw new Error('Token requerido');
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-};
 
 const fetchFileFromStorage = async (path) => {
   const { data, error } = await supabaseAdmin.storage.from('documents').download(path);

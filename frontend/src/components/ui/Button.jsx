@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
-export const Button = ({ 
-  children, 
+export const Button = ({
+  children,
   variant = 'primary',
   size = 'md',
   className,
@@ -11,11 +11,11 @@ export const Button = ({
   icon,
   cyber = true,
   onClick,
-  ...props 
+  ...props
 }) => {
   const variants = {
-    primary: cyber 
-      ? 'btn-cyber bg-gradient-to-r from-primary-500/20 to-primary-600/20 text-primary-100 border-primary-500/40' 
+    primary: cyber
+      ? 'btn-cyber bg-gradient-to-r from-primary-500/20 to-primary-600/20 text-primary-100 border-primary-500/40'
       : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/25',
     secondary: cyber
       ? 'btn-cyber bg-rambla-surface/50 text-rambla-text-primary border-rambla-border hover:border-primary-500/30'
@@ -38,26 +38,26 @@ export const Button = ({
     xl: 'px-8 py-4 text-xl rounded-2xl',
   };
 
-  const handleClick = (e) => {
+  const handleClick = e => {
     if (disabled || loading) return;
     onClick?.(e);
   };
 
   return (
     <motion.button
-      whileHover={{ 
+      whileHover={{
         scale: disabled ? 1 : 1.02,
-        boxShadow: !disabled && cyber ? "0 0 25px -5px rgba(0, 246, 255, 0.4)" : undefined
+        boxShadow: !disabled && cyber ? '0 0 25px -5px rgba(0, 246, 255, 0.4)' : undefined,
       }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-300",
-        "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-rambla-bg",
-        !cyber && "btn-modern",
+        'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300',
+        'focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-rambla-bg',
+        !cyber && 'btn-modern',
         variants[variant],
         sizes[size],
-        disabled && "opacity-50 cursor-not-allowed",
-        loading && "cursor-wait",
+        disabled && 'opacity-50 cursor-not-allowed',
+        loading && 'cursor-wait',
         className
       )}
       disabled={disabled || loading}
@@ -65,10 +65,10 @@ export const Button = ({
       {...props}
     >
       {loading ? (
-        <motion.div 
-          className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+        <motion.div
+          className='w-4 h-4 border-2 border-current border-t-transparent rounded-full'
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       ) : icon ? (
         <motion.span
@@ -84,6 +84,5 @@ export const Button = ({
   );
 };
 
-// Variantes especializadas
-export const CyberButton = (props) => <Button {...props} cyber={true} />;
-export const ModernButton = (props) => <Button {...props} cyber={false} />;
+// Variante especializada
+export const CyberButton = props => <Button {...props} cyber={true} />;

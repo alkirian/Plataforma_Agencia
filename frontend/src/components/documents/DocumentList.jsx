@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { DocumentArrowDownIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { deleteDocument as deleteDocumentApi, downloadDocument as downloadDocumentApi } from '../../api/documents.js';
+import {
+  deleteDocument as deleteDocumentApi,
+  downloadDocument as downloadDocumentApi,
+} from '../../api/documents.js';
 
-export const DocumentList = ({ documents = [], clientId, onDocumentDeleted, onDelete, onDownload }) => {
+export const DocumentList = ({
+  documents = [],
+  clientId,
+  onDocumentDeleted,
+  onDelete,
+  onDownload,
+}) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
-  const handleDownload = async (docData) => {
+  const handleDownload = async docData => {
     setDownloadingId(docData.id);
-    
+
     try {
       if (onDownload) {
         await onDownload(docData);
@@ -23,7 +32,7 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted, onDe
     }
   };
 
-  const handleDelete = async (docData) => {
+  const handleDelete = async docData => {
     if (!clientId) {
       console.error('❌ No clientId provided to DocumentList');
       alert('Error: No se puede identificar el cliente');
@@ -35,21 +44,21 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted, onDe
       alert('Error: No se puede identificar el documento');
       return;
     }
-    
+
     if (!confirm(`¿Estás seguro de que quieres eliminar "${docData.file_name}"?`)) {
       return;
     }
 
     const docId = docData.id;
     setDeletingId(docId);
-    
+
     try {
       if (onDelete) {
         await onDelete(docId);
       } else {
         await deleteDocumentApi(clientId, docId);
       }
-      
+
       if (onDocumentDeleted) {
         onDocumentDeleted(docId);
       }
@@ -61,59 +70,67 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted, onDe
     }
   };
   return (
-    <div className="mt-6 flow-root">
-      <ul role="list" className="-my-4 divide-y divide-rambla-border">
+    <div className='mt-6 flow-root'>
+      <ul role='list' className='-my-4 divide-y divide-rambla-border'>
         {documents.length === 0 && (
-          <li className="py-4 text-rambla-text-secondary">No hay documentos aún.</li>
+          <li className='py-4 text-rambla-text-secondary'>No hay documentos aún.</li>
         )}
-        {documents.map((doc) => (
-          <li key={doc.id} className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-rambla-bg flex items-center justify-center border border-primary-500/20">
-                <span className="text-xs font-bold text-primary-400">
+        {documents.map(doc => (
+          <li key={doc.id} className='flex items-center justify-between py-4'>
+            <div className='flex items-center space-x-4'>
+              <div className='h-10 w-10 flex-shrink-0 rounded-lg bg-rambla-bg flex items-center justify-center border border-primary-500/20'>
+                <span className='text-xs font-bold text-primary-400'>
                   {(doc.file_type || '').toUpperCase().includes('PDF') ? 'PDF' : 'DOC'}
                 </span>
               </div>
               <div>
-                <p className="font-semibold text-white">{doc.file_name}</p>
-                <p className="text-sm text-rambla-text-secondary">
+                <p className='font-semibold text-white'>{doc.file_name}</p>
+                <p className='text-sm text-rambla-text-secondary'>
                   {doc.file_size ? (doc.file_size / 1024 / 1024).toFixed(2) + ' MB' : ''}
                   {doc.created_at ? ' - ' + new Date(doc.created_at).toLocaleDateString() : ''}
                 </p>
               </div>
               {doc.ai_status && (
-                <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                  doc.ai_status === 'ready' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
-                  doc.ai_status === 'processing' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
-                  'bg-white/10 text-white/70 border border-white/20'
-                }`}>
-                  {doc.ai_status === 'ready' ? 'Listo' : doc.ai_status === 'processing' ? 'Procesando' : 'Pendiente'}
+                <span
+                  className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    doc.ai_status === 'ready'
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : doc.ai_status === 'processing'
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                        : 'bg-white/10 text-white/70 border border-white/20'
+                  }`}
+                >
+                  {doc.ai_status === 'ready'
+                    ? 'Listo'
+                    : doc.ai_status === 'processing'
+                      ? 'Procesando'
+                      : 'Pendiente'}
                 </span>
               )}
             </div>
-            <div className="flex space-x-2">
-              <button 
+            <div className='flex space-x-2'>
+              <button
                 onClick={() => handleDownload(doc)}
                 disabled={downloadingId === doc.id}
-                className="text-rambla-text-secondary hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" 
-                title="Descargar"
+                className='text-rambla-text-secondary hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                title='Descargar'
               >
                 {downloadingId === doc.id ? (
-                  <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className='w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin'></div>
                 ) : (
-                  <DocumentArrowDownIcon className="h-5 w-5" />
+                  <DocumentArrowDownIcon className='h-5 w-5' />
                 )}
               </button>
-              <button 
+              <button
                 onClick={() => handleDelete(doc)}
                 disabled={deletingId === doc.id}
-                className="text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" 
-                title="Eliminar"
+                className='text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                title='Eliminar'
               >
                 {deletingId === doc.id ? (
-                  <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className='w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin'></div>
                 ) : (
-                  <TrashIcon className="h-5 w-5" />
+                  <TrashIcon className='h-5 w-5' />
                 )}
               </button>
             </div>

@@ -1,263 +1,446 @@
-import React, { useState, useEffect, useCallback, Fragment } from 'react';
-import { getClientById } from '../../api/clients';
-import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem } from '../../api/schedule';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'moment/locale/es';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import toast from 'react-hot-toast';
-import { MiniMonth } from './MiniMonth.jsx';
-import { CalendarToolbar } from './CalendarToolbar.jsx';
-import { AIAssistant } from '../ai/AIAssistant.jsx';
-import { EventDetailModal } from './EventDetailModal.jsx';
-import { TASK_STATES } from '../../constants/taskStates.js';
+import { getCurrentDate } from '../../utils/dateHelpers';
 
-const localizer = momentLocalizer(moment);
+// Importaciones de FullCalendar
+import FullCalendarWrapper from './FullCalendarWrapper';
+import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 
-const eventStyleGetter = (event) => {
-  const status = event.resource?.status || 'pendiente';
-  const stateStyle = TASK_STATES[status] || TASK_STATES.pendiente;
-  
-  return {
-    style: {
-      backgroundColor: stateStyle.color,
-      border: `1px solid ${stateStyle.color}`,
-      borderRadius: '8px',
-      color: 'white',
-      fontSize: '12px',
-      fontWeight: '500',
-      padding: '4px 8px',
-      boxShadow: `0 2px 8px ${stateStyle.color}30`,
-      backdropFilter: 'blur(4px)',
-      // Hacer que ocupen más espacio en la celda
-      height: 'auto',
-      minHeight: '32px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    }
-  };
-};
+// Componentes existentes
+import { MiniMonth } from './MiniMonth';
+import { AIAssistant } from '../ai/AIAssistant';
 
+// Estilos
+import '../../styles/fullcalendar-custom.css';
+import { getClientById } from '../../api/clients';
+
+/**
+ * Componente de calendario renovado con FullCalendar
+ * Implementa todas las mejores prácticas y funcionalidades optimizadas
+ */
 export const ScheduleSection = ({ clientId }) => {
+  // Estados del componente
   const [client, setClient] = useState(null);
-  const [scheduleItems, setScheduleItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [formTitle, setFormTitle] = useState('');
-  const [formDate, setFormDate] = useState('');
-  const [formTime, setFormTime] = useState('09:00');
-  const [formStatus, setFormStatus] = useState('pendiente');
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => getCurrentDate());
+  const [currentView, setCurrentView] = useState('dayGridMonth');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
+  
+  // Estados del formulario
+  const [formData, setFormData] = useState({
+    title: '',
+    date: '',
+    time: '09:00',
+    status: 'pendiente'
+  });
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [clientResponse, scheduleResponse] = await Promise.all([
-        getClientById(clientId),
-        getSchedule(clientId)
-      ]);
+  // Hook personalizado para eventos
+  const {
+    events,
+    loading,
+    error,
+    loadEvents,
+  createEvent,
+    updateEvent,
+    deleteEvent,
+    moveEvent,
+    eventStats
+  } = useCalendarEvents(clientId);
 
-      setClient(clientResponse.data);
-      const formattedEvents = scheduleResponse.data.map(item => ({
-        id: item.id,
-        title: item.title,
-        start: new Date(item.scheduled_at),
-        end: new Date(item.scheduled_at),
-        resource: item,
-      }));
-      setScheduleItems(formattedEvents);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [clientId]);
-
+  // Cargar datos iniciales
   useEffect(() => {
-    moment.locale('es');
-    loadData();
-  }, [loadData]);
+    const loadInitialData = async () => {
+      try {
+        if (clientId) {
+          // Cargar cliente y eventos en paralelo
+          const [clientResponse] = await Promise.all([
+            getClientById(clientId),
+            loadEvents()
+          ]);
+          setClient(clientResponse.data);
+        }
+      } catch (err) {
+        toast.error('Error al cargar datos del cliente');
+      }
+    };
 
-  const handleSelectSlot = ({ start }) => {
-    const yyyy = start.getFullYear();
-    const mm = String(start.getMonth() + 1).padStart(2, '0');
-    const dd = String(start.getDate()).padStart(2, '0');
-    const hh = String(start.getHours()).padStart(2, '0');
-    const min = String(start.getMinutes()).padStart(2, '0');
-    setFormDate(`${yyyy}-${mm}-${dd}`);
-    setFormTime(`${hh}:${min}`);
-    setIsEditMode(false);
-    setIsOpen(true);
-  };
+    loadInitialData();
+  }, [clientId, loadEvents]);
 
-  const closeModal = () => {
-    setIsOpen(false);
-    setFormTitle('');
-    setFormStatus('pendiente');
+  // Handlers del calendario
+  const handleDateClick = (date) => {
+    const yyyy = String(date.getFullYear());
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+
+    setFormData({
+      title: '',
+      date: `${yyyy}-${mm}-${dd}`,
+      time: `${hh}:${min}`,
+      status: 'pendiente'
+    });
+    setSelectedEvent(null);
+    setIsModalOpen(true);
   };
 
   const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setIsEventDetailOpen(true);
-  };
-
-  const handleUpdateEvent = async (eventId, updateData) => {
-    await updateScheduleItem(clientId, eventId, updateData);
-    loadData(); // Refresh calendar
-  };
-
-  const handleDeleteEvent = async (eventId) => {
-    await deleteScheduleItem(clientId, eventId);
-    loadData(); // Refresh calendar
-  };
-
-  const handleCreateFromModal = async (e) => {
-    e.preventDefault();
     try {
-      if (!formTitle || !formDate || !formTime) return;
-      const iso = new Date(`${formDate}T${formTime}:00`).toISOString();
-      await toast.promise(
-        createScheduleItem(clientId, {
-          title: formTitle,
-          scheduled_at: iso,
-          status: formStatus,
-        }),
-        {
-          loading: 'Creando evento…',
-          success: 'Evento creado',
-          error: (e) => e.message || 'No se pudo crear el evento',
-        }
-      );
-      closeModal();
-      loadData();
-    } catch (err) {
-      // El toast.promise ya maneja el error visual
+      const d = event.start ? new Date(event.start) : getCurrentDate();
+      const yyyy = String(d.getFullYear());
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+
+      setSelectedEvent(event);
+      setFormData({
+        title: event.title || '',
+        date: `${yyyy}-${mm}-${dd}`,
+        time: `${hh}:${min}`,
+        status: event.extendedProps?.status || 'pendiente'
+      });
+      setIsModalOpen(true);
+    } catch {
+      // fallback
+      setSelectedEvent(event);
+      setIsModalOpen(true);
     }
   };
 
-  if (loading) return <div className="text-center text-rambla-text-secondary">Cargando...</div>;
-  if (error) return <div className="text-center text-red-500">Error: {error}</div>;
+  const handleEventDrop = async (event) => {
+    try {
+      await moveEvent(event.id, event.start, event.end);
+    } catch (err) {
+      // El hook maneja el error y recarga
+    }
+  };
+
+  const handleViewChange = (viewType) => {
+    setCurrentView(viewType);
+  };
+
+  const handleDateChange = (start /*, end, view */) => {
+    if (start && Math.abs(start.getTime() - currentDate.getTime()) > 24 * 60 * 60 * 1000) {
+      setCurrentDate(start);
+    }
+  };
+
+  // Formulario handlers
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!formData.title || !formData.date || !formData.time) {
+        toast.error('Completa título, fecha y hora');
+        return;
+      }
+
+      const scheduled_at = new Date(`${formData.date}T${formData.time}:00`);
+      const eventData = {
+        title: formData.title,
+        status: formData.status,
+        scheduled_at: scheduled_at.toISOString()
+      };
+
+      if (selectedEvent?.id) {
+        await updateEvent(selectedEvent.id, eventData);
+        toast.success('Evento actualizado');
+      } else {
+        await createEvent(eventData);
+        toast.success('Evento creado');
+      }
+      closeModal();
+    } catch (err) {
+      // El hook ya maneja los errores
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (selectedEvent && window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+      try {
+        await deleteEvent(selectedEvent.id);
+        closeModal();
+        setIsEventDetailOpen(false);
+      } catch (err) {
+        // El hook ya maneja los errores
+      }
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setIsEventDetailOpen(false);
+    setSelectedEvent(null);
+    setFormData({
+      title: '',
+      date: '',
+      time: '09:00',
+      status: 'pendiente'
+    });
+  };
+
+  // Estados de carga y error
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 max-w-md mx-auto">
+          <p className="text-red-400 font-medium">Error al cargar el calendario</p>
+          <p className="text-red-300 text-sm mt-1">{error}</p>
+          <button 
+            onClick={loadEvents}
+            className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-white">Cronograma de Contenidos</h2>
-        <button
-          onClick={() => {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            setFormDate(`${yyyy}-${mm}-${dd}`);
-            setFormTime('09:00');
-            setIsOpen(true);
-          }}
-          className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle"
-        >
-          Nuevo evento
-        </button>
-      </div>
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* Columna izquierda: mini calendario */}
-        <div className="xl:col-span-2">
-          <MiniMonth
-            date={currentDate}
-            onNavigate={(date) => setCurrentDate(date)}
-            onSelectDate={(d) => setCurrentDate(d)}
-          />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="calendar-container"
+    >
+      {/* Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-6 flex items-center justify-between"
+      >
+        <div>
+          <h2 className="text-2xl font-bold text-gray-100">
+            Cronograma de Contenidos
+          </h2>
+          {client && (
+            <p className="text-sm text-gray-400 mt-1">
+              Cliente: {client.name} • {eventStats.total} eventos totales
+            </p>
+          )}
         </div>
+        
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleDateClick(getCurrentDate())}
+          className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white 
+                     font-semibold rounded-lg shadow-sm transition-all duration-200"
+        >
+          Nuevo Evento
+        </motion.button>
+      </motion.div>
 
-        {/* Centro: calendario grande */}
-        <div className="xl:col-span-7">
-          <div className="h-[72vh] rounded-lg border border-white/10 bg-rambla-surface p-2">
-            <Calendar
-              localizer={localizer}
-              date={currentDate}
-              onNavigate={(date) => setCurrentDate(date)}
-              events={scheduleItems}
-              startAccessor="start"
-              endAccessor="end"
-              selectable
-              onSelectSlot={handleSelectSlot}
-              onSelectEvent={handleEventClick}
-              eventPropGetter={eventStyleGetter}
-              components={{
-                toolbar: (props) => (
-                  <CalendarToolbar
-                    label={props.label}
-                    view={props.view}
-                    onView={props.onView}
-                    onNavigate={(action) => {
-                      const map = { PREV: () => props.onNavigate('PREV'), NEXT: () => props.onNavigate('NEXT'), TODAY: () => props.onNavigate('TODAY') };
-                      map[action]?.();
-                    }}
-                  />
-                ),
-              }}
-            />
+      {/* Estadísticas superiores (full width) */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+        className="mb-6"
+      >
+        <div className="bg-surface-900/40 backdrop-blur-sm border border-white/10 
+                        rounded-xl p-4 shadow-lg">
+          <div className="text-sm font-semibold text-gray-300 mb-3">Estadísticas</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="flex items-center justify-between text-xs bg-white/5 rounded-md px-3 py-2">
+              <span className="text-gray-400">Total</span>
+              <span className="text-white font-medium">{eventStats.total}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs bg-white/5 rounded-md px-3 py-2">
+              <span className="text-gray-400">Pendientes</span>
+              <span className="text-orange-400 font-medium">{eventStats.byStatus.pendiente || 0}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs bg-white/5 rounded-md px-3 py-2">
+              <span className="text-gray-400">En progreso</span>
+              <span className="text-blue-400 font-medium">{(eventStats.byStatus['en-diseño'] || 0) + (eventStats.byStatus['en-progreso'] || 0)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs bg-white/5 rounded-md px-3 py-2">
+              <span className="text-gray-400">Completados</span>
+              <span className="text-green-400 font-medium">{eventStats.byStatus.publicado || 0}</span>
+            </div>
           </div>
         </div>
+      </motion.div>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Izquierda: mini calendario */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="xl:col-span-3"
+        >
+          <MiniMonth 
+            currentDate={currentDate}
+            onNavigate={setCurrentDate}
+            events={events}
+          />
+        </motion.div>
 
-        {/* Derecha: chat con IA */}
-        <div className="xl:col-span-3">
-          <AIAssistant />
-        </div>
+        {/* Centro: calendario principal ampliado */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="xl:col-span-9"
+        >
+          <div className="bg-surface-900/40 backdrop-blur-sm 
+                          border border-white/10 rounded-xl p-6 shadow-lg">
+            <FullCalendarWrapper
+              key={`${currentDate.getTime()}-${currentView}`}
+              events={events}
+              currentDate={currentDate}
+              currentView={currentView}
+              loading={loading}
+              onDateChange={handleDateChange}
+              onViewChange={handleViewChange}
+              onEventClick={handleEventClick}
+              onDateClick={handleDateClick}
+              onEventDrop={handleEventDrop}
+              height="800px"
+            />
+          </div>
+        </motion.div>
       </div>
 
-      <Transition appear show={isOpen} as={Fragment}>
+      {/* Fila inferior: chat con IA (full width) */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.25 }}
+        className="mt-6"
+      >
+        <div className="bg-surface-900/40 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-lg">
+          <AIAssistant />
+        </div>
+      </motion.div>
+
+      {/* Modal para crear/editar eventos */}
+      <Transition appear show={isModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeModal}>
-          <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <div className="fixed inset-0 bg-black/50" />
+          <Transition.Child 
+            as={Fragment} 
+            enter="ease-out duration-200" 
+            enterFrom="opacity-0" 
+            enterTo="opacity-100" 
+            leave="ease-in duration-150" 
+            leaveFrom="opacity-100" 
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                <Dialog.Panel className="w-full max-w-md rounded-xl border border-rambla-border bg-rambla-surface p-6 shadow">
-                  <Dialog.Title className="mb-2 text-lg font-semibold text-white">Nuevo evento</Dialog.Title>
-                  <form onSubmit={handleCreateFromModal} className="space-y-4">
+              <Transition.Child 
+                as={Fragment} 
+                enter="ease-out duration-200" 
+                enterFrom="opacity-0 scale-95" 
+                enterTo="opacity-100 scale-100" 
+                leave="ease-in duration-150" 
+                leaveFrom="opacity-100 scale-100" 
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md bg-surface-900/90 backdrop-blur-sm
+                                        border border-white/20 rounded-xl p-6 shadow-xl">
+                  <Dialog.Title className="mb-4 text-xl font-bold text-gray-100">
+                    {selectedEvent ? 'Editar Evento' : 'Nuevo Evento'}
+                  </Dialog.Title>
+                  
+                  <form onSubmit={handleFormSubmit} className="space-y-4">
                     <div>
-                      <label className="mb-1 block text-sm text-rambla-text-secondary">Título</label>
-                      <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors duration-200" placeholder="Post para Instagram" required />
+                      <label className="mb-2 block text-sm font-medium text-gray-300">Título</label>
+                      <input 
+                        type="text" 
+                        value={formData.title} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} 
+                        className="input-cyber w-full" 
+                        placeholder="Nombre del evento" 
+                        required 
+                      />
                     </div>
+                    
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-sm text-rambla-text-secondary">Fecha</label>
-                        <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200" required />
+                        <label className="mb-2 block text-sm font-medium text-gray-300">Fecha</label>
+                        <input 
+                          type="date" 
+                          value={formData.date} 
+                          onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))} 
+                          className="input-cyber w-full" 
+                          required 
+                        />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm text-rambla-text-secondary">Hora</label>
-                        <input type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200" required />
+                        <label className="mb-2 block text-sm font-medium text-gray-300">Hora</label>
+                        <input 
+                          type="time" 
+                          value={formData.time} 
+                          onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))} 
+                          className="input-cyber w-full" 
+                          required 
+                        />
                       </div>
                     </div>
+                    
                     <div>
-                      <label className="mb-1 block text-sm text-rambla-text-secondary">Estado</label>
-                      <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200">
-                        <option value="planificacion">📋 Planificación</option>
-                        <option value="pendiente">⏳ Pendiente</option>
-                        <option value="en-progreso">🚀 En Progreso</option>
-                        <option value="en-diseño">🎨 En Diseño</option>
-                        <option value="en-revision">👀 En Revisión</option>
-                        <option value="esperando-aprobacion">⏰ Esperando Aprobación</option>
-                        <option value="aprobado">✅ Aprobado</option>
-                        <option value="requiere-cambios">🔄 Requiere Cambios</option>
-                        <option value="listo-publicar">📤 Listo para Publicar</option>
-                        <option value="publicado">📢 Publicado</option>
-                        <option value="completado">🎉 Completado</option>
-                        <option value="pausado">⏸️ Pausado</option>
-                        <option value="cancelado">❌ Cancelado</option>
+                      <label className="mb-2 block text-sm font-medium text-gray-300">Estado</label>
+                      <select 
+                        value={formData.status} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))} 
+                        className="input-cyber w-full"
+                      >
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en-diseño">En Diseño</option>
+                        <option value="en-progreso">En Progreso</option>
+                        <option value="aprobado">Aprobado</option>
+                        <option value="publicado">Publicado</option>
+                        <option value="cancelado">Cancelado</option>
                       </select>
                     </div>
-                    <div className="flex justify-end space-x-2 pt-2">
-                      <button type="button" onClick={closeModal} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400 transition-colors duration-200">Cancelar</button>
-                      <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle">Crear</button>
+                    
+                    <div className="flex justify-end space-x-3 pt-4">
+                      {selectedEvent && (
+                        <motion.button 
+                          type="button" 
+                          onClick={handleDeleteEvent}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white 
+                                     font-semibold rounded-lg transition-all duration-200"
+                        >
+                          Eliminar
+                        </motion.button>
+                      )}
+                      
+                      <motion.button 
+                        type="button" 
+                        onClick={closeModal}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 border border-white/20 rounded-lg text-gray-300 
+                                   hover:border-white/40 hover:text-white transition-all duration-300"
+                      >
+                        Cancelar
+                      </motion.button>
+                      
+                      <motion.button 
+                        type="submit"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 bg-accent-600 hover:bg-accent-700 
+                                   text-white font-semibold rounded-lg shadow-sm 
+                                   transition-all duration-200"
+                      >
+                        {selectedEvent ? 'Actualizar' : 'Crear'} Evento
+                      </motion.button>
                     </div>
                   </form>
                 </Dialog.Panel>
@@ -266,16 +449,6 @@ export const ScheduleSection = ({ clientId }) => {
           </div>
         </Dialog>
       </Transition>
-
-      {/* Event Detail Modal */}
-      <EventDetailModal
-        isOpen={isEventDetailOpen}
-        onClose={() => setIsEventDetailOpen(false)}
-        event={selectedEvent}
-        onUpdate={handleUpdateEvent}
-        onDelete={handleDeleteEvent}
-        clientId={clientId}
-      />
-    </div>
+    </motion.div>
   );
 };

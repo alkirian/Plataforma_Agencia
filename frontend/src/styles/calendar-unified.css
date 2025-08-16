@@ -1,0 +1,375 @@
+/* Unified Calendar Styles - Supports both cyber and modern themes */
+
+/* CSS Custom Properties for theming */
+:root {
+  /* Default: Modern theme variables */
+  --calendar-primary: rgba(168, 85, 247, 0.8);
+  --calendar-primary-light: rgba(168, 85, 247, 0.1);
+  --calendar-primary-border: rgba(168, 85, 247, 0.3);
+  --calendar-background: rgba(15, 23, 42, 0.4);
+  --calendar-header-bg: rgba(15, 23, 42, 0.2);
+  --calendar-border: rgba(255, 255, 255, 0.06);
+  --calendar-border-light: rgba(255, 255, 255, 0.04);
+  --calendar-text: #c9d1d9;
+  --calendar-text-secondary: #9aa4b2;
+  --calendar-shadow: 0 4px 24px rgba(168, 85, 247, 0.1);
+}
+
+/* Cyber theme variables */
+[data-theme='cyber'] {
+  --calendar-primary: #00f6ff;
+  --calendar-primary-light: rgba(0, 246, 255, 0.1);
+  --calendar-primary-border: rgba(0, 246, 255, 0.3);
+  --calendar-background: rgba(22, 27, 34, 0.8);
+  --calendar-header-bg: linear-gradient(
+    135deg,
+    rgba(0, 246, 255, 0.05) 0%,
+    rgba(0, 170, 255, 0.05) 100%
+  );
+  --calendar-border: rgba(0, 246, 255, 0.2);
+  --calendar-border-light: rgba(0, 246, 255, 0.1);
+  --calendar-text: #c9d1d9;
+  --calendar-text-secondary: #00f6ff;
+  --calendar-shadow: 0 4px 24px rgba(0, 246, 255, 0.1);
+}
+
+/* Main calendar container */
+.rbc-calendar {
+  background: transparent;
+  color: var(--calendar-text);
+  font-family: inherit;
+}
+
+/* Toolbar */
+.rbc-toolbar {
+  background: var(--calendar-background);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--calendar-border);
+  box-shadow: var(--calendar-shadow);
+}
+
+/* Modern theme hides default toolbar */
+[data-theme='modern'] .rbc-toolbar {
+  display: none;
+}
+
+.rbc-toolbar button {
+  background: var(--calendar-primary-light);
+  color: var(--calendar-primary);
+  border: 1px solid var(--calendar-primary-border);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0 4px;
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus {
+  background: var(--calendar-primary-border);
+  transform: translateY(-1px);
+  box-shadow: var(--calendar-shadow);
+}
+
+.rbc-toolbar .rbc-active {
+  background: var(--calendar-primary);
+  color: #000;
+}
+
+/* Time views and month view containers */
+.rbc-time-view,
+.rbc-month-view,
+.rbc-agenda-view {
+  background: var(--calendar-background);
+  border: 1px solid var(--calendar-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Headers */
+.rbc-header {
+  background: var(--calendar-header-bg);
+  border: none !important;
+  border-bottom: 1px solid var(--calendar-border) !important;
+  padding: 10px 0;
+  font-weight: 600;
+  color: var(--calendar-text-secondary);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+/* Cyber theme header adjustments */
+[data-theme='cyber'] .rbc-header {
+  padding: 12px 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid var(--calendar-border-light) !important;
+}
+
+/* Grid lines */
+.rbc-time-content,
+.rbc-month-row {
+  border-top: 1px solid var(--calendar-border);
+}
+
+.rbc-time-gutter .rbc-time-slot,
+.rbc-day-slot .rbc-time-slot {
+  border-color: var(--calendar-border-light);
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid var(--calendar-border-light);
+}
+
+/* Month view cells */
+.rbc-month-view .rbc-row {
+  border: none;
+}
+
+.rbc-date-cell {
+  padding: 8px 12px;
+  border-right: 1px solid var(--calendar-border-light);
+  min-height: 100px;
+  position: relative;
+  overflow: visible;
+}
+
+/* Month view event container fixes */
+.rbc-month-view .rbc-row-content {
+  position: relative;
+  z-index: 1;
+}
+
+.rbc-month-view .rbc-row-segment {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+  padding: 0 1px;
+}
+
+.rbc-off-range-bg {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.rbc-today {
+  background: var(--calendar-primary-light);
+  border: 1px solid var(--calendar-primary-border);
+}
+
+/* Date button */
+.rbc-button-link {
+  color: var(--calendar-text);
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.rbc-off-range .rbc-button-link {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.rbc-today .rbc-button-link {
+  color: var(--calendar-primary);
+}
+
+/* Events - FORCE VISIBILITY GLOBALLY */
+.rbc-event {
+  transition: all 0.2s ease;
+  position: relative !important;
+  z-index: 3 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.rbc-event:hover {
+  transform: translateY(-1px);
+  z-index: 4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Month view specific adjustments */
+.rbc-month-view .rbc-event {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+.rbc-month-view .rbc-event:hover {
+  z-index: 10 !important;
+  transform: scale(1.02);
+}
+
+/* Cyber theme event glow effect */
+[data-theme='cyber'] .rbc-event {
+  box-shadow: 0 0 10px rgba(0, 246, 255, 0.4);
+}
+
+[data-theme='cyber'] .rbc-event:hover {
+  box-shadow: 0 0 15px rgba(0, 246, 255, 0.6);
+}
+
+/* Selected event */
+.rbc-selected {
+  background: var(--calendar-primary) !important;
+  opacity: 0.9;
+}
+
+/* Time grid */
+.rbc-time-gutter {
+  background: var(--calendar-background);
+  border-right: 1px solid var(--calendar-border);
+}
+
+.rbc-time-header {
+  border-bottom: 1px solid var(--calendar-border);
+}
+
+/* More events link */
+.rbc-show-more {
+  color: var(--calendar-primary);
+  font-weight: 500;
+  font-size: 11px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.rbc-show-more:hover {
+  color: var(--calendar-text);
+}
+
+/* Agenda view */
+.rbc-agenda-view table {
+  background: transparent;
+}
+
+.rbc-agenda-view .rbc-agenda-table tbody > tr > td {
+  border-top: 1px solid var(--calendar-border-light);
+  padding: 12px;
+  color: var(--calendar-text);
+}
+
+.rbc-agenda-view .rbc-agenda-table .rbc-agenda-time-cell {
+  color: var(--calendar-text-secondary);
+  font-weight: 500;
+}
+
+/* Popup/overlay */
+.rbc-overlay {
+  background: var(--calendar-background);
+  border: 1px solid var(--calendar-border);
+  border-radius: 8px;
+  box-shadow: var(--calendar-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.rbc-overlay-header {
+  background: var(--calendar-header-bg);
+  border-bottom: 1px solid var(--calendar-border);
+  color: var(--calendar-text-secondary);
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+/* Month view cell optimizations */
+.rbc-month-view .rbc-date-cell {
+  min-height: 90px;
+  padding: 6px 8px;
+  overflow: visible;
+  position: relative;
+}
+
+/* CRITICAL: Fix month view event rendering */
+.rbc-month-view .rbc-row-content {
+  position: relative;
+  overflow: visible;
+}
+
+.rbc-month-view .rbc-row-segment {
+  position: relative;
+  overflow: visible;
+}
+
+.rbc-month-view .rbc-event {
+  position: relative !important;
+  display: block !important;
+  margin: 1px 0 !important;
+}
+
+/* FIX: Pantallas grandes ocultan eventos en vista mes */
+@media (min-width: 1280px) {
+  /* Forzar contenedor del calendario */
+  .rbc-calendar {
+    overflow: visible !important;
+  }
+  
+  .rbc-month-view {
+    overflow: visible !important;
+  }
+  
+  .rbc-month-view .rbc-event {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    min-height: 18px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+  
+  .rbc-month-view .rbc-row-segment {
+    overflow: visible !important;
+    position: relative !important;
+    display: block !important;
+  }
+  
+  .rbc-month-view .rbc-date-cell {
+    overflow: visible !important;
+    position: relative !important;
+  }
+  
+  .rbc-month-view .rbc-row {
+    overflow: visible !important;
+  }
+  
+  .rbc-month-view .rbc-row-content {
+    overflow: visible !important;
+    position: relative !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    padding: 8px 12px;
+    margin-bottom: 16px;
+  }
+
+  .rbc-toolbar button {
+    padding: 4px 12px;
+    font-size: 14px;
+  }
+
+  .rbc-header {
+    padding: 6px 0;
+    font-size: 10px;
+  }
+
+  .rbc-date-cell {
+    min-height: 80px;
+    padding: 6px 8px;
+  }
+
+  .rbc-month-view .rbc-date-cell {
+    min-height: 70px;
+  }
+}

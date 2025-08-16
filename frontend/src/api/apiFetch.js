@@ -42,8 +42,11 @@ export const apiFetch = async (endpoint, options = {}) => {
         if (text) errorMessage = text;
       } catch {}
     }
-    
-    console.error(`API Error: ${response.method || 'Unknown'} ${endpoint} - ${response.status}:`, errorMessage);
+
+    console.error(
+      `API Error: ${response.method || 'Unknown'} ${endpoint} - ${response.status}:`,
+      errorMessage
+    );
     const error = new Error(errorMessage);
     error.status = response.status;
     throw error;
