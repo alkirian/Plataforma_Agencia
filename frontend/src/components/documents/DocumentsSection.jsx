@@ -11,8 +11,8 @@ export const DocumentsSection = ({ clientId }) => {
   const loadDocuments = useCallback(async () => {
     try {
       setLoading(true);
-  const { data: docs } = await getDocumentsForClient(clientId);
-  setDocuments(docs || []);
+  const response = await getDocumentsForClient(clientId);
+  setDocuments(response.data || []);
       setError(null);
     } catch (err) {
       setError(err.message);

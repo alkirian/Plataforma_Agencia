@@ -13,3 +13,16 @@ export const generateIdeas = (clientId, promptData) => {
     body: JSON.stringify(promptData),
   });
 };
+
+/**
+ * Obtiene respuesta de chat conversacional con IA.
+ * @param {string} clientId - El UUID del cliente.
+ * @param {object} chatData - Los datos del chat (userPrompt, chatHistory).
+ * @returns {Promise<object>} La respuesta del chat.
+ */
+export const getChatResponse = (clientId, chatData) => {
+  return apiFetch(`/clients/${clientId}/chat`, {
+    method: 'POST',
+    body: JSON.stringify(chatData),
+  });
+};

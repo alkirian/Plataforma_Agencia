@@ -3,11 +3,11 @@ import { DocumentArrowDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { deleteDocument, downloadDocument } from '../../api/documents.js';
 
 export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) => {
-  const [loadingStates, setLoadingStates] = useState({});
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const handleDownload = async (docData) => {
-    const docId = docData.id;
-    setLoadingStates(prev => ({ ...prev, [`download_${docId}`]: true }));
+    setDownloadingId(docData.id);
     
     try {
       await downloadDocument(docData);
@@ -15,7 +15,7 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
       console.error('Error al descargar documento:', error);
       alert('Error al descargar el documento. Por favor, intenta de nuevo.');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`download_${docId}`]: false }));
+      setDownloadingId(null);
     }
   };
 
@@ -37,28 +37,19 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
     }
 
     const docId = docData.id;
-    setLoadingStates(prev => ({ ...prev, [`delete_${docId}`]: true }));
+    setDeletingId(docId);
     
     try {
-      console.log('🗑️ Deleting document:', { 
-        clientId, 
-        documentId: docId,
-        fileName: docData.file_name 
-      });
-      
       await deleteDocument(clientId, docId);
       
-      // Llamar callback para actualizar la lista en el componente padre
       if (onDocumentDeleted) {
         onDocumentDeleted(docId);
       }
-      
-      console.log('✅ Document deleted successfully');
     } catch (error) {
-      console.error('❌ Error deleting document:', error);
+      console.error('Error deleting document:', error);
       alert(`Error al eliminar el documento: ${error.message}`);
     } finally {
-      setLoadingStates(prev => ({ ...prev, [`delete_${docId}`]: false }));
+      setDeletingId(null);
     }
   };
   return (
@@ -95,11 +86,11 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
             <div className="flex space-x-2">
               <button 
                 onClick={() => handleDownload(doc)}
-                disabled={loadingStates[`download_${doc.id}`]}
+                disabled={downloadingId === doc.id}
                 className="text-rambla-text-secondary hover:text-rambla-accent disabled:opacity-50 disabled:cursor-not-allowed" 
                 title="Descargar"
               >
-                {loadingStates[`download_${doc.id}`] ? (
+                {downloadingId === doc.id ? (
                   <div className="w-5 h-5 border-2 border-rambla-accent border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <DocumentArrowDownIcon className="h-5 w-5" />
@@ -107,11 +98,11 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
               </button>
               <button 
                 onClick={() => handleDelete(doc)}
-                disabled={loadingStates[`delete_${doc.id}`]}
+                disabled={deletingId === doc.id}
                 className="text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed" 
                 title="Eliminar"
               >
-                {loadingStates[`delete_${doc.id}`] ? (
+                {deletingId === doc.id ? (
                   <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <TrashIcon className="h-5 w-5" />

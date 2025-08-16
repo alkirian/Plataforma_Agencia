@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { ChatInput } from './ChatInput.jsx';
 import { MessageList } from './MessageList.jsx';
-import { generateIdeas, getChatResponse } from '../../services/ai.js';
+import { generateIdeas, getChatResponse } from '../../api/ai.js';
 import toast from 'react-hot-toast';
 
 export const AIAssistant = () => {

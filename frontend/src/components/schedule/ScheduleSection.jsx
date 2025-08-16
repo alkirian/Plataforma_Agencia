@@ -42,13 +42,13 @@ export const ScheduleSection = ({ clientId }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [{ data: clientData }, { data: scheduleData }] = await Promise.all([
+      const [clientResponse, scheduleResponse] = await Promise.all([
         getClientById(clientId),
         getSchedule(clientId)
       ]);
 
-      setClient(clientData);
-      const formattedEvents = scheduleData.map(item => ({
+      setClient(clientResponse.data);
+      const formattedEvents = scheduleResponse.data.map(item => ({
         id: item.id,
         title: item.title,
         start: new Date(item.scheduled_at),
