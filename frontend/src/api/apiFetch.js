@@ -31,8 +31,22 @@ export const apiFetch = async (endpoint, options = {}) => {
   });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({ message: 'Error en la petición de red' }));
-    throw new Error(errorBody.message || 'Ocurrió un error inesperado en el servidor');
+    let errorMessage = `HTTP ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // Si no es JSON, intentar texto
+      try {
+        const text = await response.text();
+        if (text) errorMessage = text;
+      } catch {}
+    }
+    
+    console.error(`API Error: ${response.method || 'Unknown'} ${endpoint} - ${response.status}:`, errorMessage);
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204 || response.headers.get('content-length') === '0') {

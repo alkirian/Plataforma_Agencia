@@ -103,7 +103,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
             localizer={localizer}
             date={currentDate || new Date()}
             onNavigate={(date) => onNavigate(date)}
-            view="month"
+            defaultView="month"
             toolbar={false}
             selectable
             onSelectSlot={({ start }) => onNavigate(start)}

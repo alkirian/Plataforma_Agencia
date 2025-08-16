@@ -26,7 +26,7 @@ export const handleCreateScheduleItem = async (req, res, next) => {
       client_id: clientId,
     };
 
-    const newItem = await createScheduleItem(newItemData, token);
+    const newItem = await createScheduleItem(newItemData, token, req.user?.id);
     res.status(201).json({ success: true, data: newItem });
   } catch (error) {
     next(error);

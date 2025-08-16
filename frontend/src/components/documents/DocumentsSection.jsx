@@ -29,6 +29,11 @@ export const DocumentsSection = ({ clientId }) => {
     loadDocuments();
   };
 
+  const handleDocumentDeleted = (deletedDocId) => {
+    // Optimistically remove from UI
+    setDocuments(prev => prev.filter(doc => doc.id !== deletedDocId));
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,7 +44,13 @@ export const DocumentsSection = ({ clientId }) => {
         <h3 className="text-xl font-bold text-white">Archivos del Cliente</h3>
         {loading && <p className="text-rambla-text-secondary">Cargando documentos...</p>}
         {error && <p className="text-red-500">Error: {error}</p>}
-        {!loading && !error && <DocumentList documents={documents} />}
+        {!loading && !error && (
+          <DocumentList 
+            documents={documents} 
+            clientId={clientId}
+            onDocumentDeleted={handleDocumentDeleted}
+          />
+        )}
       </div>
     </div>
   );

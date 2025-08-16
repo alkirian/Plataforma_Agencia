@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/supabaseClient.js';
 import { createClient, getClientsByAgency, getClientById } from '../services/clients.service.js';
+import { getActivityFeedByClient } from '../services/activity.service.js';
 
 // Esta función auxiliar es un caso especial y necesita privilegios para buscar cualquier perfil.
 // La cambiaremos para que use supabaseAdmin.
@@ -60,6 +61,28 @@ export const handleGetClientById = async (req, res, next) => {
     // Si todo va bien, devolvemos el cliente encontrado
     res.status(200).json({ success: true, data: client });
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Helper to fetch user's agency_id
+const getUserAgencyId = async (userId) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('agency_id')
+    .eq('id', userId)
+    .single();
+  if (error) throw new Error('No se pudo obtener el perfil del usuario.');
+  return data.agency_id;
+};
+
+export const handleGetActivityFeed = async (req, res, next) => {
+  try {
+    const { clientId } = req.params;
+    const agencyId = await getUserAgencyId(req.user.id);
+    const feed = await getActivityFeedByClient(clientId, agencyId);
+    res.status(200).json({ success: true, data: feed });
   } catch (error) {
     next(error);
   }

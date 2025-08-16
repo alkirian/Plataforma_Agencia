@@ -1,7 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DocumentArrowDownIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { deleteDocument, downloadDocument } from '../../api/documents.js';
 
-export const DocumentList = ({ documents = [] }) => {
+export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) => {
+  const [loadingStates, setLoadingStates] = useState({});
+
+  const handleDownload = async (docData) => {
+    const docId = docData.id;
+    setLoadingStates(prev => ({ ...prev, [`download_${docId}`]: true }));
+    
+    try {
+      await downloadDocument(docData);
+    } catch (error) {
+      console.error('Error al descargar documento:', error);
+      alert('Error al descargar el documento. Por favor, intenta de nuevo.');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`download_${docId}`]: false }));
+    }
+  };
+
+  const handleDelete = async (docData) => {
+    if (!clientId) {
+      console.error('❌ No clientId provided to DocumentList');
+      alert('Error: No se puede identificar el cliente');
+      return;
+    }
+
+    if (!docData.id) {
+      console.error('❌ Document has no id:', docData);
+      alert('Error: No se puede identificar el documento');
+      return;
+    }
+    
+    if (!confirm(`¿Estás seguro de que quieres eliminar "${docData.file_name}"?`)) {
+      return;
+    }
+
+    const docId = docData.id;
+    setLoadingStates(prev => ({ ...prev, [`delete_${docId}`]: true }));
+    
+    try {
+      console.log('🗑️ Deleting document:', { 
+        clientId, 
+        documentId: docId,
+        fileName: docData.file_name 
+      });
+      
+      await deleteDocument(clientId, docId);
+      
+      // Llamar callback para actualizar la lista en el componente padre
+      if (onDocumentDeleted) {
+        onDocumentDeleted(docId);
+      }
+      
+      console.log('✅ Document deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting document:', error);
+      alert(`Error al eliminar el documento: ${error.message}`);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`delete_${docId}`]: false }));
+    }
+  };
   return (
     <div className="mt-6 flow-root">
       <ul role="list" className="-my-4 divide-y divide-rambla-border">
@@ -34,11 +93,29 @@ export const DocumentList = ({ documents = [] }) => {
               )}
             </div>
             <div className="flex space-x-2">
-              <button className="text-rambla-text-secondary hover:text-rambla-accent" title="Descargar">
-                <DocumentArrowDownIcon className="h-5 w-5" />
+              <button 
+                onClick={() => handleDownload(doc)}
+                disabled={loadingStates[`download_${doc.id}`]}
+                className="text-rambla-text-secondary hover:text-rambla-accent disabled:opacity-50 disabled:cursor-not-allowed" 
+                title="Descargar"
+              >
+                {loadingStates[`download_${doc.id}`] ? (
+                  <div className="w-5 h-5 border-2 border-rambla-accent border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <DocumentArrowDownIcon className="h-5 w-5" />
+                )}
               </button>
-              <button className="text-rambla-text-secondary hover:text-red-500" title="Eliminar">
-                <TrashIcon className="h-5 w-5" />
+              <button 
+                onClick={() => handleDelete(doc)}
+                disabled={loadingStates[`delete_${doc.id}`]}
+                className="text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+                title="Eliminar"
+              >
+                {loadingStates[`delete_${doc.id}`] ? (
+                  <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <TrashIcon className="h-5 w-5" />
+                )}
               </button>
             </div>
           </li>

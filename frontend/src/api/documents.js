@@ -29,8 +29,34 @@ export const uploadDocument = async (clientId, file) => {
   });
 };
 
-export const deleteDocument = (documentId) => {
-  return apiFetch(`/documents/${documentId}`, {
+export const deleteDocument = (clientId, documentId) => {
+  return apiFetch(`/clients/${clientId}/documents/${documentId}`, {
     method: 'DELETE',
   });
+};
+
+export const downloadDocument = async (docData) => {
+  try {
+    // Obtener la URL de descarga desde Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .download(docData.storage_path);
+
+    if (error) throw error;
+
+    // Crear un blob URL y descargar el archivo
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = docData.file_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error downloading document:', error);
+    throw error;
+  }
 };
