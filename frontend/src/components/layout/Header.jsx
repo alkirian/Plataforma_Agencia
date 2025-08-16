@@ -1,10 +1,18 @@
 import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useParams, useLocation } from 'react-router-dom';
 import { HomeIcon, Cog6ToothIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { CyberButton } from '../ui';
+import { ClientSelector } from '../ui/ClientSelector';
 
 export const Header = ({ userEmail, onLogout }) => {
+  const location = useLocation();
+  const params = useParams();
+  
+  // Detectar si estamos en una página de cliente
+  const isClientPage = location.pathname.startsWith('/clients/');
+  const currentClientId = params.id;
+
   const navLinkClasses = ({ isActive }) =>
     `rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
       isActive
@@ -41,6 +49,19 @@ export const Header = ({ userEmail, onLogout }) => {
             transition={{ duration: 2, repeat: Infinity }}
           />
         </motion.div>
+
+        {/* Centro: Client Selector (solo en páginas de cliente) */}
+        {isClientPage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <ClientSelector 
+              currentClientId={currentClientId}
+            />
+          </motion.div>
+        )}
 
         {/* Derecha: Navegación y Menú de Usuario */}
         <div className='flex items-center space-x-4'>
