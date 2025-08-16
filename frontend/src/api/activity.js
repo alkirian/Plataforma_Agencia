@@ -11,23 +11,10 @@ import { apiFetch } from './apiFetch.js';
 export const getClientActivityFeed = async (clientId, options = {}) => {
   const { limit = 50 } = options;
   
-  try {
-    const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    
-    const url = `/api/v1/clients/${clientId}/activity-feed${params.toString() ? '?' + params.toString() : ''}`;
-    
-    const response = await apiFetch(url, {
-      method: 'GET'
-    });
-
-    if (!response.success) {
-      throw new Error(response.message || 'Error al obtener el feed de actividad');
-    }
-
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener el feed de actividad:', error);
-    throw error;
-  }
+  const params = new URLSearchParams();
+  if (limit) params.append('limit', limit.toString());
+  
+  const url = `/clients/${clientId}/activity-feed${params.toString() ? '?' + params.toString() : ''}`;
+  
+  return apiFetch(url);
 };
