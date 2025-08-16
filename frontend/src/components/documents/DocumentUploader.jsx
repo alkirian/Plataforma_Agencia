@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { uploadDocument } from '../../api/documents';
 
-export const DocumentUploader = ({ clientId, onUploaded }) => {
+export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,7 +13,11 @@ export const DocumentUploader = ({ clientId, onUploaded }) => {
     try {
       setUploading(true);
       setError(null);
-      await uploadDocument(clientId, file);
+      if (onUpload) {
+        await onUpload(file);
+      } else {
+        await uploadDocument(clientId, file);
+      }
       if (onUploaded) onUploaded();
     } catch (err) {
       setError(err.message);
@@ -38,7 +42,7 @@ export const DocumentUploader = ({ clientId, onUploaded }) => {
       <div className="text-center">
         <ArrowUpTrayIcon className="mx-auto h-12 w-12 text-rambla-text-secondary" />
         <div className="mt-4 flex text-sm leading-6 text-rambla-text-secondary">
-          <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-semibold text-rambla-accent focus-within:outline-none hover:text-blue-400">
+          <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-semibold text-primary-500 focus-within:outline-none hover:text-primary-400">
             <span>{uploading ? 'Subiendo...' : 'Sube un archivo'}</span>
             <input id="file-upload" name="file-upload" type="file" ref={inputRef} className="sr-only" onChange={onInputChange} />
           </label>

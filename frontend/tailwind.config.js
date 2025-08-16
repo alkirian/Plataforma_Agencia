@@ -15,34 +15,40 @@ export default {
         'rambla-text-secondary': '#8b949e',
         'rambla-accent': '#58a6ff',
 
-        // Legacy "Cyber Glow" - DEPRECATED, avoid using in new code
-        'glow-cyan': '#00f6ff', // kept for backward compatibility
+        // Modern Purple Palette - Professional & Subtle
+        primary: {
+          50: '#faf5ff',
+          100: '#f3e8ff',
+          200: '#e9d5ff',
+          300: '#d8b4fe',
+          400: '#c084fc',
+          500: '#a855f7',
+          600: '#9333ea',
+          700: '#7c2d12',
+          800: '#6b21a8',
+          900: '#581c87',
+          950: '#3b0764',
+        },
+
+        // Core brand colors - Purple focused
+        brand: {
+          50: '#faf5ff',
+          100: '#f3e8ff', 
+          200: '#e9d5ff',
+          300: '#d8b4fe', // light purple for backgrounds
+          400: '#c084fc', // hover states
+          500: '#a855f7', // main brand color
+          600: '#9333ea', // primary actions
+          700: '#7c2d12', // selected states
+          800: '#6b21a8', // dark accents
+          900: '#581c87', // deep purple
+        },
+
+        // Legacy support (will be gradually removed)
+        'glow-cyan': '#a855f7', // now maps to purple
         'glow-bg-start': '#020024',
         'glow-bg-end': '#0d1117',
-        'glow-card-bg': 'rgba(22, 27, 34, 0.5)',
-
-        // Modern accent palette - subtle purple for professional UI
-        accent: {
-          400: '#a78bfa', // light purple for hover states
-          500: '#8b5cf6', // main purple accent
-          600: '#7c3aed', // darker purple for selected states
-          700: '#6d28d9', // deep purple for emphasis
-        },
-
-        // Legacy primary - DEPRECATED, use accent instead
-        primary: {
-          50: '#e6fdff',
-          100: '#ccfbff',
-          200: '#99f6ff',
-          300: '#66f0ff',
-          400: '#33ebff',
-          500: '#00f6ff', // legacy glow-cyan
-          600: '#00c4cc',
-          700: '#009399',
-          800: '#006266',
-          900: '#003133',
-          950: '#001a1a',
-        },
+        'glow-card-bg': 'rgba(22, 27, 34, 0.6)',
         // Grises neutros mejorados basados en rambla
         surface: {
           50: '#f8fafc',
@@ -97,15 +103,24 @@ export default {
           '50%': { opacity: '0.8' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgb(0 246 255 / 0.5), 0 0 20px rgb(0 246 255 / 0.3)' },
-          '100%': { boxShadow: '0 0 10px rgb(0 246 255 / 0.6), 0 0 30px rgb(0 246 255 / 0.4)' },
+          '0%': { boxShadow: '0 0 5px rgb(168 85 247 / 0.4), 0 0 20px rgb(168 85 247 / 0.2)' },
+          '100%': { boxShadow: '0 0 10px rgb(168 85 247 / 0.5), 0 0 30px rgb(168 85 247 / 0.3)' },
         },
-        cyberPulse: {
+        purplePulse: {
           '0%, 100%': { 
-            boxShadow: '0 0 5px rgb(0 246 255 / 0.3), 0 0 15px rgb(0 246 255 / 0.2), inset 0 0 15px rgb(0 246 255 / 0.1)' 
+            boxShadow: '0 0 5px rgb(168 85 247 / 0.3), 0 0 15px rgb(168 85 247 / 0.15), inset 0 0 15px rgb(168 85 247 / 0.1)' 
           },
           '50%': { 
-            boxShadow: '0 0 10px rgb(0 246 255 / 0.5), 0 0 25px rgb(0 246 255 / 0.3), inset 0 0 25px rgb(0 246 255 / 0.2)' 
+            boxShadow: '0 0 10px rgb(168 85 247 / 0.4), 0 0 25px rgb(168 85 247 / 0.2), inset 0 0 25px rgb(168 85 247 / 0.15)' 
+          },
+        },
+        // Legacy mapping
+        cyberPulse: {
+          '0%, 100%': { 
+            boxShadow: '0 0 5px rgb(168 85 247 / 0.3), 0 0 15px rgb(168 85 247 / 0.15), inset 0 0 15px rgb(168 85 247 / 0.1)' 
+          },
+          '50%': { 
+            boxShadow: '0 0 10px rgb(168 85 247 / 0.4), 0 0 25px rgb(168 85 247 / 0.2), inset 0 0 25px rgb(168 85 247 / 0.15)' 
           },
         },
       },
@@ -116,9 +131,14 @@ export default {
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2)',
-        'glow-cyan': '0 0 25px -5px rgba(0, 246, 255, 0.4)',
-        'inner-glow': 'inset 0 0 20px -5px rgba(0, 246, 255, 0.2)',
-        'cyber': '0 0 15px -3px rgba(0, 246, 255, 0.3), 0 0 30px -6px rgba(0, 246, 255, 0.2)',
+        'purple-glow': '0 0 25px -5px rgba(168, 85, 247, 0.4)',
+        'purple-soft': '0 4px 20px -2px rgba(168, 85, 247, 0.25)',
+        'purple-inner': 'inset 0 0 20px -5px rgba(168, 85, 247, 0.15)',
+        'purple-subtle': '0 1px 10px -2px rgba(168, 85, 247, 0.2)',
+        // Legacy (maps to purple now)
+        'glow-cyan': '0 0 25px -5px rgba(168, 85, 247, 0.4)',
+        'inner-glow': 'inset 0 0 20px -5px rgba(168, 85, 247, 0.15)',
+        'cyber': '0 0 15px -3px rgba(168, 85, 247, 0.3), 0 0 30px -6px rgba(168, 85, 247, 0.2)',
       },
     },
   },

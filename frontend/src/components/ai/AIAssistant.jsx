@@ -67,8 +67,8 @@ export const AIAssistant = () => {
   const isLoading = chatMutation.isPending || ideasMutation.isPending;
 
   return (
-    <div className="mt-8 p-4 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
-      <h3 className="text-lg font-bold text-cyan-300 mb-4">Asistente de Contenido IA</h3>
+    <div className="mt-8 p-4 bg-primary-500/5 backdrop-blur-md rounded-lg border border-primary-500/15 shadow-purple-subtle">
+      <h3 className="text-lg font-bold text-primary-400 mb-4">Asistente de Contenido IA</h3>
       <div className="flex flex-col h-96">
         <MessageList messages={messages} />
         <ChatInput

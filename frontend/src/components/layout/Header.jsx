@@ -8,8 +8,8 @@ export const Header = ({ userEmail, onLogout }) => {
 	const navLinkClasses = ({ isActive }) =>
 		`rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
 			isActive 
-				? 'bg-primary-500/20 text-glow-cyan shadow-glow-cyan border border-primary-500/30' 
-				: 'text-rambla-text-secondary hover:bg-primary-500/10 hover:text-primary-300 hover:border-primary-500/20 border border-transparent'
+				? 'bg-primary-500/15 text-primary-400 shadow-purple-subtle border border-primary-500/25' 
+				: 'text-rambla-text-secondary hover:bg-primary-500/8 hover:text-primary-400 hover:border-primary-500/15 border border-transparent'
 		}`;
 
 	return (

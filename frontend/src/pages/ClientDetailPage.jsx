@@ -68,10 +68,10 @@ export const ClientDetailPage = () => {
   return (
     <div>
       <div className="mb-6">
-        <Link to="/dashboard" className="text-sm text-rambla-accent hover:underline">&larr; Volver al Dashboard</Link>
+        <Link to="/dashboard" className="text-sm text-primary-500 hover:text-primary-400 hover:underline transition-colors duration-200">&larr; Volver al Dashboard</Link>
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold text-white">{client.name}</h1>
-          <button onClick={() => setIsAIModalOpen(true)} className="rounded-md bg-glow-cyan px-4 py-2 text-sm font-semibold text-black hover:opacity-90">
+          <button onClick={() => setIsAIModalOpen(true)} className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle">
             ✨ Generar con IA
           </button>
         </div>
@@ -84,8 +84,8 @@ export const ClientDetailPage = () => {
             onClick={() => setActiveTab('schedule')}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               activeTab === 'schedule'
-                ? 'bg-rambla-accent text-white'
-                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-rambla-accent'
+                ? 'bg-primary-600 text-white shadow-purple-subtle'
+                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400'
             }`}
           >
             Cronograma
@@ -94,8 +94,8 @@ export const ClientDetailPage = () => {
             onClick={() => setActiveTab('documents')}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               activeTab === 'documents'
-                ? 'bg-rambla-accent text-white'
-                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-rambla-accent'
+                ? 'bg-primary-600 text-white shadow-purple-subtle'
+                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400'
             }`}
           >
             Documentos
@@ -121,10 +121,10 @@ export const ClientDetailPage = () => {
                 <Dialog.Panel className="w-full max-w-lg rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg">
                   <Dialog.Title className="mb-2 text-lg font-semibold text-white">Generar ideas con IA</Dialog.Title>
                   <p className="mb-4 text-sm text-rambla-text-secondary">¿Sobre qué tema te gustaría generar ideas para este mes?</p>
-                  <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" placeholder="Ej. ideas para el Día del Padre" />
+                  <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors duration-200" placeholder="Ej. ideas para el Día del Padre" />
                   <div className="mt-4 flex justify-end gap-2">
-                    <button onClick={() => setIsAIModalOpen(false)} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-rambla-accent">Cancelar</button>
-                    <button onClick={() => aiMutation.mutate()} disabled={!aiPrompt || aiMutation.isPending} className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+                    <button onClick={() => setIsAIModalOpen(false)} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400 transition-colors duration-200">Cancelar</button>
+                    <button onClick={() => aiMutation.mutate()} disabled={!aiPrompt || aiMutation.isPending} className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors duration-200 shadow-purple-subtle">
                       {aiMutation.isPending ? 'Creando…' : 'Generar Ideas'}
                     </button>
                   </div>

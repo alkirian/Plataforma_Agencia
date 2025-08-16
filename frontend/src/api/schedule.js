@@ -22,3 +22,39 @@ export const createScheduleItem = (clientId, itemData) => {
     body: JSON.stringify(itemData),
   });
 };
+
+/**
+ * Obtiene un ítem específico del cronograma.
+ * @param {string} clientId - El UUID del cliente.
+ * @param {string} itemId - El ID del ítem del cronograma.
+ * @returns {Promise<object>} Los datos del ítem.
+ */
+export const getScheduleItem = (clientId, itemId) => {
+  return apiFetch(`/clients/${clientId}/schedule/${itemId}`);
+};
+
+/**
+ * Actualiza un ítem del cronograma.
+ * @param {string} clientId - El UUID del cliente.
+ * @param {string} itemId - El ID del ítem del cronograma.
+ * @param {object} updateData - Los datos a actualizar.
+ * @returns {Promise<object>} El ítem actualizado.
+ */
+export const updateScheduleItem = (clientId, itemId, updateData) => {
+  return apiFetch(`/clients/${clientId}/schedule/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updateData),
+  });
+};
+
+/**
+ * Elimina un ítem del cronograma.
+ * @param {string} clientId - El UUID del cliente.
+ * @param {string} itemId - El ID del ítem del cronograma.
+ * @returns {Promise<object>} Confirmación de eliminación.
+ */
+export const deleteScheduleItem = (clientId, itemId) => {
+  return apiFetch(`/clients/${clientId}/schedule/${itemId}`, {
+    method: 'DELETE',
+  });
+};

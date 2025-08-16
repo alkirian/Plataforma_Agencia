@@ -31,7 +31,7 @@ export const getActivityFeedByClient = async (clientId, agencyId) => {
       created_at,
       action_type,
       details,
-      author:profiles ( id, full_name, avatar_url )
+      author:profiles ( id, full_name )
     `)
     .eq('client_id', clientId)
     .eq('agency_id', agencyId)
@@ -40,4 +40,39 @@ export const getActivityFeedByClient = async (clientId, agencyId) => {
 
   if (error) throw new Error(`Error al obtener el feed de actividad: ${error.message}`);
   return data || [];
+};
+
+/**
+ * Obtiene el feed de actividad para toda la agencia (global dashboard).
+ * Soporta paginación por cursor basado en created_at.
+ * @param {string} agencyId
+ * @param {{ limit?: number, cursor?: string }} options
+ */
+export const getAgencyActivityFeed = async (agencyId, { limit = 20, cursor } = {}) => {
+  let query = supabaseAdmin
+    .from('activity_logs')
+    .select(`
+      id,
+      created_at,
+      action_type,
+      client_id,
+      details,
+      author:profiles ( id, full_name )
+    `)
+    .eq('agency_id', agencyId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    // Traer items más antiguos que el cursor
+    query = query.lt('created_at', cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Error al obtener actividad global: ${error.message}`);
+
+  const items = data || [];
+  const nextCursor = items.length === limit ? items[items.length - 1].created_at : null;
+
+  return { items, nextCursor };
 };

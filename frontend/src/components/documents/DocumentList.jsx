@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { DocumentArrowDownIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { deleteDocument, downloadDocument } from '../../api/documents.js';
+import { deleteDocument as deleteDocumentApi, downloadDocument as downloadDocumentApi } from '../../api/documents.js';
 
-export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) => {
+export const DocumentList = ({ documents = [], clientId, onDocumentDeleted, onDelete, onDownload }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -10,7 +10,11 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
     setDownloadingId(docData.id);
     
     try {
-      await downloadDocument(docData);
+      if (onDownload) {
+        await onDownload(docData);
+      } else {
+        await downloadDocumentApi(docData);
+      }
     } catch (error) {
       console.error('Error al descargar documento:', error);
       alert('Error al descargar el documento. Por favor, intenta de nuevo.');
@@ -40,7 +44,11 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
     setDeletingId(docId);
     
     try {
-      await deleteDocument(clientId, docId);
+      if (onDelete) {
+        await onDelete(docId);
+      } else {
+        await deleteDocumentApi(clientId, docId);
+      }
       
       if (onDocumentDeleted) {
         onDocumentDeleted(docId);
@@ -61,8 +69,8 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
         {documents.map((doc) => (
           <li key={doc.id} className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-rambla-bg flex items-center justify-center">
-                <span className="text-xs font-bold text-rambla-accent">
+              <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-rambla-bg flex items-center justify-center border border-primary-500/20">
+                <span className="text-xs font-bold text-primary-400">
                   {(doc.file_type || '').toUpperCase().includes('PDF') ? 'PDF' : 'DOC'}
                 </span>
               </div>
@@ -87,11 +95,11 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
               <button 
                 onClick={() => handleDownload(doc)}
                 disabled={downloadingId === doc.id}
-                className="text-rambla-text-secondary hover:text-rambla-accent disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="text-rambla-text-secondary hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" 
                 title="Descargar"
               >
                 {downloadingId === doc.id ? (
-                  <div className="w-5 h-5 border-2 border-rambla-accent border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <DocumentArrowDownIcon className="h-5 w-5" />
                 )}
@@ -99,7 +107,7 @@ export const DocumentList = ({ documents = [], clientId, onDocumentDeleted }) =>
               <button 
                 onClick={() => handleDelete(doc)}
                 disabled={deletingId === doc.id}
-                className="text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" 
                 title="Eliminar"
               >
                 {deletingId === doc.id ? (

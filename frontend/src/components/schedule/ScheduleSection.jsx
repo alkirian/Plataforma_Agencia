@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { getClientById } from '../../api/clients';
-import { getSchedule, createScheduleItem } from '../../api/schedule';
+import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem } from '../../api/schedule';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/es';
@@ -10,19 +10,33 @@ import toast from 'react-hot-toast';
 import { MiniMonth } from './MiniMonth.jsx';
 import { CalendarToolbar } from './CalendarToolbar.jsx';
 import { AIAssistant } from '../ai/AIAssistant.jsx';
+import { EventDetailModal } from './EventDetailModal.jsx';
+import { TASK_STATES } from '../../constants/taskStates.js';
 
 const localizer = momentLocalizer(moment);
 
 const eventStyleGetter = (event) => {
-  const statusStyles = {
-    'Pendiente': { backgroundColor: '#f0ad4e' },
-    'En Diseño': { backgroundColor: '#5bc0de' },
-    'Aprobado': { backgroundColor: '#5cb85c' },
-    'Publicado': { backgroundColor: '#337ab7' },
-    'Cancelado': { backgroundColor: '#d9534f' },
-  };
+  const status = event.resource?.status || 'pendiente';
+  const stateStyle = TASK_STATES[status] || TASK_STATES.pendiente;
+  
   return {
-    style: statusStyles[event.resource?.status] || {},
+    style: {
+      backgroundColor: stateStyle.color,
+      border: `1px solid ${stateStyle.color}`,
+      borderRadius: '8px',
+      color: 'white',
+      fontSize: '12px',
+      fontWeight: '500',
+      padding: '4px 8px',
+      boxShadow: `0 2px 8px ${stateStyle.color}30`,
+      backdropFilter: 'blur(4px)',
+      // Hacer que ocupen más espacio en la celda
+      height: 'auto',
+      minHeight: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }
   };
 };
 
@@ -35,9 +49,11 @@ export const ScheduleSection = ({ clientId }) => {
   const [formTitle, setFormTitle] = useState('');
   const [formDate, setFormDate] = useState('');
   const [formTime, setFormTime] = useState('09:00');
-  const [formStatus, setFormStatus] = useState('Pendiente');
+  const [formStatus, setFormStatus] = useState('pendiente');
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -84,7 +100,22 @@ export const ScheduleSection = ({ clientId }) => {
   const closeModal = () => {
     setIsOpen(false);
     setFormTitle('');
-    setFormStatus('Pendiente');
+    setFormStatus('pendiente');
+  };
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setIsEventDetailOpen(true);
+  };
+
+  const handleUpdateEvent = async (eventId, updateData) => {
+    await updateScheduleItem(clientId, eventId, updateData);
+    loadData(); // Refresh calendar
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    await deleteScheduleItem(clientId, eventId);
+    loadData(); // Refresh calendar
   };
 
   const handleCreateFromModal = async (e) => {
@@ -128,7 +159,7 @@ export const ScheduleSection = ({ clientId }) => {
             setFormTime('09:00');
             setIsOpen(true);
           }}
-          className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle"
         >
           Nuevo evento
         </button>
@@ -155,6 +186,7 @@ export const ScheduleSection = ({ clientId }) => {
               endAccessor="end"
               selectable
               onSelectSlot={handleSelectSlot}
+              onSelectEvent={handleEventClick}
               eventPropGetter={eventStyleGetter}
               components={{
                 toolbar: (props) => (
@@ -193,31 +225,39 @@ export const ScheduleSection = ({ clientId }) => {
                   <form onSubmit={handleCreateFromModal} className="space-y-4">
                     <div>
                       <label className="mb-1 block text-sm text-rambla-text-secondary">Título</label>
-                      <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none" placeholder="Post para Instagram" required />
+                      <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors duration-200" placeholder="Post para Instagram" required />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-1 block text-sm text-rambla-text-secondary">Fecha</label>
-                        <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-rambla-accent focus:outline-none" required />
+                        <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200" required />
                       </div>
                       <div>
                         <label className="mb-1 block text-sm text-rambla-text-secondary">Hora</label>
-                        <input type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-rambla-accent focus:outline-none" required />
+                        <input type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200" required />
                       </div>
                     </div>
                     <div>
                       <label className="mb-1 block text-sm text-rambla-text-secondary">Estado</label>
-                      <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-rambla-accent focus:outline-none">
-                        <option>Pendiente</option>
-                        <option>En Diseño</option>
-                        <option>Aprobado</option>
-                        <option>Publicado</option>
-                        <option>Cancelado</option>
+                      <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors duration-200">
+                        <option value="planificacion">📋 Planificación</option>
+                        <option value="pendiente">⏳ Pendiente</option>
+                        <option value="en-progreso">🚀 En Progreso</option>
+                        <option value="en-diseño">🎨 En Diseño</option>
+                        <option value="en-revision">👀 En Revisión</option>
+                        <option value="esperando-aprobacion">⏰ Esperando Aprobación</option>
+                        <option value="aprobado">✅ Aprobado</option>
+                        <option value="requiere-cambios">🔄 Requiere Cambios</option>
+                        <option value="listo-publicar">📤 Listo para Publicar</option>
+                        <option value="publicado">📢 Publicado</option>
+                        <option value="completado">🎉 Completado</option>
+                        <option value="pausado">⏸️ Pausado</option>
+                        <option value="cancelado">❌ Cancelado</option>
                       </select>
                     </div>
                     <div className="flex justify-end space-x-2 pt-2">
-                      <button type="button" onClick={closeModal} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-rambla-accent">Cancelar</button>
-                      <button type="submit" className="rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Crear</button>
+                      <button type="button" onClick={closeModal} className="rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400 transition-colors duration-200">Cancelar</button>
+                      <button type="submit" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle">Crear</button>
                     </div>
                   </form>
                 </Dialog.Panel>
@@ -226,6 +266,16 @@ export const ScheduleSection = ({ clientId }) => {
           </div>
         </Dialog>
       </Transition>
+
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        isOpen={isEventDetailOpen}
+        onClose={() => setIsEventDetailOpen(false)}
+        event={selectedEvent}
+        onUpdate={handleUpdateEvent}
+        onDelete={handleDeleteEvent}
+        clientId={clientId}
+      />
     </div>
   );
 };

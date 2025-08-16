@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { WelcomeEmptyState } from '../components/dashboard/WelcomeEmptyState.jsx';
 import { ClientCreationModal } from '../components/dashboard/ClientCreationModal.jsx';
+import { ActivityFeed } from '../components/dashboard/ActivityFeed.jsx';
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -98,6 +99,9 @@ export const DashboardPage = () => {
         onCreate={(payload) => createClientMutation.mutate(payload)}
         isSubmitting={createClientMutation.isPending}
       />
+
+  {/* Activity feed under the clients section */}
+  <ActivityFeed />
     </div>
   );
 };
