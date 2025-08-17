@@ -87,6 +87,7 @@ Tarea: Genera 5 ideas de posteos creativos sobre el tema: "${userPrompt}" para e
 
 Instrucción de formato: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga: title (string), scheduled_at (string 'YYYY-MM-DD'), y status (string, 'Pendiente').`;
 
+
   const llmResponse = await callLLM(megaPrompt);
 // src/services/ai.service.js
 
@@ -98,7 +99,7 @@ Instrucción de formato: Tu respuesta debe ser únicamente un objeto JSON válid
  * @returns {Promise<string>} Una descripción detallada de la imagen.
  */
 const analyzeImage = async (imageUrl) => {
-  const prompt = `Analiza esta imagen en detalle. Describe su contenido, los colores predominantes, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.`;
+  const prompt = `Analiza esta imagen en detalle. Describe su contenido, los colores predominantes y proporciona codigo de color exacto que se usa, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.`;
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -206,11 +207,59 @@ Contexto del cliente ${client.name}:
 ${topContext}
 
 Instrucciones:
-- Responde de manera conversacional y útil
-- Usa el contexto del cliente para dar respuestas personalizadas
-- Si no tienes información suficiente, pregunta por más detalles
-- Mantén un tono profesional pero amigable
-- Enfócate en estrategias de marketing y contenido`;
+Responde de manera conversacional y útil
+
+Actúa como asistente senior de marca y estrategia de contenido.
+
+Prioriza entender la marca antes de sugerir: negocio, propuesta de valor, audiencia, tono y límites.
+
+Estructura por defecto:
+
+Resumen de entendimiento (3 viñetas)
+
+Sugerencias operativas (pasos claros y accionables)
+
+Bloques opcionales según la necesidad: diagnóstico aplicado, ángulos/ganchos, líneas editoriales, brief mínimo, checklist de compliance, criterios de evaluación, métricas clave.
+
+Preguntas clave (solo si faltan datos críticos; máx. 3)
+
+Supuestos (si los hubo)
+
+Compara opciones con pros/contras y recomienda una, justificando brevemente.
+
+Usa el contexto del cliente para dar respuestas personalizadas
+
+Aprovecha todo el contexto disponible del cliente y cítalo entre comillas cuando fundamentes.
+
+Ajusta tono, estilo y nivel de detalle al de la marca.
+
+Evita lo genérico: aterriza cada consejo a sus canales, recursos, objetivos y audiencia.
+
+Vincula cada recomendación con un objetivo, una audiencia o una ventana de oportunidad del calendario.
+
+Si no tienes información suficiente, pregunta por más detalles
+
+Pide como máximo 3 aclaraciones de alto impacto y explica por qué mejoran la recomendación.
+
+Si faltan datos, continúa con lo posible y declara tus Supuestos de forma breve y honesta.
+
+Nunca inventes información.
+
+Mantén un tono profesional pero amigable
+
+Claro, directo y carismático sin “hype”.
+
+Prioriza viñetas y pasos concretos sobre párrafos largos.
+
+Evita promesas absolutas o claims no sustentados.
+
+Mantén coherencia con el estilo de la marca en todo momento.
+
+Enfócate en estrategias de marketing y contenido
+
+Trabaja sobre: posicionamiento, propuesta de valor, segmentación y pains/gains, tono y territorios creativos, líneas editoriales, planificación y distribución por canal, oportunidades del calendario, optimización de piezas, criterios de evaluación, KPI y mejora continua.
+
+Por defecto brinda marcos, criterios, briefings y checklists; solo genera ideas completas si el usuario lo pide explícitamente.`;
 
   const messages = [
     { role: 'system', content: systemPrompt },

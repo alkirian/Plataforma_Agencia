@@ -5,6 +5,7 @@ import {
   updateScheduleItem,
   deleteScheduleItem
 } from '../services/schedule.service.js';
+import { generateScheduleIdeas } from '../services/ai.service.js';
 import { validateData, scheduleItemSchema, scheduleItemUpdateSchema } from '../schemas/validation.js';
 
 export const handleGetSchedule = async (req, res, next) => {
@@ -23,7 +24,76 @@ export const handleCreateScheduleItem = async (req, res, next) => {
     const token = req.token || (req.headers.authorization?.split(' ')[1]);
     const { clientId } = req.params;
 
-    // Validar datos de entrada
+    // Ruta extendida: si llega userPrompt o ideas[], generamos/bulk-creamos desde el backend
+    const { userPrompt, monthContext, ideas } = req.body || {};
+
+    // Helper: normalizar fecha 'YYYY-MM-DD' -> ISO con hora 09:00Z
+    const toIsoDateTime = (dateStr) => {
+      if (!dateStr || typeof dateStr !== 'string') return null;
+      // Si ya parece ISO datetime, devolver tal cual
+      if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateStr)) return dateStr;
+      // Si es solo fecha YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return `${dateStr}T09:00:00.000Z`;
+      // Intentar parsear y re-serializar
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+
+    if (typeof userPrompt === 'string' && userPrompt.trim()) {
+      // 1) Generar ideas con IA
+      const generated = await generateScheduleIdeas({
+        clientId,
+        userPrompt: userPrompt.trim(),
+        monthContext: monthContext || null,
+        token
+      });
+
+      if (!Array.isArray(generated) || generated.length === 0) {
+        return res.status(400).json({ success: false, message: 'No se pudieron generar ideas' });
+      }
+
+      // 2) Crear ítems a partir de las ideas
+      const created = [];
+      for (const idea of generated) {
+        const payload = {
+          title: idea.title || 'Idea sin título',
+          scheduled_at: toIsoDateTime(idea.scheduled_at) || new Date().toISOString(),
+          status: idea.status || 'pendiente',
+          client_id: clientId
+        };
+
+        // Validar y crear cada item
+        const validation = validateData(scheduleItemSchema, payload);
+        if (!validation.success) {
+          // Saltar inválidos pero continuar con el resto
+          continue;
+        }
+        const item = await createScheduleItem(validation.data, token, req.user?.id);
+        created.push(item);
+      }
+
+      return res.status(201).json({ success: true, data: created });
+    }
+
+    if (Array.isArray(ideas) && ideas.length) {
+      // Bulk create directo desde ideas[] recibidas
+      const created = [];
+      for (const idea of ideas) {
+        const payload = {
+          title: idea.title || 'Idea sin título',
+          scheduled_at: toIsoDateTime(idea.scheduled_at) || new Date().toISOString(),
+          status: idea.status || 'pendiente',
+          client_id: clientId
+        };
+        const validation = validateData(scheduleItemSchema, payload);
+        if (!validation.success) continue;
+        const item = await createScheduleItem(validation.data, token, req.user?.id);
+        created.push(item);
+      }
+      return res.status(201).json({ success: true, data: created });
+    }
+
+    // Flujo normal: crear un único item
     const validation = validateData(scheduleItemSchema, {
       ...req.body,
       client_id: clientId
