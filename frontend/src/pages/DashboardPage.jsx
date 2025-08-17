@@ -31,8 +31,11 @@ export const DashboardPage = () => {
   // Extraemos el array de clientes desde la respuesta
   const allClients = response?.data || [];
 
-  // Obtener estadísticas de todos los clientes
-  const clientIds = allClients.map(client => client.id);
+  // Obtener estadísticas de todos los clientes - siempre llamar el hook
+  const clientIds = React.useMemo(() => 
+    allClients.map(client => client.id), 
+    [allClients]
+  );
   const { statsMap } = useMultipleClientStats(clientIds);
 
   // Filtrar y ordenar clientes

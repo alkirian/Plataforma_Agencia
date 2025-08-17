@@ -12,6 +12,7 @@ import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 // Componentes existentes
 import { MiniMonth } from './MiniMonth';
 import { AIAssistant } from '../ai/AIAssistant';
+import { TaskTemplateSelector } from './TaskTemplateSelector';
 
 // Estilos
 import '../../styles/fullcalendar-custom.css';
@@ -29,6 +30,7 @@ export const ScheduleSection = ({ clientId }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -172,6 +174,32 @@ export const ScheduleSection = ({ clientId }) => {
     }
   };
 
+  // Handler para plantillas
+  const handleSelectTemplate = async (template) => {
+    try {
+      const baseDate = getCurrentDate();
+      
+      for (let i = 0; i < template.tasks.length; i++) {
+        const task = template.tasks[i];
+        // Espaciar las tareas cada día
+        const taskDate = new Date(baseDate);
+        taskDate.setDate(taskDate.getDate() + i);
+        
+        const eventData = {
+          title: task.title,
+          scheduled_at: taskDate.toISOString(),
+          status: task.status || 'pendiente'
+        };
+        
+        await createEvent(eventData);
+      }
+      
+      toast.success(`Se crearon ${template.tasks.length} tareas desde la plantilla "${template.name}"`);
+    } catch (error) {
+      toast.error('Error al crear tareas desde la plantilla');
+    }
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setIsEventDetailOpen(false);
@@ -227,15 +255,29 @@ export const ScheduleSection = ({ clientId }) => {
           )}
         </div>
         
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleDateClick(getCurrentDate())}
-          className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white 
-                     font-semibold rounded-lg shadow-sm transition-all duration-200"
-        >
-          Nuevo Evento
-        </motion.button>
+        <div className="flex space-x-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsTemplateModalOpen(true)}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white 
+                       font-semibold rounded-lg shadow-sm transition-all duration-200 
+                       flex items-center space-x-2"
+          >
+            <span>📋</span>
+            <span>Plantillas</span>
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleDateClick(getCurrentDate())}
+            className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white 
+                       font-semibold rounded-lg shadow-sm transition-all duration-200"
+          >
+            Nuevo Evento
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Estadísticas superiores (full width) */}
@@ -449,6 +491,13 @@ export const ScheduleSection = ({ clientId }) => {
           </div>
         </Dialog>
       </Transition>
+
+      {/* Modal de plantillas */}
+      <TaskTemplateSelector
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </motion.div>
   );
 };

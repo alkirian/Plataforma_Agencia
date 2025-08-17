@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { getSchedule } from '../api/schedule';
 import { TASK_STATES } from '../constants/taskStates';
 
@@ -53,21 +53,22 @@ export const useClientStats = (clientId) => {
  * @param {Array} clientIds - Array de IDs de clientes
  */
 export const useMultipleClientStats = (clientIds = []) => {
-  const queries = clientIds.map(clientId => ({
-    queryKey: ['client-stats', clientId],
-    queryFn: () => getSchedule(clientId),
-    enabled: !!clientId,
-    staleTime: 2 * 60 * 1000,
-  }));
-
-  const results = queries.map(query => useQuery(query));
+  const results = useQueries({
+    queries: clientIds.map(clientId => ({
+      queryKey: ['client-stats', clientId],
+      queryFn: () => getSchedule(clientId),
+      enabled: !!clientId,
+      staleTime: 2 * 60 * 1000,
+    }))
+  });
 
   // Combinar resultados
   const statsMap = {};
   
   clientIds.forEach((clientId, index) => {
-    const events = results[index]?.data || [];
-    const isLoading = results[index]?.isLoading || false;
+    const result = results[index];
+    const events = result?.data || [];
+    const isLoading = result?.isLoading || false;
 
     const stats = {
       total: events.length,

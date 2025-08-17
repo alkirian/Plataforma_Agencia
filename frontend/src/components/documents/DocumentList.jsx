@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { DocumentArrowDownIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { DocumentArrowDownIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import {
   deleteDocument as deleteDocumentApi,
   downloadDocument as downloadDocumentApi,
 } from '../../api/documents.js';
+import { DocumentPreview } from './DocumentPreview';
 
 export const DocumentList = ({
   documents = [],
@@ -14,6 +15,7 @@ export const DocumentList = ({
 }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [previewDocument, setPreviewDocument] = useState(null);
 
   const handleDownload = async docData => {
     setDownloadingId(docData.id);
@@ -110,6 +112,13 @@ export const DocumentList = ({
             </div>
             <div className='flex space-x-2'>
               <button
+                onClick={() => setPreviewDocument(doc)}
+                className='text-rambla-text-secondary hover:text-blue-500 transition-colors duration-200'
+                title='Vista previa'
+              >
+                <EyeIcon className='h-5 w-5' />
+              </button>
+              <button
                 onClick={() => handleDownload(doc)}
                 disabled={downloadingId === doc.id}
                 className='text-rambla-text-secondary hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
@@ -137,6 +146,14 @@ export const DocumentList = ({
           </li>
         ))}
       </ul>
+      
+      {/* Modal de vista previa */}
+      <DocumentPreview
+        isOpen={!!previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        document={previewDocument}
+        onDownload={onDownload || handleDownload}
+      />
     </div>
   );
 };
