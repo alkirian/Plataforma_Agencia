@@ -11,6 +11,7 @@ import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 
 // Componentes existentes
 import { MiniMonth } from './MiniMonth';
+import { MonthAgenda } from './MonthAgenda';
 import { AIAssistant } from '../ai/AIAssistant';
 import { TaskTemplateSelector } from './TaskTemplateSelector';
 
@@ -323,6 +324,13 @@ export const ScheduleSection = ({ clientId }) => {
             currentDate={currentDate}
             onNavigate={setCurrentDate}
             events={events}
+          />
+          {/* Agenda mensual bajo el mini calendario */}
+          <MonthAgenda
+            events={events}
+            currentDate={currentDate}
+            loading={loading}
+            onEventClick={handleEventClick}
           />
         </motion.div>
 

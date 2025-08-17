@@ -20,9 +20,10 @@
     --color-border-subtle: rgba(148, 163, 184, 0.2);
     --color-border-strong: rgba(148, 163, 184, 0.35);
 
-    /* Typography */
-    --color-text-primary: #E5E7EB;
-    --color-text-muted: #94A3B8;
+    /* Typography - WCAG 2.1 AA compliant colors */
+    --color-text-primary: #F1F5F9; /* Increased from #E5E7EB for better contrast */
+    --color-text-muted: #CBD5E1; /* Increased from #94A3B8 for better contrast ratio */
+    --color-text-secondary: #94A3B8; /* Original muted color for less critical text */
     --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
 
     /* Accent tokens */
