@@ -9,7 +9,7 @@ export const DocumentsSection = ({ clientId }) => {
   return (
     <div className='space-y-6'>
       <div>
-        <h3 className='text-xl font-bold text-white'>Subir Nuevo Documento</h3>
+  <h3 className='text-xl font-bold text-text-primary'>Subir Nuevo Documento</h3>
         <DocumentUploader
           clientId={clientId}
           onUpload={async file => {
@@ -18,8 +18,8 @@ export const DocumentsSection = ({ clientId }) => {
         />
       </div>
       <div>
-        <h3 className='text-xl font-bold text-white'>Archivos del Cliente</h3>
-        {isLoading && <p className='text-rambla-text-secondary'>Cargando documentos...</p>}
+  <h3 className='text-xl font-bold text-text-primary'>Archivos del Cliente</h3>
+  {isLoading && <p className='text-text-muted'>Cargando documentos...</p>}
         {error && <p className='text-red-500'>Error: {error.message || String(error)}</p>}
         {!isLoading && !error && (
           <DocumentList

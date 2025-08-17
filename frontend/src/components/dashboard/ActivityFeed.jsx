@@ -40,15 +40,15 @@ export const ActivityFeed = ({ limit = 20 }) => {
   return (
     <section className='space-y-4'>
       <div className='relative'>
-        <div className='mx-auto mb-4 h-px w-full border-t border-white/10' />
+        <div className='mx-auto mb-4 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
         <div className='-mt-4 mb-2 flex justify-center'>
-          <span className='rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs tracking-wide text-rambla-text-secondary'>
+          <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-white/5 px-3 py-1 text-xs tracking-wide text-text-muted'>
             ACTIVIDAD RECIENTE
           </span>
         </div>
       </div>
 
-      <div className='rounded-xl border border-white/10 bg-glow-card-bg p-4 backdrop-blur-lg'>
+      <div className='card rounded-xl p-4'>
         {isLoading && (
           <div className='space-y-3'>
             {[...Array(4)].map((_, i) => (
@@ -60,17 +60,17 @@ export const ActivityFeed = ({ limit = 20 }) => {
           <div className='text-sm text-red-400'>Error: {error.message || String(error)}</div>
         )}
         {!isLoading && !error && items.length === 0 && (
-          <div className='text-sm text-rambla-text-secondary'>No hay actividad reciente.</div>
+          <div className='text-sm text-text-muted'>No hay actividad reciente.</div>
         )}
         {!isLoading && !error && items.length > 0 && (
-          <ul className='divide-y divide-white/10'>
+          <ul className='divide-y divide-[color:var(--color-border-subtle)]'>
             {items.map(evt => {
               const conf = typeMeta[evt.action_type] || {};
               const Icon = conf.icon || DocumentArrowUpIcon;
               const actor = evt.author?.full_name || 'Alguien';
               const client = (
                 <Link
-                  className='text-rambla-accent hover:underline'
+                  className='text-[color:var(--color-accent-blue)] hover:underline'
                   to={`/clients/${evt.client_id}`}
                 >
                   {evt.client_name || 'Cliente'}
@@ -93,15 +93,15 @@ export const ActivityFeed = ({ limit = 20 }) => {
                 : `${actor} realizó una acción`;
               return (
                 <li key={evt.id} className='flex items-center gap-3 py-3'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5'>
-                    <Icon className='h-4 w-4 text-white/80' />
+                  <div className='flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-white/5'>
+                    <Icon className='h-4 w-4 text-text-primary/80' />
                   </div>
-                  <div className='flex-1 text-sm text-white/90'>
+                  <div className='flex-1 text-sm text-text-primary/90'>
                     {conf.text ? (
                       <>
                         <span>{conf.text(actor, 'Cliente', details)} </span>
                         <Link
-                          className='text-rambla-accent hover:underline'
+                          className='text-[color:var(--color-accent-blue)] hover:underline'
                           to={`/clients/${evt.client_id}`}
                         >
                           ver cliente
@@ -110,7 +110,7 @@ export const ActivityFeed = ({ limit = 20 }) => {
                     ) : (
                       <span>{text}</span>
                     )}
-                    <div className='text-xs text-white/50'>{timeAgo(evt.created_at)}</div>
+                    <div className='text-xs text-text-muted'>{timeAgo(evt.created_at)}</div>
                   </div>
                 </li>
               );
@@ -122,7 +122,7 @@ export const ActivityFeed = ({ limit = 20 }) => {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className='rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm text-white hover:border-rambla-accent disabled:opacity-60'
+              className='rounded-md border border-[color:var(--color-border-subtle)] bg-white/5 px-4 py-2 text-sm text-text-primary hover:border-[color:var(--color-accent-blue)] disabled:opacity-60'
             >
               {isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
             </button>

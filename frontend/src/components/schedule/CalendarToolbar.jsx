@@ -31,7 +31,7 @@ export const CalendarToolbar = ({
     <button
       onClick={onClick}
       className={`px-3 py-1.5 text-sm rounded-md border transition-colors
-      ${active ? 'bg-cyan-500 text-black border-cyan-400' : 'bg-white/5 text-white/80 border-white/10 hover:bg-white/10'}`}
+      ${active ? 'bg-[color:var(--color-accent-blue)] text-black border-[color:var(--color-accent-blue)]' : 'bg-white/5 text-text-primary/80 border-[color:var(--color-border-subtle)] hover:bg-white/10'}`}
     >
       {children}
     </button>
@@ -46,7 +46,7 @@ export const CalendarToolbar = ({
             <Button onClick={() => onNavigate('PREV')} className="hover:scale-105 transition-transform">
               ◀
             </Button>
-            <div className='px-4 py-2 text-white/90 text-sm font-medium border border-white/20 rounded-lg bg-white/10 backdrop-blur-sm min-w-[180px] text-center'>
+            <div className='px-4 py-2 text-text-primary/90 text-sm font-medium border border-[color:var(--color-border-subtle)] rounded-lg bg-white/10 backdrop-blur-sm min-w-[180px] text-center'>
               {label}
             </div>
             <Button onClick={() => onNavigate('NEXT')} className="hover:scale-105 transition-transform">
@@ -55,12 +55,12 @@ export const CalendarToolbar = ({
           </div>
           
           {/* Indicador de contexto de navegación */}
-          <div className='px-2 py-1 text-xs text-white/60 bg-white/5 rounded-md border border-white/10' title={getNavigationContext().tip}>
+          <div className='px-2 py-1 text-xs text-text-primary/60 bg-white/5 rounded-md border border-[color:var(--color-border-subtle)]' title={getNavigationContext().tip}>
             {getNavigationContext().text}
           </div>
           
           {/* Indicador de keyboard shortcuts */}
-          <div className='px-2 py-1 text-xs text-white/40 bg-white/5 rounded-md border border-white/10' title='Atajos: Ctrl+← → (navegar), Ctrl+T (hoy), Ctrl+1-4 (vistas)'>
+          <div className='px-2 py-1 text-xs text-text-primary/40 bg-white/5 rounded-md border border-[color:var(--color-border-subtle)]' title='Atajos: Ctrl+← → (navegar), Ctrl+T (hoy), Ctrl+1-4 (vistas)'>
             ⌨️
           </div>
         </div>
@@ -90,8 +90,8 @@ export const CalendarToolbar = ({
         {/* Botón de exportar */}
         <button
           onClick={() => setShowExportModal(true)}
-          className="px-3 py-1.5 text-sm rounded-md border border-primary-500/30 bg-primary-500/10 
-                     text-primary-400 hover:bg-primary-500/20 transition-colors flex items-center gap-2"
+          className="px-3 py-1.5 text-sm rounded-md border border-[color:var(--color-accent-blue)]/30 bg-[color:var(--color-accent-blue)]/10 
+                     text-[color:var(--color-accent-blue)] hover:bg-[color:var(--color-accent-blue)]/20 transition-colors flex items-center gap-2"
           title="Exportar calendario"
         >
           <ArrowDownTrayIcon className="h-4 w-4" />

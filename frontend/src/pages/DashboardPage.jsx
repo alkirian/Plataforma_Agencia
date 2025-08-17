@@ -79,21 +79,21 @@ export const DashboardPage = () => {
   });
 
   if (isLoading)
-    return <div className='text-center text-rambla-text-secondary'>Cargando clientes...</div>;
+    return <div className='text-center text-text-muted'>Cargando clientes...</div>;
   if (isError) return <div className='text-center text-red-500'>Error: {error.message}</div>;
 
   return (
     <div className='space-y-8'>
       {/* Hero */}
       <section className='flex flex-col items-center text-center gap-4 py-4'>
-        <div className='h-16 w-16 rounded-full border border-white/20 bg-white/5 backdrop-blur flex items-center justify-center text-2xl font-bold text-white'>
+        <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft backdrop-blur flex items-center justify-center text-2xl font-bold text-text-primary'>
           R
         </div>
         <div className='flex justify-center'>
           <button
             id='add-client-button'
             onClick={() => setIsModalOpen(true)}
-            className='rounded-md bg-rambla-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90'
+            className='btn-cyber px-4 py-2 text-sm font-semibold hover-cyber-glow'
           >
             + Añadir Cliente
           </button>
@@ -108,14 +108,14 @@ export const DashboardPage = () => {
           className='mx-auto max-w-2xl space-y-4'
         >
           {/* Barra de búsqueda */}
-          <div className='relative'>
+      <div className='relative'>
             <MagnifyingGlassIcon className='absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400' />
             <input
               type='text'
               placeholder='Buscar clientes por nombre o industria...'
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className='w-full rounded-lg border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all focus:border-rambla-accent focus:outline-none focus:ring-1 focus:ring-rambla-accent'
+        className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft py-3 pl-10 pr-4 text-text-primary placeholder-text-muted backdrop-blur-sm transition-all focus:border-[color:var(--color-border-strong)] focus:outline-none'
             />
           </div>
 
@@ -127,7 +127,7 @@ export const DashboardPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className='rounded-md border border-white/10 bg-white/5 px-3 py-1 text-sm text-white backdrop-blur-sm focus:border-rambla-accent focus:outline-none'
+                className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-sm text-text-primary backdrop-blur-sm focus:border-[color:var(--color-border-strong)] focus:outline-none'
               >
                 <option value='name'>Nombre</option>
                 <option value='date'>Fecha agregado</option>
@@ -135,7 +135,7 @@ export const DashboardPage = () => {
               </select>
             </div>
             
-            <div className='text-sm text-gray-400'>
+            <div className='text-sm text-text-muted'>
               {filteredAndSortedClients.length} de {allClients.length} clientes
             </div>
           </div>
@@ -144,9 +144,9 @@ export const DashboardPage = () => {
 
       {/* Separador */}
       <div className='relative'>
-        <div className='mx-auto mb-6 h-px w-full border-t border-white/10' />
+        <div className='mx-auto mb-6 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
         <div className='-mt-4 mb-2 flex justify-center'>
-          <span className='rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs tracking-wide text-rambla-text-secondary'>
+          <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-xs tracking-wide text-text-muted'>
             {searchTerm ? 'RESULTADOS DE BÚSQUEDA' : 'CLIENTES RECIENTES'}
           </span>
         </div>
@@ -189,9 +189,9 @@ export const DashboardPage = () => {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
                 <Link to={`/clients/${client.id}`} className='group block'>
-                  <div className='rounded-xl border border-white/10 bg-glow-card-bg p-5 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out hover:!border-glow-cyan hover:scale-105 hover:shadow-glow-cyan/20'>
+                  <div className='card rounded-xl p-5 transition-all duration-300 ease-in-out hover:scale-105'>
                     <div className='mb-2 flex items-center justify-between'>
-                      <div className='text-[10px] uppercase tracking-wider text-white/60'>
+                      <div className='text-[10px] uppercase tracking-wider text-text-muted'>
                         Cliente
                       </div>
                       {statsMap[client.id] && (
@@ -202,14 +202,14 @@ export const DashboardPage = () => {
                       )}
                     </div>
                     
-                    <h3 className='font-bold text-white mb-1'>{client.name}</h3>
-                    <p className='text-sm text-rambla-text-secondary mb-3'>
+                    <h3 className='font-bold text-text-primary mb-1'>{client.name}</h3>
+                    <p className='text-sm text-text-muted mb-3'>
                       {client.industry || 'Sin industria'}
                     </p>
 
                     {/* Estadísticas rápidas */}
                     {statsMap[client.id]?.hasEvents ? (
-                      <div className='flex items-center justify-between text-xs'>
+                        <div className='flex items-center justify-between text-xs'>
                         <div className='flex space-x-3'>
                           <span className='text-green-400'>
                             ✓ {statsMap[client.id].stats.completed}
@@ -221,12 +221,12 @@ export const DashboardPage = () => {
                             ◯ {statsMap[client.id].stats.pending}
                           </span>
                         </div>
-                        <span className='text-gray-500'>
+                          <span className='text-text-muted'>
                           {statsMap[client.id].stats.total} tareas
                         </span>
                       </div>
                     ) : (
-                      <div className='text-xs text-gray-500 italic'>
+                      <div className='text-xs text-text-muted italic'>
                         Sin tareas programadas
                       </div>
                     )}

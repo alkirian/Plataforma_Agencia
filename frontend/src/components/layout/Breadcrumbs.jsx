@@ -17,20 +17,20 @@ export const Breadcrumbs = () => {
   if (segments.length === 0) return null;
 
   return (
-    <nav className='mb-4 text-sm text-rambla-text-secondary' aria-label='Breadcrumb'>
+    <nav className='mb-4 text-sm text-text-muted' aria-label='Breadcrumb'>
       <ol className='flex items-center space-x-2'>
         <li>
-          <Link to='/dashboard' className='hover:text-white'>
+          <Link to='/dashboard' className='hover:text-text-primary'>
             Dashboard
           </Link>
         </li>
         {crumbs.map((c, i) => (
           <li key={c.path} className='flex items-center space-x-2'>
-            <span className='text-white/20'>/</span>
+            <span className='text-text-muted'>/</span>
             {i === crumbs.length - 1 ? (
-              <span className='text-white'>{decodeURIComponent(c.label)}</span>
+              <span className='text-text-primary'>{decodeURIComponent(c.label)}</span>
             ) : (
-              <Link to={c.path} className='hover:text-white'>
+              <Link to={c.path} className='hover:text-text-primary'>
                 {decodeURIComponent(c.label)}
               </Link>
             )}

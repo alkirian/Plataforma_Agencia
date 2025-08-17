@@ -120,17 +120,17 @@ export const NotificationPanel = ({
               leaveTo="opacity-0 translate-x-full"
             >
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-l-xl 
-                                        bg-surface-900/95 backdrop-blur-sm border-l border-t border-b border-white/10 
-                                        shadow-xl transition-all h-[calc(100vh-4rem)]">
+                                        bg-surface-soft/95 backdrop-blur-sm border-l border-t border-b border-[color:var(--color-border-subtle)] 
+                                        shadow-xl transition-all h-[calc(100vh-4rem)] text-text-primary">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-[color:var(--color-border-subtle)]">
                   <div className="flex items-center space-x-2">
-                    <BellIcon className="h-5 w-5 text-primary-400" />
-                    <Dialog.Title className="text-lg font-medium text-white">
+          <BellIcon className="h-5 w-5 text-[color:var(--color-accent-blue)]" />
+          <Dialog.Title className="text-lg font-medium text-text-primary">
                       Notificaciones
                     </Dialog.Title>
                     {stats.total > 0 && (
-                      <span className="bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-[color:var(--color-accent-blue)] text-black text-xs px-2 py-0.5 rounded-full">
                         {stats.total}
                       </span>
                     )}
@@ -143,7 +143,7 @@ export const NotificationPanel = ({
                           onClick={onMarkAllAsRead}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="text-xs text-gray-400 hover:text-white transition-colors"
+              className="text-xs text-text-muted hover:text-text-primary transition-colors"
                         >
                           Marcar todas como leídas
                         </motion.button>
@@ -156,7 +156,7 @@ export const NotificationPanel = ({
                           }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center space-x-1"
+              className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center space-x-1"
                           title="Eliminar todas las notificaciones"
                         >
                           <TrashIcon className="h-3 w-3" />
@@ -169,7 +169,7 @@ export const NotificationPanel = ({
                       onClick={onClose}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="rounded-full p-1 text-gray-400 hover:text-white hover:bg-white/10 
+            className="rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-white/10 
                                  transition-colors"
                     >
                       <XMarkIcon className="h-4 w-4" />
@@ -178,7 +178,7 @@ export const NotificationPanel = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="px-4 py-2 border-b border-white/10">
+                <div className="px-4 py-2 border-b border-[color:var(--color-border-subtle)]">
                   <div className="flex space-x-1">
                     {tabs.map((tab) => (
                       <motion.button
@@ -189,16 +189,16 @@ export const NotificationPanel = ({
                         className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs font-medium 
                                    transition-all ${
                                      selectedTab === tab.id
-                                       ? 'bg-primary-600 text-white'
-                                       : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                       ? 'bg-[color:var(--color-accent-blue)] text-black'
+                                       : 'text-text-muted hover:text-text-primary hover:bg-white/10'
                                    }`}
                       >
                         <span>{tab.name}</span>
                         {tab.count > 0 && (
                           <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                             selectedTab === tab.id
-                              ? 'bg-white/20 text-white'
-                              : 'bg-gray-500/30 text-gray-300'
+                              ? 'bg-white/20 text-black'
+                              : 'bg-white/10 text-text-muted'
                           }`}>
                             {tab.count}
                           </span>
@@ -211,7 +211,7 @@ export const NotificationPanel = ({
                 {/* Notificaciones */}
                 <div className="flex-1 overflow-y-auto">
                   {getDisplayNotifications().length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <div className="flex flex-col items-center justify-center py-12 text-text-muted">
                       <BellIcon className="h-12 w-12 mb-4 opacity-50" />
                       <p className="text-center">
                         {selectedTab === 'all' 
@@ -232,7 +232,7 @@ export const NotificationPanel = ({
                             transition={{ delay: index * 0.05 }}
                             className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] ${
                               getNotificationColor(notification.type)
-                            } ${notification.isRead ? 'opacity-60 bg-gray-500/10' : ''}`}
+                            } ${notification.isRead ? 'opacity-60 bg-white/5' : ''}`}
                             onClick={() => handleNotificationClick(notification)}
                           >
                             <div className="flex items-start space-x-3">
@@ -243,7 +243,7 @@ export const NotificationPanel = ({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-1">
                                   <div className="flex items-center space-x-2">
-                                    <p className={`text-sm font-medium ${notification.isRead ? 'text-gray-400' : 'text-white'}`}>
+                                    <p className={`text-sm font-medium ${notification.isRead ? 'text-text-muted' : 'text-text-primary'}`}>
                                       {notification.title}
                                     </p>
                                     {notification.isRead && (
@@ -259,7 +259,7 @@ export const NotificationPanel = ({
                                         }}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="text-gray-400 hover:text-white transition-colors"
+                                        className="text-text-muted hover:text-text-primary transition-colors"
                                         title="Marcar como leída"
                                       >
                                         <CheckIcon className="h-4 w-4" />
@@ -273,7 +273,7 @@ export const NotificationPanel = ({
                                       }}
                                       whileHover={{ scale: 1.1 }}
                                       whileTap={{ scale: 0.9 }}
-                                      className="text-gray-400 hover:text-red-400 transition-colors"
+                                      className="text-text-muted hover:text-red-400 transition-colors"
                                       title="Eliminar notificación"
                                     >
                                       <TrashIcon className="h-4 w-4" />
@@ -281,11 +281,11 @@ export const NotificationPanel = ({
                                   </div>
                                 </div>
                                 
-                                <p className="text-sm text-gray-300 mb-2">
+                                <p className="text-sm text-text-primary/80 mb-2">
                                   {notification.message}
                                 </p>
                                 
-                                <div className="flex items-center justify-between text-xs text-gray-400">
+                                <div className="flex items-center justify-between text-xs text-text-muted">
                                   <span>{notification.clientName}</span>
                                   {notification.task?.scheduled_at && (
                                     <span>{formatDate(notification.task.scheduled_at)}</span>
@@ -302,19 +302,19 @@ export const NotificationPanel = ({
 
                 {/* Footer con estadísticas */}
                 {stats.total > 0 && (
-                  <div className="p-4 border-t border-white/10 bg-black/20">
+      <div className="p-4 border-t border-[color:var(--color-border-subtle)] bg-white/5">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <div className="text-lg font-medium text-red-400">{stats.overdue}</div>
-                        <div className="text-xs text-gray-400">Vencidas</div>
+        <div className="text-lg font-medium text-red-400">{stats.overdue}</div>
+        <div className="text-xs text-text-muted">Vencidas</div>
                       </div>
                       <div>
-                        <div className="text-lg font-medium text-orange-400">{stats.dueToday}</div>
-                        <div className="text-xs text-gray-400">Para hoy</div>
+        <div className="text-lg font-medium text-orange-400">{stats.dueToday}</div>
+        <div className="text-xs text-text-muted">Para hoy</div>
                       </div>
                       <div>
-                        <div className="text-lg font-medium text-green-400">{stats.upcoming}</div>
-                        <div className="text-xs text-gray-400">Próximas</div>
+        <div className="text-lg font-medium text-green-400">{stats.upcoming}</div>
+        <div className="text-xs text-text-muted">Próximas</div>
                       </div>
                     </div>
                   </div>

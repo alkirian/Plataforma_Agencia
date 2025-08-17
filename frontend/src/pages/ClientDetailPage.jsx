@@ -55,7 +55,7 @@ export const ClientDetailPage = () => {
     run();
   }, [clientId]);
 
-  if (loading) return <div className='text-center text-rambla-text-secondary'>Cargando...</div>;
+  if (loading) return <div className='text-center text-text-muted'>Cargando...</div>;
   if (error) return <div className='text-center text-red-500'>Error: {error}</div>;
   if (!client) return <div>Cliente no encontrado.</div>;
 
@@ -64,30 +64,30 @@ export const ClientDetailPage = () => {
       <div className='mb-6'>
         <Link
           to='/dashboard'
-          className='text-sm text-primary-500 hover:text-primary-400 hover:underline transition-colors duration-200'
+          className='text-sm text-text-muted hover:text-text-primary hover:underline transition-colors duration-200'
         >
           &larr; Volver al Dashboard
         </Link>
         <div className='flex items-center justify-between'>
-          <h1 className='text-4xl font-bold text-white'>{client.name}</h1>
+          <h1 className='text-4xl font-bold text-cyber-gradient'>{client.name}</h1>
           <button
             onClick={() => setIsAIModalOpen(true)}
-            className='rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors duration-200 shadow-purple-subtle'
+            className='btn-cyber px-4 py-2 text-sm font-semibold hover-cyber-glow'
           >
             ✨ Generar con IA
           </button>
         </div>
-        <p className='text-rambla-text-secondary'>{client.industry || 'No especificada'}</p>
+        <p className='text-text-muted'>{client.industry || 'No especificada'}</p>
       </div>
-      <hr className='border-rambla-border' />
+      <hr className='border-[color:var(--color-border-subtle)]' />
       <div className='mt-4'>
         <div className='mb-4 flex gap-2'>
           <button
             onClick={() => setActiveTab('schedule')}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               activeTab === 'schedule'
-                ? 'bg-primary-600 text-white shadow-purple-subtle'
-                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400'
+                ? 'bg-surface-strong text-text-primary shadow-halo'
+                : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
             }`}
           >
             Cronograma
@@ -96,14 +96,14 @@ export const ClientDetailPage = () => {
             onClick={() => setActiveTab('documents')}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               activeTab === 'documents'
-                ? 'bg-primary-600 text-white shadow-purple-subtle'
-                : 'border border-rambla-border bg-rambla-surface text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400'
+                ? 'bg-surface-strong text-text-primary shadow-halo'
+                : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
             }`}
           >
             Documentos
           </button>
         </div>
-        <div className='rounded-lg border border-rambla-border bg-rambla-surface p-4'>
+        <div className='card rounded-xl p-4'>
           {activeTab === 'schedule' ? (
             <ScheduleSection key={refreshKey} clientId={clientId} />
           ) : (

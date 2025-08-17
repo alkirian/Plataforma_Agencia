@@ -81,21 +81,21 @@ export const DocumentList = ({
   };
   return (
     <div className='mt-6 flow-root'>
-      <ul role='list' className='-my-4 divide-y divide-rambla-border'>
+      <ul role='list' className='-my-4 divide-y divide-[color:var(--color-border-subtle)]'>
         {documents.length === 0 && (
-          <li className='py-4 text-rambla-text-secondary'>No hay documentos aún.</li>
+          <li className='py-4 text-text-muted'>No hay documentos aún.</li>
         )}
         {documents.map(doc => (
           <li key={doc.id} className='flex items-center justify-between py-4'>
             <div className='flex items-center space-x-4'>
-              <div className='h-10 w-10 flex-shrink-0 rounded-lg bg-rambla-bg flex items-center justify-center border border-primary-500/20'>
-                <span className='text-xs font-bold text-primary-400'>
+              <div className='h-10 w-10 flex-shrink-0 rounded-lg bg-surface-soft flex items-center justify-center border border-[color:var(--color-border-subtle)]'>
+                <span className='text-xs font-bold text-text-muted'>
                   {(doc.file_type || '').toUpperCase().includes('PDF') ? 'PDF' : 'DOC'}
                 </span>
               </div>
               <div>
-                <p className='font-semibold text-white'>{doc.file_name}</p>
-                <p className='text-sm text-rambla-text-secondary'>
+                <p className='font-semibold text-text-primary'>{doc.file_name}</p>
+                <p className='text-sm text-text-muted'>
                   {doc.file_size ? (doc.file_size / 1024 / 1024).toFixed(2) + ' MB' : ''}
                   {doc.created_at ? ' - ' + new Date(doc.created_at).toLocaleDateString() : ''}
                 </p>
@@ -107,7 +107,7 @@ export const DocumentList = ({
                       ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                       : doc.ai_status === 'processing'
                         ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                        : 'bg-white/10 text-white/70 border border-white/20'
+                        : 'bg-white/5 text-text-muted border border-[color:var(--color-border-subtle)]'
                   }`}
                 >
                   {doc.ai_status === 'ready'
@@ -121,7 +121,7 @@ export const DocumentList = ({
             <div className='flex space-x-2'>
               <button
                 onClick={() => setPreviewDocument(doc)}
-                className='text-rambla-text-secondary hover:text-blue-500 transition-colors duration-200'
+                className='text-text-muted hover:text-[color:var(--color-accent-blue)] transition-colors duration-200'
                 title='Vista previa'
               >
                 <EyeIcon className='h-5 w-5' />
@@ -129,11 +129,11 @@ export const DocumentList = ({
               <button
                 onClick={() => handleDownload(doc)}
                 disabled={downloadingId === doc.id}
-                className='text-rambla-text-secondary hover:text-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                className='text-text-muted hover:text-[color:var(--color-accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
                 title='Descargar'
               >
                 {downloadingId === doc.id ? (
-                  <div className='w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin'></div>
+                  <div className='w-5 h-5 border-2 border-[color:var(--color-accent-blue)] border-t-transparent rounded-full animate-spin'></div>
                 ) : (
                   <DocumentArrowDownIcon className='h-5 w-5' />
                 )}
@@ -141,7 +141,7 @@ export const DocumentList = ({
               <button
                 onClick={() => handleDelete(doc)}
                 disabled={deletingId === doc.id}
-                className='text-rambla-text-secondary hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                className='text-text-muted hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
                 title='Eliminar'
               >
                 {deletingId === doc.id ? (

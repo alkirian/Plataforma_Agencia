@@ -101,7 +101,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
-              <Dialog.Panel className='w-full max-w-2xl transform overflow-hidden rounded-xl bg-rambla-surface border border-primary-500/20 backdrop-blur-lg shadow-purple-glow transition-all'>
+              <Dialog.Panel className='w-full max-w-2xl transform overflow-hidden rounded-xl card transition-all'>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -109,19 +109,19 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                   className='relative'
                 >
                   {/* Header */}
-                  <div className='flex items-center justify-between border-b border-primary-500/20 p-6'>
+                  <div className='flex items-center justify-between border-b border-[color:var(--color-border-subtle)] p-6'>
                     <div className='flex items-center space-x-3'>
                       <div
                         className='w-4 h-4 rounded-full'
                         style={{ backgroundColor: currentState.color }}
                       />
-                      <Dialog.Title className='text-xl font-semibold text-white'>
+                      <Dialog.Title className='text-xl font-semibold text-text-primary'>
                         {isEditing ? 'Editar Evento' : 'Detalles del Evento'}
                       </Dialog.Title>
                     </div>
                     <button
                       onClick={onClose}
-                      className='text-rambla-text-secondary hover:text-white transition-colors'
+                      className='text-text-muted hover:text-text-primary transition-colors'
                     >
                       <XMarkIcon className='h-6 w-6' />
                     </button>
@@ -149,7 +149,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                           >
                             {currentState.name}
                           </div>
-                          <p className='text-xs text-rambla-text-secondary mt-1'>
+                          <p className='text-xs text-text-muted mt-1'>
                             {currentState.description}
                           </p>
                         </div>
@@ -159,7 +159,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                       <div className='flex space-x-2'>
                         <button
                           onClick={() => setIsEditing(!isEditing)}
-                          className='p-2 text-rambla-text-secondary hover:text-primary-400 transition-colors'
+                          className='p-2 text-text-muted hover:text-[color:var(--color-accent-blue)] transition-colors'
                           title='Editar'
                         >
                           <PencilIcon className='h-5 w-5' />
@@ -167,7 +167,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         <button
                           onClick={handleDelete}
                           disabled={loading}
-                          className='p-2 text-rambla-text-secondary hover:text-red-400 transition-colors'
+                          className='p-2 text-text-muted hover:text-red-400 transition-colors'
                           title='Eliminar'
                         >
                           <TrashIcon className='h-5 w-5' />
@@ -218,7 +218,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.4 }}
                       >
-                        <label className='block text-sm font-medium text-rambla-text-secondary mb-2'>
+                        <label className='block text-sm font-medium text-text-muted mb-2'>
                           Título
                         </label>
                         {isEditing ? (
@@ -228,10 +228,10 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                             onChange={e =>
                               setFormData(prev => ({ ...prev, title: e.target.value }))
                             }
-                            className='w-full rounded-lg border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors'
+                            className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
                           />
                         ) : (
-                          <p className='text-white text-lg font-medium'>{event.title}</p>
+                          <p className='text-text-primary text-lg font-medium'>{event.title}</p>
                         )}
                       </motion.div>
 
@@ -241,7 +241,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.5 }}
                       >
-                        <label className='block text-sm font-medium text-rambla-text-secondary mb-2'>
+                        <label className='block text-sm font-medium text-text-muted mb-2'>
                           Descripción
                         </label>
                         {isEditing ? (
@@ -251,11 +251,11 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                               setFormData(prev => ({ ...prev, description: e.target.value }))
                             }
                             rows={3}
-                            className='w-full rounded-lg border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors'
+                            className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
                             placeholder='Descripción del evento...'
                           />
                         ) : (
-                          <p className='text-rambla-text-primary'>
+                          <p className='text-text-primary'>
                             {event.resource?.description || 'Sin descripción'}
                           </p>
                         )}
@@ -269,7 +269,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         className='grid grid-cols-1 md:grid-cols-2 gap-4'
                       >
                         <div>
-                          <label className='block text-sm font-medium text-rambla-text-secondary mb-2'>
+                          <label className='block text-sm font-medium text-text-muted mb-2'>
                             <CalendarIcon className='h-4 w-4 inline mr-1' />
                             Fecha y Hora
                           </label>
@@ -280,10 +280,10 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                               onChange={e =>
                                 setFormData(prev => ({ ...prev, scheduled_at: e.target.value }))
                               }
-                              className='w-full rounded-lg border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors'
+                              className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
                             />
                           ) : (
-                            <p className='text-white'>
+                            <p className='text-text-primary'>
                               {new Date(event.start).toLocaleString('es-ES', {
                                 dateStyle: 'medium',
                                 timeStyle: 'short',
@@ -294,7 +294,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
 
                         {/* Priority */}
                         <div>
-                          <label className='block text-sm font-medium text-rambla-text-secondary mb-2'>
+                          <label className='block text-sm font-medium text-text-muted mb-2'>
                             <TagIcon className='h-4 w-4 inline mr-1' />
                             Prioridad
                           </label>
@@ -304,7 +304,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                               onChange={e =>
                                 setFormData(prev => ({ ...prev, priority: e.target.value }))
                               }
-                              className='w-full rounded-lg border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors'
+                              className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
                             >
                               <option value='baja'>🟢 Baja</option>
                               <option value='media'>🟡 Media</option>
@@ -312,7 +312,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                               <option value='urgente'>🔴 Urgente</option>
                             </select>
                           ) : (
-                            <p className='text-white'>
+                            <p className='text-text-primary'>
                               {formData.priority === 'baja' && '🟢 Baja'}
                               {formData.priority === 'media' && '🟡 Media'}
                               {formData.priority === 'alta' && '🟠 Alta'}
@@ -329,7 +329,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                           animate={{ x: 0, opacity: 1 }}
                           transition={{ delay: 0.7 }}
                         >
-                          <label className='block text-sm font-medium text-rambla-text-secondary mb-2'>
+                          <label className='block text-sm font-medium text-text-muted mb-2'>
                             Estado
                           </label>
                           <select
@@ -337,7 +337,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                             onChange={e =>
                               setFormData(prev => ({ ...prev, status: e.target.value }))
                             }
-                            className='w-full rounded-lg border border-rambla-border bg-rambla-bg px-3 py-2 text-white focus:border-primary-500 focus:outline-none transition-colors'
+                            className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
                           >
                             {STATE_ORDER.map(stateKey => {
                               const state = TASK_STATES[stateKey];
@@ -359,19 +359,19 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.8 }}
-                      className='border-t border-primary-500/20 px-6 py-4 flex justify-end space-x-3'
+                      className='border-t border-[color:var(--color-border-subtle)] px-6 py-4 flex justify-end space-x-3'
                     >
                       <button
                         onClick={() => setIsEditing(false)}
                         disabled={loading}
-                        className='px-4 py-2 text-sm font-medium text-rambla-text-secondary hover:text-white transition-colors'
+                        className='px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors'
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={handleSave}
                         disabled={loading || !formData.title}
-                        className='px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors shadow-purple-subtle'
+                        className='px-4 py-2 text-sm font-medium btn-cyber rounded-lg disabled:opacity-50 transition-colors'
                       >
                         {loading ? 'Guardando...' : 'Guardar Cambios'}
                       </button>

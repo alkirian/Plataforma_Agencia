@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 
 const inputClass =
-  'w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-glow-cyan focus:outline-none focus:ring-2 focus:ring-glow-cyan/30';
-const primaryBtn =
-  'w-full rounded-md bg-rambla-accent px-4 py-2 font-semibold text-white transition hover:opacity-90';
+  'w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30';
+const primaryBtn = 'w-full btn-cyber px-4 py-2 font-semibold';
 
 export const RegisterForm = () => {
   const [fullName, setFullName] = useState('');

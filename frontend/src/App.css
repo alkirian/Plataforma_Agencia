@@ -3,11 +3,8 @@
 @tailwind utilities;
 
 body {
-  background-color: theme('colors.glow-bg-end');
-  background-image:
-    radial-gradient(circle at top right, theme('colors.primary.500 / 8%'), transparent 45%),
-    radial-gradient(circle at bottom left, theme('colors.primary.600 / 6%'), transparent 55%),
-    linear-gradient(180deg, theme('colors.primary.900 / 3%'), transparent 30%);
+  /* Use global gradient from the new design system */
+  background: var(--gradient-cyber);
   background-attachment: fixed;
 }
 
@@ -15,25 +12,25 @@ body {
 /* Estilos Personalizados para React Big Calendar */
 .rbc-calendar {
   background-color: transparent !important;
-  border: 1px solid theme('colors.rambla-border') !important;
-  border-radius: theme('borderRadius.lg') !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: 0.5rem !important; /* lg */
 }
 .rbc-month-view,
 .rbc-time-view {
   background: transparent !important;
-  border-color: theme('colors.rambla-border') !important;
-  border-radius: theme('borderRadius.lg') !important;
+  border-color: var(--color-border-subtle) !important;
+  border-radius: 0.5rem !important; /* lg */
   overflow: hidden;
 }
 .rbc-toolbar {
-  color: theme('colors.rambla-text-primary') !important;
-  margin-bottom: theme('spacing.4') !important;
+  color: var(--color-text-primary) !important;
+  margin-bottom: 1rem !important; /* spacing.4 */
 }
 .rbc-toolbar button {
-  color: theme('colors.rambla-text-primary') !important;
+  color: var(--color-text-primary) !important;
   background: transparent !important;
   border: 1px solid transparent !important;
-  border-radius: theme('borderRadius.md') !important;
+  border-radius: 0.375rem !important; /* md */
   padding: 0.25rem 0.5rem !important;
   transition:
     background-color 0.15s ease,
@@ -41,19 +38,19 @@ body {
     color 0.15s ease !important;
 }
 .rbc-toolbar button:hover {
-  background: theme('colors.white / 5%') !important;
-  border-color: theme('colors.white / 10%') !important;
-  color: theme('colors.white') !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--color-border-subtle) !important;
+  color: var(--color-text-primary) !important;
 }
 .rbc-header {
-  color: theme('colors.rambla-text-secondary') !important;
-  border-bottom: 1px solid theme('colors.white / 6%') !important;
+  color: var(--color-text-muted) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 .rbc-off-range-bg {
-  background-color: theme('colors.rambla-bg') !important;
+  background-color: var(--color-surface-soft) !important;
 }
 .rbc-month-view .rbc-date-cell {
-  color: theme('colors.rambla-text-secondary') !important;
+  color: var(--color-text-muted) !important;
   transition:
     color 0.15s ease,
     text-shadow 0.15s ease !important;
@@ -63,12 +60,12 @@ body {
   color: inherit !important;
 }
 .rbc-month-view .rbc-date-cell:hover {
-  color: theme('colors.primary.400') !important;
-  text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+  color: var(--color-text-primary) !important;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
 }
 .rbc-day-bg,
 .rbc-time-slot {
-  background-color: theme('colors.rambla-surface') !important;
+  background-color: var(--color-surface) !important;
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease !important;
@@ -77,20 +74,20 @@ body {
 .rbc-time-slot:hover {
   background-image: linear-gradient(
     180deg,
-    theme('colors.primary.500 / 6%'),
+    rgba(96, 165, 250, 0.06),
     transparent
   ) !important;
-  box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 15%');
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15);
 }
 .rbc-today {
-  background-color: theme('colors.primary.500 / 8%') !important;
-  box-shadow: inset 0 0 0 1px theme('colors.primary.500 / 20%');
+  background-color: rgba(96, 165, 250, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.2);
 }
 .rbc-selected-cell {
-  background-color: theme('colors.primary.500 / 12%') !important;
+  background-color: rgba(96, 165, 250, 0.12) !important;
 }
 .rbc-month-row + .rbc-month-row {
-  border-top-color: theme('colors.rambla-border') !important;
+  border-top-color: var(--color-border-subtle) !important;
 }
 .rbc-event {
   border-radius: 8px !important;
@@ -113,7 +110,7 @@ body {
   z-index: 10;
 }
 .rbc-event-content {
-  color: white !important;
+  color: var(--color-text-primary) !important;
   font-weight: 500 !important;
   text-overflow: ellipsis !important;
   overflow: hidden !important;

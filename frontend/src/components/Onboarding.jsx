@@ -38,15 +38,15 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   };
 
   return (
-    <div className='min-h-screen text-rambla-text-primary flex items-center justify-center p-6'>
-      <div className='w-full max-w-md rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg'>
-        <h2 className='mb-1 text-2xl font-bold text-white'>Completa tu registro</h2>
-        <p className='mb-6 text-sm text-rambla-text-secondary'>
+    <div className='min-h-screen text-text-primary flex items-center justify-center p-6'>
+      <div className='w-full max-w-md card rounded-xl p-6'>
+        <h2 className='mb-1 text-2xl font-bold text-cyber-gradient'>Completa tu registro</h2>
+        <p className='mb-6 text-sm text-text-muted'>
           ¡Bienvenido! Solo un paso más para empezar.
         </p>
         <form onSubmit={handleCompleteProfile} className='space-y-4'>
           <div>
-            <label htmlFor='fullName' className='mb-1 block text-sm text-rambla-text-secondary'>
+            <label htmlFor='fullName' className='mb-1 block text-sm text-text-muted'>
               Tu nombre completo
             </label>
             <input
@@ -54,12 +54,12 @@ export const Onboarding = ({ session, onProfileComplete }) => {
               type='text'
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className='w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none'
+              className='w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none'
               required
             />
           </div>
           <div>
-            <label htmlFor='agencyName' className='mb-1 block text-sm text-rambla-text-secondary'>
+            <label htmlFor='agencyName' className='mb-1 block text-sm text-text-muted'>
               Nombre de tu agencia
             </label>
             <input
@@ -67,14 +67,14 @@ export const Onboarding = ({ session, onProfileComplete }) => {
               type='text'
               value={agencyName}
               onChange={e => setAgencyName(e.target.value)}
-              className='w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-rambla-accent focus:outline-none'
+              className='w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none'
               required
             />
           </div>
           <button
             type='submit'
             disabled={loading}
-            className='w-full rounded-md bg-rambla-accent px-4 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-60'
+            className='w-full btn-cyber px-4 py-2 font-semibold hover-cyber-glow disabled:opacity-60'
           >
             {loading ? 'Creando...' : 'Crear Agencia'}
           </button>
