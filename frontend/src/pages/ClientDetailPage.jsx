@@ -32,7 +32,9 @@ export const ClientDetailPage = () => {
         try {
           await createScheduleItem(clientId, idea);
         } catch (e) {
-          console.error('Error creando evento de idea', e);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error creando evento de idea', e);
+          }
         }
       }
       setIsAIModalOpen(false);

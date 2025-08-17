@@ -43,10 +43,12 @@ export const apiFetch = async (endpoint, options = {}) => {
       } catch {}
     }
 
-    console.error(
-      `API Error: ${response.method || 'Unknown'} ${endpoint} - ${response.status}:`,
-      errorMessage
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.error(
+        `API Error: ${response.method || 'Unknown'} ${endpoint} - ${response.status}:`,
+        errorMessage
+      );
+    }
     const error = new Error(errorMessage);
     error.status = response.status;
     throw error;

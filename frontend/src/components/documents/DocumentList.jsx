@@ -27,7 +27,9 @@ export const DocumentList = ({
         await downloadDocumentApi(docData);
       }
     } catch (error) {
-      console.error('Error al descargar documento:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error al descargar documento:', error);
+      }
       alert('Error al descargar el documento. Por favor, intenta de nuevo.');
     } finally {
       setDownloadingId(null);
@@ -36,13 +38,17 @@ export const DocumentList = ({
 
   const handleDelete = async docData => {
     if (!clientId) {
-      console.error('❌ No clientId provided to DocumentList');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ No clientId provided to DocumentList');
+      }
       alert('Error: No se puede identificar el cliente');
       return;
     }
 
     if (!docData.id) {
-      console.error('❌ Document has no id:', docData);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Document has no id:', docData);
+      }
       alert('Error: No se puede identificar el documento');
       return;
     }
@@ -65,7 +71,9 @@ export const DocumentList = ({
         onDocumentDeleted(docId);
       }
     } catch (error) {
-      console.error('Error deleting document:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error deleting document:', error);
+      }
       alert(`Error al eliminar el documento: ${error.message}`);
     } finally {
       setDeletingId(null);

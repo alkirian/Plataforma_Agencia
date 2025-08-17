@@ -1,17 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, NavLink, useParams, useLocation } from 'react-router-dom';
-import { HomeIcon, Cog6ToothIcon, UserCircleIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { HomeIcon, Cog6ToothIcon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CyberButton } from '../ui';
 import { ClientSelector } from '../ui/ClientSelector';
+import { NotificationPanel } from '../notifications/NotificationPanel';
+import { useNotifications } from '../../hooks/useNotifications';
 
 export const Header = ({ userEmail, onLogout }) => {
   const location = useLocation();
   const params = useParams();
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   
   // Detectar si estamos en una página de cliente
   const isClientPage = location.pathname.startsWith('/clients/');
   const currentClientId = params.id;
+
+  // Hook de notificaciones
+  const {
+    notifications,
+    groupedNotifications,
+    stats,
+    markAsRead,
+    markAllAsRead,
+    markAllAsViewed,
+    deleteNotification,
+    deleteAllNotifications,
+  } = useNotifications();
+
+  // Handler para abrir el panel de notificaciones
+  const handleOpenNotifications = () => {
+    setIsNotificationPanelOpen(true);
+    // Marcar todas las notificaciones actuales como vistas
+    if (notifications.length > 0) {
+      markAllAsViewed();
+    }
+  };
 
   const navLinkClasses = ({ isActive }) =>
     `rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
@@ -74,6 +98,31 @@ export const Header = ({ userEmail, onLogout }) => {
             <NavLink to='/dashboard' className={navLinkClasses} title='Dashboard'>
               <HomeIcon className='h-5 w-5' />
             </NavLink>
+            
+            {/* Botón de notificaciones */}
+            <motion.button
+              onClick={handleOpenNotifications}
+              className={`rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
+                isNotificationPanelOpen
+                  ? 'bg-primary-500/15 text-primary-400 shadow-purple-subtle border border-primary-500/25'
+                  : 'text-rambla-text-secondary hover:bg-primary-500/8 hover:text-primary-400 hover:border-primary-500/15 border border-transparent'
+              }`}
+              title='Notificaciones'
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <BellIcon className='h-5 w-5' />
+              {stats.total > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs font-medium text-white flex items-center justify-center'
+                >
+                  {stats.total > 9 ? '9+' : stats.total}
+                </motion.span>
+              )}
+            </motion.button>
+            
             <NavLink to='/settings' className={navLinkClasses} title='Configuración'>
               <Cog6ToothIcon className='h-5 w-5' />
             </NavLink>
@@ -109,6 +158,19 @@ export const Header = ({ userEmail, onLogout }) => {
           </motion.div>
         </div>
       </div>
+
+      {/* Panel de notificaciones */}
+      <NotificationPanel
+        isOpen={isNotificationPanelOpen}
+        onClose={() => setIsNotificationPanelOpen(false)}
+        notifications={notifications}
+        groupedNotifications={groupedNotifications}
+        stats={stats}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+        onDeleteNotification={deleteNotification}
+        onDeleteAllNotifications={deleteAllNotifications}
+      />
     </motion.header>
   );
 };

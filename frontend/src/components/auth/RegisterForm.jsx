@@ -22,7 +22,9 @@ export const RegisterForm = () => {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       // Opcional: guardar datos extra en tabla profiles después de confirmar email
-      console.log('SignUp sent. Confirm email flow may be required.', data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('SignUp sent. Confirm email flow may be required.', data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

@@ -5,6 +5,7 @@ export { Input, Textarea } from './Input';
 export { AnimatedText, useStaggerDelay } from './AnimatedText';
 export { ClientSelector } from './ClientSelector';
 export { ProgressIndicator, ProgressBadge } from './ProgressIndicator';
+export { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 // Re-exportar utilidades
 export { cn } from '../../lib/utils';

@@ -30,7 +30,7 @@ export default defineConfig({
           'vendor-ui': ['framer-motion', '@headlessui/react', '@heroicons/react'],
           'vendor-data': ['@tanstack/react-query', '@supabase/supabase-js'],
           'vendor-forms': ['react-hook-form', 'react-hot-toast'],
-          'vendor-calendar': ['react-big-calendar', 'moment'],
+          'vendor-calendar': ['@fullcalendar/react', '@fullcalendar/core', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/list'],
           'vendor-utils': ['clsx', 'tailwind-merge']
         }
       }

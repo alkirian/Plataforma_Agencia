@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -53,28 +53,28 @@ export const ScheduleSection = ({ clientId }) => {
     eventStats
   } = useCalendarEvents(clientId);
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        if (clientId) {
-          // Cargar cliente y eventos en paralelo
-          const [clientResponse] = await Promise.all([
-            getClientById(clientId),
-            loadEvents()
-          ]);
-          setClient(clientResponse.data);
-        }
-      } catch (err) {
-        toast.error('Error al cargar datos del cliente');
+  // Cargar datos iniciales - memoizar loadInitialData
+  const loadInitialData = useCallback(async () => {
+    try {
+      if (clientId) {
+        // Cargar cliente y eventos en paralelo
+        const [clientResponse] = await Promise.all([
+          getClientById(clientId),
+          loadEvents()
+        ]);
+        setClient(clientResponse.data);
       }
-    };
-
-    loadInitialData();
+    } catch (err) {
+      toast.error('Error al cargar datos del cliente');
+    }
   }, [clientId, loadEvents]);
 
-  // Handlers del calendario
-  const handleDateClick = (date) => {
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  // Handlers del calendario - memoizados para evitar re-renders
+  const handleDateClick = useCallback((date) => {
     const yyyy = String(date.getFullYear());
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
@@ -89,9 +89,9 @@ export const ScheduleSection = ({ clientId }) => {
     });
     setSelectedEvent(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEventClick = (event) => {
+  const handleEventClick = useCallback((event) => {
     try {
       const d = event.start ? new Date(event.start) : getCurrentDate();
       const yyyy = String(d.getFullYear());
@@ -113,28 +113,28 @@ export const ScheduleSection = ({ clientId }) => {
       setSelectedEvent(event);
       setIsModalOpen(true);
     }
-  };
+  }, []);
 
-  const handleEventDrop = async (event) => {
+  const handleEventDrop = useCallback(async (event) => {
     try {
       await moveEvent(event.id, event.start, event.end);
     } catch (err) {
       // El hook maneja el error y recarga
     }
-  };
+  }, [moveEvent]);
 
-  const handleViewChange = (viewType) => {
+  const handleViewChange = useCallback((viewType) => {
     setCurrentView(viewType);
-  };
+  }, []);
 
-  const handleDateChange = (start /*, end, view */) => {
+  const handleDateChange = useCallback((start /*, end, view */) => {
     if (start && Math.abs(start.getTime() - currentDate.getTime()) > 24 * 60 * 60 * 1000) {
       setCurrentDate(start);
     }
-  };
+  }, [currentDate]);
 
-  // Formulario handlers
-  const handleFormSubmit = async (e) => {
+  // Formulario handlers - memoizados
+  const handleFormSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
       if (!formData.title || !formData.date || !formData.time) {
@@ -160,9 +160,9 @@ export const ScheduleSection = ({ clientId }) => {
     } catch (err) {
       // El hook ya maneja los errores
     }
-  };
+  }, [formData, selectedEvent, createEvent, updateEvent]);
 
-  const handleDeleteEvent = async () => {
+  const handleDeleteEvent = useCallback(async () => {
     if (selectedEvent && window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
       try {
         await deleteEvent(selectedEvent.id);
@@ -172,10 +172,10 @@ export const ScheduleSection = ({ clientId }) => {
         // El hook ya maneja los errores
       }
     }
-  };
+  }, [selectedEvent, deleteEvent]);
 
-  // Handler para plantillas
-  const handleSelectTemplate = async (template) => {
+  // Handler para plantillas - memoizado
+  const handleSelectTemplate = useCallback(async (template) => {
     try {
       const baseDate = getCurrentDate();
       
@@ -198,9 +198,9 @@ export const ScheduleSection = ({ clientId }) => {
     } catch (error) {
       toast.error('Error al crear tareas desde la plantilla');
     }
-  };
+  }, [createEvent]);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setIsEventDetailOpen(false);
     setSelectedEvent(null);
@@ -210,7 +210,7 @@ export const ScheduleSection = ({ clientId }) => {
       time: '09:00',
       status: 'pendiente'
     });
-  };
+  }, []);
 
   // Estados de carga y error
   if (error) {
@@ -347,6 +347,7 @@ export const ScheduleSection = ({ clientId }) => {
               onDateClick={handleDateClick}
               onEventDrop={handleEventDrop}
               height="800px"
+              clientName={client?.name || ''}
             />
           </div>
         </motion.div>

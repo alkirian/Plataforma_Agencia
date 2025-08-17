@@ -69,7 +69,9 @@ function App() {
       if (error) throw error;
       setProfile(data?.[0] || null);
     } catch (error) {
-      console.error('Error al obtener el perfil:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error al obtener el perfil:', error);
+      }
     } finally {
       // El loading general se desactiva en el handleSession
       setLoading(false);

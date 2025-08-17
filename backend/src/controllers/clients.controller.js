@@ -1,15 +1,24 @@
 import { createClient, getClientsByAgency, getClientById } from '../services/clients.service.js';
 import { getActivityFeedByClient } from '../services/activity.service.js';
 import { getUserAgencyId, getUserProfile } from '../helpers/userHelpers.js';
+import { validateData, clientSchema } from '../schemas/validation.js';
 
 export const handleCreateClient = async (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
-    const { name, industry } = req.body;
-    if (!name) {
-      return res.status(400).json({ success: false, message: 'El nombre del cliente es requerido.' });
+    
+    // Validar datos de entrada
+    const validation = validateData(clientSchema, req.body);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos de entrada inválidos',
+        errors: validation.errors
+      });
     }
-    const newClient = await createClient({ name, industry }, token);
+
+    const newClient = await createClient(validation.data, token);
     res.status(201).json({ success: true, data: newClient });
   } catch (error) {
     next(error);

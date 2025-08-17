@@ -11,6 +11,8 @@ const normalizeStatus = (status) => {
     'pendiente': 'Pendiente',
     'en diseño': 'En Diseño',
     'en diseno': 'En Diseño',
+    'en-diseño': 'En Diseño',
+    'en-progreso': 'En Progreso',
     'aprobado': 'Aprobado',
     'publicado': 'Publicado',
     'cancelado': 'Cancelado',
@@ -18,6 +20,7 @@ const normalizeStatus = (status) => {
     'pending': 'Pendiente',
     'in_design': 'En Diseño',
     'in design': 'En Diseño',
+    'in_progress': 'En Progreso',
     'approved': 'Aprobado',
     'published': 'Publicado',
     'cancelled': 'Cancelado',
@@ -46,7 +49,7 @@ export const getScheduleItemsByClient = async (clientId, token) => {
 export const createScheduleItem = async (itemData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
   // Normalizar y validar status antes de insertar
-  const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+  const allowed = ['Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'];
   const normalizedStatus = normalizeStatus(itemData.status);
   if (normalizedStatus && !allowed.includes(normalizedStatus)) {
     console.warn('[schedule] Status no permitido, recibido:', itemData.status, '-> normalizado:', normalizedStatus);
@@ -101,12 +104,12 @@ export const getScheduleItemById = async (itemId, clientId, token) => {
 /**
  * Actualiza un ítem del cronograma.
  */
-export const updateScheduleItem = async (itemId, clientId, updateData, token) => {
+export const updateScheduleItem = async (itemId, clientId, updateData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
   // Normalizar status si viene en el update
   let normalizedUpdate = { ...updateData };
   if (Object.prototype.hasOwnProperty.call(updateData, 'status')) {
-    const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+    const allowed = ['Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'];
     const normalizedStatus = normalizeStatus(updateData.status);
     if (normalizedStatus && !allowed.includes(normalizedStatus)) {
       console.warn('[schedule] Update status no permitido, recibido:', updateData.status, '-> normalizado:', normalizedStatus);
@@ -136,18 +139,20 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token) =>
   if (error) throw new Error(error.message);
 
   // Log activity
-  await logActivity({
-    agency_id: data.agency_id,
-    client_id: data.client_id,
-    user_id: null, // TODO: get from token
-    action_type: 'SCHEDULE_ITEM_UPDATED',
-    details: { 
-      item_title: data.title, 
-      item_id: data.id,
-      previous_status: existingItem.status,
-      new_status: data.status
-    }
-  });
+  if (userId) {
+    await logActivity({
+      agency_id: data.agency_id,
+      client_id: data.client_id,
+      user_id: userId,
+      action_type: 'SCHEDULE_ITEM_UPDATED',
+      details: { 
+        item_title: data.title, 
+        item_id: data.id,
+        previous_status: existingItem.status,
+        new_status: data.status
+      }
+    });
+  }
 
   return data;
 };
@@ -155,7 +160,7 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token) =>
 /**
  * Elimina un ítem del cronograma.
  */
-export const deleteScheduleItem = async (itemId, clientId, token) => {
+export const deleteScheduleItem = async (itemId, clientId, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
   
   // Primero obtener el item para logging
@@ -178,16 +183,18 @@ export const deleteScheduleItem = async (itemId, clientId, token) => {
   if (error) throw new Error(error.message);
 
   // Log activity
-  await logActivity({
-    agency_id: item.agency_id,
-    client_id: item.client_id,
-    user_id: null, // TODO: get from token
-    action_type: 'SCHEDULE_ITEM_DELETED',
-    details: { 
-      item_title: item.title, 
-      item_id: item.id
-    }
-  });
+  if (userId) {
+    await logActivity({
+      agency_id: item.agency_id,
+      client_id: item.client_id,
+      user_id: userId,
+      action_type: 'SCHEDULE_ITEM_DELETED',
+      details: { 
+        item_title: item.title, 
+        item_id: item.id
+      }
+    });
+  }
 
   return true;
 };

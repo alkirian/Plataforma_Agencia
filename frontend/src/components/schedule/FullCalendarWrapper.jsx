@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { getCurrentDate } from '../../utils/dateHelpers';
+import { CalendarToolbar } from './CalendarToolbar';
 
 /**
  * Wrapper component para FullCalendar con configuración optimizada
@@ -23,12 +24,9 @@ const FullCalendarWrapper = ({
   onEventResize,
   loading = false,
   height = '600px',
-  headerToolbar = {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
-  },
-  className = ''
+  headerToolbar = false, // Disable default toolbar
+  className = '',
+  clientName = ''
 }) => {
   const calendarRef = useRef(null);
   // Ancla de mes/año para mantener consistencia al cambiar de vista
@@ -88,14 +86,16 @@ const FullCalendarWrapper = ({
     // Debug mínimo para detectar saltos inesperados
     try {
       const api = calendarRef.current?.getApi();
-      // eslint-disable-next-line no-console
-      console.debug('[FullCalendar] datesSet', {
-        view: arg.view?.type,
-        start: arg.start,
-        end: arg.end,
-        currentStart: arg.view?.currentStart,
-        apiDate: api?.getDate?.(),
-      });
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.debug('[FullCalendar] datesSet', {
+          view: arg.view?.type,
+          start: arg.start,
+          end: arg.end,
+          currentStart: arg.view?.currentStart,
+          apiDate: api?.getDate?.(),
+        });
+      }
       // Lógica de anclaje por mes/año
       const viewType = arg.view?.type;
       const cs = computedStart;
@@ -209,18 +209,21 @@ const FullCalendarWrapper = ({
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
-        }
+        },
+        dayHeaderFormat: { weekday: 'short', day: 'numeric', month: 'short' }
       },
       timeGridDay: {
-        allDaySlot: false
+        allDaySlot: false,
+        dayHeaderFormat: { weekday: 'long', day: 'numeric', month: 'long' }
       },
       listWeek: {
         listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' }
       },
       listMonth: {
-        listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
-        listDaySideFormat: false,
-        noEventsText: 'No hay tareas programadas para este mes'
+        listDayFormat: { weekday: 'long', day: 'numeric', month: 'short' },
+        listDaySideFormat: { month: 'short', day: 'numeric' },
+        noEventsText: '📋 No hay tareas programadas para este mes',
+        dayHeaderFormat: { month: 'long', year: 'numeric' }
       }
     },
     
@@ -261,8 +264,124 @@ const FullCalendarWrapper = ({
     }
   };
 
+  // Keyboard shortcuts para navegación rápida
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Solo activar si no estamos escribiendo en un input
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
+      
+      const calendarApi = calendarRef.current?.getApi();
+      if (!calendarApi) return;
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            calendarApi.prev();
+          }
+          break;
+        case 'ArrowRight':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            calendarApi.next();
+          }
+          break;
+        case 't':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            calendarApi.today();
+          }
+          break;
+        case '1':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            onViewChange?.('dayGridMonth');
+            calendarApi.changeView('dayGridMonth');
+          }
+          break;
+        case '2':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            onViewChange?.('timeGridWeek');
+            calendarApi.changeView('timeGridWeek');
+          }
+          break;
+        case '3':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            onViewChange?.('timeGridDay');
+            calendarApi.changeView('timeGridDay');
+          }
+          break;
+        case '4':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            onViewChange?.('listMonth');
+            calendarApi.changeView('listMonth');
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [onViewChange]);
+
+  // Handler para navegación desde toolbar
+  const handleToolbarNavigate = (action) => {
+    if (!calendarRef.current) return;
+    const calendarApi = calendarRef.current.getApi();
+    
+    switch (action) {
+      case 'PREV':
+        calendarApi.prev();
+        break;
+      case 'NEXT':
+        calendarApi.next();
+        break;
+      case 'TODAY':
+        calendarApi.today();
+        break;
+    }
+  };
+
+  // Handler para cambio de vista desde toolbar
+  const handleToolbarView = (viewType) => {
+    if (!calendarRef.current) return;
+    
+    // Mapear nombres de vista simples a nombres de FullCalendar
+    const viewMap = {
+      'month': 'dayGridMonth',
+      'week': 'timeGridWeek', 
+      'day': 'timeGridDay',
+      'agenda': 'listMonth'
+    };
+    
+    const fullCalendarView = viewMap[viewType] || viewType;
+    const calendarApi = calendarRef.current.getApi();
+    calendarApi.changeView(fullCalendarView);
+    onViewChange?.(fullCalendarView);
+  };
+
+  // Obtener label del título actual
+  const getCalendarLabel = () => {
+    if (!calendarRef.current) return '';
+    const calendarApi = calendarRef.current.getApi();
+    return calendarApi.view.title;
+  };
+
   return (
     <div className={`fullcalendar-wrapper ${className}`}>
+      {/* Custom Toolbar */}
+      <CalendarToolbar
+        label={getCalendarLabel()}
+        onNavigate={handleToolbarNavigate}
+        onView={handleToolbarView}
+        view={currentView}
+        events={events}
+        clientName={clientName}
+      />
+      
       {loading && (
         <div className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
           <div className="flex items-center space-x-2">

@@ -13,7 +13,7 @@ export const useCalendarEvents = (clientId) => {
   const [error, setError] = useState(null);
 
   // Transformar datos del backend a formato FullCalendar
-  const transformToFullCalendarEvents = useCallback((scheduleData) => {
+  const transformToFullCalendarEvents = (scheduleData) => {
     return scheduleData.map(item => {
       const startDate = new Date(item.scheduled_at);
       
@@ -35,7 +35,7 @@ export const useCalendarEvents = (clientId) => {
         }
       };
     });
-  }, []);
+  };
 
   // Cargar eventos desde la API
   const loadEvents = useCallback(async () => {
@@ -50,20 +50,24 @@ export const useCalendarEvents = (clientId) => {
       
       setEvents(transformedEvents);
       
-      console.log('📅 FullCalendar events loaded:', {
-        rawData: scheduleData,
-        transformedEvents,
-        eventCount: transformedEvents.length
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📅 FullCalendar events loaded:', {
+          rawData: scheduleData,
+          transformedEvents,
+          eventCount: transformedEvents.length
+        });
+      }
       
     } catch (err) {
-      console.error('Error loading calendar events:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading calendar events:', err);
+      }
       setError(err.message);
       toast.error('Error al cargar eventos del calendario');
     } finally {
       setLoading(false);
     }
-  }, [clientId, transformToFullCalendarEvents]);
+  }, [clientId]);
 
   // Crear nuevo evento (Optimistic Update)
   const createEvent = useCallback(async (eventData) => {
@@ -106,7 +110,7 @@ export const useCalendarEvents = (clientId) => {
       toast.error('Error al crear evento');
       throw err;
     }
-  }, [clientId, transformToFullCalendarEvents]);
+  }, [clientId]);
 
   // Actualizar evento
   const updateEvent = useCallback(async (eventId, updateData) => {
@@ -129,7 +133,7 @@ export const useCalendarEvents = (clientId) => {
       toast.error('Error al actualizar evento');
       throw err;
     }
-  }, [clientId, transformToFullCalendarEvents]);
+  }, [clientId]);
 
   // Eliminar evento
   const deleteEvent = useCallback(async (eventId) => {
