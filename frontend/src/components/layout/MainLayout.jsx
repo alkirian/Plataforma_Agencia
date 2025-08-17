@@ -11,19 +11,19 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
 
   return (
     // El fondo y el texto principal se definen aquí
-    <div className='min-h-screen bg-glow-bg-end text-rambla-text-primary'>
+  <div className='min-h-screen bg-app text-text-primary'>
       <Header userEmail={userEmail} onLogout={onLogout} />
       <Toaster
         position='bottom-right'
         toastOptions={{
           style: {
-            background: '#0b1220',
-            color: '#c9d1d9',
-            border: '1px solid #30363d',
+      background: 'rgba(15,23,42,0.85)',
+      color: 'var(--color-text-primary)',
+      border: '1px solid var(--color-border-subtle)',
           },
         }}
       />
-      <main className='w-full py-6 px-5'>
+    <main className='w-full py-8 px-6'>
         <Breadcrumbs />
         {children}
       </main>

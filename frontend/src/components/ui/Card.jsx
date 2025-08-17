@@ -13,8 +13,8 @@ export const Card = ({
   const cardContent = (
     <div
       className={cn(
-        cyber ? 'card-cyber' : 'card-modern p-6',
-        'transition-all duration-300',
+        cyber ? 'card-cyber' : 'card p-6',
+        'transition-all duration-300 focus-visible:focus-visible',
         hover && 'hover-cyber-glow',
         className
       )}
@@ -36,7 +36,7 @@ export const Card = ({
           stiffness: 100,
           damping: 15,
         }}
-        whileHover={{ scale: hover ? 1.02 : 1 }}
+  whileHover={{ scale: hover ? 1.01 : 1 }}
       >
         {cardContent}
       </motion.div>
@@ -49,8 +49,8 @@ export const Card = ({
 export const CardHeader = ({ children, className, cyber = true, ...props }) => (
   <div
     className={cn(
-      'mb-6 pb-4',
-      cyber ? 'border-b border-rambla-border/30' : 'border-b border-surface-800/50',
+  'mb-6 pb-4',
+  cyber ? 'border-b border-[color:var(--color-border-subtle)]' : 'border-b border-[color:var(--color-border-subtle)]',
       className
     )}
     {...props}
@@ -62,7 +62,7 @@ export const CardHeader = ({ children, className, cyber = true, ...props }) => (
 export const CardTitle = ({ children, className, cyber = true, ...props }) => (
   <motion.h3
     className={cn(
-      'text-lg font-semibold',
+  'text-lg font-semibold',
       cyber ? 'text-cyber-gradient' : 'text-gradient',
       className
     )}
@@ -91,11 +91,41 @@ export const CardFooter = ({ children, className, cyber = true, ...props }) => (
   <div
     className={cn(
       'mt-6 pt-4',
-      cyber ? 'border-t border-rambla-border/30' : 'border-t border-surface-800/50',
+      cyber ? 'border-t border-[color:var(--color-border-subtle)]' : 'border-t border-[color:var(--color-border-subtle)]',
       className
     )}
     {...props}
   >
     {children}
   </div>
+);
+
+export const StatCard = ({
+  title,
+  value,
+  subvalue,
+  icon: Icon,
+  trend,
+  className,
+  ...props
+}) => (
+  <Card className={cn('p-5 md:p-6 group', className)} {...props}>
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-text-muted">{title}</p>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-2xl md:text-3xl font-semibold text-text-primary">{value}</span>
+          {subvalue && <span className="text-sm text-text-muted">{subvalue}</span>}
+        </div>
+      </div>
+      {Icon && (
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-surface-soft border border-[color:var(--color-border-subtle)] shadow-glass">
+          <Icon className="h-5 w-5 text-[var(--color-accent-blue)]" />
+        </div>
+      )}
+    </div>
+    {trend && (
+      <div className="mt-3 text-xs text-text-muted">{trend}</div>
+    )}
+  </Card>
 );

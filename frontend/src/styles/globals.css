@@ -4,17 +4,41 @@
 
 @layer base {
   :root {
-    --gradient-cyber: linear-gradient(135deg, #020024 0%, #0d1117 50%, #161b22 100%);
-    --gradient-glow: linear-gradient(135deg, #00f6ff 0%, #58a6ff 100%);
+    /* App background and gradients */
+    --color-app-bg: #0B1020;
+    --color-app-gradient-start: #0B1020;
+    --color-app-gradient-end: #0F172A;
+    --gradient-cyber: radial-gradient(1200px 600px at 10% -10%, rgba(96, 165, 250, 0.08), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(167, 139, 250, 0.08), transparent 60%),
+      linear-gradient(180deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-end) 100%);
+    --gradient-glow: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+
+    /* Surfaces and borders */
+    --color-surface: rgba(15, 23, 42, 0.65);
+    --color-surface-soft: rgba(15, 23, 42, 0.5);
+    --color-surface-strong: rgba(15, 23, 42, 0.8);
+    --color-border-subtle: rgba(148, 163, 184, 0.2);
+    --color-border-strong: rgba(148, 163, 184, 0.35);
+
+    /* Typography */
+    --color-text-primary: #E5E7EB;
+    --color-text-muted: #94A3B8;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* Accent tokens */
+    --color-accent-cyan: #67E8F9;
+    --color-accent-blue: #60A5FA;
+    --color-accent-violet: #A78BFA;
   }
 
   body {
     background: var(--gradient-cyber);
-    color: #c9d1d9;
+    color: var(--color-text-primary);
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
     min-height: 100vh;
+    font-family: var(--font-sans);
   }
 
   /* Scrollbar personalizada */
@@ -24,11 +48,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #161b22;
+    background: rgba(15, 23, 42, 0.35);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #00f6ff, #58a6ff);
+    background: linear-gradient(45deg, #60A5FA, #A78BFA);
     border-radius: 4px;
   }
 
@@ -37,13 +61,13 @@
   }
 
   ::selection {
-    background: rgba(0, 246, 255, 0.3);
+    background: rgba(96, 165, 250, 0.25);
     color: white;
   }
 }
 
 @layer components {
-  /* Botón cyber moderno */
+  /* Buttons */
   .btn-cyber {
     padding: 0.625rem 1.5rem;
     border-radius: 0.75rem;
@@ -52,13 +76,14 @@
     transform: none;
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(0, 246, 255, 0.3);
-    background: linear-gradient(to right, rgba(0, 246, 255, 0.1), rgba(88, 166, 255, 0.1));
+    border: 1px solid var(--color-border-subtle);
+    background: linear-gradient(to right, rgba(96,165,250,0.08), rgba(167,139,250,0.08));
+    color: var(--color-text-primary);
   }
 
   .btn-cyber:hover {
-    border-color: rgba(0, 246, 255, 0.5);
-    box-shadow: 0 0 25px -5px rgba(0, 246, 255, 0.4);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 0 25px -5px rgba(96, 165, 250, 0.3);
     transform: scale(1.02);
   }
 
@@ -66,70 +91,102 @@
     transform: scale(0.98);
   }
 
-  /* Card cyber moderna */
+  /* Cards */
   .card-cyber {
-    background: linear-gradient(135deg, rgba(22, 27, 34, 0.8), rgba(13, 17, 23, 0.6));
-    backdrop-filter: blur(12px);
+    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
+    backdrop-filter: blur(14px);
     border-radius: 1rem;
-    border: 1px solid rgba(48, 54, 61, 0.5);
-    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--tw-shadow, 0 8px 24px rgba(0,0,0,0.35));
     position: relative;
     overflow: hidden;
     transition: all 0.3s ease;
   }
 
   .card-cyber:hover {
-    border-color: rgba(0, 246, 255, 0.3);
-    box-shadow: 0 0 15px -3px rgba(0, 246, 255, 0.3);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 0 0 1px rgba(96,165,250,0.15), 0 20px 50px -20px rgba(96,165,250,0.25), 0 30px 60px -30px rgba(167,139,250,0.25);
     transform: scale(1.01);
   }
 
-  /* Input modern - subtle purple accent */
+  /* Inputs */
   .input-cyber {
     width: 100%;
     background: rgba(15, 23, 42, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 0.625rem 1rem;
-    color: #c9d1d9;
+    color: var(--color-text-primary);
     transition: all 0.2s ease;
   }
 
   .input-cyber:focus {
     outline: none;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
   }
 
   .input-cyber::placeholder {
-    color: #8b949e;
+    color: var(--color-text-muted);
   }
 
-  /* Header cyber */
+  /* Header */
   .header-cyber {
-    background: linear-gradient(to right, rgba(22, 27, 34, 0.8), rgba(22, 27, 34, 0.5));
+    background: linear-gradient(to right, rgba(15,23,42,0.75), rgba(15,23,42,0.5));
     backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 }
 
 @layer utilities {
-  /* Texto con gradiente cyber */
+  /* Text gradient */
   .text-cyber-gradient {
-    background: linear-gradient(to right, #00f6ff, #58a6ff);
+    background: linear-gradient(to right, #60A5FA, #A78BFA);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  /* Hover con glow cyber */
+  /* Glow hover */
   .hover-cyber-glow {
     transition: all 0.3s ease;
   }
 
   .hover-cyber-glow:hover {
-    box-shadow: 0 0 25px -5px rgba(0, 246, 255, 0.4);
-    border-color: rgba(0, 246, 255, 0.5);
+    box-shadow: 0 0 25px -5px rgba(96,165,250,0.3);
+    border-color: var(--color-border-strong);
+  }
+
+  /* App background utility */
+  .bg-app {
+    background: var(--gradient-cyber);
+  }
+
+  /* Surfaces */
+  .surface {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-subtle);
+    backdrop-filter: blur(8px);
+  }
+
+  .card {
+    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 1rem;
+    backdrop-filter: blur(14px);
+    box-shadow: var(--tw-shadow, 0 8px 24px rgba(0,0,0,0.35));
+  }
+
+  /* Neon ring gradient */
+  .ring-gradient {
+    box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 6px rgba(96,165,250,0.15), 0 0 0 12px rgba(167,139,250,0.12);
+  }
+
+  /* Focus visible */
+  .focus-visible:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(96,165,250,0.5), 0 0 0 6px rgba(96,165,250,0.25);
+    border-color: var(--color-border-strong);
   }
 }
 

@@ -40,8 +40,8 @@ export const Header = ({ userEmail, onLogout }) => {
   const navLinkClasses = ({ isActive }) =>
     `rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
       isActive
-        ? 'bg-primary-500/15 text-primary-400 shadow-purple-subtle border border-primary-500/25'
-        : 'text-rambla-text-secondary hover:bg-primary-500/8 hover:text-primary-400 hover:border-primary-500/15 border border-transparent'
+        ? 'bg-surface-strong text-text-primary shadow-halo border border-[color:var(--color-border-subtle)]'
+        : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'
     }`;
 
   return (
@@ -62,7 +62,7 @@ export const Header = ({ userEmail, onLogout }) => {
             Rambla
           </Link>
           <motion.div
-            className='ml-2 w-2 h-2 bg-glow-cyan rounded-full'
+            className='ml-2 w-2 h-2 bg-[var(--color-accent-blue)] rounded-full'
             animate={{
               boxShadow: [
                 '0 0 5px rgb(0 246 255 / 0.5)',
@@ -104,8 +104,8 @@ export const Header = ({ userEmail, onLogout }) => {
               onClick={handleOpenNotifications}
               className={`rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
                 isNotificationPanelOpen
-                  ? 'bg-primary-500/15 text-primary-400 shadow-purple-subtle border border-primary-500/25'
-                  : 'text-rambla-text-secondary hover:bg-primary-500/8 hover:text-primary-400 hover:border-primary-500/15 border border-transparent'
+                  ? 'bg-surface-strong text-text-primary shadow-halo border border-[color:var(--color-border-subtle)]'
+                  : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'
               }`}
               title='Notificaciones'
               whileHover={{ scale: 1.05 }}
@@ -130,7 +130,7 @@ export const Header = ({ userEmail, onLogout }) => {
 
           {/* Separador Visual con glow */}
           <motion.div
-            className='h-6 w-px bg-gradient-to-b from-transparent via-primary-500/50 to-transparent'
+              className='h-6 w-px bg-gradient-to-b from-transparent via-[var(--color-accent-blue)]/50 to-transparent'
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.3, delay: 0.4 }}
@@ -146,12 +146,12 @@ export const Header = ({ userEmail, onLogout }) => {
             <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ duration: 0.2 }}>
               <UserCircleIcon className='h-7 w-7 text-primary-400' />
             </motion.div>
-            <span className='text-sm font-medium text-rambla-text-primary'>{userEmail}</span>
+            <span className='text-sm font-medium text-text-primary'>{userEmail}</span>
             <CyberButton
               variant='ghost'
               size='sm'
               onClick={onLogout}
-              className='text-rambla-text-secondary hover:text-primary-300'
+              className='text-text-muted hover:text-text-primary'
             >
               Salir
             </CyberButton>

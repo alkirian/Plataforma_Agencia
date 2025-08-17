@@ -7,53 +7,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Colores originales Rambla
-        'rambla-bg': '#0d1117',
-        'rambla-surface': '#161b22',
-        'rambla-border': '#30363d',
-        'rambla-text-primary': '#c9d1d9',
-        'rambla-text-secondary': '#8b949e',
-        'rambla-accent': '#58a6ff',
-
-        // Modern Purple Palette - Professional & Subtle
-        primary: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7c3aed', // Fix: was incorrectly brown color
-          800: '#6b21a8',
-          900: '#581c87',
-          950: '#3b0764',
+        // Design tokens (mapped to CSS variables for fine-grain tuning)
+        app: {
+          bg: 'var(--color-app-bg)', // #0B1020 base
+          gradientStart: 'var(--color-app-gradient-start)',
+          gradientEnd: 'var(--color-app-gradient-end)'
         },
-
-        // Legacy support (will be gradually removed)
-        'glow-cyan': '#a855f7', // now maps to purple
-        'glow-bg-start': '#020024',
-        'glow-bg-end': '#0d1117',
-        'glow-card-bg': 'rgba(22, 27, 34, 0.6)',
-        // Grises neutros mejorados basados en rambla
         surface: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b', // similar a rambla-surface
-          900: '#0f172a', // similar a rambla-bg
-          950: '#020617',
+          DEFAULT: 'var(--color-surface)', // rgba(15,23,42,0.65)
+          soft: 'var(--color-surface-soft)', // rgba(15,23,42,0.5)
+          strong: 'var(--color-surface-strong)' // rgba(15,23,42,0.8)
         },
-        // Estados con tema cyber
-        success: '#00ff88',
-        warning: '#ffaa00',
-        error: '#ff3366',
-        info: '#00aaff',
+        border: {
+          subtle: 'var(--color-border-subtle)',
+          strong: 'var(--color-border-strong)'
+        },
+        text: {
+          primary: 'var(--color-text-primary)', // #E5E7EB
+          muted: 'var(--color-text-muted)', // #94A3B8
+        },
+        accent: {
+          cyan: 'var(--color-accent-cyan)', // #67E8F9
+          blue: 'var(--color-accent-blue)', // #60A5FA
+          violet: 'var(--color-accent-violet)', // #A78BFA
+        },
+        brand: {
+          50: '#EEF2FF',
+          100: '#E0E7FF',
+          200: '#C7D2FE',
+          300: '#A5B4FC',
+          400: '#818CF8',
+          500: '#6366F1',
+          600: '#4F46E5',
+          700: '#4338CA',
+          800: '#3730A3',
+          900: '#312E81',
+          950: '#1E1B4B'
+        },
+        success: '#16A34A',
+        warning: '#D97706',
+        error: '#DC2626',
+        info: '#0EA5E9',
       },
       backdropBlur: {
         xs: '2px',
@@ -102,21 +96,20 @@ export default {
         },
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        xl: '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.75rem',
+        pill: '2.25rem'
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2)',
-        'purple-glow': '0 0 25px -5px rgba(168, 85, 247, 0.4)',
-        'purple-soft': '0 4px 20px -2px rgba(168, 85, 247, 0.25)',
-        'purple-inner': 'inset 0 0 20px -5px rgba(168, 85, 247, 0.15)',
-        'purple-subtle': '0 1px 10px -2px rgba(168, 85, 247, 0.2)',
-        // Legacy (maps to purple now)
-        'glow-cyan': '0 0 25px -5px rgba(168, 85, 247, 0.4)',
-        'inner-glow': 'inset 0 0 20px -5px rgba(168, 85, 247, 0.15)',
-        'cyber': '0 0 15px -3px rgba(168, 85, 247, 0.3), 0 0 30px -6px rgba(168, 85, 247, 0.2)',
+        soft: '0 8px 24px rgba(0,0,0,0.35)',
+        glass: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.35)',
+        halo: '0 0 0 1px var(--color-border-subtle), 0 0 20px rgba(96,165,250,0.15), 0 0 40px rgba(167,139,250,0.15)',
+        'halo-strong': '0 0 0 1px var(--color-border-strong), 0 0 30px rgba(96,165,250,0.25), 0 0 60px rgba(167,139,250,0.25)'
       },
+      ringOffsetWidth: {
+        3: '3px'
+      }
     },
   },
   plugins: [],

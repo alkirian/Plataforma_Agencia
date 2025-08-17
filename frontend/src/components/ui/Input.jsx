@@ -21,7 +21,7 @@ export const Input = ({
         <motion.label
           className={cn(
             'block text-sm font-medium',
-            cyber ? 'text-rambla-text-primary' : 'text-surface-200',
+            cyber ? 'text-text-primary' : 'text-surface-200',
             required && "after:content-['*'] after:text-red-400 after:ml-1"
           )}
           initial={{ opacity: 0, x: -10 }}
@@ -37,8 +37,8 @@ export const Input = ({
           <div
             className={cn(
               'absolute left-3 top-1/2 transform -translate-y-1/2 z-10',
-              cyber ? 'text-primary-400' : 'text-surface-400',
-              'group-focus-within:text-primary-300 transition-colors duration-200'
+              cyber ? 'text-[var(--color-accent-blue)]' : 'text-surface-400',
+              'group-focus-within:text-[var(--color-accent-violet)] transition-colors duration-200'
             )}
           >
             {icon}
@@ -70,7 +70,7 @@ export const Input = ({
 
         {/* Efecto de glow en focus */}
         {cyber && (
-          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-primary-500/0 via-primary-500/10 to-primary-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
+          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--color-accent-blue)]/0 via-[var(--color-accent-blue)]/10 to-[var(--color-accent-violet)]/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
         )}
       </div>
 
@@ -107,7 +107,7 @@ export const Textarea = ({
         <motion.label
           className={cn(
             'block text-sm font-medium',
-            cyber ? 'text-rambla-text-primary' : 'text-surface-200',
+            cyber ? 'text-text-primary' : 'text-surface-200',
             required && "after:content-['*'] after:text-red-400 after:ml-1"
           )}
           initial={{ opacity: 0, x: -10 }}
@@ -143,7 +143,7 @@ export const Textarea = ({
 
         {/* Efecto de glow en focus */}
         {cyber && (
-          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-primary-500/0 via-primary-500/10 to-primary-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
+          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--color-accent-blue)]/0 via-[var(--color-accent-blue)]/10 to-[var(--color-accent-violet)]/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
         )}
       </div>
 
