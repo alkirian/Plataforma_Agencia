@@ -55,11 +55,18 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
     const pad = (n) => String(n).padStart(2, '0');
     const nextDate = (offset) => {
       const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + offset);
+      d.setDate(baseDate.getDate() + offset * 7); // Una por semana
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     };
     const ideas = Array.from({ length: 5 }, (_, i) => ({
       title: `${userPrompt} — Idea ${i + 1} (${client.name})`,
+      copy: `🚀 ${userPrompt} para ${client.name}! 
+
+✨ Idea creativa #${i + 1} diseñada especialmente para conectar con tu audiencia.
+
+💡 ¿Qué opinas? ¡Déjanos tu comentario!
+
+#Marketing #RedesSociales #${client.name.replace(/\s+/g, '')}`,
       scheduled_at: nextDate(i + 1),
       status: 'Pendiente',
     }));
@@ -80,12 +87,52 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
 
   const calendarCtx = Array.isArray(monthContext) ? monthContext.join(', ') : '';
 
-  const megaPrompt = `Eres un estratega de redes sociales experto.
-Contexto del cliente (fragmentos relevantes):\n${topContext}
-Fechas importantes del mes: ${calendarCtx}
-Tarea: Genera 5 ideas de posteos creativos sobre el tema: "${userPrompt}" para el cliente ${client.name}.
+  // Obtener fechas actuales para contexto
+  const now = new Date();
+  const currentMonth = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  const currentYear = now.getFullYear();
+  const currentMonthNum = now.getMonth() + 1; // 1-12
+  const nextMonthNum = (now.getMonth() + 2) > 12 ? 1 : (now.getMonth() + 2);
+  const nextMonthYear = (now.getMonth() + 2) > 12 ? currentYear + 1 : currentYear;
 
-Instrucción de formato: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga: title (string), scheduled_at (string 'YYYY-MM-DD'), y status (string, 'Pendiente').`;
+  const megaPrompt = `Eres un estratega de redes sociales experto especializado en crear contenido atractivo y efectivo.
+
+CONTEXTO TEMPORAL:
+- Fecha actual: ${now.toLocaleDateString('es-ES')}
+- Mes actual: ${currentMonth}
+- Próximo mes: ${nextMonth}
+- Las ideas deben programarse para ${currentMonth} y ${nextMonth}
+
+CONTEXTO DEL CLIENTE:
+${topContext}
+
+FECHAS IMPORTANTES: ${calendarCtx}
+
+TAREA: Genera 5 ideas de posteos creativos sobre el tema: "${userPrompt}" para el cliente ${client.name}.
+
+INSTRUCCIONES ESPECÍFICAS:
+1. Cada idea debe incluir COPY COMPLETO para redes sociales (texto del post listo para publicar)
+2. Programa las ideas en fechas del mes actual (${currentMonth}) y próximo (${nextMonth})
+3. Considera las fechas importantes mencionadas para timing estratégico
+4. El copy debe ser engaging, usar emojis apropiados y llamadas a la acción
+5. Adapta el tono a la marca y audiencia del cliente
+
+FORMATO DE RESPUESTA: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga:
+- title (string): Título descriptivo de la idea
+- copy (string): Texto completo del post listo para publicar en redes sociales
+- scheduled_at (string): Fecha en formato 'YYYY-MM-DD' (usar ${currentYear}-${String(currentMonthNum).padStart(2, '0')} para este mes o ${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')} para el próximo)
+- status (string): Siempre 'Pendiente'
+
+Ejemplo de estructura:
+[
+  {
+    "title": "Título descriptivo",
+    "copy": "🌟 Texto completo del post con emojis y call-to-action #hashtags",
+    "scheduled_at": "${currentYear}-${String(currentMonthNum).padStart(2, '0')}-15",
+    "status": "Pendiente"
+  }
+]`;
 
 
   const llmResponse = await callLLM(megaPrompt);

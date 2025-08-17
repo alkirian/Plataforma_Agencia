@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query';
 import { generateIdeas } from '../api/ai';
 import toast from 'react-hot-toast';
 import { createScheduleItem } from '../api/schedule';
+import AIIdeasPreview from '../components/schedule/AIIdeasPreview';
 
 export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
@@ -16,33 +17,26 @@ export const ClientDetailPage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const aiMutation = useMutation({
-    mutationFn: () =>
-      toast.promise(generateIdeas(clientId, { userPrompt: aiPrompt, monthContext: [] }), {
-        loading: 'Nuestro asistente está creando... 🧠',
-        success: '¡Ideas generadas! Añadiendo al calendario...',
-        error: e => e.message || 'No se pudieron generar ideas',
-      }),
-    onSuccess: async response => {
-      const ideas = Array.isArray(response) ? response : (response?.data || []);
-      for (const idea of ideas) {
-        try {
-          await createScheduleItem(clientId, idea);
-        } catch (e) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Error creando evento de idea', e);
-          }
-        }
-      }
-      setIsAIModalOpen(false);
-      setAiPrompt('');
-      setRefreshKey(k => k + 1);
-      toast.success('¡Nuevas ideas han sido añadidas a tu calendario!');
-    },
-  });
+  // Handler para generar ideas
+  const handleGenerateIdeas = async (prompt) => {
+    const ideas = await generateIdeas(clientId, { 
+      userPrompt: prompt, 
+      monthContext: [] 
+    });
+    return Array.isArray(ideas) ? ideas : (ideas?.data || []);
+  };
+
+  // Handler para agregar idea individual al calendario
+  const handleAddIdea = async (ideaData) => {
+    await createScheduleItem(clientId, ideaData);
+  };
+
+  // Handler cuando se agregan ideas al calendario
+  const handleIdeasGenerated = (addedIdeas) => {
+    setRefreshKey(k => k + 1);
+  };
 
   useEffect(() => {
     const run = async () => {
@@ -118,65 +112,15 @@ export const ClientDetailPage = () => {
         </div>
       </div>
 
-      <Transition appear show={isAIModalOpen} as={Fragment}>
-        <Dialog as='div' className='relative z-50' onClose={() => setIsAIModalOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter='ease-out duration-200'
-            enterFrom='opacity-0'
-            enterTo='opacity-100'
-            leave='ease-in duration-150'
-            leaveFrom='opacity-100'
-            leaveTo='opacity-0'
-          >
-            <div className='fixed inset-0 bg-black/50' />
-          </Transition.Child>
-          <div className='fixed inset-0 overflow-y-auto'>
-            <div className='flex min-h-full items-center justify-center p-4'>
-              <Transition.Child
-                as={Fragment}
-                enter='ease-out duration-200'
-                enterFrom='opacity-0 scale-95'
-                enterTo='opacity-100 scale-100'
-                leave='ease-in duration-150'
-                leaveFrom='opacity-100 scale-100'
-                leaveTo='opacity-0 scale-95'
-              >
-                <Dialog.Panel className='w-full max-w-lg rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg'>
-                  <Dialog.Title className='mb-2 text-lg font-semibold text-white'>
-                    Generar ideas con IA
-                  </Dialog.Title>
-                  <p className='mb-4 text-sm text-rambla-text-secondary'>
-                    ¿Sobre qué tema te gustaría generar ideas para este mes?
-                  </p>
-                  <textarea
-                    value={aiPrompt}
-                    onChange={e => setAiPrompt(e.target.value)}
-                    rows={4}
-                    className='w-full rounded-md border border-rambla-border bg-rambla-bg px-3 py-2 text-white placeholder-rambla-text-secondary focus:border-primary-500 focus:outline-none transition-colors duration-200'
-                    placeholder='Ej. ideas para el Día del Padre'
-                  />
-                  <div className='mt-4 flex justify-end gap-2'>
-                    <button
-                      onClick={() => setIsAIModalOpen(false)}
-                      className='rounded-md border border-rambla-border px-4 py-2 text-sm text-rambla-text-secondary hover:border-primary-500 hover:text-primary-400 transition-colors duration-200'
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => aiMutation.mutate()}
-                      disabled={!aiPrompt || aiMutation.isPending}
-                      className='rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors duration-200 shadow-purple-subtle'
-                    >
-                      {aiMutation.isPending ? 'Creando…' : 'Generar Ideas'}
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      {/* AI Ideas Preview Modal */}
+      <AIIdeasPreview
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        clientId={clientId}
+        onGenerateIdeas={handleGenerateIdeas}
+        onAddIdea={handleAddIdea}
+        onIdeasGenerated={handleIdeasGenerated}
+      />
     </div>
   );
 };

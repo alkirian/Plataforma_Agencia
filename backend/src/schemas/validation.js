@@ -22,6 +22,10 @@ export const scheduleItemSchema = z.object({
     .max(1000, 'La descripción no puede exceder 1000 caracteres')
     .optional()
     .nullable(),
+  copy: z.string()
+    .max(2000, 'El copy no puede exceder 2000 caracteres')
+    .optional()
+    .nullable(),
   scheduled_at: z.string()
     .datetime('Fecha y hora deben estar en formato ISO 8601'),
   status: z.enum(['pendiente', 'en-diseño', 'en-progreso', 'aprobado', 'publicado', 'cancelado', 'Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'])
