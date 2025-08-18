@@ -209,7 +209,7 @@ export const DashboardPage = () => {
                   className='group block'
                   aria-label={`Ver detalles del cliente ${client.name}${client.industry ? ` - ${client.industry}` : ''}`}
                 >
-                  <div className='card rounded-xl p-5 transition-all duration-300 ease-in-out hover:scale-105'>
+                  <div className='card-cyber rounded-xl p-6 transition-all duration-300 ease-in-out hover:-translate-y-0.5'>
                     <div className='mb-2 flex items-center justify-between'>
                       <div className='text-[10px] uppercase tracking-wider text-text-muted'>
                         Cliente

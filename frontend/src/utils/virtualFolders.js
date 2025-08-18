@@ -174,6 +174,7 @@ export const getVirtualFolderStats = (folders) => {
  * Configuración personalizable de carpetas (guardada en localStorage)
  */
 export const STORAGE_KEY = 'virtual_folders_config';
+export const DOCUMENT_ASSIGNMENTS_KEY = 'document_folder_assignments';
 
 export const saveVirtualFoldersConfig = (config) => {
   try {
@@ -186,10 +187,10 @@ export const saveVirtualFoldersConfig = (config) => {
 export const loadVirtualFoldersConfig = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
+    return saved ? JSON.parse(saved) : {};
   } catch (error) {
     console.warn('No se pudo cargar la configuración de carpetas:', error);
-    return null;
+    return {};
   }
 };
 
@@ -249,4 +250,193 @@ export const suggestVirtualFolders = (documents = []) => {
 
   // Solo sugerir carpetas con al menos 2 documentos
   return Array.from(suggestions.values()).filter(s => s.count >= 2);
+};
+
+/**
+ * Gestión de asignaciones personalizadas de documentos a carpetas
+ */
+export const saveDocumentAssignment = (documentId, folderId) => {
+  try {
+    const assignments = loadDocumentAssignments();
+    assignments[documentId] = folderId;
+    localStorage.setItem(DOCUMENT_ASSIGNMENTS_KEY, JSON.stringify(assignments));
+    return true;
+  } catch (error) {
+    console.warn('No se pudo guardar la asignación del documento:', error);
+    return false;
+  }
+};
+
+export const removeDocumentAssignment = (documentId) => {
+  try {
+    const assignments = loadDocumentAssignments();
+    delete assignments[documentId];
+    localStorage.setItem(DOCUMENT_ASSIGNMENTS_KEY, JSON.stringify(assignments));
+    return true;
+  } catch (error) {
+    console.warn('No se pudo remover la asignación del documento:', error);
+    return false;
+  }
+};
+
+export const loadDocumentAssignments = () => {
+  try {
+    const saved = localStorage.getItem(DOCUMENT_ASSIGNMENTS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch (error) {
+    console.warn('No se pudo cargar las asignaciones de documentos:', error);
+    return {};
+  }
+};
+
+export const getDocumentAssignment = (documentId) => {
+  const assignments = loadDocumentAssignments();
+  return assignments[documentId] || null;
+};
+
+/**
+ * Obtiene todas las carpetas disponibles (predefinidas + personalizadas)
+ */
+export const getAllVirtualFolders = () => {
+  const customFolders = loadVirtualFoldersConfig();
+  const allFolders = { ...VIRTUAL_FOLDERS };
+  
+  // Agregar carpetas personalizadas
+  Object.values(customFolders).forEach(folder => {
+    allFolders[folder.id] = folder;
+  });
+  
+  return allFolders;
+};
+
+/**
+ * Organiza documentos considerando asignaciones personalizadas
+ */
+export const organizeDocumentsWithCustomAssignments = (documents = []) => {
+  const folders = {};
+  const assignments = loadDocumentAssignments();
+  const allFolders = getAllVirtualFolders();
+
+  // Inicializar carpetas
+  Object.values(allFolders).forEach(folder => {
+    folders[folder.id] = {
+      ...folder,
+      documents: [],
+      count: 0
+    };
+  });
+
+  // Clasificar documentos
+  documents.forEach(doc => {
+    let categorized = false;
+    
+    // Verificar si tiene asignación personalizada
+    const customAssignment = assignments[doc.id];
+    if (customAssignment && folders[customAssignment]) {
+      folders[customAssignment].documents.push(doc);
+      folders[customAssignment].count++;
+      categorized = true;
+    } else {
+      // Usar clasificación automática
+      Object.values(allFolders).forEach(folder => {
+        if (folder.id !== 'others' && folder.filter && folder.filter(doc)) {
+          folders[folder.id].documents.push(doc);
+          folders[folder.id].count++;
+          categorized = true;
+        }
+      });
+    }
+
+    // Si no se categorizó, va a 'others'
+    if (!categorized) {
+      folders.others.documents.push(doc);
+      folders.others.count++;
+    }
+  });
+
+  // Filtrar carpetas vacías y ordenar
+  const activeFolders = Object.values(folders)
+    .filter(folder => folder.count > 0)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return {
+    folders: activeFolders,
+    totalDocuments: documents.length,
+    folderMap: folders
+  };
+};
+
+/**
+ * Asigna un documento a una carpeta virtual
+ */
+export const assignDocumentToFolder = (document, folder) => {
+  const success = saveDocumentAssignment(document.id, folder.id);
+  
+  if (success) {
+    console.log(`Documento "${document.file_name}" asignado a carpeta "${folder.name}"`);
+    return {
+      success: true,
+      message: `Documento movido a "${folder.name}"`
+    };
+  } else {
+    return {
+      success: false,
+      message: 'Error al mover el documento'
+    };
+  }
+};
+
+/**
+ * Gestión de carpetas personalizadas
+ */
+export const addCustomFolder = (folderData) => {
+  try {
+    const customFolders = loadVirtualFoldersConfig();
+    customFolders[folderData.id] = folderData;
+    saveVirtualFoldersConfig(customFolders);
+    return { success: true, folder: folderData };
+  } catch (error) {
+    console.warn('Error al agregar carpeta personalizada:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const updateCustomFolder = (folderId, folderData) => {
+  try {
+    const customFolders = loadVirtualFoldersConfig();
+    if (customFolders[folderId]) {
+      customFolders[folderId] = { ...customFolders[folderId], ...folderData };
+      saveVirtualFoldersConfig(customFolders);
+      return { success: true, folder: customFolders[folderId] };
+    }
+    return { success: false, error: 'Carpeta no encontrada' };
+  } catch (error) {
+    console.warn('Error al actualizar carpeta personalizada:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const deleteCustomFolder = (folderId) => {
+  try {
+    const customFolders = loadVirtualFoldersConfig();
+    if (customFolders[folderId]) {
+      delete customFolders[folderId];
+      saveVirtualFoldersConfig(customFolders);
+      
+      // Remover asignaciones de documentos a esta carpeta
+      const assignments = loadDocumentAssignments();
+      Object.keys(assignments).forEach(docId => {
+        if (assignments[docId] === folderId) {
+          delete assignments[docId];
+        }
+      });
+      localStorage.setItem(DOCUMENT_ASSIGNMENTS_KEY, JSON.stringify(assignments));
+      
+      return { success: true };
+    }
+    return { success: false, error: 'Carpeta no encontrada' };
+  } catch (error) {
+    console.warn('Error al eliminar carpeta personalizada:', error);
+    return { success: false, error: error.message };
+  }
 };
