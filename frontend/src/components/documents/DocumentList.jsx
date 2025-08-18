@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { DocumentArrowDownIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { DocumentArrowDownIcon, TrashIcon, EyeIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
 import {
   deleteDocument as deleteDocumentApi,
   downloadDocument as downloadDocumentApi,
@@ -16,6 +17,7 @@ export const DocumentList = ({
   const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [draggedDocument, setDraggedDocument] = useState(null);
 
   const handleDownload = async docData => {
     setDownloadingId(docData.id);
@@ -79,6 +81,24 @@ export const DocumentList = ({
       setDeletingId(null);
     }
   };
+
+  // Drag & Drop handlers
+  const handleDragStart = (e, doc) => {
+    setDraggedDocument(doc);
+    e.dataTransfer.setData('text/plain', JSON.stringify(doc));
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // Crear una imagen de arrastre personalizada
+    const dragImage = e.target.cloneNode(true);
+    dragImage.style.transform = 'rotate(3deg)';
+    dragImage.style.opacity = '0.8';
+    e.dataTransfer.setDragImage(dragImage, 20, 20);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedDocument(null);
+  };
+
   return (
     <div className='mt-6 flow-root'>
       <ul role='list' className='-my-4 divide-y divide-[color:var(--color-border-subtle)]'>
@@ -86,8 +106,28 @@ export const DocumentList = ({
           <li className='py-4 text-text-muted'>No hay documentos aún.</li>
         )}
         {documents.map(doc => (
-          <li key={doc.id} className='flex items-center justify-between py-4'>
+          <motion.li 
+            key={doc.id} 
+            className={`flex items-center justify-between py-4 rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing ${
+              draggedDocument?.id === doc.id 
+                ? 'opacity-50 scale-95 bg-cyan-500/10 border border-cyan-400/30' 
+                : 'hover:bg-white/5'
+            }`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, doc)}
+            onDragEnd={handleDragEnd}
+            whileHover={{ scale: 1.01 }}
+            whileDrag={{ scale: 1.05, rotate: 2 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
             <div className='flex items-center space-x-4'>
+              {/* Drag handle */}
+              <div className="flex-shrink-0 text-text-muted opacity-50 hover:opacity-100 transition-opacity">
+                <Bars3Icon className="h-4 w-4" />
+              </div>
+              
               <div className='h-10 w-10 flex-shrink-0 rounded-lg bg-surface-soft flex items-center justify-center border border-[color:var(--color-border-subtle)]'>
                 <span className='text-xs font-bold text-text-muted'>
                   {(doc.file_type || '').toUpperCase().includes('PDF') ? 'PDF' : 'DOC'}
@@ -151,7 +191,7 @@ export const DocumentList = ({
                 )}
               </button>
             </div>
-          </li>
+          </motion.li>
         ))}
       </ul>
       

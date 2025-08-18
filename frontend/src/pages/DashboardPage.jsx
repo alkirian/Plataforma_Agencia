@@ -86,7 +86,7 @@ export const DashboardPage = () => {
     return <ErrorCard title="Error al cargar clientes" message={error.message} onRetry={() => window.location.reload()} />;
 
   return (
-    <div className='space-y-6 sm:space-y-8'>
+    <div className='space-y-6 sm:space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
       {/* Hero */}
       <section className='flex flex-col items-center text-center gap-4 py-4 px-4 sm:px-0'>
         <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft backdrop-blur flex items-center justify-center text-2xl font-bold text-text-primary'>
@@ -107,7 +107,7 @@ export const DashboardPage = () => {
       </section>
 
       {/* Búsqueda y filtros */}
-      {allClients.length > 0 && (
+  {allClients.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,7 +157,7 @@ export const DashboardPage = () => {
 
       {/* Separador */}
       <div className='relative'>
-        <div className='mx-auto mb-6 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
+        <div className='mx-auto max-w-7xl mb-6 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
         <div className='-mt-4 mb-2 flex justify-center'>
           <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-xs tracking-wide text-text-muted'>
             {searchTerm ? 'RESULTADOS DE BÚSQUEDA' : 'CLIENTES RECIENTES'}
@@ -181,7 +181,7 @@ export const DashboardPage = () => {
           </p>
           <button
             onClick={() => setSearchTerm('')}
-            className='text-rambla-accent hover:underline text-sm'
+            className='text-[color:var(--color-accent-blue)] hover:underline text-sm'
           >
             Limpiar búsqueda
           </button>
@@ -189,7 +189,7 @@ export const DashboardPage = () => {
       ) : (
         <motion.div
           layout
-          className='grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-4 sm:px-0'
+          className='grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mx-auto max-w-7xl justify-center'
           role="list"
           aria-label="Lista de clientes"
         >

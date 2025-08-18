@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  FolderIcon, 
   DocumentIcon,
   EllipsisVerticalIcon,
   TrashIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
+import { FolderIcon } from '../ui/FolderIcon';
 
 export const FolderCard = ({ 
   folder, 
@@ -15,8 +15,10 @@ export const FolderCard = ({
   onClick,
   onEdit,
   onDelete,
+  onDrop,
   isCustom = false 
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -35,12 +37,41 @@ export const FolderCard = ({
     onDelete?.(folder);
   };
 
+  // Drag & Drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const documentData = e.dataTransfer.getData('text/plain');
+    if (documentData && onDrop) {
+      const document = JSON.parse(documentData);
+      onDrop(document, folder);
+    }
+  };
+
   return (
     <motion.div
-      className="group relative bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+      className={`group relative rounded-xl p-6 transition-all duration-300 cursor-pointer ${
+        isDragOver 
+          ? 'bg-cyan-500/20 border-2 border-cyan-400 shadow-lg shadow-cyan-500/25' 
+          : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
+      }`}
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={handleClick}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -102,12 +133,23 @@ export const FolderCard = ({
 
       {/* Icono de la carpeta */}
       <div className="flex justify-center mb-4">
-        <div 
-          className="p-4 rounded-2xl"
-          style={{ backgroundColor: `${folder.color}20` }}
+        <motion.div 
+          className={`p-4 rounded-2xl bg-gradient-to-br ${folder.gradient || 'from-gray-400 to-slate-500'} bg-opacity-20 backdrop-blur-sm`}
+          whileHover={{ scale: 1.1, rotate: isDragOver ? 0 : 5 }}
+          animate={{ 
+            scale: isDragOver ? 1.15 : 1,
+            rotate: isDragOver ? 10 : 0 
+          }}
+          transition={{ duration: 0.2 }}
         >
-          <span className="text-4xl">{folder.icon}</span>
-        </div>
+          <FolderIcon 
+            iconType={folder.iconType || folder.icon || 'folder'}
+            className="h-12 w-12"
+            gradient={folder.gradient || 'from-gray-400 to-slate-500'}
+            withGlow={isDragOver}
+            animated
+          />
+        </motion.div>
       </div>
 
       {/* Nombre de la carpeta */}

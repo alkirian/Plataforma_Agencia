@@ -84,9 +84,9 @@ export const Header = ({ userEmail, onLogout }) => {
             <Link 
               to='/dashboard' 
               className='text-xl sm:text-2xl font-bold text-cyber-gradient'
-              aria-label="Ir al dashboard - Plataforma de gestión de agencia"
+              aria-label="Ir al dashboard - Cadence"
             >
-              Plataforma Agencia
+              Cadence
             </Link>
           </Tooltip>
           <motion.div

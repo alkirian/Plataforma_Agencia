@@ -8,19 +8,21 @@ export const VIRTUAL_FOLDERS = {
   // Carpetas por tipo de archivo
   images: {
     id: 'images',
-    name: '📸 Imágenes',
+    name: 'Imágenes',
     description: 'Fotos, logos, gráficos',
-    icon: '🖼️',
+    iconType: 'photo',
     color: '#10b981',
+    gradient: 'from-emerald-400 to-cyan-500',
     filter: (doc) => doc.file_type?.startsWith('image/'),
     sortOrder: 1
   },
   documents: {
     id: 'documents',
-    name: '📄 Documentos',
+    name: 'Documentos',
     description: 'PDFs, Word, Excel',
-    icon: '📄',
+    iconType: 'document-text',
     color: '#3b82f6',
+    gradient: 'from-blue-400 to-indigo-500',
     filter: (doc) => doc.file_type?.includes('pdf') || 
                     doc.file_type?.includes('word') || 
                     doc.file_type?.includes('excel') || 
@@ -29,46 +31,51 @@ export const VIRTUAL_FOLDERS = {
   },
   contracts: {
     id: 'contracts',
-    name: '📋 Contratos',
+    name: 'Contratos',
     description: 'Documentos contractuales',
-    icon: '📋',
+    iconType: 'clipboard-document',
     color: '#8b5cf6',
+    gradient: 'from-purple-400 to-pink-500',
     filter: (doc) => /contrat|agreement|acuerdo/i.test(doc.file_name),
     sortOrder: 3
   },
   proposals: {
     id: 'proposals',
-    name: '💼 Propuestas',
+    name: 'Propuestas',
     description: 'Propuestas comerciales',
-    icon: '💼',
+    iconType: 'briefcase',
     color: '#f59e0b',
+    gradient: 'from-amber-400 to-orange-500',
     filter: (doc) => /propuesta|proposal|quote|cotiz/i.test(doc.file_name),
     sortOrder: 4
   },
   marketing: {
     id: 'marketing',
-    name: '🎨 Marketing',
+    name: 'Marketing',
     description: 'Material publicitario',
-    icon: '🎨',
+    iconType: 'paint-brush',
     color: '#ec4899',
+    gradient: 'from-pink-400 to-rose-500',
     filter: (doc) => /marketing|publicidad|campaign|social|redes/i.test(doc.file_name),
     sortOrder: 5
   },
   reports: {
     id: 'reports',
-    name: '📊 Reportes',
+    name: 'Reportes',
     description: 'Informes y análisis',
-    icon: '📊',
+    iconType: 'chart-bar',
     color: '#06b6d4',
+    gradient: 'from-cyan-400 to-blue-500',
     filter: (doc) => /report|informe|analisis|dashboard|metrics/i.test(doc.file_name),
     sortOrder: 6
   },
   others: {
     id: 'others',
-    name: '📁 Otros',
+    name: 'Otros',
     description: 'Documentos sin categorizar',
-    icon: '📁',
+    iconType: 'folder',
     color: '#6b7280',
+    gradient: 'from-gray-400 to-slate-500',
     filter: () => true, // Catch-all
     sortOrder: 99
   }

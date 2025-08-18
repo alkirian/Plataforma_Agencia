@@ -22,6 +22,7 @@ export const FolderGrid = ({
   onDeleteFolder,
   onDocumentDelete,
   onDocumentDownload,
+  onDocumentDrop,
   isLoading = false 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,6 +89,12 @@ export const FolderGrid = ({
 
   const clearSearch = () => {
     setSearchTerm('');
+  };
+
+  const handleDocumentDrop = (document, folder) => {
+    if (onDocumentDrop) {
+      onDocumentDrop(document, folder);
+    }
   };
 
   if (isLoading) {
@@ -248,6 +255,7 @@ export const FolderGrid = ({
                   onClick={() => onFolderSelect(folder.id)}
                   onEdit={handleEditFolder}
                   onDelete={handleDeleteFolder}
+                  onDrop={handleDocumentDrop}
                   isCustom={folder.custom}
                 />
               </motion.div>

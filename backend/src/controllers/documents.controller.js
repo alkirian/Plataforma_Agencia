@@ -35,39 +35,20 @@ export const handleUploadDocument = async (req, res, next) => {
   try {
     const { clientId } = req.params;
     const token = req.token;
-    const { file_name, storage_path, file_type, file_size, folder_id } = req.body || {};
+    const { file_name, storage_path, file_type, file_size } = req.body || {};
     if (!clientId || !storage_path || !file_name) {
       return res.status(400).json({ success: false, message: 'Faltan campos requeridos.' });
     }
     const agencyId = await getUserAgencyId(req.user.id);
 
-    // Verificar que la carpeta existe si se especifica folder_id
-    if (folder_id) {
-      const { data: folder, error: folderError } = await supabaseAdmin
-        .from('document_folders')
-        .select('id')
-        .eq('id', folder_id)
-        .eq('client_id', clientId)
-        .eq('agency_id', agencyId)
-        .single();
-        
-      if (folderError || !folder) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'La carpeta especificada no existe o no tienes permisos para acceder a ella' 
-        });
-      }
-    }
-
     // Creamos el objeto que vamos a insertar
     const documentData = {
       client_id: clientId,
-      agency_id: agencyId,
+      agency_id: agencyId, // <-- Sospechamos que este valor puede ser null
       file_name,
       storage_path,
       file_type,
       file_size,
-      folder_id: folder_id || null,
       ai_status: 'pending',
     };
     

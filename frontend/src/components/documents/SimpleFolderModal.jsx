@@ -3,15 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, FolderPlusIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { CyberButton } from '../ui';
+import { FolderIcon as CustomFolderIcon, FolderIconPicker } from '../ui/FolderIcon';
 
-const FOLDER_COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
-];
-
-const FOLDER_ICONS = [
-  '📁', '📂', '🗂️', '📋', '📊', '📄', '🎨', '💼', 
-  '🔧', '💡', '📸', '🎵', '🎥', '📚', '💰', '⚖️'
+const FOLDER_GRADIENTS = [
+  'from-blue-400 to-indigo-500',
+  'from-emerald-400 to-cyan-500', 
+  'from-amber-400 to-orange-500',
+  'from-red-400 to-pink-500', 
+  'from-purple-400 to-pink-500',
+  'from-pink-400 to-rose-500',
+  'from-cyan-400 to-blue-500',
+  'from-lime-400 to-green-500'
 ];
 
 export const SimpleFolderModal = ({ 
@@ -25,28 +27,43 @@ export const SimpleFolderModal = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    icon: '📁',
-    color: '#3b82f6',
+    iconType: 'folder',
+    gradient: 'from-blue-400 to-indigo-500',
     filterPattern: ''
   });
   const [errors, setErrors] = useState({});
+
+  // Función helper para extraer color del gradient
+  const extractColorFromGradient = (gradient) => {
+    const colorMap = {
+      'from-blue-400 to-indigo-500': '#3b82f6',
+      'from-emerald-400 to-cyan-500': '#10b981', 
+      'from-amber-400 to-orange-500': '#f59e0b',
+      'from-red-400 to-pink-500': '#ef4444', 
+      'from-purple-400 to-pink-500': '#8b5cf6',
+      'from-pink-400 to-rose-500': '#ec4899',
+      'from-cyan-400 to-blue-500': '#06b6d4',
+      'from-lime-400 to-green-500': '#84cc16'
+    };
+    return colorMap[gradient] || '#3b82f6';
+  };
 
   useEffect(() => {
     if (isOpen) {
       if (isEditing && folder) {
         setFormData({
-          name: folder.name?.replace(/^📁\s*/, '') || '',
+          name: folder.name || '',
           description: folder.description || '',
-          icon: folder.icon || '📁',
-          color: folder.color || '#3b82f6',
+          iconType: folder.iconType || 'folder',
+          gradient: folder.gradient || 'from-blue-400 to-indigo-500',
           filterPattern: folder.filterPattern || ''
         });
       } else {
         setFormData({
           name: '',
           description: '',
-          icon: '📁',
-          color: '#3b82f6',
+          iconType: 'folder',
+          gradient: 'from-blue-400 to-indigo-500',
           filterPattern: ''
         });
       }
@@ -80,8 +97,9 @@ export const SimpleFolderModal = ({
       id: formData.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
       name: formData.name.trim(),
       description: formData.description.trim() || null,
-      icon: formData.icon,
-      color: formData.color,
+      iconType: formData.iconType,
+      gradient: formData.gradient,
+      color: extractColorFromGradient(formData.gradient),
       custom: true,
       filter: formData.filterPattern 
         ? (doc) => new RegExp(formData.filterPattern, 'i').test(doc.file_name)
@@ -157,12 +175,18 @@ export const SimpleFolderModal = ({
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 {/* Preview */}
                 <div className="text-center">
-                  <div 
-                    className="inline-flex p-4 rounded-2xl mb-2"
-                    style={{ backgroundColor: `${formData.color}20` }}
+                  <motion.div 
+                    className={`inline-flex p-4 rounded-2xl mb-2 bg-gradient-to-br ${formData.gradient} bg-opacity-20 backdrop-blur-sm`}
+                    whileHover={{ scale: 1.05, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <span className="text-4xl">{formData.icon}</span>
-                  </div>
+                    <CustomFolderIcon 
+                      iconType={formData.iconType}
+                      className="h-12 w-12"
+                      gradient={formData.gradient}
+                      withGlow
+                    />
+                  </motion.div>
                   <p className="text-sm text-text-muted">Vista previa</p>
                 </div>
 
@@ -212,41 +236,29 @@ export const SimpleFolderModal = ({
                   <label className="block text-sm font-medium text-text-primary mb-2">
                     Icono
                   </label>
-                  <div className="grid grid-cols-8 gap-2">
-                    {FOLDER_ICONS.map((icon) => (
-                      <button
-                        key={icon}
-                        type="button"
-                        onClick={() => handleInputChange('icon', icon)}
-                        className={`p-2 rounded-lg text-xl transition-colors ${
-                          formData.icon === icon
-                            ? 'bg-primary-500/20 border border-primary-500/30'
-                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
-                        }`}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
+                  <FolderIconPicker
+                    selectedIcon={formData.iconType}
+                    onSelect={(iconType) => handleInputChange('iconType', iconType)}
+                    className=""
+                  />
                 </div>
 
-                {/* Color */}
+                {/* Gradiente */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Color
+                    Gradiente
                   </label>
-                  <div className="grid grid-cols-8 gap-2">
-                    {FOLDER_COLORS.map((color) => (
+                  <div className="grid grid-cols-4 gap-2">
+                    {FOLDER_GRADIENTS.map((gradient) => (
                       <button
-                        key={color}
+                        key={gradient}
                         type="button"
-                        onClick={() => handleInputChange('color', color)}
-                        className={`w-8 h-8 rounded-lg transition-all ${
-                          formData.color === color
+                        onClick={() => handleInputChange('gradient', gradient)}
+                        className={`w-12 h-8 rounded-lg transition-all bg-gradient-to-r ${gradient} ${
+                          formData.gradient === gradient
                             ? 'ring-2 ring-white ring-offset-2 ring-offset-surface-strong scale-110'
                             : 'hover:scale-105'
                         }`}
-                        style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>

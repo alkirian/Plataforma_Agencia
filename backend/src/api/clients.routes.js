@@ -4,9 +4,7 @@ import { protect } from '../middleware/auth.middleware.js';
 import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed } from '../controllers/clients.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
 import { handleGenerateIdeas, handleChat, handleGetChatHistory } from '../controllers/ai.controller.js';
-import { handleMoveDocument } from '../controllers/folders.controller.js';
 import scheduleRoutes from './schedule.routes.js';
-import folderRoutes from './folders.routes.js';
 
 const router = Router();
 
@@ -32,9 +30,6 @@ router.route('/:clientId/documents')
 // Eliminar un documento específico de un cliente
 router.delete('/:clientId/documents/:documentId', handleDeleteDocument);
 
-// Mover un documento a una carpeta
-router.put('/:clientId/documents/:documentId/move', handleMoveDocument);
-
 // Rutas de IA - deben ir ANTES de la ruta /:clientId genérica
 router.post('/:clientId/generate-ideas', handleGenerateIdeas);
 router.post('/:clientId/chat', handleChat);
@@ -42,9 +37,6 @@ router.get('/:clientId/chat/history', handleGetChatHistory);
 
 // Ruta para el feed de actividad de un cliente
 router.get('/:clientId/activity-feed', handleGetActivityFeed);
-
-// Rutas anidadas para carpetas de documentos
-router.use('/:clientId/folders', folderRoutes);
 
 // Rutas anidadas para el calendario - ESTA LÍNEA FALTABA
 router.use('/:clientId/schedule', scheduleRoutes);
