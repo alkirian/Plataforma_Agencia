@@ -1,4 +1,4 @@
-# Backend - Software Rambla
+# Backend - Cadence
 
 Base de backend con Node.js, Express.js y Supabase (PostgreSQL) lista para desarrollo y despliegue.
 

@@ -12,7 +12,7 @@ export const Sidebar = () => {
 
   return (
     <div className='flex h-full w-64 flex-col space-y-6 bg-surface-soft/80 backdrop-blur-xl py-4 px-2 border-r border-[color:var(--color-border-subtle)] text-text-primary'>
-      <h1 className='px-4 text-2xl font-bold text-cyber-gradient'>Rambla</h1>
+  <h1 className='px-4 text-2xl font-bold text-cyber-gradient'>Cadence</h1>
       <nav className='flex-1 space-y-2'>
         <NavLink to='/dashboard' className={getLinkClasses}>
           <HomeIcon className='h-6 w-6' />

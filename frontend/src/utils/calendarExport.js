@@ -48,10 +48,10 @@ export const exportToICS = (events, clientName = '') => {
   let icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Rambla//Calendar Export//ES',
+    'PRODID:-//Cadence//Calendar Export//ES',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    `X-WR-CALNAME:${clientName ? `${clientName} - ` : ''}Calendario Rambla`,
+    `X-WR-CALNAME:${clientName ? `${clientName} - ` : ''}Calendario Cadence`,
     'X-WR-TIMEZONE:America/Argentina/Buenos_Aires'
   ];
 
@@ -75,7 +75,7 @@ export const exportToICS = (events, clientName = '') => {
       `DTSTART:${formatICSDate(startDate)}`,
       `DTEND:${formatICSDate(endDate)}`,
       `DTSTAMP:${dateStamp}`,
-      `UID:${event.id}@rambla-calendar`,
+  `UID:${event.id}@cadence-calendar`,
       `SUMMARY:${event.title || 'Sin título'}`,
       description ? `DESCRIPTION:${description}` : '',
       event.extendedProps?.status ? `CATEGORIES:${event.extendedProps.status}` : '',

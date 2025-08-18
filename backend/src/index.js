@@ -21,7 +21,7 @@ app.use('/api/v1', mainRouter);
 
 // Ruta Raíz
 app.get('/', (_req, res) => {
-    res.send('API de Software Rambla funcionando.');
+    res.send('API de Cadence funcionando.');
 });
 
 // Middleware de Manejo de Errores (siempre al final)

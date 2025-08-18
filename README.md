@@ -1,4 +1,4 @@
-# Software Rambla
+# Cadence
 
 Plataforma para agencias creativas que centraliza la gestión de clientes, cronogramas de contenido, documentos y tendencias.
 

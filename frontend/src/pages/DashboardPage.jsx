@@ -10,6 +10,8 @@ import { ClientCreationModal } from '../components/dashboard/ClientCreationModal
 import { ActivityFeed } from '../components/dashboard/ActivityFeed.jsx';
 import { useMultipleClientStats } from '../hooks/useClientStats.js';
 import { ProgressBadge } from '../components/ui/ProgressIndicator.jsx';
+import { LoadingCard, ErrorCard, Tooltip, HelpTooltip } from '../components/ui/index.js';
+import { useUIState } from '../hooks/useUIState.js';
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -79,24 +81,28 @@ export const DashboardPage = () => {
   });
 
   if (isLoading)
-    return <div className='text-center text-text-muted'>Cargando clientes...</div>;
-  if (isError) return <div className='text-center text-red-500'>Error: {error.message}</div>;
+    return <LoadingCard title="Cargando clientes..." description="Obteniendo la lista de tus clientes" />;
+  if (isError) 
+    return <ErrorCard title="Error al cargar clientes" message={error.message} onRetry={() => window.location.reload()} />;
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-6 sm:space-y-8'>
       {/* Hero */}
-      <section className='flex flex-col items-center text-center gap-4 py-4'>
+      <section className='flex flex-col items-center text-center gap-4 py-4 px-4 sm:px-0'>
         <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft backdrop-blur flex items-center justify-center text-2xl font-bold text-text-primary'>
           R
         </div>
         <div className='flex justify-center'>
-          <button
-            id='add-client-button'
-            onClick={() => setIsModalOpen(true)}
-            className='btn-cyber px-4 py-2 text-sm font-semibold hover-cyber-glow'
-          >
-            + Añadir Cliente
-          </button>
+          <Tooltip content="Crear un nuevo cliente para gestionar sus proyectos (Ctrl+N)" side="bottom">
+            <button
+              id='add-client-button'
+              onClick={() => setIsModalOpen(true)}
+              className='btn-cyber px-6 py-3 text-sm font-semibold hover-cyber-glow min-h-[44px] touch-target'
+              aria-label="Abrir modal para añadir nuevo cliente"
+            >
+              + Añadir Cliente
+            </button>
+          </Tooltip>
         </div>
       </section>
 
@@ -105,34 +111,41 @@ export const DashboardPage = () => {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className='mx-auto max-w-2xl space-y-4'
+          className='mx-auto max-w-2xl space-y-4 px-4 sm:px-0'
         >
           {/* Barra de búsqueda */}
-      <div className='relative'>
+          <div className='relative'>
             <MagnifyingGlassIcon className='absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400' />
-            <input
-              type='text'
-              placeholder='Buscar clientes por nombre o industria...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-        className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft py-3 pl-10 pr-4 text-text-primary placeholder-text-muted backdrop-blur-sm transition-all focus:border-[color:var(--color-border-strong)] focus:outline-none'
-            />
+            <Tooltip content="Busca por nombre de cliente o industria. Usa '/' para enfocar rápidamente" side="top">
+              <input
+                type='text'
+                placeholder='Buscar clientes por nombre o industria...'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft py-3 pl-10 pr-4 text-text-primary placeholder-text-muted backdrop-blur-sm transition-all focus:border-[color:var(--color-border-strong)] focus:outline-none min-h-[44px] text-base sm:text-sm'
+                aria-label="Buscar clientes por nombre o industria"
+                role="searchbox"
+              />
+            </Tooltip>
           </div>
 
           {/* Filtros */}
-          <div className='flex items-center justify-between'>
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0'>
             <div className='flex items-center space-x-2'>
               <FunnelIcon className='h-4 w-4 text-gray-400' />
               <span className='text-sm text-gray-400'>Ordenar por:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-sm text-text-primary backdrop-blur-sm focus:border-[color:var(--color-border-strong)] focus:outline-none'
-              >
-                <option value='name'>Nombre</option>
-                <option value='date'>Fecha agregado</option>
-                <option value='industry'>Industria</option>
-              </select>
+              <Tooltip content="Cambia el orden de visualización de los clientes" side="top">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary backdrop-blur-sm focus:border-[color:var(--color-border-strong)] focus:outline-none min-h-[44px]'
+                  aria-label="Ordenar clientes por"
+                >
+                  <option value='name'>Nombre</option>
+                  <option value='date'>Fecha agregado</option>
+                  <option value='industry'>Industria</option>
+                </select>
+              </Tooltip>
             </div>
             
             <div className='text-sm text-text-muted'>
@@ -176,7 +189,9 @@ export const DashboardPage = () => {
       ) : (
         <motion.div
           layout
-          className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          className='grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-4 sm:px-0'
+          role="list"
+          aria-label="Lista de clientes"
         >
           <AnimatePresence>
             {filteredAndSortedClients.map((client, index) => (
@@ -187,18 +202,27 @@ export const DashboardPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
+                role="listitem"
               >
-                <Link to={`/clients/${client.id}`} className='group block'>
+                <Link 
+                  to={`/clients/${client.id}`} 
+                  className='group block'
+                  aria-label={`Ver detalles del cliente ${client.name}${client.industry ? ` - ${client.industry}` : ''}`}
+                >
                   <div className='card rounded-xl p-5 transition-all duration-300 ease-in-out hover:scale-105'>
                     <div className='mb-2 flex items-center justify-between'>
                       <div className='text-[10px] uppercase tracking-wider text-text-muted'>
                         Cliente
                       </div>
                       {statsMap[client.id] && (
-                        <ProgressBadge 
-                          percentage={statsMap[client.id].stats.percentage}
-                          total={statsMap[client.id].stats.total}
-                        />
+                        <Tooltip content={`Progreso: ${statsMap[client.id].stats.completed} completadas de ${statsMap[client.id].stats.total} tareas`}>
+                          <div>
+                            <ProgressBadge 
+                              percentage={statsMap[client.id].stats.percentage}
+                              total={statsMap[client.id].stats.total}
+                            />
+                          </div>
+                        </Tooltip>
                       )}
                     </div>
                     

@@ -11,7 +11,15 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
 
   return (
     // El fondo y el texto principal se definen aquí
-  <div className='min-h-screen bg-app text-text-primary'>
+  <div className='min-h-screen bg-app text-text-primary keyboard-nav'>
+      {/* Skip links for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Saltar al contenido principal
+      </a>
+      <a href="#navigation" className="skip-link">
+        Saltar a la navegación
+      </a>
+      
       <Header userEmail={userEmail} onLogout={onLogout} />
       <Toaster
         position='bottom-right'
@@ -23,7 +31,7 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
           },
         }}
       />
-    <main className='w-full py-8 px-6'>
+    <main id="main-content" className='w-full py-8 px-6'>
         <Breadcrumbs />
         {children}
       </main>

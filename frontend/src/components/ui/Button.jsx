@@ -11,6 +11,7 @@ export const Button = ({
   icon,
   cyber = true,
   onClick,
+  'aria-label': ariaLabel,
   ...props
 }) => {
   const variants = {
@@ -32,10 +33,10 @@ export const Button = ({
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg',
-    md: 'px-5 py-2.5 rounded-xl',
-    lg: 'px-7 py-3 text-lg rounded-xl',
-    xl: 'px-8 py-4 text-xl rounded-2xl',
+    sm: 'px-4 py-2 text-sm rounded-lg min-h-[44px] sm:min-h-auto sm:px-3 sm:py-1.5',
+    md: 'px-6 py-3 rounded-xl min-h-[44px] sm:min-h-auto sm:px-5 sm:py-2.5',
+    lg: 'px-8 py-4 text-lg rounded-xl min-h-[48px] sm:min-h-auto sm:px-7 sm:py-3',
+    xl: 'px-10 py-5 text-xl rounded-2xl min-h-[52px] sm:min-h-auto sm:px-8 sm:py-4',
   };
 
   const handleClick = e => {
@@ -62,6 +63,8 @@ export const Button = ({
       )}
       disabled={disabled || loading}
       onClick={handleClick}
+      aria-label={ariaLabel || (loading ? 'Cargando...' : undefined)}
+      aria-disabled={disabled || loading}
       {...props}
     >
       {loading ? (

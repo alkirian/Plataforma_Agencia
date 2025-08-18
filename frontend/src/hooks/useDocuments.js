@@ -27,8 +27,8 @@ export const useDocuments = clientId => {
 
   // Upload
   const uploadMut = useMutation({
-    mutationFn: ({ file }) => uploadDocument(clientId, file),
-    onMutate: async ({ file }) => {
+    mutationFn: ({ file, folder_id }) => uploadDocument(clientId, file, folder_id),
+    onMutate: async ({ file, folder_id }) => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEY(clientId) });
       const prev = queryClient.getQueryData(QUERY_KEY(clientId));
       const optimistic = {
@@ -36,6 +36,7 @@ export const useDocuments = clientId => {
         file_name: file?.name || 'archivo',
         file_type: file?.type,
         file_size: file?.size,
+        folder_id: folder_id || null,
         created_at: new Date().toISOString(),
         ai_status: 'processing',
         _optimistic: true,

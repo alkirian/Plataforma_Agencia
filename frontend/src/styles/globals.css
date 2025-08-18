@@ -183,11 +183,106 @@
     box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 6px rgba(96,165,250,0.15), 0 0 0 12px rgba(167,139,250,0.12);
   }
 
-  /* Focus visible */
+  /* Focus visible - Enhanced for accessibility */
   .focus-visible:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(96,165,250,0.5), 0 0 0 6px rgba(96,165,250,0.25);
-    border-color: var(--color-border-strong);
+    box-shadow: 0 0 0 2px rgba(96,165,250,0.8), 0 0 0 4px rgba(96,165,250,0.4);
+    border-color: var(--color-accent-blue);
+  }
+
+  /* Enhanced focus for interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent-blue);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(96,165,250,0.3);
+  }
+
+  /* Remove default outline and replace with our accessible version */
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  [tabindex]:focus {
+    outline: none;
+  }
+
+  /* Skip links for keyboard navigation */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--color-accent-blue);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    font-weight: 500;
+    transition: top 0.3s;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+
+  /* Enhanced visual feedback for keyboard navigation */
+  .keyboard-nav button:focus-visible,
+  .keyboard-nav a:focus-visible,
+  .keyboard-nav input:focus-visible,
+  .keyboard-nav select:focus-visible {
+    outline: 3px solid var(--color-accent-blue);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px white, 0 0 0 5px var(--color-accent-blue);
+  }
+
+  /* Touch target improvements for mobile */
+  @media (max-width: 768px) {
+    /* Minimum touch target size */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Enhanced touch areas */
+    button, 
+    a, 
+    input[type="button"], 
+    input[type="submit"], 
+    .btn, 
+    .btn-cyber {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 12px 16px;
+    }
+
+    /* Larger spacing for mobile */
+    .mobile-spacing {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    /* Improved form elements */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+      min-height: 44px;
+      padding: 12px 16px;
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    /* Touch-friendly navigation */
+    nav a {
+      padding: 12px 16px;
+      margin: 4px 0;
+    }
   }
 }
 
