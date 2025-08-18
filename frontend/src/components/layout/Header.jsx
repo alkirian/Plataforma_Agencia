@@ -5,7 +5,8 @@ import {
   Cog6ToothIcon, 
   UserCircleIcon, 
   BellIcon,
-  Bars3Icon 
+  Bars3Icon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CyberButton } from '../ui';
@@ -14,12 +15,14 @@ import { NotificationPanel } from '../notifications/NotificationPanel';
 import { useNotifications } from '../../hooks/useNotifications';
 import { Tooltip } from '../ui/Tooltip';
 import { MobileMenu } from './MobileMenu';
+import { ClientSearchModal } from '../ui/ClientSearchModal';
 
 export const Header = ({ userEmail, onLogout }) => {
   const location = useLocation();
   const params = useParams();
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Detectar si estamos en una página de cliente
   const isClientPage = location.pathname.startsWith('/clients/');
@@ -47,11 +50,7 @@ export const Header = ({ userEmail, onLogout }) => {
   };
 
   const navLinkClasses = ({ isActive }) =>
-    `rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
-      isActive
-        ? 'bg-surface-strong text-text-primary shadow-halo border border-[color:var(--color-border-subtle)]'
-        : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'
-    }`;
+    `icon-btn ${isActive ? 'icon-btn--active' : ''}`;
 
   return (
     <motion.header
@@ -116,15 +115,21 @@ export const Header = ({ userEmail, onLogout }) => {
           </motion.div>
         )}
 
-        {/* Mobile: Solo notificaciones */}
+        {/* Mobile: Búsqueda y notificaciones */}
         <div className="flex items-center md:hidden">
           <motion.button
+            onClick={() => setIsSearchOpen(true)}
+            className={`icon-btn`}
+            aria-label="Buscar clientes"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <MagnifyingGlassIcon className='h-6 w-6' aria-hidden="true" />
+          </motion.button>
+
+          <motion.button
             onClick={handleOpenNotifications}
-            className={`rounded-xl p-3 transition-all duration-300 relative overflow-hidden ${
-              isNotificationPanelOpen
-                ? 'bg-surface-strong text-text-primary shadow-halo border border-[color:var(--color-border-subtle)]'
-                : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'
-            }`}
+            className={`icon-btn ${isNotificationPanelOpen ? 'icon-btn--active' : ''}`}
             aria-label={`Notificaciones${stats.total > 0 ? ` - ${stats.total} sin leer` : ''}`}
             aria-expanded={isNotificationPanelOpen}
             whileHover={{ scale: 1.05 }}
@@ -164,6 +169,19 @@ export const Header = ({ userEmail, onLogout }) => {
               >
                 <HomeIcon className='h-5 w-5' aria-hidden="true" />
               </NavLink>
+            </Tooltip>
+
+            <Tooltip content="Buscar clientes (/)" >
+              <motion.button
+                onClick={() => setIsSearchOpen(true)}
+                className={navLinkClasses({ isActive: false })}
+                title='Buscar'
+                aria-label='Abrir búsqueda de clientes'
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <MagnifyingGlassIcon className='h-5 w-5' aria-hidden="true" />
+              </motion.button>
             </Tooltip>
             
             {/* Botón de notificaciones - Desktop */}
@@ -261,6 +279,9 @@ export const Header = ({ userEmail, onLogout }) => {
         notifications={stats}
         onNotificationsClick={handleOpenNotifications}
       />
+
+  {/* Client Search Modal */}
+  <ClientSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </motion.header>
   );
 };

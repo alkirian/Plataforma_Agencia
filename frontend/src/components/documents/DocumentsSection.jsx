@@ -3,18 +3,16 @@ import { motion } from 'framer-motion';
 import { ArrowUpTrayIcon, Squares2X2Icon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { DocumentList } from './DocumentList';
 import { DocumentUploader } from './DocumentUploader';
-import { FolderGrid } from './FolderGrid';
+import { DocumentBoard } from './DocumentBoard';
 import { useDocuments } from '../../hooks/useDocuments';
-import { useGridFolders } from '../../hooks/useGridFolders';
 import { Tooltip } from '../ui/Tooltip';
 
 export const DocumentsSection = ({ clientId, clientName = 'Cliente' }) => {
-  const [viewMode, setViewMode] = useState('folders'); // 'folders' | 'list'
+  const [viewMode, setViewMode] = useState('board'); // 'board' | 'list'
   const [isUploadExpanded, setIsUploadExpanded] = useState(false);
 
   // Hooks
   const { documents, isLoading, error, upload, remove, download } = useDocuments(clientId);
-  const gridFolders = useGridFolders(documents);
 
   // Document upload 
   const handleUpload = async (file) => {
@@ -26,12 +24,12 @@ export const DocumentsSection = ({ clientId, clientName = 'Cliente' }) => {
       {/* Header with View Toggle and Upload */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h2 className='text-2xl font-bold text-text-primary'>📁 Documentos</h2>
+          
           
           {/* Estadísticas */}
-          {gridFolders.stats.totalDocuments > 0 && (
+          {documents.length > 0 && (
             <div className="text-sm text-text-muted">
-              {gridFolders.stats.totalDocuments} documentos • {gridFolders.stats.totalFolders} carpetas
+             
             </div>
           )}
         </div>
@@ -48,36 +46,34 @@ export const DocumentsSection = ({ clientId, clientName = 'Cliente' }) => {
             <span>Subir</span>
           </motion.button>
 
-          {/* View Toggle - Solo mostrar si no estamos en una carpeta */}
-          {!gridFolders.isInFolderView && (
-            <div className="flex items-center space-x-1 bg-white/5 rounded-lg p-1">
-              <Tooltip content="Vista de carpetas">
-                <button
-                  onClick={() => setViewMode('folders')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'folders' 
-                      ? 'bg-primary-500/20 text-primary-400' 
-                      : 'text-text-muted hover:text-text-primary hover:bg-white/10'
-                  }`}
-                >
-                  <Squares2X2Icon className="h-4 w-4" />
-                </button>
-              </Tooltip>
-              
-              <Tooltip content="Vista de lista">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-primary-500/20 text-primary-400' 
-                      : 'text-text-muted hover:text-text-primary hover:bg-white/10'
-                  }`}
-                >
-                  <ListBulletIcon className="h-4 w-4" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
+          {/* View Toggle */}
+          <div className="flex items-center space-x-1 bg-white/5 rounded-lg p-1">
+            <Tooltip content="Vista de tablero">
+              <button
+                onClick={() => setViewMode('board')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'board' 
+                    ? 'bg-primary-500/20 text-primary-400' 
+                    : 'text-text-muted hover:text-text-primary hover:bg-white/10'
+                }`}
+              >
+                <Squares2X2Icon className="h-4 w-4" />
+              </button>
+            </Tooltip>
+            
+            <Tooltip content="Vista de lista">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'list' 
+                    ? 'bg-primary-500/20 text-primary-400' 
+                    : 'text-text-muted hover:text-text-primary hover:bg-white/10'
+                }`}
+              >
+                <ListBulletIcon className="h-4 w-4" />
+              </button>
+            </Tooltip>
+          </div>
         </div>
       </div>
 
@@ -114,16 +110,11 @@ export const DocumentsSection = ({ clientId, clientName = 'Cliente' }) => {
       {/* Main Content */}
       {!isLoading && !error && (
         <>
-          {/* Folder Grid View */}
-          {viewMode === 'folders' && (
-            <FolderGrid
-              folders={gridFolders.folders}
+          {/* Document Board View */}
+          {viewMode === 'board' && (
+            <DocumentBoard
               documents={documents}
-              currentFolderId={gridFolders.selectedFolderId}
-              onFolderSelect={gridFolders.selectFolder}
-              onCreateFolder={gridFolders.createCustomFolder}
-              onEditFolder={gridFolders.editCustomFolder}
-              onDeleteFolder={gridFolders.deleteCustomFolder}
+              clientId={clientId}
               onDocumentDelete={async documentId => {
                 await remove(documentId);
               }}

@@ -6,12 +6,12 @@
   :root {
     /* App background and gradients */
     --color-app-bg: #0B1020;
-    --color-app-gradient-start: #0B1020;
-    --color-app-gradient-end: #0F172A;
-    --gradient-cyber: radial-gradient(1200px 600px at 10% -10%, rgba(96, 165, 250, 0.08), transparent 60%),
-      radial-gradient(900px 500px at 90% 0%, rgba(167, 139, 250, 0.08), transparent 60%),
-      linear-gradient(180deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-end) 100%);
-    --gradient-glow: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+    --color-app-gradient-start: #3f3e3e;
+    --color-app-gradient-end: #02010a;
+    --gradient-cyber: radial-gradient(1000px 600px at 50% -10%, rgb(20, 36, 58), transparent 100%),
+      radial-gradient(1000px 600px at 50% 99%, rgba(20, 36, 58, 0.322), transparent 100%),
+      linear-gradient(1deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-end) 0%);
+    --gradient-glow: linear-gradient(135deg, #263d57 0%, #ffffff 100%);
 
     /* Surfaces and borders */
     --color-surface: rgba(15, 23, 42, 0.65);
@@ -49,16 +49,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.35);
+    background: rgba(60, 89, 157, 0.35);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #60A5FA, #A78BFA);
-    border-radius: 4px;
+    background: linear-gradient(45deg, #3a3a3a, #212040);
+    border-radius: px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #00f6ff;
+    background: #273232;
   }
 
   ::selection {
@@ -106,7 +106,7 @@
 
   .card-cyber:hover {
     border-color: var(--color-border-strong);
-    box-shadow: 0 0 0 1px rgba(96,165,250,0.15), 0 20px 50px -20px rgba(96,165,250,0.25), 0 30px 60px -30px rgba(167,139,250,0.25);
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.429), 0 20px 50px -20px rgba(96,165,250,0.25), 0 30px 60px -30px rgba(167,139,250,0.25);
     transform: scale(1.01);
   }
 
@@ -140,6 +140,32 @@
 }
 
 @layer utilities {
+  /* Compact icon button for header/toolbars */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px; /* h-9 */
+    width: 36px;  /* w-9 */
+    border-radius: 0.75rem; /* rounded-xl */
+    transition: all 0.2s ease;
+    color: var(--color-text-muted);
+    border: 1px solid transparent;
+    position: relative;
+  }
+
+  .icon-btn:hover {
+    background: var(--color-surface-soft);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-subtle);
+  }
+
+  .icon-btn--active {
+    background: var(--color-surface-strong);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-subtle);
+  }
+
   /* Text gradient */
   .text-cyber-gradient {
     background: linear-gradient(to right, #60A5FA, #A78BFA);

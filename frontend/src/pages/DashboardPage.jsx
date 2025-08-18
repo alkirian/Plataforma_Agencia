@@ -1,9 +1,9 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getClients, createClient } from '../api/clients.js';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { WelcomeEmptyState } from '../components/dashboard/WelcomeEmptyState.jsx';
 import { ClientCreationModal } from '../components/dashboard/ClientCreationModal.jsx';
@@ -15,9 +15,24 @@ import { useUIState } from '../hooks/useUIState.js';
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState('');
+  const searchParams = new URLSearchParams(location.search);
+  const searchTerm = searchParams.get('q') || '';
   const [sortBy, setSortBy] = React.useState('name'); // 'name', 'date', 'industry'
+  const [isSortOpen, setIsSortOpen] = React.useState(false);
+  const sortRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const onClickOutside = (e) => {
+      if (isSortOpen && sortRef.current && !sortRef.current.contains(e.target)) {
+        setIsSortOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [isSortOpen]);
 
   // useQuery ahora devuelve un objeto, accedemos a la propiedad .data para el array
   const {
@@ -113,44 +128,11 @@ export const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className='mx-auto max-w-2xl space-y-4 px-4 sm:px-0'
         >
-          {/* Barra de búsqueda */}
-          <div className='relative'>
-            <MagnifyingGlassIcon className='absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400' />
-            <Tooltip content="Busca por nombre de cliente o industria. Usa '/' para enfocar rápidamente" side="top">
-              <input
-                type='text'
-                placeholder='Buscar clientes por nombre o industria...'
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft py-3 pl-10 pr-4 text-text-primary placeholder-text-muted backdrop-blur-sm transition-all focus:border-[color:var(--color-border-strong)] focus:outline-none min-h-[44px] text-base sm:text-sm'
-                aria-label="Buscar clientes por nombre o industria"
-                role="searchbox"
-              />
-            </Tooltip>
-          </div>
+          {/* Nota: la búsqueda ahora está en el header (modal). */}
 
-          {/* Filtros */}
-          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0'>
-            <div className='flex items-center space-x-2'>
-              <FunnelIcon className='h-4 w-4 text-gray-400' />
-              <span className='text-sm text-gray-400'>Ordenar por:</span>
-              <Tooltip content="Cambia el orden de visualización de los clientes" side="top">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary backdrop-blur-sm focus:border-[color:var(--color-border-strong)] focus:outline-none min-h-[44px]'
-                  aria-label="Ordenar clientes por"
-                >
-                  <option value='name'>Nombre</option>
-                  <option value='date'>Fecha agregado</option>
-                  <option value='industry'>Industria</option>
-                </select>
-              </Tooltip>
-            </div>
-            
-            <div className='text-sm text-text-muted'>
-              {filteredAndSortedClients.length} de {allClients.length} clientes
-            </div>
+          {/* Contador (el control de orden ahora vive junto al grid) */}
+          <div className='text-sm text-text-muted text-center'>
+            {filteredAndSortedClients.length} de {allClients.length} clientes
           </div>
         </motion.div>
       )}
@@ -164,6 +146,57 @@ export const DashboardPage = () => {
           </span>
         </div>
       </div>
+
+      {/* Barra del grid: ordenación sutil */}
+      {allClients.length > 0 && (
+        <div className='mx-auto max-w-7xl flex items-center justify-end px-4 sm:px-0'>
+          <div className='relative' ref={sortRef}>
+            <button
+              type='button'
+              onClick={() => setIsSortOpen(v => !v)}
+              className='inline-flex items-center gap-2 rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-muted hover:text-text-primary transition-colors'
+              aria-haspopup='listbox'
+              aria-expanded={isSortOpen}
+              aria-label='Cambiar orden de clientes'
+            >
+              <ArrowsUpDownIcon className='h-4 w-4' />
+              <span className='hidden sm:inline'>Ordenar: {sortBy === 'name' ? 'Nombre' : sortBy === 'date' ? 'Fecha' : 'Industria'}</span>
+              <span className='sm:hidden'>Orden</span>
+            </button>
+            <AnimatePresence>
+              {isSortOpen && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  className='absolute right-0 z-10 mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-strong backdrop-blur-xl shadow-xl overflow-hidden'
+                  role='listbox'
+                >
+                  {[
+                    { value: 'name', label: 'Nombre' },
+                    { value: 'date', label: 'Fecha agregado' },
+                    { value: 'industry', label: 'Industria' },
+                  ].map(opt => (
+                    <li key={opt.value}>
+                      <button
+                        type='button'
+                        onClick={() => { setSortBy(opt.value); setIsSortOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                          sortBy === opt.value ? 'bg-white/5 text-text-primary' : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
+                        }`}
+                        role='option'
+                        aria-selected={sortBy === opt.value}
+                      >
+                        {opt.label}
+                      </button>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Grid de tarjetas */}
       {allClients.length === 0 ? (
@@ -180,7 +213,7 @@ export const DashboardPage = () => {
             Intenta con un término de búsqueda diferente
           </p>
           <button
-            onClick={() => setSearchTerm('')}
+            onClick={() => navigate('/dashboard')}
             className='text-[color:var(--color-accent-blue)] hover:underline text-sm'
           >
             Limpiar búsqueda
