@@ -2,7 +2,6 @@ import React from 'react';
 import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
-import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
 export const MainLayout = ({ children, userEmail, onLogout }) => {
@@ -35,9 +34,6 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
         <Breadcrumbs />
         {children}
       </main>
-      
-      {/* Modal de atajos de teclado */}
-      <KeyboardShortcutsModal />
     </div>
   );
 };

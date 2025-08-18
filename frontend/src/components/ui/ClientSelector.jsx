@@ -50,8 +50,8 @@ export const ClientSelector = ({ currentClientId }) => {
     <div className="relative" ref={dropdownRef}>
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 
-                   hover:border-primary-500/50 transition-all duration-200 backdrop-blur-sm"
+  className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-surface-soft border border-white/10 
+                   hover:border-primary-500/50 transition-all duration-200"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -73,7 +73,7 @@ export const ClientSelector = ({ currentClientId }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 right-0 w-64 bg-surface-900/95 backdrop-blur-sm border border-white/10 
+            className="absolute top-full mt-2 right-0 w-64 bg-surface-900/95 border border-white/10 
                        rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto"
           >
             <div className="p-2">
@@ -87,7 +87,7 @@ export const ClientSelector = ({ currentClientId }) => {
                   <motion.button
                     key={client.id}
                     onClick={() => handleClientSelect(client.id)}
-                    className="w-full text-left px-3 py-2 rounded-md hover:bg-white/10 
+                    className="w-full text-left px-3 py-2 rounded-md hover:bg-surface-strong 
                                transition-colors duration-150 group"
                     whileHover={{ x: 4 }}
                   >

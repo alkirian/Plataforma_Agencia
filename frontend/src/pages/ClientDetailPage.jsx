@@ -1,14 +1,8 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getClientById } from '../api/clients'; // Nombre corregido
+import { getClientById } from '../api/clients';
 import { ScheduleSection } from '../components/schedule/ScheduleSection';
 import { DocumentsSection } from '../components/documents/DocumentsSection';
-import { Dialog, Transition } from '@headlessui/react';
-import { useMutation } from '@tanstack/react-query';
-import { generateIdeas } from '../api/ai';
-import toast from 'react-hot-toast';
-import { createScheduleItem } from '../api/schedule';
-import AIIdeasPreview from '../components/schedule/AIIdeasPreview';
 
 export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
@@ -16,27 +10,6 @@ export const ClientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Handler para generar ideas
-  const handleGenerateIdeas = async (prompt) => {
-    const ideas = await generateIdeas(clientId, { 
-      userPrompt: prompt, 
-      monthContext: [] 
-    });
-    return Array.isArray(ideas) ? ideas : (ideas?.data || []);
-  };
-
-  // Handler para agregar idea individual al calendario
-  const handleAddIdea = async (ideaData) => {
-    await createScheduleItem(clientId, ideaData);
-  };
-
-  // Handler cuando se agregan ideas al calendario
-  const handleIdeasGenerated = (addedIdeas) => {
-    setRefreshKey(k => k + 1);
-  };
 
   useEffect(() => {
     const run = async () => {
@@ -70,12 +43,6 @@ export const ClientDetailPage = () => {
         </Link>
         <div className='flex items-center justify-between'>
           <h1 className='text-4xl font-bold text-cyber-gradient'>{client.name}</h1>
-          <button
-            onClick={() => setIsAIModalOpen(true)}
-            className='btn-cyber px-4 py-2 text-sm font-semibold hover-cyber-glow'
-          >
-            ✨ Generar con IA
-          </button>
         </div>
         <p className='text-text-muted'>{client.industry || 'No especificada'}</p>
       </div>
@@ -105,22 +72,12 @@ export const ClientDetailPage = () => {
         </div>
         <div className='card rounded-xl p-4'>
           {activeTab === 'schedule' ? (
-            <ScheduleSection key={refreshKey} clientId={clientId} />
+            <ScheduleSection clientId={clientId} />
           ) : (
             <DocumentsSection clientId={clientId} />
           )}
         </div>
       </div>
-
-      {/* AI Ideas Preview Modal */}
-      <AIIdeasPreview
-        isOpen={isAIModalOpen}
-        onClose={() => setIsAIModalOpen(false)}
-        clientId={clientId}
-        onGenerateIdeas={handleGenerateIdeas}
-        onAddIdea={handleAddIdea}
-        onIdeasGenerated={handleIdeasGenerated}
-      />
     </div>
   );
 };

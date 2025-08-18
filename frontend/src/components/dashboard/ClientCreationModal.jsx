@@ -36,7 +36,7 @@ export const ClientCreationModal = ({ isOpen, onClose, onCreate, isSubmitting })
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
-              <Dialog.Panel className='w-full max-w-md rounded-xl border border-white/10 bg-glow-card-bg p-6 backdrop-blur-lg shadow-lg'>
+              <Dialog.Panel className='w-full max-w-md rounded-xl border border-white/10 bg-surface-strong p-6 shadow-lg'>
                 <Dialog.Title className='mb-2 text-lg font-semibold text-white'>
                   Nuevo cliente
                 </Dialog.Title>

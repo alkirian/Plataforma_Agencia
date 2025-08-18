@@ -4,7 +4,8 @@ import {
   EllipsisVerticalIcon, 
   PencilIcon, 
   TrashIcon,
-  DocumentIcon 
+  DocumentIcon,
+  ArrowUpTrayIcon 
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { DocumentCard } from './DocumentCard';
@@ -20,27 +21,64 @@ export const BoardColumn = ({
   canReorder = false
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [draggedDocumentId, setDraggedDocumentId] = useState(null);
 
-  // Drag & Drop handlers
+  // Drag & Drop handlers mejorados
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Verificar si es un documento interno o archivos externos
+    const hasFiles = e.dataTransfer.types.includes('Files');
+    const hasDocumentData = e.dataTransfer.types.includes('text/plain');
+    
+    if (hasFiles || hasDocumentData) {
+      setIsDragOver(true);
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
-    setIsDragOver(false);
+    e.stopPropagation();
+    
+    // Solo desactivar si realmente salimos del área
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     
+    // Manejar archivos externos (desde escritorio)
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // TODO: Implementar drop directo en columna
+      console.log(`Files dropped in column ${column.name}:`, files);
+      return;
+    }
+    
+    // Manejar documentos internos
     const documentData = e.dataTransfer.getData('text/plain');
     if (documentData && onDocumentDrop) {
       try {
         const { documentId, sourceColumnId } = JSON.parse(documentData);
-        onDocumentDrop(documentId, sourceColumnId, column.id, documents.length);
+        if (sourceColumnId !== column.id) { // Solo mover si es diferente columna
+          onDocumentDrop(documentId, sourceColumnId, column.id, documents.length);
+        }
       } catch (error) {
         console.error('Error parsing drop data:', error);
       }
@@ -49,17 +87,22 @@ export const BoardColumn = ({
 
   return (
     <motion.div
-      className={`flex-shrink-0 w-80 bg-white/5 border rounded-xl transition-all duration-200 ${
+      className={`flex-shrink-0 w-80 bg-surface-soft border rounded-xl transition-all duration-200 ${
         isDragOver 
           ? 'border-primary-400 bg-primary-500/10 shadow-lg shadow-primary-500/25' 
           : 'border-white/10'
       }`}
       onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       layout
       initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
+      animate={{ 
+        opacity: 1, 
+        x: 0,
+        scale: isDragOver ? 1.02 : 1
+      }}
       transition={{ duration: 0.3 }}
     >
       {/* Header de la columna */}
@@ -148,16 +191,29 @@ export const BoardColumn = ({
         )}
       </div>
 
-      {/* Indicador de drop zone */}
+      {/* Indicador de drop zone mejorado */}
       {isDragOver && (
         <motion.div
-          className="absolute inset-0 border-2 border-primary-400 bg-primary-500/10 rounded-xl flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          className="absolute inset-0 border-2 border-dashed border-blue-400 bg-blue-500/10 rounded-xl flex items-center justify-center backdrop-blur-sm z-10"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="text-primary-400 font-medium">
-            Soltar documento aquí
+          <div className="flex flex-col items-center gap-2">
+            <motion.div
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+              className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center"
+            >
+              <ArrowUpTrayIcon className="w-6 h-6 text-blue-400" />
+            </motion.div>
+            <div className="text-blue-400 font-semibold text-sm">
+              Soltar en "{column.name}"
+            </div>
+            <div className="text-blue-300 text-xs opacity-80">
+              Los documentos se organizarán aquí
+            </div>
           </div>
         </motion.div>
       )}

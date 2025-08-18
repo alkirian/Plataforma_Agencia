@@ -122,7 +122,7 @@ const AIIdeasPreview = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/75" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -137,7 +137,7 @@ const AIIdeasPreview = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-xl 
-                                        bg-surface-900/95 backdrop-blur-sm border border-white/10 
+                                        bg-surface-900/95 border border-white/10 
                                         shadow-xl transition-all">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -174,8 +174,8 @@ const AIIdeasPreview = ({
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       rows={3}
-                      className="flex-1 rounded-lg border border-white/10 bg-white/5 py-3 px-4 
-                                 text-white placeholder-gray-400 backdrop-blur-sm transition-all 
+                      className="flex-1 rounded-lg border border-white/10 bg-surface-soft py-3 px-4 
+                                 text-white placeholder-gray-400 transition-all 
                                  focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       placeholder="Ej: Ideas para el Día del Padre, contenido sobre sustentabilidad, posts motivacionales..."
                     />
@@ -234,7 +234,7 @@ const AIIdeasPreview = ({
                               className={`p-4 rounded-lg border transition-all cursor-pointer ${
                                 isSelected
                                   ? 'border-primary-500 bg-primary-500/10'
-                                  : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                                  : 'border-white/10 bg-surface-soft hover:border-white/20 hover:bg-surface-strong'
                               }`}
                               onClick={() => toggleIdeaSelection(idea.tempId)}
                             >
@@ -253,7 +253,7 @@ const AIIdeasPreview = ({
                                   
                                   {/* Copy del post */}
                                   {idea.copy && (
-                                    <div className="mb-3 p-3 rounded bg-white/5 border border-white/10">
+                                    <div className="mb-3 p-3 rounded bg-surface-soft border border-white/10">
                                       <p className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">
                                         {idea.copy}
                                       </p>

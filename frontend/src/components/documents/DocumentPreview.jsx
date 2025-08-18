@@ -26,7 +26,7 @@ export const DocumentPreview = ({
       return <DocumentTextIcon className="h-16 w-16 text-red-400" />;
     }
     if (fileType?.toLowerCase().includes('image')) {
-      return <PhotoIcon className="h-16 w-16 text-blue-400" />;
+      return <PhotoIcon className="h-16 w-16 text-gray-400" />;
     }
     return <DocumentTextIcon className="h-16 w-16 text-gray-400" />;
   };
@@ -61,7 +61,7 @@ export const DocumentPreview = ({
     if (fileType.includes('image')) {
       return (
         <div className="flex flex-col items-center justify-center py-12">
-          <PhotoIcon className="h-24 w-24 text-blue-400 mb-4" />
+          <PhotoIcon className="h-24 w-24 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Imagen</h3>
           <p className="text-gray-400 text-center mb-6 max-w-sm">
             Vista previa de imagen disponible después de descarga.
@@ -70,8 +70,8 @@ export const DocumentPreview = ({
             onClick={() => onDownload?.(document)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 
-                       text-white rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-surface-strong hover:bg-surface-soft 
+                       text-white rounded-lg transition-colors border border-white/10"
           >
             <DocumentArrowDownIcon className="h-4 w-4" />
             <span>Descargar Imagen</span>
@@ -119,7 +119,7 @@ export const DocumentPreview = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/75" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -134,7 +134,7 @@ export const DocumentPreview = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-xl 
-                                        bg-surface-900/95 backdrop-blur-sm border border-white/10 
+                                        bg-surface-900/95 border border-white/10 
                                         shadow-xl transition-all">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -159,7 +159,7 @@ export const DocumentPreview = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-white/10 
+                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-surface-soft 
                                transition-colors"
                   >
                     <XMarkIcon className="h-5 w-5" />
@@ -177,7 +177,7 @@ export const DocumentPreview = ({
                             ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                             : document.ai_status === 'processing'
                               ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                              : 'bg-white/10 text-white/70 border border-white/20'
+                              : 'bg-surface-soft text-white/70 border border-white/20'
                         }`}
                       >
                         Estado IA: {document.ai_status === 'ready'

@@ -101,7 +101,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
       transition={{ duration: 0.5 }}
       className="relative"
     >
-      <div className="bg-surface-900/40 backdrop-blur-sm border border-white/10 
+  <div className="bg-surface-900/70 border border-white/10 
                       rounded-xl p-4 shadow-lg">
         {/* Header */}
         <div className="mb-4 pb-3 border-b border-white/10">
@@ -116,7 +116,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigateMonth(-1)}
-            className="p-1.5 hover:bg-white/10 rounded-md transition-all group"
+            className="p-1.5 hover:bg-surface-soft rounded-md transition-all group"
           >
             <ChevronLeftIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-200" />
           </motion.button>
@@ -129,7 +129,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigateMonth(1)}
-            className="p-1.5 hover:bg-white/10 rounded-md transition-all group"
+            className="p-1.5 hover:bg-surface-soft rounded-md transition-all group"
           >
             <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-200" />
           </motion.button>
@@ -159,8 +159,8 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                 className={`
                   relative w-8 h-8 text-xs font-medium rounded-md transition-all
                   ${dayData.isCurrentMonth 
-                    ? 'text-gray-200 hover:bg-white/10' 
-                    : 'text-gray-500 hover:bg-white/5'
+                    ? 'text-gray-200 hover:bg-surface-soft' 
+                    : 'text-gray-500 hover:bg-surface-soft'
                   }
                   ${dayData.isToday 
                     ? 'bg-accent-500 text-white font-bold hover:bg-accent-600' 
@@ -182,9 +182,9 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                         key={idx}
                         className={`w-1 h-1 rounded-full ${
                           event.extendedProps?.status === 'Pendiente' ? 'bg-orange-500' :
-                          event.extendedProps?.status === 'En Diseño' ? 'bg-blue-500' :
+                          event.extendedProps?.status === 'En Diseño' ? 'bg-gray-600' :
                           event.extendedProps?.status === 'Aprobado' ? 'bg-green-500' :
-                          event.extendedProps?.status === 'Publicado' ? 'bg-purple-500' :
+                          event.extendedProps?.status === 'Publicado' ? 'bg-gray-500' :
                           'bg-accent-500'
                         }`}
                       />
@@ -215,7 +215,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
               <span className="text-gray-400">Pendiente</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
+              <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
               <span className="text-gray-400">En Diseño</span>
             </div>
             <div className="flex items-center space-x-1">
@@ -223,7 +223,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
               <span className="text-gray-400">Aprobado</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-purple-500 rounded-full"></span>
+              <span className="w-1 h-1 bg-gray-500 rounded-full"></span>
               <span className="text-gray-400">Publicado</span>
             </div>
           </div>

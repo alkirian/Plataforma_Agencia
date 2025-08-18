@@ -79,7 +79,7 @@ export const LoadingOverlay = ({ isVisible, children, label = 'Cargando...' }) =
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg flex items-center justify-center z-10"
+  className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center z-10"
       >
         <div className="bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg p-4 flex items-center space-x-3">
           <LoadingSpinner size="sm" />

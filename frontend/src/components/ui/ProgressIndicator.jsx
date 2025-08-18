@@ -12,14 +12,14 @@ export const ProgressIndicator = ({
 }) => {
   const getColor = (percentage) => {
     if (percentage >= 80) return 'text-green-400';
-    if (percentage >= 50) return 'text-blue-400';
+    if (percentage >= 50) return 'text-gray-300';
     if (percentage >= 20) return 'text-orange-400';
     return 'text-gray-400';
   };
 
   const getBarColor = (percentage) => {
     if (percentage >= 80) return 'bg-green-500';
-    if (percentage >= 50) return 'bg-blue-500';
+    if (percentage >= 50) return 'bg-gray-500';
     if (percentage >= 20) return 'bg-orange-500';
     return 'bg-gray-500';
   };
@@ -63,7 +63,7 @@ export const ProgressIndicator = ({
             <span className="text-gray-400">{completed}</span>
           </div>
           <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
             <span className="text-gray-400">{inProgress}</span>
           </div>
           <div className="flex items-center space-x-1">
@@ -80,7 +80,7 @@ export const ProgressIndicator = ({
 export const ProgressBadge = ({ percentage = 0, total = 0 }) => {
   const getColor = (percentage) => {
     if (percentage >= 80) return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (percentage >= 50) return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    if (percentage >= 50) return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
     if (percentage >= 20) return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
     return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   };

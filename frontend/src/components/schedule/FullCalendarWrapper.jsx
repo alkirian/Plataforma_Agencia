@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -7,6 +7,7 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { getCurrentDate } from '../../utils/dateHelpers';
 import { CalendarToolbar } from './CalendarToolbar';
+import '../../styles/fullcalendar-custom.css';
 
 /**
  * Wrapper component para FullCalendar con configuración optimizada
@@ -26,9 +27,11 @@ const FullCalendarWrapper = ({
   height = '600px',
   headerToolbar = false, // Disable default toolbar
   className = '',
-  clientName = ''
+  clientName = '',
+  isChatOpen = false
 }) => {
   const calendarRef = useRef(null);
+  const [calendarLabel, setCalendarLabel] = useState('');
   // Ancla de mes/año para mantener consistencia al cambiar de vista
   const anchorYMRef = useRef(() => {
     const d = currentDate || getCurrentDate();
@@ -45,6 +48,8 @@ const FullCalendarWrapper = ({
       // Actualizar ancla al mes del currentDate
       try {
         anchorYMRef.current = { y: currentDate.getFullYear(), m: currentDate.getMonth() };
+        // Actualizar label también
+        setCalendarLabel(calendarApi.view.title);
       } catch {}
     }
   }, [currentDate]);
@@ -67,11 +72,32 @@ const FullCalendarWrapper = ({
     }
   }, [currentView]);
 
+  // Forzar re-render cuando cambie el estado del chat
+  useEffect(() => {
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      // Pequeño delay para permitir que la transición CSS termine
+      const timer = setTimeout(() => {
+        calendarApi.updateSize();
+        calendarApi.render();
+      }, 600); // Mismo duration que la transición del calendario
+      return () => clearTimeout(timer);
+    }
+  }, [isChatOpen]);
+
 
   // Handlers optimizados
   const handleDateClick = (arg) => {
     const clickedDate = new Date(arg.date);
-    onDateClick?.(clickedDate, arg);
+    const clickInfo = {
+      clickCoords: {
+        x: arg.jsEvent.clientX,
+        y: arg.jsEvent.clientY
+      },
+      elementRect: arg.dayEl ? arg.dayEl.getBoundingClientRect() : null,
+      originalEvent: arg
+    };
+    onDateClick?.(clickedDate, clickInfo);
   };
 
   const handleEventClick = (arg) => {
@@ -80,6 +106,9 @@ const FullCalendarWrapper = ({
   };
 
   const handleDatesSet = (arg) => {
+    // Actualizar label cuando cambia la fecha
+    setCalendarLabel(arg.view.title);
+    
     // Usar el inicio "real" del periodo de la vista (p.ej., 1er día del mes) en lugar del rango visible
     const computedStart = arg.view?.currentStart ?? arg.start;
     const computedEnd = arg.view?.currentEnd ?? arg.end;
@@ -183,6 +212,29 @@ const FullCalendarWrapper = ({
     eventDisplay: 'block',
     eventStartEditable: true,
     eventDurationEditable: true,
+    eventClassNames: (arg) => {
+      const s = (arg.event.extendedProps?.status || '').toLowerCase();
+      const classes = ['fc-event-base'];
+      // map to kebab variants used in CSS
+      const map = {
+        'planificacion': 'planificacion',
+        'pendiente': 'pendiente',
+        'en-diseño': 'en-diseño',
+        'en-diseno': 'en-diseno',
+        'en-progreso': 'en-progreso',
+        'en-revision': 'en-revision',
+        'esperando-aprobacion': 'esperando-aprobacion',
+        'aprobado': 'aprobado',
+        'listo-publicar': 'listo-publicar',
+        'publicado': 'publicado',
+        'completado': 'completado',
+        'pausado': 'pausado',
+        'cancelado': 'cancelado',
+      };
+      const key = map[s] || null;
+      if (key) classes.push(`fc-event--${key}`);
+      return classes;
+    },
     
     // Handlers
     dateClick: handleDateClick,
@@ -363,27 +415,21 @@ const FullCalendarWrapper = ({
     onViewChange?.(fullCalendarView);
   };
 
-  // Obtener label del título actual
-  const getCalendarLabel = () => {
-    if (!calendarRef.current) return '';
-    const calendarApi = calendarRef.current.getApi();
-    return calendarApi.view.title;
-  };
-
   return (
     <div className={`fullcalendar-wrapper ${className}`}>
       {/* Custom Toolbar */}
       <CalendarToolbar
-        label={getCalendarLabel()}
+        label={calendarLabel}
         onNavigate={handleToolbarNavigate}
         onView={handleToolbarView}
         view={currentView}
         events={events}
         clientName={clientName}
+  isChatOpen={isChatOpen}
       />
       
       {loading && (
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+  <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 border-2 border-accent-500 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-sm text-gray-400">Cargando eventos...</span>

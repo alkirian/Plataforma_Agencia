@@ -88,7 +88,7 @@ export const DocumentCard = ({
 
   return (
     <motion.div
-      className={`group bg-white/5 border border-white/10 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:bg-white/10 hover:border-white/20 ${
+  className={`group bg-surface-soft border border-white/10 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:bg-surface-strong hover:border-white/20 ${
         isDragging ? 'opacity-50 scale-95 rotate-2' : ''
       }`}
       draggable
@@ -134,7 +134,7 @@ export const DocumentCard = ({
                   ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                   : document.ai_status === 'processing'
                     ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                    : 'bg-white/5 text-text-muted border border-white/20'
+                    : 'bg-surface-soft text-text-muted border border-white/20'
               }`}>
                 {document.ai_status === 'ready' ? 'Listo' : 
                  document.ai_status === 'processing' ? 'Procesando' : 'Pendiente'}

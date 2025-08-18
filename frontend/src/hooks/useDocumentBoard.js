@@ -38,11 +38,13 @@ export const useDocumentBoard = (clientId, documents = []) => {
   const organizedData = useMemo(() => {
     const columnsWithDocs = columns.map(column => ({
       ...column,
-      documents: documents.filter(doc => documentAssignments[doc.id] === column.id)
+      // Usar claves de documento como string para evitar inconsistencias (número vs string)
+      documents: documents.filter(doc => documentAssignments[String(doc.id)] === column.id)
     }));
 
     const assignedDocumentIds = new Set(Object.keys(documentAssignments));
-    const unassignedDocuments = documents.filter(doc => !assignedDocumentIds.has(doc.id));
+    // Asegurar comparación por string para que no se dupliquen documentos al moverlos
+    const unassignedDocuments = documents.filter(doc => !assignedDocumentIds.has(String(doc.id)));
 
     return {
       columns: columnsWithDocs.sort((a, b) => a.order - b.order),
@@ -110,13 +112,14 @@ export const useDocumentBoard = (clientId, documents = []) => {
   const moveDocument = useCallback(async (documentId, sourceColumnId, targetColumnId, targetIndex) => {
     try {
       const updatedAssignments = { ...documentAssignments };
+      const docKey = String(documentId);
       
       if (targetColumnId === 'unassigned') {
         // Mover a sin clasificar (remover asignación)
-        delete updatedAssignments[documentId];
+        delete updatedAssignments[docKey];
       } else {
         // Asignar a columna específica
-        updatedAssignments[documentId] = targetColumnId;
+        updatedAssignments[docKey] = targetColumnId;
       }
 
       setDocumentAssignments(updatedAssignments);

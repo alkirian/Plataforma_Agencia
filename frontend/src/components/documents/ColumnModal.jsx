@@ -102,7 +102,7 @@ export const ColumnModal = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/60" />
         </Transition.Child>
 
         {/* Modal */}
@@ -131,7 +131,7 @@ export const ColumnModal = ({
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  className="p-2 rounded-lg hover:bg-surface-soft transition-colors"
                 >
                   <XMarkIcon className="h-5 w-5 text-text-muted" />
                 </button>
@@ -167,7 +167,7 @@ export const ColumnModal = ({
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Ej: En progreso, Completado, Revisión..."
-                    className={`w-full px-3 py-2 bg-white/5 border rounded-lg text-text-primary placeholder-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    className={`w-full px-3 py-2 bg-surface-soft border rounded-lg text-text-primary placeholder-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)] ${
                       errors.name ? 'border-red-500' : 'border-white/20 focus:border-primary-500'
                     }`}
                     autoFocus

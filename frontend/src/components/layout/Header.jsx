@@ -66,7 +66,7 @@ export const Header = ({ userEmail, onLogout }) => {
         <div className="flex items-center md:hidden">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
+            className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors"
             aria-label="Abrir menú de navegación"
           >
             <Bars3Icon className="h-6 w-6" />

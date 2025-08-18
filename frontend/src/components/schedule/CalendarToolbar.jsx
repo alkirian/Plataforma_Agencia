@@ -1,105 +1,85 @@
-// src/components/schedule/CalendarToolbar.jsx
 import React, { useState } from 'react';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { ExportModal } from './ExportModal';
 
-export const CalendarToolbar = ({ 
-  label, 
-  onNavigate, 
-  onView, 
-  view, 
-  events = [], 
-  clientName = '' 
+// Botón minimalista reutilizable
+const MiniButton = ({ children, onClick, active, title, className = '' }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className={`px-2 py-1 text-xs rounded-md border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800/60 transition-colors ${active ? 'bg-gray-800 text-white border-gray-600' : ''} ${className}`}
+  >
+    {children}
+  </button>
+);
+
+export const CalendarToolbar = ({
+  label,
+  onNavigate,
+  onView,
+  view,
+  events = [],
+  clientName = '',
+  isChatOpen = false
 }) => {
   const [showExportModal, setShowExportModal] = useState(false);
-  
-  // Obtener texto contextual para navegación según la vista
-  const getNavigationContext = () => {
-    switch(view) {
-      case 'timeGridWeek':
-        return { text: '🗓️ Semanas', tip: 'Navegando semana por semana' };
-      case 'timeGridDay':
-        return { text: '📅 Días', tip: 'Navegando día por día' };
-      case 'listMonth':
-        return { text: '📋 Agenda del mes', tip: 'Mostrando todas las tareas del mes' };
-      case 'dayGridMonth':
-      default:
-        return { text: '🗓️ Meses', tip: 'Navegando mes por mes' };
-    }
-  };
-  const Button = ({ children, onClick, active }) => (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1.5 text-sm rounded-md border transition-colors
-      ${active ? 'bg-[color:var(--color-accent-blue)] text-black border-[color:var(--color-accent-blue)]' : 'bg-white/5 text-text-primary/80 border-[color:var(--color-border-subtle)] hover:bg-white/10'}`}
-    >
-      {children}
-    </button>
-  );
+
+  const isMonth = view === 'dayGridMonth' || view === 'month';
+  const isWeek = view === 'timeGridWeek' || view === 'week';
+  const isDay = view === 'timeGridDay' || view === 'day';
+  const isAgenda = view === 'listMonth' || view === 'agenda';
 
   return (
-    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-2'>
-      <div className='flex items-center gap-2'>
-        <Button onClick={() => onNavigate('TODAY')}>Hoy</Button>
-        <div className='flex items-center gap-2'>
-          <div className='flex items-center gap-1'>
-            <Button onClick={() => onNavigate('PREV')} className="hover:scale-105 transition-transform">
-              ◀
-            </Button>
-            <div className='px-4 py-2 text-text-primary/90 text-sm font-medium border border-[color:var(--color-border-subtle)] rounded-lg bg-white/10 backdrop-blur-sm min-w-[180px] text-center'>
-              {label}
-            </div>
-            <Button onClick={() => onNavigate('NEXT')} className="hover:scale-105 transition-transform">
-              ▶
-            </Button>
+    <div className="bg-gray-900/50 border border-gray-700/50 rounded-lg p-2 mb-3">
+      <div className="flex items-center justify-between gap-2">
+        {/* Izquierda: navegación */}
+        <div className="flex items-center gap-2 min-w-0">
+          <MiniButton onClick={() => onNavigate('TODAY')} title="Ir a hoy">
+            Hoy
+          </MiniButton>
+
+          <div className="h-4 w-px bg-gray-700/50" />
+
+          <MiniButton onClick={() => onNavigate('PREV')} title="Anterior" className="!px-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </MiniButton>
+
+          <div className={`text-xs font-medium text-gray-200 capitalize truncate ${isChatOpen ? 'max-w-[110px] sm:max-w-[160px]' : 'max-w-[200px]'}`}>
+            {label}
           </div>
-          
-          {/* Indicador de contexto de navegación */}
-          <div className='px-2 py-1 text-xs text-text-primary/60 bg-white/5 rounded-md border border-[color:var(--color-border-subtle)]' title={getNavigationContext().tip}>
-            {getNavigationContext().text}
-          </div>
-          
-          {/* Indicador de keyboard shortcuts */}
-          <div className='px-2 py-1 text-xs text-text-primary/40 bg-white/5 rounded-md border border-[color:var(--color-border-subtle)]' title='Atajos: Ctrl+← → (navegar), Ctrl+T (hoy), Ctrl+1-4 (vistas)'>
-            ⌨️
-          </div>
+
+          <MiniButton onClick={() => onNavigate('NEXT')} title="Siguiente" className="!px-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </MiniButton>
         </div>
+
+        {/* Centro: vistas */}
+        <div className="flex items-center gap-1 bg-gray-800/40 p-1 rounded-md border border-gray-700/50">
+          <MiniButton onClick={() => onView('month')} active={isMonth} title="Vista mes">
+            {isChatOpen ? 'M' : 'Mes'}
+          </MiniButton>
+          <MiniButton onClick={() => onView('week')} active={isWeek} title="Vista semana">
+            {isChatOpen ? 'S' : 'Semana'}
+          </MiniButton>
+          <MiniButton onClick={() => onView('day')} active={isDay} title="Vista día">
+            {isChatOpen ? 'D' : 'Día'}
+          </MiniButton>
+          <MiniButton onClick={() => onView('agenda')} active={isAgenda} title="Vista agenda">
+            {isChatOpen ? 'A' : 'Agenda'}
+          </MiniButton>
+        </div>
+
+        {/* Derecha: export */}
+        <MiniButton onClick={() => setShowExportModal(true)} title="Exportar calendario" className="!py-1.5">
+          <span className="sr-only">Exportar</span>
+          <ArrowDownTrayIcon className="w-4 h-4" />
+        </MiniButton>
       </div>
 
-      <div className='flex items-center gap-2'>
-        <Button onClick={() => onView('month')} active={view === 'dayGridMonth' || view === 'month'}>
-          <span>Mes</span>
-          <span className='text-xs opacity-60 ml-1'>1</span>
-        </Button>
-        <Button onClick={() => onView('week')} active={view === 'timeGridWeek' || view === 'week'}>
-          <span>Semana</span>
-          <span className='text-xs opacity-60 ml-1'>2</span>
-        </Button>
-        <Button onClick={() => onView('day')} active={view === 'timeGridDay' || view === 'day'}>
-          <span>Día</span>
-          <span className='text-xs opacity-60 ml-1'>3</span>
-        </Button>
-        <Button onClick={() => onView('agenda')} active={view === 'listMonth' || view === 'agenda'}>
-          <span>Agenda</span>
-          <span className='text-xs opacity-60 ml-1'>4</span>
-        </Button>
-        
-        {/* Separador */}
-        <div className="h-6 w-px bg-white/20 mx-1" />
-        
-        {/* Botón de exportar */}
-        <button
-          onClick={() => setShowExportModal(true)}
-          className="px-3 py-1.5 text-sm rounded-md border border-[color:var(--color-accent-blue)]/30 bg-[color:var(--color-accent-blue)]/10 
-                     text-[color:var(--color-accent-blue)] hover:bg-[color:var(--color-accent-blue)]/20 transition-colors flex items-center gap-2"
-          title="Exportar calendario"
-        >
-          <ArrowDownTrayIcon className="h-4 w-4" />
-          Exportar
-        </button>
-      </div>
-
-      {/* Modal de exportación */}
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}

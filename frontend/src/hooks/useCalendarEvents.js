@@ -17,15 +17,12 @@ export const useCalendarEvents = (clientId) => {
     return scheduleData.map(item => {
       const startDate = new Date(item.scheduled_at);
       
-      return {
+  return {
         id: item.id,
         title: item.title,
         start: startDate,
         end: startDate, // Eventos de momento específico
         allDay: false,
-        backgroundColor: TASK_STATES[item.status]?.color || TASK_STATES.pendiente.color,
-        borderColor: TASK_STATES[item.status]?.color || TASK_STATES.pendiente.color,
-        textColor: '#ffffff',
         extendedProps: {
           status: item.status,
           description: item.description,
@@ -73,14 +70,11 @@ export const useCalendarEvents = (clientId) => {
   const createEvent = useCallback(async (eventData) => {
     try {
       // Optimistic update: agregar evento inmediatamente
-      const tempEvent = {
+  const tempEvent = {
         id: `temp-${Date.now()}`,
         title: eventData.title,
         start: new Date(eventData.scheduled_at),
         end: new Date(eventData.scheduled_at),
-        backgroundColor: TASK_STATES[eventData.status]?.color || TASK_STATES.pendiente.color,
-        borderColor: TASK_STATES[eventData.status]?.color || TASK_STATES.pendiente.color,
-        textColor: '#ffffff',
         extendedProps: {
           status: eventData.status,
           isTemporary: true
@@ -105,6 +99,9 @@ export const useCalendarEvents = (clientId) => {
       return newEvent;
       
     } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[createEvent] Error:', err?.message || err, { eventData });
+      }
       // Revertir optimistic update en caso de error
       setEvents(prev => prev.filter(event => !event.extendedProps?.isTemporary));
       toast.error('Error al crear evento');
@@ -130,6 +127,9 @@ export const useCalendarEvents = (clientId) => {
       return updatedEvent;
       
     } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[updateEvent] Error:', err?.message || err, { eventId, updateData });
+      }
       toast.error('Error al actualizar evento');
       throw err;
     }
@@ -206,3 +206,13 @@ export const useCalendarEvents = (clientId) => {
     refresh: loadEvents
   };
 };
+
+async function onCreateEvent(clientId, form) {
+  try {
+    await createScheduleItem(clientId, form);
+    // refrescar lista/calendario...
+  } catch (err) {
+    console.error('Crear evento falló:', err);
+    alert(err.message || 'No se pudo crear el evento. Verifique título, fecha y estado.');
+  }
+}

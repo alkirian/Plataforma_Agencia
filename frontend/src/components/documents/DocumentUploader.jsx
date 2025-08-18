@@ -230,7 +230,7 @@ export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                  className="flex items-center justify-between p-3 bg-surface-soft rounded-lg border border-white/10"
                 >
                   <div className="flex items-center space-x-3">
                     <span className="text-lg">{getFileIcon(fileItem.type)}</span>

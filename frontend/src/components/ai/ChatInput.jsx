@@ -1,8 +1,8 @@
 // src/components/ai/ChatInput.jsx
 import React, { useState } from 'react';
-import { PaperAirplaneIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 
-export const ChatInput = ({ onSendMessage, onGenerateIdeas, isLoading }) => {
+export const ChatInput = ({ onSendMessage, isLoading }) => {
   const [prompt, setPrompt] = useState('');
 
   const handleSubmit = e => {
@@ -13,38 +13,29 @@ export const ChatInput = ({ onSendMessage, onGenerateIdeas, isLoading }) => {
   };
 
   return (
-    <div className='pt-2 border-t border-slate-700'>
-      <form onSubmit={handleSubmit} className='flex items-center space-x-2'>
+    <div className="pt-2">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
-          type='text'
+          type="text"
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
-          placeholder='Hola, ¿en qué te puedo ayudar?'
+          placeholder="Escribe un mensaje..."
           disabled={isLoading}
-          className='w-full bg-slate-900/50 text-white placeholder-gray-500 border border-slate-700 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500'
+          className="w-full bg-gray-900 text-gray-100 placeholder-gray-500 border border-gray-700 rounded-full py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-gray-600"
         />
         <button
-          type='submit'
-          disabled={isLoading}
-          className='text-white p-2 rounded-md disabled:opacity-50'
+          type="submit"
+          disabled={isLoading || !prompt.trim()}
+          className="p-2 rounded-full bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title="Enviar"
         >
           {isLoading ? (
-            <div className='w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin'></div>
+            <div className="w-5 h-5 border-2 border-t-transparent border-white/80 rounded-full animate-spin"></div>
           ) : (
-            <PaperAirplaneIcon className='w-5 h-5' />
+            <PaperAirplaneIcon className="w-5 h-5" />
           )}
         </button>
       </form>
-      <div className='flex justify-end mt-2'>
-        <button
-          onClick={onGenerateIdeas}
-          disabled={isLoading}
-          className='flex items-center space-x-2 text-sm bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold px-4 py-2 rounded-md disabled:opacity-50 transition-all'
-        >
-          <SparklesIcon className='w-4 h-4' />
-          <span>Generar Ideas</span>
-        </button>
-      </div>
     </div>
   );
 };

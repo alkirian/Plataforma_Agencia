@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient.js';
+import { supabase, supabaseAdmin } from '../config/supabaseClient.js';
 
 /**
  * Registra un nuevo usuario en Supabase Auth y luego crea una nueva agencia
@@ -64,4 +64,28 @@ export const completeUserProfile = async ({ userId, fullName, agencyName }) => {
   return {
     agencyId: data,
   };
+};
+
+/**
+ * Verifica si un usuario existe en el sistema por su email.
+ * @param {string} email - El email a verificar.
+ * @returns {Promise<boolean>} True si el usuario existe, false si no.
+ */
+export const checkUserExistsByEmail = async (email) => {
+  try {
+    // Usar supabaseAdmin para acceder a auth.users
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (error) {
+      throw new Error(`Error al verificar usuario: ${error.message}`);
+    }
+
+    // Buscar si existe un usuario con ese email
+    const userExists = data.users.some(user => user.email === email);
+    
+    return userExists;
+  } catch (error) {
+    console.error('Error en checkUserExistsByEmail:', error);
+    throw new Error('Error al verificar el email en el sistema');
+  }
 };

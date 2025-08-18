@@ -104,7 +104,7 @@ export const DashboardPage = () => {
     <div className='space-y-6 sm:space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
       {/* Hero */}
       <section className='flex flex-col items-center text-center gap-4 py-4 px-4 sm:px-0'>
-        <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft backdrop-blur flex items-center justify-center text-2xl font-bold text-text-primary'>
+  <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft flex items-center justify-center text-2xl font-bold text-text-primary'>
           R
         </div>
         <div className='flex justify-center'>
@@ -169,7 +169,7 @@ export const DashboardPage = () => {
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  className='absolute right-0 z-10 mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-strong backdrop-blur-xl shadow-xl overflow-hidden'
+                  className='absolute right-0 z-10 mt-2 w-44 rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-strong shadow-xl overflow-hidden'
                   role='listbox'
                 >
                   {[
@@ -182,7 +182,7 @@ export const DashboardPage = () => {
                         type='button'
                         onClick={() => { setSortBy(opt.value); setIsSortOpen(false); }}
                         className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                          sortBy === opt.value ? 'bg-white/5 text-text-primary' : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
+                          sortBy === opt.value ? 'bg-surface-soft text-text-primary' : 'text-text-muted hover:bg-surface-soft hover:text-text-primary'
                         }`}
                         role='option'
                         aria-selected={sortBy === opt.value}
@@ -271,7 +271,7 @@ export const DashboardPage = () => {
                           <span className='text-green-400'>
                             ✓ {statsMap[client.id].stats.completed}
                           </span>
-                          <span className='text-blue-400'>
+                          <span className='text-gray-400'>
                             ⟳ {statsMap[client.id].stats.inProgress}
                           </span>
                           <span className='text-orange-400'>

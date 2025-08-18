@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../api/clients';
 import { getSchedule } from '../api/schedule';
+import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
 
 /**
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [lastChecked, setLastChecked] = useState(Date.now());
+  const [session, setSession] = useState(null);
   const toastTimeoutRef = useRef(null);
   const [readNotifications, setReadNotifications] = useState(() => {
     const saved = localStorage.getItem('read-notifications');
@@ -27,11 +29,33 @@ export const useNotifications = () => {
     return localStorage.getItem('notifications-enabled') !== 'false';
   });
 
+  // Escuchar cambios de sesión
+  useEffect(() => {
+    // Obtener sesión inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Escuchar cambios de autenticación
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      
+      // Si no hay sesión, limpiar notificaciones
+      if (!session) {
+        setNotifications([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Obtener todos los clientes
   const { data: clientsResponse } = useQuery({
     queryKey: ['clients'],
     queryFn: getClients,
-    enabled: isEnabled,
+    enabled: isEnabled && !!session, // Solo ejecutar si hay sesión y está habilitado
     staleTime: 5 * 60 * 1000, // 5 minutos
     cacheTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
@@ -115,7 +139,7 @@ export const useNotifications = () => {
 
   // Función para obtener todas las tareas de todos los clientes  
   const getAllTasks = useCallback(async () => {
-    if (!isEnabled) return [];
+    if (!isEnabled || !session) return [];
     
     // Obtener clientes frescos directamente de la API en lugar de depender del prop
     try {
@@ -136,6 +160,10 @@ export const useNotifications = () => {
           }));
           allTasks.push(...tasksWithClient);
         } catch (error) {
+          // Si el error es por token inválido, no loguearlo como error
+          if (error.message?.includes('Token inválido') || error.message?.includes('No autorizado')) {
+            return [];
+          }
           if (process.env.NODE_ENV === 'development') {
             console.warn(`Error loading schedule for client ${client.name}:`, error);
           }
@@ -144,16 +172,20 @@ export const useNotifications = () => {
       
       return allTasks;
     } catch (error) {
+      // Si el error es por token inválido, no loguearlo como error
+      if (error.message?.includes('Token inválido') || error.message?.includes('No autorizado')) {
+        return [];
+      }
       if (process.env.NODE_ENV === 'development') {
         console.error('Error loading all tasks:', error);
       }
       return [];
     }
-  }, [isEnabled]);
+  }, [isEnabled, session]);
 
   // Función para generar notificaciones
   const generateNotifications = useCallback(async () => {
-    if (!isEnabled) return;
+    if (!isEnabled || !session) return;
 
     try {
       const allTasks = await getAllTasks();
@@ -252,7 +284,7 @@ export const useNotifications = () => {
         console.error('Error generating notifications:', error);
       }
     }
-  }, [isEnabled, getAllTasks, lastChecked, readNotifications, toastShownNotifications, deletedNotifications]);
+  }, [isEnabled, getAllTasks, readNotifications, toastShownNotifications, deletedNotifications, session]);
 
   // Función para marcar notificación como leída
   const markAsRead = useCallback((notificationId) => {
@@ -355,7 +387,7 @@ export const useNotifications = () => {
         clearTimeout(toastTimeoutRef.current);
       }
     };
-  }, [isEnabled]); // Solo depende de isEnabled
+  }, [isEnabled, generateNotifications]); // Solo depende de isEnabled y generateNotifications
 
   // Efecto para limpiar notificaciones antiguas (ejecutar una vez al día)
   useEffect(() => {

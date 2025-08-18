@@ -19,7 +19,6 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
     title: event?.title || '',
     description: event?.resource?.description || '',
     status: event?.resource?.status || 'pendiente',
-    priority: event?.resource?.priority || 'media',
     scheduled_at: event?.start ? new Date(event.start).toISOString().slice(0, 16) : '',
   });
 
@@ -87,7 +86,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/50 backdrop-blur-sm' />
+          <div className='fixed inset-0 bg-black/60' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
@@ -266,7 +265,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         initial={{ x: -10, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.6 }}
-                        className='grid grid-cols-1 md:grid-cols-2 gap-4'
+                        className='w-full'
                       >
                         <div>
                           <label className='block text-sm font-medium text-text-muted mb-2'>
@@ -292,34 +291,6 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                           )}
                         </div>
 
-                        {/* Priority */}
-                        <div>
-                          <label className='block text-sm font-medium text-text-muted mb-2'>
-                            <TagIcon className='h-4 w-4 inline mr-1' />
-                            Prioridad
-                          </label>
-                          {isEditing ? (
-                            <select
-                              value={formData.priority}
-                              onChange={e =>
-                                setFormData(prev => ({ ...prev, priority: e.target.value }))
-                              }
-                              className='w-full rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
-                            >
-                              <option value='baja'>🟢 Baja</option>
-                              <option value='media'>🟡 Media</option>
-                              <option value='alta'>🟠 Alta</option>
-                              <option value='urgente'>🔴 Urgente</option>
-                            </select>
-                          ) : (
-                            <p className='text-text-primary'>
-                              {formData.priority === 'baja' && '🟢 Baja'}
-                              {formData.priority === 'media' && '🟡 Media'}
-                              {formData.priority === 'alta' && '🟠 Alta'}
-                              {formData.priority === 'urgente' && '🔴 Urgente'}
-                            </p>
-                          )}
-                        </div>
                       </motion.div>
 
                       {/* Status (when editing) */}

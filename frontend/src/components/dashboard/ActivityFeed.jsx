@@ -42,7 +42,7 @@ export const ActivityFeed = ({ limit = 20 }) => {
       <div className='relative'>
         <div className='mx-auto mb-4 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
         <div className='-mt-4 mb-2 flex justify-center'>
-          <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-white/5 px-3 py-1 text-xs tracking-wide text-text-muted'>
+          <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-xs tracking-wide text-text-muted'>
             ACTIVIDAD RECIENTE
           </span>
         </div>
@@ -93,7 +93,7 @@ export const ActivityFeed = ({ limit = 20 }) => {
                 : `${actor} realizó una acción`;
               return (
                 <li key={evt.id} className='flex items-center gap-3 py-3'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-white/5'>
+                  <div className='flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft'>
                     <Icon className='h-4 w-4 text-text-primary/80' />
                   </div>
                   <div className='flex-1 text-sm text-text-primary/90'>
@@ -122,7 +122,7 @@ export const ActivityFeed = ({ limit = 20 }) => {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className='rounded-md border border-[color:var(--color-border-subtle)] bg-white/5 px-4 py-2 text-sm text-text-primary hover:border-[color:var(--color-accent-blue)] disabled:opacity-60'
+              className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-4 py-2 text-sm text-text-primary hover:border-[color:var(--color-accent-blue)] disabled:opacity-60'
             >
               {isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
             </button>

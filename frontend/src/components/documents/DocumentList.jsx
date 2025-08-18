@@ -109,9 +109,9 @@ export const DocumentList = ({
           <motion.li 
             key={doc.id} 
             className={`flex items-center justify-between py-4 rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing ${
-              draggedDocument?.id === doc.id 
-                ? 'opacity-50 scale-95 bg-cyan-500/10 border border-cyan-400/30' 
-                : 'hover:bg-white/5'
+                  draggedDocument?.id === doc.id 
+                    ? 'opacity-50 scale-95 bg-cyan-500/10 border border-cyan-400/30' 
+                    : 'hover:bg-surface-soft'
             }`}
             draggable
             onDragStart={(e) => handleDragStart(e, doc)}

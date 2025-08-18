@@ -36,16 +36,16 @@ export const ExportModal = ({
       name: 'iCal (ICS)',
       description: 'Importar a Google Calendar, Outlook, Apple Calendar',
       icon: CalendarDaysIcon,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10 border-blue-500/30'
+      color: 'text-gray-400',
+      bgColor: 'bg-gray-500/10 border-gray-500/30'
     },
     {
       id: 'json',
       name: 'JSON',
       description: 'Para integraciones técnicas y backup completo',
       icon: CodeBracketIcon,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10 border-purple-500/30'
+      color: 'text-gray-300',
+      bgColor: 'bg-gray-600/10 border-gray-600/30'
     }
   ];
 
@@ -93,7 +93,7 @@ export const ExportModal = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/60" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -108,7 +108,7 @@ export const ExportModal = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl 
-                                        bg-surface-900/95 backdrop-blur-sm border border-white/10 
+                                        bg-surface-900/95 border border-white/10 
                                         p-6 shadow-xl transition-all">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -123,7 +123,7 @@ export const ExportModal = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-white/10 
+                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-surface-soft 
                                transition-colors"
                   >
                     <XMarkIcon className="h-5 w-5" />
@@ -131,7 +131,7 @@ export const ExportModal = ({
                 </div>
 
                 {/* Resumen de eventos */}
-                <div className="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                <div className="mb-6 p-4 bg-surface-soft rounded-lg border border-white/10">
                   <div className="flex items-center space-x-2 mb-3">
                     <ChartBarIcon className="h-5 w-5 text-gray-400" />
                     <h3 className="text-sm font-medium text-white">Resumen de exportación</h3>
@@ -194,7 +194,7 @@ export const ExportModal = ({
                           className={`p-4 rounded-lg border transition-all cursor-pointer ${
                             isSelected 
                               ? format.bgColor
-                              : 'border-white/10 hover:border-white/20 bg-white/5'
+                              : 'border-white/10 hover:border-white/20 bg-surface-soft'
                           }`}
                           onClick={() => setSelectedFormat(format.id)}
                         >

@@ -40,7 +40,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
       transition={{ duration: 0.4 }}
       className="mt-4"
     >
-      <div className="bg-surface-900/40 backdrop-blur-sm border border-white/10 rounded-xl p-4 shadow-lg">
+  <div className="bg-surface-900/70 border border-white/10 rounded-xl p-4 shadow-lg">
         <div className="mb-3 pb-2 border-b border-white/10 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-200">Agenda del mes</h3>
           <span className="text-xs text-gray-400">{grouped.reduce((acc, g) => acc + g.items.length, 0)} tareas</span>
@@ -65,7 +65,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                       <li key={e.id}>
                         <button
                           onClick={() => onEventClick && onEventClick(e)}
-                          className="w-full text-left group flex items-center gap-2 px-2 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                          className="w-full text-left group flex items-center gap-2 px-2 py-2 rounded-lg border border-white/10 bg-surface-soft hover:bg-surface-strong transition-colors"
                         >
                           <span
                             className="inline-block w-2 h-2 rounded-full flex-shrink-0"

@@ -53,7 +53,7 @@ export const MobileCalendarView = ({
   return (
     <div 
       ref={swipeHandlers.ref}
-      className="bg-surface-soft/80 backdrop-blur-xl rounded-xl border border-[color:var(--color-border-subtle)] overflow-hidden touch-pan-y"
+  className="bg-surface-soft rounded-xl border border-[color:var(--color-border-subtle)] overflow-hidden touch-pan-y"
     >
       {/* Header */}
       <div className="p-4 border-b border-[color:var(--color-border-subtle)] bg-surface-strong/50">
@@ -61,7 +61,7 @@ export const MobileCalendarView = ({
           <div className="flex items-center space-x-3">
             <button
               onClick={() => navigateMonth(-1)}
-              className="p-3 rounded-lg bg-surface-soft hover:bg-white/10 transition-colors touch-target"
+              className="p-3 rounded-lg bg-surface-soft hover:bg-surface-strong transition-colors touch-target"
               aria-label="Mes anterior"
             >
               <ChevronLeftIcon className="h-5 w-5 text-text-primary" />
@@ -73,7 +73,7 @@ export const MobileCalendarView = ({
             
             <button
               onClick={() => navigateMonth(1)}
-              className="p-3 rounded-lg bg-surface-soft hover:bg-white/10 transition-colors touch-target"
+              className="p-3 rounded-lg bg-surface-soft hover:bg-surface-strong transition-colors touch-target"
               aria-label="Mes siguiente"
             >
               <ChevronRightIcon className="h-5 w-5 text-text-primary" />
@@ -120,7 +120,7 @@ export const MobileCalendarView = ({
                   relative h-12 flex flex-col items-center justify-center rounded-lg transition-all duration-200 touch-target
                   ${isSelected 
                     ? 'bg-[var(--color-accent-blue)]/20 border border-[var(--color-accent-blue)]/50 text-text-primary' 
-                    : 'hover:bg-white/5'
+                    : 'hover:bg-surface-soft'
                   }
                   ${!isCurrentMonth ? 'opacity-30' : ''}
                   ${isTodayDate ? 'ring-1 ring-[var(--color-accent-blue)]/50' : ''}
@@ -174,7 +174,7 @@ export const MobileCalendarView = ({
                     <motion.button
                       key={index}
                       onClick={() => onEventClick(event)}
-                      className="w-full text-left p-3 rounded-lg bg-surface-soft hover:bg-white/5 transition-colors border border-[color:var(--color-border-subtle)]"
+                      className="w-full text-left p-3 rounded-lg bg-surface-soft hover:bg-surface-strong transition-colors border border-[color:var(--color-border-subtle)]"
                       whileTap={{ scale: 0.98 }}
                     >
                       <div className="flex items-center space-x-3">

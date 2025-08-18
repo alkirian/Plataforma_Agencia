@@ -49,7 +49,7 @@ export const MobileMenu = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/60 z-40"
             onClick={onClose}
           />
           
@@ -59,7 +59,7 @@ export const MobileMenu = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-surface-strong/95 backdrop-blur-xl border-r border-[color:var(--color-border-subtle)] z-50"
+            className="fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-surface-strong border-r border-[color:var(--color-border-subtle)] z-50"
           >
             <div className="flex flex-col h-full">
               {/* Header */}
@@ -73,7 +73,7 @@ export const MobileMenu = ({
                 </Link>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  className="p-2 rounded-lg hover:bg-surface-soft transition-colors"
                   aria-label="Cerrar menú"
                 >
                   <XMarkIcon className="h-6 w-6 text-text-muted" />
@@ -90,7 +90,7 @@ export const MobileMenu = ({
                     className={`flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 ${
                       isActiveRoute(item.path)
                         ? 'bg-surface-strong text-text-primary border border-[color:var(--color-border-subtle)] shadow-halo'
-                        : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
+                        : 'text-text-muted hover:bg-surface-soft hover:text-text-primary'
                     }`}
                     aria-label={`${item.label} - ${item.shortcut}`}
                   >
@@ -108,7 +108,7 @@ export const MobileMenu = ({
                     onNotificationsClick();
                     onClose();
                   }}
-                  className="flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 text-text-muted hover:bg-white/5 hover:text-text-primary w-full"
+                  className="flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 text-text-muted hover:bg-surface-soft hover:text-text-primary w-full"
                   aria-label={`Notificaciones${notifications?.total > 0 ? ` - ${notifications.total} sin leer` : ''}`}
                 >
                   <div className="relative">

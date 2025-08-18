@@ -79,7 +79,7 @@ export const Breadcrumbs = () => {
         <li className='flex items-center'>
           <Link 
             to='/dashboard' 
-            className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-white/0 hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors'
+            className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
             aria-label="Ir al dashboard"
           >
             <HomeIcon className='h-4 w-4' />
@@ -94,14 +94,14 @@ export const Breadcrumbs = () => {
             {crumb.isClickable ? (
               <Link 
                 to={crumb.path} 
-                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-white/0 hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors'
+                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
                 aria-label={`Ir a ${crumb.label}`}
               >
                 <span className='truncate'>{crumb.label}</span>
               </Link>
             ) : (
               <span 
-                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface-soft/60 border border-white/10 text-text-primary font-medium'
+                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface-soft border border-[color:var(--color-border-subtle)] text-text-primary font-medium'
                 aria-current="page"
               >
                 <span className='truncate'>{crumb.label}</span>

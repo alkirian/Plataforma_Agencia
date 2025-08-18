@@ -50,7 +50,7 @@ export const NotificationPanel = ({
       case 'due-today':
         return <CalendarDaysIcon className="h-5 w-5 text-orange-400" />;
       case 'due-tomorrow':
-        return <ClockIcon className="h-5 w-5 text-blue-400" />;
+        return <ClockIcon className="h-5 w-5 text-gray-400" />;
       case 'upcoming':
         return <BellIcon className="h-5 w-5 text-green-400" />;
       default:
@@ -65,7 +65,7 @@ export const NotificationPanel = ({
       case 'due-today':
         return 'border-orange-500/30 bg-orange-500/10';
       case 'due-tomorrow':
-        return 'border-blue-500/30 bg-blue-500/10';
+        return 'border-gray-500/30 bg-gray-500/10';
       case 'upcoming':
         return 'border-green-500/30 bg-green-500/10';
       default:
@@ -105,7 +105,7 @@ export const NotificationPanel = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/60" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -120,7 +120,7 @@ export const NotificationPanel = ({
               leaveTo="opacity-0 translate-x-full"
             >
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-l-xl 
-                                        bg-surface-soft/95 backdrop-blur-sm border-l border-t border-b border-[color:var(--color-border-subtle)] 
+                                        bg-surface-soft border-l border-t border-b border-[color:var(--color-border-subtle)] 
                                         shadow-xl transition-all h-[calc(100vh-4rem)] text-text-primary">
                 {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[color:var(--color-border-subtle)]">
@@ -169,7 +169,7 @@ export const NotificationPanel = ({
                       onClick={onClose}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-            className="rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-white/10 
+            className="rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-surface-soft 
                                  transition-colors"
                     >
                       <XMarkIcon className="h-4 w-4" />
@@ -190,7 +190,7 @@ export const NotificationPanel = ({
                                    transition-all ${
                                      selectedTab === tab.id
                                        ? 'bg-[color:var(--color-accent-blue)] text-black'
-                                       : 'text-text-muted hover:text-text-primary hover:bg-white/10'
+                                       : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
                                    }`}
                       >
                         <span>{tab.name}</span>
@@ -198,7 +198,7 @@ export const NotificationPanel = ({
                           <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                             selectedTab === tab.id
                               ? 'bg-white/20 text-black'
-                              : 'bg-white/10 text-text-muted'
+                              : 'bg-surface-soft text-text-muted'
                           }`}>
                             {tab.count}
                           </span>
@@ -302,7 +302,7 @@ export const NotificationPanel = ({
 
                 {/* Footer con estadísticas */}
                 {stats.total > 0 && (
-      <div className="p-4 border-t border-[color:var(--color-border-subtle)] bg-white/5">
+  <div className="p-4 border-t border-[color:var(--color-border-subtle)] bg-surface-soft">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
         <div className="text-lg font-medium text-red-400">{stats.overdue}</div>

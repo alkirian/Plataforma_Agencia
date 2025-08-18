@@ -2,34 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
 @layer base {
   :root {
     /* App background and gradients */
-    --color-app-bg: #0B1020;
-    --color-app-gradient-start: #3f3e3e;
-    --color-app-gradient-end: #02010a;
-    --gradient-cyber: radial-gradient(1000px 600px at 50% -10%, rgb(20, 36, 58), transparent 100%),
-      radial-gradient(1000px 600px at 50% 99%, rgba(20, 36, 58, 0.322), transparent 100%),
-      linear-gradient(1deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-end) 0%);
-    --gradient-glow: linear-gradient(135deg, #263d57 0%, #ffffff 100%);
+    --color-app-bg: #0b0d10;
+    --color-app-gradient-start: #111111;  /* darkest */
+    --color-app-gradient-mid: #0b0b0b;    /* mid dark gray */
+    --color-app-gradient-end: #000000;    /* slightly lighter */
+    /* Neutral dark gradient background (no blue/violet tint) */
+    --gradient-cyber:
+      radial-gradient(1500px 600px at 10% 10%, rgba(82, 82, 82, 0.178), transparent 100%),
+      linear-gradient(180deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-mid) 38%, var(--color-app-gradient-end) 100%);
+  --gradient-glow: linear-gradient(135deg, #262626 0%, #0b0d10 100%);
 
-    /* Surfaces and borders */
-    --color-surface: rgba(15, 23, 42, 0.65);
-    --color-surface-soft: rgba(15, 23, 42, 0.5);
-    --color-surface-strong: rgba(15, 23, 42, 0.8);
-    --color-border-subtle: rgba(148, 163, 184, 0.2);
-    --color-border-strong: rgba(148, 163, 184, 0.35);
+  /* Surfaces and borders (neutral gray, no blue tint) */
+  --color-surface: rgba(23, 23, 23, 0.65);       /* neutral-900 @ 65% */
+  --color-surface-soft: rgba(23, 23, 23, 0.5);   /* neutral-900 @ 50% */
+  --color-surface-strong: rgba(23, 23, 23, 0.85);/* neutral-900 @ 85% */
+  --color-border-subtle: rgba(163, 163, 163, 0.2);  /* neutral-400 @ 20% */
+  --color-border-strong: rgba(163, 163, 163, 0.35); /* neutral-400 @ 35% */
 
     /* Typography - WCAG 2.1 AA compliant colors */
-    --color-text-primary: #F1F5F9; /* Increased from #E5E7EB for better contrast */
-    --color-text-muted: #CBD5E1; /* Increased from #94A3B8 for better contrast ratio */
+  --color-text-primary: #F1F5F9; /* High contrast */
+  --color-text-muted: #C7D2FE0F; /* will be overridden below; keeping token for compatibility */
+  --color-text-muted: #CBD5E1; /* muted gray */
     --color-text-secondary: #94A3B8; /* Original muted color for less critical text */
     --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* Accent tokens */
-    --color-accent-cyan: #67E8F9;
-    --color-accent-blue: #60A5FA;
-    --color-accent-violet: #A78BFA;
+    /* Accent tokens - Converted to grayscale */
+    --color-accent-cyan: #9CA3AF;   /* Gray instead of cyan */
+    --color-accent-blue: #9CA3AF;   /* Gray instead of blue */
+    --color-accent-violet: #E5E7EB; /* Light gray instead of violet */
+    --color-accent-purple: var(--color-accent-violet);
+  }
+
+  /* Solid theme: opaque surfaces, no blur, minimal shadows */
+  :root[data-theme="solid"],
+  body[data-theme="solid"] {
+    /* Keep app bg but use crisper surfaces */
+  --color-surface: #171717;       /* neutral-900 */
+  --color-surface-soft: #1f1f1f;  /* neutral-900 softer */
+  --color-surface-strong: #121212;/* deep neutral */
+    --color-border-subtle: rgba(148, 163, 184, 0.16);
+    --color-border-strong: rgba(148, 163, 184, 0.32);
+  /* Neutral/Grayscale accent by default; provide dark button palettes */
+  --color-accent-blue: #9CA3AF;   /* Gray primary for gradients */
+  --color-accent-violet: #E5E7EB; /* Light gray end */
+  --color-accent-cyan: #6B7280;   /* Mid gray for subtle glows */
+  --color-accent-purple: var(--color-accent-violet);
+
+  /* Dark button palettes */
+  --btn-dark-green: #0f2f1b;
+  --btn-dark-green-hover: #144027;
+  --btn-dark-blue: #0b2540;
+  --btn-dark-blue-hover: #113356;
+  --btn-dark-yellow: #2a2306;
+  --btn-dark-yellow-hover: #3a3209;
   }
 
   body {
@@ -49,12 +92,12 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(60, 89, 157, 0.35);
+    background: rgba(107, 114, 128, 0.25); /* gray-500/25 */
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #3a3a3a, #212040);
-    border-radius: px;
+  background: linear-gradient(45deg, #3a3a3a, #1f1f1f);
+  border-radius: 8px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -62,7 +105,7 @@
   }
 
   ::selection {
-    background: rgba(96, 165, 250, 0.25);
+    background: rgba(156, 163, 175, 0.25); /* gray-400/25 */
     color: white;
   }
 }
@@ -77,15 +120,25 @@
     transform: none;
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--color-border-subtle);
-    background: linear-gradient(to right, rgba(96,165,250,0.08), rgba(167,139,250,0.08));
+  border: 1px solid var(--color-border-subtle);
+  /* Neutral dark button by default */
+  background: linear-gradient(to right, rgba(44, 44, 44, 0.9), rgba(31, 31, 32, 0.9));
     color: var(--color-text-primary);
   }
 
   .btn-cyber:hover {
-    border-color: var(--color-border-strong);
-    box-shadow: 0 0 25px -5px rgba(96, 165, 250, 0.3);
+  border-color: var(--color-border-strong);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.6);
     transform: scale(1.02);
+  }
+  /* Solid theme: keep neutral dark, subtle shadow */
+  [data-theme="solid"] .btn-cyber {
+    background: linear-gradient(to right, rgba(31,41,55,0.95), rgba(17,24,39,0.95));
+    border-color: var(--color-border-subtle);
+  }
+
+  [data-theme="solid"] .btn-cyber:hover {
+    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.4);
   }
 
   .btn-cyber:active {
@@ -98,22 +151,29 @@
     backdrop-filter: blur(14px);
     border-radius: 1rem;
     border: 1px solid var(--color-border-subtle);
-    box-shadow: var(--tw-shadow, 0 8px 24px rgba(0,0,0,0.35));
+  box-shadow: var(--tw-shadow, 0 12px 22px -8px rgba(0,0,0,0.6));
     position: relative;
     overflow: hidden;
     transition: all 0.3s ease;
   }
 
+  /* Solid variant without blur and with flat surface */
+  [data-theme="solid"] .card-cyber {
+    background: var(--color-surface-strong);
+    backdrop-filter: none;
+  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.65);
+  }
+
   .card-cyber:hover {
     border-color: var(--color-border-strong);
-    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.429), 0 20px 50px -20px rgba(96,165,250,0.25), 0 30px 60px -30px rgba(167,139,250,0.25);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 16px 32px -14px rgba(0,0,0,0.65);
     transform: scale(1.01);
   }
 
   /* Inputs */
   .input-cyber {
     width: 100%;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(23, 23, 23, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 0.625rem 1rem;
@@ -121,10 +181,15 @@
     transition: all 0.2s ease;
   }
 
+  [data-theme="solid"] .input-cyber {
+    background: var(--color-surface);
+    border-color: var(--color-border-subtle);
+  }
+
   .input-cyber:focus {
     outline: none;
     border-color: var(--color-border-strong);
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  box-shadow: 0 0 0 2px rgba(163, 163, 163, 0.25);
   }
 
   .input-cyber::placeholder {
@@ -133,9 +198,14 @@
 
   /* Header */
   .header-cyber {
-    background: linear-gradient(to right, rgba(15,23,42,0.75), rgba(15,23,42,0.5));
+    background: linear-gradient(to right, rgba(23,23,23,0.75), rgba(23,23,23,0.5));
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  [data-theme="solid"] .header-cyber {
+    background: var(--color-surface);
+    backdrop-filter: none;
   }
 }
 
@@ -166,9 +236,9 @@
     border-color: var(--color-border-subtle);
   }
 
-  /* Text gradient */
+  /* Text gradient (always grayscale) */
   .text-cyber-gradient {
-    background: linear-gradient(to right, #60A5FA, #A78BFA);
+    background: linear-gradient(to right, #80cc94, #3a9f5f);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -180,7 +250,7 @@
   }
 
   .hover-cyber-glow:hover {
-    box-shadow: 0 0 25px -5px rgba(96,165,250,0.3);
+  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.7);
     border-color: var(--color-border-strong);
   }
 
@@ -196,25 +266,46 @@
     backdrop-filter: blur(8px);
   }
 
+  [data-theme="solid"] .surface {
+    backdrop-filter: none;
+  }
+
   .card {
     background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
     border: 1px solid var(--color-border-subtle);
     border-radius: 1rem;
-  backdrop-filter: blur(16px);
-  /* Slight outer glow to separate from dark bg */
-  box-shadow: 0 0 0 1px rgba(96,165,250,0.08), 0 12px 28px -12px rgba(0,0,0,0.45);
+    backdrop-filter: blur(16px);
+    /* Subtle separation from dark bg, more defined shadow */
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 14px 24px -10px rgba(0,0,0,0.6);
+  }
+
+  [data-theme="solid"] .card {
+    background: var(--color-surface-strong);
+    backdrop-filter: none;
+  }
+
+  /* Disable all blur utilities under solid theme for a clean, flat look */
+  [data-theme="solid"] .backdrop-blur,
+  [data-theme="solid"] .backdrop-blur-xs,
+  [data-theme="solid"] .backdrop-blur-sm,
+  [data-theme="solid"] .backdrop-blur-md,
+  [data-theme="solid"] .backdrop-blur-lg,
+  [data-theme="solid"] .backdrop-blur-xl,
+  [data-theme="solid"] .backdrop-blur-2xl,
+  [data-theme="solid"] .backdrop-blur-3xl {
+    backdrop-filter: none !important;
   }
 
   /* Neon ring gradient */
   .ring-gradient {
-    box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 6px rgba(96,165,250,0.15), 0 0 0 12px rgba(167,139,250,0.12);
+    box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 6px rgba(156,163,175,0.15), 0 0 0 12px rgba(209,213,219,0.12);
   }
 
   /* Focus visible - Enhanced for accessibility */
   .focus-visible:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(96,165,250,0.8), 0 0 0 4px rgba(96,165,250,0.4);
-    border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 2px rgba(156,163,175,0.8), 0 0 0 4px rgba(156,163,175,0.4);
+  border-color: #9CA3AF;
   }
 
   /* Enhanced focus for interactive elements */
@@ -224,9 +315,9 @@
   select:focus-visible,
   textarea:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid var(--color-accent-blue);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px rgba(96,165,250,0.3);
+  outline: 2px solid #9CA3AF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
   }
 
   /* Remove default outline and replace with our accessible version */
@@ -263,10 +354,27 @@
   .keyboard-nav a:focus-visible,
   .keyboard-nav input:focus-visible,
   .keyboard-nav select:focus-visible {
-    outline: 3px solid var(--color-accent-blue);
+    outline: 3px solid #9CA3AF;
     outline-offset: 2px;
-    box-shadow: 0 0 0 2px white, 0 0 0 5px var(--color-accent-blue);
+    box-shadow: 0 0 0 2px white, 0 0 0 5px #9CA3AF;
   }
+
+  /* Dark tone button variants */
+  .btn-tone {
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    color: #F9FAFB;
+    border: 1px solid var(--color-border-subtle);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .btn-tone:active { transform: scale(0.98); }
+  .btn-tone--green { background: linear-gradient(to bottom, var(--btn-dark-green), #0a2214); }
+  .btn-tone--green:hover { background: linear-gradient(to bottom, var(--btn-dark-green-hover), #0d2b1a); }
+  .btn-tone--blue { background: linear-gradient(to bottom, var(--btn-dark-blue), #081b2e); }
+  .btn-tone--blue:hover { background: linear-gradient(to bottom, var(--btn-dark-blue-hover), #0d2742); }
+  .btn-tone--yellow { background: linear-gradient(to bottom, var(--btn-dark-yellow), #1f1a05); }
+  .btn-tone--yellow:hover { background: linear-gradient(to bottom, var(--btn-dark-yellow-hover), #2b2407); }
 
   /* Touch target improvements for mobile */
   @media (max-width: 768px) {
@@ -346,5 +454,16 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  /* Anula rings grandes aplicados vía :focus-within en contenedores */
+  .no-focus-within:focus-within { outline: none !important; box-shadow: none !important; }
+
+  /* Hover gris para reemplazar hover:bg-white/5 */
+  .hover-surface:hover {
+    background-color: var(--color-surface) !important;
+    border-color: var(--color-border-subtle) !important;
   }
 }

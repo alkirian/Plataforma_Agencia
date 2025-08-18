@@ -7,9 +7,9 @@
   --calendar-primary-light: rgba(168, 85, 247, 0.1);
   --calendar-primary-border: rgba(168, 85, 247, 0.3);
   --calendar-background: rgba(15, 23, 42, 0.4);
-  --calendar-header-bg: rgba(15, 23, 42, 0.2);
+  --calendar-header-bg: rgba(21, 21, 21, 0.2);
   --calendar-border: rgba(255, 255, 255, 0.06);
-  --calendar-border-light: rgba(255, 255, 255, 0.04);
+  --calendar-border-light: rgba(22, 22, 22, 0.096);
   --calendar-text: #c9d1d9;
   --calendar-text-secondary: #9aa4b2;
   --calendar-shadow: 0 4px 24px rgba(168, 85, 247, 0.1);

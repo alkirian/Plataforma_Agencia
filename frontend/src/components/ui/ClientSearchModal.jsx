@@ -41,7 +41,7 @@ export const ClientSearchModal = ({ isOpen, onClose }) => {
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -10, opacity: 0 }}
-            className="relative w-full max-w-2xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong backdrop-blur-xl shadow-xl"
+            className="relative w-full max-w-2xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong shadow-xl no-focus-within"
           >
             <div className="flex items-center gap-3 p-4">
               <MagnifyingGlassIcon className="h-6 w-6 text-text-muted" />
@@ -51,13 +51,15 @@ export const ClientSearchModal = ({ isOpen, onClose }) => {
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
                 placeholder="Buscar clientes por nombre o industria…"
-                className="flex-1 bg-transparent text-text-primary placeholder-text-muted focus:outline-none text-base"
+                className="flex-1 bg-transparent text-text-primary placeholder-text-muted outline-none text-base
+                 border border-[color:var(--color-border-subtle)] rounded-lg px-3 py-2
+                 focus:border-[color:var(--color-border-strong)] focus:ring-1 focus:ring-[rgba(163,163,163,0.25)]"
                 aria-label="Buscar clientes"
               />
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5"
+                className="p-2 rounded-lg text-text-muted hover:text-text-primary border border-transparent hover-surface"
                 aria-label="Cerrar búsqueda"
               >
                 <XMarkIcon className="h-5 w-5" />

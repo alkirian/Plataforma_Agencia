@@ -1,22 +1,32 @@
-/* FullCalendar Custom Styles - Integrado con el diseño de la plataforma */
+/* FullCalendar Custom Styles - Dark Grayscale Theme */
 
-/* Variables CSS para theming */
 :root {
-  --fc-primary-color: #8b5cf6;
-  --fc-primary-light: rgba(139, 92, 246, 0.1);
-  --fc-surface: rgba(15, 23, 42, 0.6);
-  --fc-border: rgba(255, 255, 255, 0.1);
-  --fc-text: #c9d1d9;
-  --fc-text-secondary: #9aa4b2;
-  --fc-hover: rgba(255, 255, 255, 0.05);
+  /* Neutral grayscale palette */
+  --fc-primary-color: #9CA3AF;            /* gray-400 */
+  --fc-primary-light: rgba(156, 163, 175, 0.15);
+  --fc-surface: #0c0c0c;                  /* slate-900 */
+  --fc-surface-soft: #111827;             /* gray-900 */
+  --fc-border: rgb(26, 25, 25); /* gray-300/16 */
+  --fc-text: #E5E7EB;                     /* gray-200 */
+  --fc-text-secondary: #9CA3AF;           /* gray-400 */
+  --fc-hover: rgb(40, 38, 49);
+  --fc-bg: #121212;
+  --fc-bg-soft: #171717;
+  --fc-border-strong: rgba(163, 163, 163, .35);
+  --fc-text-muted: #9ca3af;
+  --ev-default: #1f1f1f;
+  --ev-draft: #1a1a1a;
+  --ev-pending: #202020;
+  --ev-approved: #222;
+  --ev-scheduled: #242424;
+  --ev-published: #262626;
+  --ev-blocked: #2b2b2b;
 }
 
-/* Contenedor principal del calendario */
-.fullcalendar-wrapper {
-  position: relative;
-}
+/* Container */
+.fullcalendar-wrapper { position: relative; }
 
-/* Reset de FullCalendar base */
+/* Base reset */
 .fc {
   background: transparent;
   color: var(--fc-text);
@@ -25,15 +35,14 @@
   overflow: hidden;
 }
 
-/* Toolbar/Header del calendario */
+/* Toolbar */
 .fc .fc-toolbar {
   background: var(--fc-surface);
-  backdrop-filter: blur(10px);
   border: 1px solid var(--fc-border);
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .fc .fc-toolbar-title {
@@ -43,10 +52,10 @@
   margin: 0;
 }
 
-/* Botones de navegación */
+/* Toolbar buttons */
 .fc .fc-button-primary {
   background: var(--fc-primary-light);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid var(--fc-border);
   color: var(--fc-primary-color);
   border-radius: 8px;
   padding: 6px 12px;
@@ -57,332 +66,314 @@
 
 .fc .fc-button-primary:hover,
 .fc .fc-button-primary:focus {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.5);
-  color: #a78bfa;
+  background: rgba(34, 35, 37, 0.25);
+  border-color: var(--fc-border);
+  color: #ff3007;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.fc .fc-button-primary:active {
-  background: rgba(139, 92, 246, 0.3);
-  transform: translateY(0);
-}
+.fc .fc-button-primary:active { background: rgba(156, 163, 175, 0.3); transform: translateY(0); }
+.fc .fc-button-primary.fc-button-active { background: #2c2c2d; color: #F3F4F6; border-color: var(--fc-border); }
+.fc .fc-button-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-.fc .fc-button-primary.fc-button-active {
-  background: var(--fc-primary-color);
-  color: white;
-  border-color: var(--fc-primary-color);
-}
-
-.fc .fc-button-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Grilla del calendario */
-.fc .fc-scrollgrid {
-  border: 1px solid var(--fc-border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--fc-surface);
-  backdrop-filter: blur(10px);
-}
-
-/* Headers de días/semanas */
-.fc .fc-col-header {
-  background: rgba(15, 23, 42, 0.8);
-  border-bottom: 1px solid var(--fc-border);
-}
-
-.fc .fc-col-header-cell {
-  padding: 12px 8px;
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--fc-text-secondary);
-}
-
-/* Celdas de días */
-.fc .fc-daygrid-day,
-.fc .fc-timegrid-col {
-  border-color: var(--fc-border);
-  background: transparent;
-}
-
-.fc .fc-daygrid-day:hover {
-  background: var(--fc-hover);
-  transition: background 0.15s ease;
-}
-
-.fc .fc-daygrid-day.fc-day-today {
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-/* Números de días */
-.fc .fc-daygrid-day-number {
-  color: var(--fc-text);
-  font-weight: 600;
-  padding: 8px;
-  transition: color 0.15s ease;
-}
-
-.fc .fc-day-today .fc-daygrid-day-number {
-  color: var(--fc-primary-color);
-  font-weight: 700;
-}
-
-.fc .fc-day-other .fc-daygrid-day-number {
-  opacity: 0.4;
-}
-
-/* Eventos */
-.fc .fc-event {
-  border-radius: 6px;
-  border: none;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 500;
-  margin: 1px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.fc .fc-event:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-
-.fc .fc-event-title {
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fc .fc-event-time {
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-/* Vista de mes - eventos */
-.fc .fc-daygrid-event {
-  margin: 1px 2px;
-  border-radius: 4px;
-  padding: 1px 4px;
-  font-size: 10px;
-}
-
-.fc .fc-daygrid-event-harness {
-  margin: 1px 0;
-}
-
-/* Enlace "más eventos" */
-.fc .fc-more-link {
-  color: var(--fc-primary-color);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: var(--fc-primary-light);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  transition: all 0.15s ease;
-}
-
-.fc .fc-more-link:hover {
-  background: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
-}
-
-/* Vista de tiempo (semana/día) */
-.fc .fc-timegrid-slot {
-  border-color: var(--fc-border);
-  height: 2rem;
-}
-
-.fc .fc-timegrid-slot-minor {
-  border-color: rgba(255, 255, 255, 0.05);
-}
-
-.fc .fc-timegrid-axis {
-  color: var(--fc-text-secondary);
-  font-size: 0.75rem;
-  border-color: var(--fc-border);
-}
-
-/* Indicador de "ahora" */
-.fc .fc-timegrid-now-indicator-line {
-  border-color: var(--fc-primary-color);
-  border-width: 2px;
-}
-
-.fc .fc-timegrid-now-indicator-arrow {
-  border-left-color: var(--fc-primary-color);
-  border-width: 6px 0 6px 6px;
-}
-
-/* Vista de lista */
-.fc .fc-list {
-  background: transparent;
-  border: 1px solid var(--fc-border);
-  border-radius: 12px;
-}
-
-.fc .fc-list-event {
-  border-color: var(--fc-border);
-  transition: background 0.15s ease;
-}
-
-.fc .fc-list-event:hover {
-  background: var(--fc-hover);
-}
-
-.fc .fc-list-event-title {
-  color: var(--fc-text);
-}
-
-.fc .fc-list-event-time {
-  color: var(--fc-text-secondary);
-}
-
-.fc .fc-list-day-text {
-  color: var(--fc-primary-color);
-  font-weight: 600;
-}
-
-.fc .fc-list-empty {
-  color: var(--fc-text-secondary);
-  background: var(--fc-surface);
-  padding: 2rem;
-  text-align: center;
-  border-radius: 8px;
-  font-style: italic;
-}
-
-.fc .fc-list-day-side {
-  background: var(--fc-surface);
-  border-radius: 8px;
-  padding: 0.5rem;
-}
-
-.fc .fc-list-event-graphic {
-  background: var(--fc-primary-color);
-  border-radius: 4px;
-}
-
-/* Popover para eventos */
-.fc .fc-popover {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--fc-border);
-  border-radius: 12px;
+/* Grid mejorado */
+.fc .fc-scrollgrid { 
+  border: 2px solid var(--fc-border); 
+  border-radius: 16px; 
+  overflow: hidden; 
+  background: linear-gradient(135deg, var(--fc-surface), var(--fc-bg-soft));
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Headers mejorados */
+.fc .fc-col-header { 
+  background: linear-gradient(135deg, var(--fc-surface-soft), var(--fc-bg)); 
+  border-bottom: 2px solid var(--fc-border-strong); 
+  backdrop-filter: blur(8px);
+}
+.fc .fc-col-header-cell { 
+  padding: 16px 12px; 
+  font-weight: 700; 
+  font-size: 0.8rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.1em; 
   color: var(--fc-text);
+  transition: all 0.2s ease;
 }
-
-.fc .fc-popover-header {
-  background: rgba(139, 92, 246, 0.1);
-  border-bottom: 1px solid var(--fc-border);
-  color: var(--fc-primary-color);
-  font-weight: 600;
-  padding: 8px 12px;
-}
-
-.fc .fc-popover-body {
-  padding: 8px;
-}
-
-/* Scrollbars personalizadas */
-.fc-scroller::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.fc-scroller::-webkit-scrollbar-track {
+.fc .fc-col-header-cell:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
 }
 
-.fc-scroller::-webkit-scrollbar-thumb {
-  background: var(--fc-primary-color);
-  border-radius: 3px;
+/* Day cells mejorados */
+.fc .fc-daygrid-day,
+.fc .fc-timegrid-col { 
+  border-color: var(--fc-border); 
+  background: transparent; 
+  transition: all 0.2s ease;
+  position: relative;
+}
+.fc .fc-daygrid-day:hover { 
+  background: linear-gradient(135deg, var(--fc-hover), rgba(255, 255, 255, 0.02)); 
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.fc .fc-daygrid-day.fc-day-today { 
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(29, 78, 216, 0.1)); 
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+.fc .fc-daygrid-day.fc-day-today:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(29, 78, 216, 0.15));
 }
 
-.fc-scroller::-webkit-scrollbar-thumb:hover {
-  background: #a78bfa;
+/* Day numbers mejorados */
+.fc .fc-daygrid-day-number { 
+  color: var(--fc-text); 
+  font-weight: 700; 
+  padding: 10px 12px; 
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  display: inline-block;
+  min-width: 32px;
+  text-align: center;
+}
+.fc .fc-daygrid-day-number:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+.fc .fc-day-today .fc-daygrid-day-number { 
+  color: #60A5FA; 
+  font-weight: 800; 
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.fc .fc-day-other .fc-daygrid-day-number { 
+  opacity: 0.3; 
+  font-weight: 500;
 }
 
-/* Responsive adjustments */
+/* Events rediseñados */
+.fc .fc-event { 
+  border-radius: 8px; 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  padding: 6px 10px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  margin: 2px 1px; 
+  cursor: pointer; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); 
+  animation: eventFadeIn 0.4s ease-out;
+  backdrop-filter: blur(4px);
+  position: relative;
+  overflow: hidden;
+}
+.fc .fc-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+}
+.fc .fc-event:hover { 
+  transform: translateY(-2px) scale(1.02); 
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); 
+  z-index: 20;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.fc .fc-event:active {
+  transform: translateY(-1px) scale(1.01);
+}
+.fc .fc-event-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc .fc-event-time { font-weight: 400; opacity: 0.9; }
+
+/* Month view event adjustments */
+.fc .fc-daygrid-event { margin: 1px 2px; border-radius: 4px; padding: 1px 4px; font-size: 10px; }
+.fc .fc-daygrid-event-harness { margin: 1px 0; }
+
+/* More link */
+.fc .fc-more-link { color: var(--fc-text-secondary); font-size: 10px; font-weight: 600; padding: 2px 4px; border-radius: 4px; background: var(--fc-primary-light); border: 1px solid var(--fc-border); transition: all 0.15s ease; }
+.fc .fc-more-link:hover { background: rgba(156,163,175,0.2); color: var(--fc-text); }
+
+/* Time views */
+.fc .fc-timegrid-slot { border-color: var(--fc-border); height: 2rem; }
+.fc .fc-timegrid-slot-minor { border-color: rgba(255,255,255,0.05); }
+.fc .fc-timegrid-axis { color: var(--fc-text-secondary); font-size: 0.75rem; border-color: var(--fc-border); }
+
+/* Now indicator */
+.fc .fc-timegrid-now-indicator-line { border-color: #9CA3AF; border-width: 2px; }
+.fc .fc-timegrid-now-indicator-arrow { border-left-color: #9CA3AF; border-width: 6px 0 6px 6px; }
+
+/* List view */
+.fc .fc-list { background: transparent; border: 1px solid var(--fc-border); border-radius: 12px; }
+.fc .fc-list-event { border-color: var(--fc-border); transition: background 0.15s ease; }
+.fc .fc-list-event:hover { background: var(--fc-hover); }
+.fc .fc-list-event-title { color: var(--fc-text); }
+.fc .fc-list-event-time { color: var(--fc-text-secondary); }
+.fc .fc-list-day-text { color: var(--fc-text-secondary); font-weight: 600; }
+.fc .fc-list-empty { color: var(--fc-text-secondary); background: var(--fc-surface); padding: 2rem; text-align: center; border-radius: 8px; font-style: italic; }
+.fc .fc-list-day-side { background: var(--fc-surface); border-radius: 8px; padding: 0.5rem; }
+.fc .fc-list-event-graphic { background: var(--fc-primary-color); border-radius: 4px; }
+
+/* Popover */
+.fc .fc-popover { background: #646464; border: 1px solid var(--fc-border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: var(--fc-text); }
+.fc .fc-popover-header { background: #111827; border-bottom: 1px solid var(--fc-border); color: var(--fc-text-secondary); font-weight: 600; padding: 8px 12px; }
+.fc .fc-popover-body { padding: 8px; }
+
+/* Scrollbars */
+.fc-scroller::-webkit-scrollbar { width: 6px; height: 6px; }
+.fc-scroller::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+.fc-scroller::-webkit-scrollbar-thumb { background: #6B7280; border-radius: 3px; }
+.fc-scroller::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Responsive */
 @media (max-width: 768px) {
-  .fc .fc-toolbar {
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-  }
-  
-  .fc .fc-toolbar-chunk {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .fc .fc-button-primary {
-    padding: 4px 8px;
-    font-size: 0.875rem;
-  }
-  
-  .fc .fc-toolbar-title {
-    font-size: 1.25rem;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-  
-  .fc .fc-daygrid-event {
-    font-size: 9px;
-    padding: 1px 3px;
-  }
-  
-  .fc .fc-col-header-cell {
-    padding: 8px 4px;
-    font-size: 0.625rem;
-  }
+  .fc .fc-toolbar { flex-direction: column; gap: 12px; padding: 12px; }
+  .fc .fc-toolbar-chunk { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .fc .fc-button-primary { padding: 4px 8px; font-size: 0.875rem; }
+  .fc .fc-toolbar-title { font-size: 1.25rem; text-align: center; margin-bottom: 8px; }
+  .fc .fc-daygrid-event { font-size: 9px; padding: 1px 3px; }
+  .fc .fc-col-header-cell { padding: 8px 4px; font-size: 0.625rem; }
 }
 
-/* Estados de carga */
-.fullcalendar-wrapper.loading {
-  pointer-events: none;
-  opacity: 0.7;
+/* Loading */
+.fullcalendar-wrapper.loading { pointer-events: none; opacity: 0.7; }
+
+/* Animations mejoradas */
+@keyframes eventFadeIn { 
+  0% { opacity: 0; transform: translateY(10px) scale(0.9); } 
+  50% { opacity: 0.7; transform: translateY(-2px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); } 
 }
 
-/* Animaciones */
-.fc .fc-event {
-  animation: eventFadeIn 0.3s ease-out;
+@keyframes eventPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
-@keyframes eventFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* Accesibilidad */
-.fc .fc-button-primary:focus-visible {
-  outline: 2px solid var(--fc-primary-color);
-  outline-offset: 2px;
+/* Animación sutil de entrada para el calendario */
+@keyframes calendarLoad {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.fc .fc-event:focus-visible {
-  outline: 2px solid var(--fc-primary-color);
-  outline-offset: 1px;
+.fc { animation: calendarLoad 0.6s ease-out; }
+
+/* Efecto shimmer en eventos nuevos */
+.fc .fc-event.event-new::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* Darker, high-contrast event badges (grayscale/dark theme) */
+:root {
+  --event-text: #E5E7EB;
+  --event-border: rgba(254, 64, 64, 0.08);
+  --event-bg-default: #4d4f51;
+  --event-bg-plan: #111827;         /* gray-900 */
+  --event-bg-pending: #6e7400;      /* slate-900 */
+  --event-bg-design: #0a0f1a;       /* deep blue-ish gray */
+  --event-bg-progress: #0b1220;     /* deep navy gray */
+  --event-bg-review: #1f2937;       /* gray-800 */
+  --event-bg-wait-approval: #111827;
+  --event-bg-approved: #105b03;     /* deep green */
+  --event-bg-ready: #12212A;        /* teal-ish */
+  --event-bg-published: #1C1C22;    /* neutral dark */
+  --event-bg-done: #175036;         /* deep green */
+  --event-bg-paused: #313843;       /* slate-800 */
+  --event-bg-cancelled: #2A1313;    /* dark red */
+}
+
+/* Base y variantes mejoradas por estado */
+.fc-event-base { 
+  color: var(--event-text) !important; 
+  background: var(--event-bg-default) !important; 
+  border: 1px solid var(--event-border) !important; 
+  border-radius: 10px !important; 
+  backdrop-filter: blur(8px);
+  position: relative;
+}
+
+.fc-event--pendiente { 
+  background: linear-gradient(135deg, #FCD34D, #F59E0B) !important; 
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  color: #78350F !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+.fc-event--en-diseño { 
+  background: linear-gradient(135deg, #60A5FA, #3B82F6) !important; 
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  color: #1E3A8A !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+.fc-event--en-progreso { 
+  background: linear-gradient(135deg, #A78BFA, #8B5CF6) !important; 
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  color: #4C1D95 !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+.fc-event--aprobado { 
+  background: linear-gradient(135deg, #34D399, #10B981) !important; 
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #064E3B !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.fc-event--publicado { 
+  background: linear-gradient(135deg, #22C55E, #16A34A) !important; 
+  border-color: rgba(34, 197, 94, 0.5) !important;
+  color: #14532D !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+.fc-event--cancelado { 
+  background: linear-gradient(135deg, #F87171, #EF4444) !important; 
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #7F1D1D !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Hover/Focus effects mejorados */
+.fc .fc-event:hover,
+.fc .fc-event:focus-visible { 
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 8px 32px rgba(0, 0, 0, 0.4) !important; 
+  transform: translateY(-3px) scale(1.03) !important;
+  z-index: 30 !important;
+}
+
+/* Efectos específicos por estado en hover */
+.fc-event--pendiente:hover { 
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5), 0 8px 32px rgba(245, 158, 11, 0.4) !important; 
+}
+.fc-event--en-diseño:hover { 
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5), 0 8px 32px rgba(59, 130, 246, 0.4) !important; 
+}
+.fc-event--en-progreso:hover { 
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5), 0 8px 32px rgba(139, 92, 246, 0.4) !important; 
+}
+.fc-event--aprobado:hover { 
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5), 0 8px 32px rgba(16, 185, 129, 0.4) !important; 
+}
+.fc-event--publicado:hover { 
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(34, 197, 94, 0.4) !important; 
+}
+.fc-event--cancelado:hover { 
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5), 0 8px 32px rgba(239, 68, 68, 0.4) !important; 
 }
