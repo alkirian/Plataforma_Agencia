@@ -4,6 +4,7 @@ import clientRoutes from './clients.routes.js';
 import documentsRoutes from './documents.routes.js';
 import aiRoutes from './ai.routes.js';
 import scheduleRoutes from './schedule.routes.js';
+import webSourcesRoutes from './webSources.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { handleGetAgencyActivityFeed } from '../controllers/activity.controller.js';
 
@@ -19,6 +20,7 @@ router.use('/clients', clientRoutes);
 router.use('/documents', documentsRoutes);
 router.use('/ai', aiRoutes);
 router.use('/schedule', scheduleRoutes);
+router.use(webSourcesRoutes);
 
 // Feed global de actividad de la agencia
 router.get('/activity-feed', protect, handleGetAgencyActivityFeed);

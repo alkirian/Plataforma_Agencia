@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getClientById } from '../api/clients';
 import { ScheduleSection } from '../components/schedule/ScheduleSection';
 import { DocumentsSection } from '../components/documents/DocumentsSection';
+import { WebSourceManager } from '../components/websources/WebSourceManager.jsx';
 
 export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
@@ -69,12 +70,24 @@ export const ClientDetailPage = () => {
           >
             Documentos
           </button>
+          <button
+            onClick={() => setActiveTab('web')}
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              activeTab === 'web'
+                ? 'bg-surface-strong text-text-primary shadow-halo'
+                : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
+            }`}
+          >
+            Fuentes de Contexto
+          </button>
         </div>
         <div className='card rounded-xl p-4'>
           {activeTab === 'schedule' ? (
             <ScheduleSection clientId={clientId} />
-          ) : (
+          ) : activeTab === 'documents' ? (
             <DocumentsSection clientId={clientId} />
+          ) : (
+            <WebSourceManager clientId={clientId} />
           )}
         </div>
       </div>
