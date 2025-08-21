@@ -99,15 +99,20 @@ export const startScraping = async (clientId, url, _agencyId) => {
     .select('*')
     .single();
 
-  // Duplicado por condición de carrera: recuperar y reusar
-  if (insertError && insertError.code === '23505') {
-    const { data: dup } = await supabaseAdmin
-      .from('web_sources')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('url_root', urlRoot)
-      .maybeSingle();
-    if (dup) return dup;
+  // Duplicado por condición de carrera o doble submit: recuperar y reusar
+  if (insertError) {
+    const msg = (insertError.message || '').toLowerCase();
+    const details = (insertError.details || '').toLowerCase();
+    const isDup = insertError.code === '23505' || insertError.status === 409 || msg.includes('duplicate key') || details.includes('duplicate');
+    if (isDup) {
+      const { data: dup, error: fetchDupErr } = await supabaseAdmin
+        .from('web_sources')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('url_root', urlRoot)
+        .maybeSingle();
+      if (!fetchDupErr && dup) return dup;
+    }
   }
 
   if (insertError) {
