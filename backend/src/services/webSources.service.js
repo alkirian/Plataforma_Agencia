@@ -24,6 +24,65 @@ export const startScraping = async (clientId, url, _agencyId) => {
     throw new Error('URL inválida');
   }
 
+  // Idempotencia: si ya existe una fuente para (client_id, url_root),
+  // reusar o reencolar según su estado.
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from('web_sources')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('url_root', urlRoot)
+    .maybeSingle();
+
+  if (existingError) {
+    // No lanzamos error duro; continuamos a insert como fallback
+    // pero log de servidor sería útil
+    // console.warn('Lookup web_source error:', existingError);
+  }
+
+  if (existing) {
+    // Si ya está en curso, devolvemos tal cual
+    if (existing.status === 'pending' || existing.status === 'scraping') {
+      // Fire-and-forget re-invoke is optional; evitamos tormenta de invocaciones
+      return existing;
+    }
+
+    // Si estaba completed/failed, reseteamos y reencolamos
+    const resetPayload = {
+      status: 'pending',
+      pages_crawled: 0,
+      error_message: null,
+      last_url: null,
+      started_at: null,
+      completed_at: null,
+      seed_url: seedUrl, // actualiza semilla si cambió
+    };
+
+    const { data: updated, error: upError } = await supabaseAdmin
+      .from('web_sources')
+      .update(resetPayload)
+      .eq('id', existing.id)
+      .select('*')
+      .single();
+
+    if (upError) {
+      throw new Error(`No se pudo reencolar la fuente web: ${upError.message}`);
+    }
+
+    try {
+      // eslint-disable-next-line no-void
+      void supabaseAdmin.functions.invoke('web-scraper', {
+        body: { sourceId: updated.id, clientId },
+      });
+    } catch (err) {
+      await supabaseAdmin
+        .from('web_sources')
+        .update({ status: 'failed', error_message: `invoke error: ${err.message}` })
+        .eq('id', updated.id);
+    }
+
+    return updated;
+  }
+
   // 1) Crea el registro en web_sources con estado pending
   const insertPayload = {
     client_id: clientId,
@@ -39,6 +98,17 @@ export const startScraping = async (clientId, url, _agencyId) => {
     .insert(insertPayload)
     .select('*')
     .single();
+
+  // Duplicado por condición de carrera: recuperar y reusar
+  if (insertError && insertError.code === '23505') {
+    const { data: dup } = await supabaseAdmin
+      .from('web_sources')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('url_root', urlRoot)
+      .maybeSingle();
+    if (dup) return dup;
+  }
 
   if (insertError) {
     throw new Error(`No se pudo crear la fuente web: ${insertError.message}`);
