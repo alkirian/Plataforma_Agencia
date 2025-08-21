@@ -105,7 +105,7 @@ export const DashboardPage = () => {
       {/* Hero */}
       <section className='flex flex-col items-center text-center gap-4 py-4 px-4 sm:px-0'>
   <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft flex items-center justify-center text-2xl font-bold text-text-primary'>
-          R
+          C
         </div>
         <div className='flex justify-center'>
           <Tooltip content="Crear un nuevo cliente para gestionar sus proyectos (Ctrl+N)" side="bottom">
@@ -121,8 +121,10 @@ export const DashboardPage = () => {
         </div>
       </section>
 
+  {/* Widgets de estado eliminados: notificaciones desactivadas */}
+
       {/* Búsqueda y filtros */}
-  {allClients.length > 0 && (
+      {allClients.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

@@ -6,11 +6,13 @@ import {
   deleteDocument,
   downloadDocument,
 } from '../api/documents';
+import { useAuth } from './useAuth';
 
 const QUERY_KEY = clientId => ['documents', clientId];
 
 export const useDocuments = clientId => {
   const queryClient = useQueryClient();
+  const { userData } = useAuth();
 
   // Fetch documents list
   const documentsQuery = useQuery({
@@ -27,7 +29,7 @@ export const useDocuments = clientId => {
 
   // Upload
   const uploadMut = useMutation({
-    mutationFn: ({ file }) => uploadDocument(clientId, file),
+    mutationFn: ({ file }) => uploadDocument(clientId, file, userData),
     onMutate: async ({ file }) => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEY(clientId) });
       const prev = queryClient.getQueryData(QUERY_KEY(clientId));
@@ -45,10 +47,10 @@ export const useDocuments = clientId => {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(QUERY_KEY(clientId), ctx.prev);
-      toast.error(err?.message || 'Error al subir documento');
+      // No mostrar toast aquí, el API ya maneja las notificaciones
     },
     onSuccess: () => {
-      toast.success('Documento subido');
+      // No mostrar toast aquí, el API ya maneja las notificaciones
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY(clientId) });

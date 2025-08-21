@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { ArrowUpTrayIcon, DocumentIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
-import { uploadDocument } from '../../api/documents';
+import { uploadDocument, uploadMultipleDocuments } from '../../api/documents';
+import { useAuth } from '../../hooks/useAuth';
+import { getMessage } from '../../constants/notificationMessages';
 
 export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {
   const inputRef = useRef(null);
@@ -10,17 +12,20 @@ export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
+  
+  // Hook para obtener información del usuario
+  const { userData } = useAuth();
 
   const validateFile = (file) => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     
     if (file.size > maxSize) {
-      return `${file.name} es muy grande. Máximo 10MB permitido.`;
+      return getMessage('document.fileTooLarge', file.name, '10');
     }
     
     if (!allowedTypes.includes(file.type)) {
-      return `${file.name} no es un tipo de archivo permitido.`;
+      return getMessage('document.fileTypeNotAllowed', file.name);
     }
     
     return null;
@@ -66,16 +71,40 @@ export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {
     setError(null);
 
     try {
-      for (const fileItem of selectedFiles) {
+      if (selectedFiles.length === 1) {
+        // Subir archivo único
+        const fileItem = selectedFiles[0];
         setUploadProgress(prev => ({ ...prev, [fileItem.id]: 0 }));
         
         if (onUpload) {
           await onUpload(fileItem.file);
         } else {
-          await uploadDocument(clientId, fileItem.file);
+          await uploadDocument(clientId, fileItem.file, userData);
         }
         
         setUploadProgress(prev => ({ ...prev, [fileItem.id]: 100 }));
+      } else {
+        // Subir múltiples archivos
+        const files = selectedFiles.map(item => item.file);
+        
+        if (onUpload) {
+          // Si hay handler personalizado, usar uno por uno
+          for (const fileItem of selectedFiles) {
+            setUploadProgress(prev => ({ ...prev, [fileItem.id]: 0 }));
+            await onUpload(fileItem.file);
+            setUploadProgress(prev => ({ ...prev, [fileItem.id]: 100 }));
+          }
+        } else {
+          // Usar la función de múltiples documentos con notificación inteligente
+          await uploadMultipleDocuments(clientId, files, userData);
+          
+          // Marcar todos como completados
+          const progressUpdate = {};
+          selectedFiles.forEach(item => {
+            progressUpdate[item.id] = 100;
+          });
+          setUploadProgress(progressUpdate);
+        }
       }
 
       if (onUploaded) onUploaded();

@@ -11,6 +11,7 @@ export const generateIdeas = (clientId, promptData) => {
   return apiFetch(`/clients/${clientId}/generate-ideas`, {
     method: 'POST',
     body: JSON.stringify(promptData),
+    timeout: 180000, // 3 minutos de timeout para generación de ideas
   }).then((resp) => resp?.data ?? resp);
 };
 

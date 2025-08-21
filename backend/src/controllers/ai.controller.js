@@ -2,15 +2,43 @@ import { generateScheduleIdeas, handleChatConversation } from '../services/ai.se
 import { listChatMessages, saveChatMessage } from '../services/chat.service.js';
 
 export const handleGenerateIdeas = async (req, res, next) => {
+  console.log('🧠 handleGenerateIdeas - Entrada:', {
+    clientId: req.params.clientId,
+    body: req.body,
+    hasToken: !!req.headers.authorization
+  });
+  
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const { clientId } = req.params;
-    const { userPrompt, monthContext } = req.body;
+    const { userPrompt, monthContext, context } = req.body;
+    
     if (!clientId || !userPrompt) {
+      console.error('❌ Faltan parámetros requeridos:', { clientId, userPrompt });
       return res.status(400).json({ success: false, message: 'clientId y userPrompt son requeridos' });
     }
-    const ideas = await generateScheduleIdeas({ clientId, userPrompt, monthContext, token });
-    res.status(200).json({ success: true, data: ideas });
+    
+    console.log('🔄 Generando ideas...');
+    const ideas = await generateScheduleIdeas({ 
+      clientId, 
+      userPrompt, 
+      monthContext: monthContext || context, 
+      context: context || monthContext,
+      token 
+    });
+    console.log('✅ Ideas generadas exitosamente:', { count: ideas?.length, sample: ideas?.[0] });
+    res.status(200).json({ 
+      success: true, 
+      data: { 
+        ideas: ideas,
+        context: {
+          clientId,
+          userPrompt,
+          totalGenerated: ideas.length,
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
   } catch (error) {
     next(error);
   }

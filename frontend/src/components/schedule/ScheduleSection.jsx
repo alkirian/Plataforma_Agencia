@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import toast from 'react-hot-toast';
+import { getMessage } from '../../constants/notificationMessages';
+import { smartToast } from '../../utils/toastManager';
 import { getCurrentDate } from '../../utils/dateHelpers';
 import QuickTaskPopover from './QuickTaskPopover';
 
@@ -15,9 +16,16 @@ import { MiniMonth } from './MiniMonth';
 import { MonthAgenda } from './MonthAgenda';
 import { AIAssistant } from '../ai/AIAssistant';
 
+// Nuevos componentes de generación de ideas
+import { PromptPopover } from './PromptPopover';
+import { IdeasModal } from './IdeasModal';
+import { IdeasLoadingModal } from './IdeasLoadingModal';
+
 // Estilos
 import '../../styles/fullcalendar-custom.css';
 import { getClientById } from '../../api/clients';
+import { generateIdeas, getChatHistory } from '../../api/ai';
+import { getRelevantSpecialDates, getSeasonalContext } from '../../constants/specialDates';
 
 /**
  * Componente de calendario renovado con FullCalendar
@@ -36,6 +44,18 @@ export const ScheduleSection = ({ clientId }) => {
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
   const [quickTaskDate, setQuickTaskDate] = useState(null);
   const [clickCoords, setClickCoords] = useState(null);
+  
+  // Estados para generación de ideas
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
+  const [generatedIdeas, setGeneratedIdeas] = useState([]);
+  const [isIdeasModalOpen, setIsIdeasModalOpen] = useState(false);
+  const [aiDetectedTones, setAiDetectedTones] = useState([]);
+  
+  // Cargar último prompt usado
+  const [lastUsedPrompt, setLastUsedPrompt] = useState(() => 
+    localStorage.getItem('lastIdeaPrompt') || ''
+  );
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -92,7 +112,7 @@ export const ScheduleSection = ({ clientId }) => {
         setClient(clientResponse.data);
       }
     } catch (err) {
-      toast.error('Error al cargar datos del cliente');
+      smartToast.client.error(getMessage('client.loadError'));
     }
   }, [clientId, loadEvents]);
 
@@ -168,7 +188,7 @@ export const ScheduleSection = ({ clientId }) => {
     e.preventDefault();
     try {
       if (!formData.title || !formData.date || !formData.time) {
-        toast.error('Completa título, fecha y hora');
+        smartToast.task.error(getMessage('task.completeRequired'));
         return;
       }
 
@@ -186,10 +206,10 @@ export const ScheduleSection = ({ clientId }) => {
 
       if (selectedEvent?.id) {
         await updateEvent(selectedEvent.id, eventData);
-        toast.success('Evento actualizado');
+        smartToast.task.success(getMessage('task.updateSuccess'));
       } else {
         await createEvent(eventData);
-        toast.success('Evento creado');
+        smartToast.task.success(getMessage('task.createSuccess'));
       }
       closeModal();
     } catch (err) {
@@ -229,12 +249,12 @@ export const ScheduleSection = ({ clientId }) => {
   const handleCreateQuickTask = useCallback(async (taskData) => {
     try {
       await createEvent(taskData);
-      toast.success('Tarea creada exitosamente');
+      smartToast.task.success(getMessage('task.quickTaskSuccess'));
       setIsQuickTaskOpen(false);
       setQuickTaskDate(null);
       setClickCoords(null);
     } catch (error) {
-      toast.error('Error al crear la tarea');
+      smartToast.task.error(getMessage('task.quickTaskError'));
       throw error; // Re-throw para que el popover maneje el loading
     }
   }, [createEvent]);
@@ -244,6 +264,179 @@ export const ScheduleSection = ({ clientId }) => {
     setIsQuickTaskOpen(false);
     setQuickTaskDate(null);
     setClickCoords(null);
+  }, []);
+
+  // === NUEVOS HANDLERS PARA GENERACIÓN DE IDEAS ===
+
+  // Handler principal para generar ideas
+  const handleGenerateIdeas = useCallback(async ({ userPrompt = null, selectedTones = [] }) => {
+    setIsGeneratingIdeas(true);
+    setIsPromptOpen(false);
+    
+    try {
+      // 1. Recopilar contexto del chat
+      const chatContext = await getChatHistory(clientId, { limit: 50 });
+      
+      // 2. Obtener fechas especiales relevantes
+      const specialDates = getRelevantSpecialDates(
+        currentDate.getMonth() + 1,
+        currentDate.getFullYear(),
+        client?.industry || 'general'
+      );
+      
+      // 3. Contexto estacional
+      const seasonalContext = getSeasonalContext(currentDate.getMonth() + 1);
+
+      // 3.1 Rango y mes objetivo visibles actualmente en el calendario
+      const y = currentDate.getFullYear();
+      const m = currentDate.getMonth() + 1; // 1-12
+      const startOfMonth = new Date(y, m - 1, 1);
+      const endOfMonth = new Date(y, m, 0);
+      const pad = (n) => String(n).padStart(2, '0');
+      const monthContext = {
+        month: m,
+        year: y,
+        range: {
+          start: `${y}-${pad(m)}-01`,
+          end: `${y}-${pad(m)}-${pad(endOfMonth.getDate())}`
+        },
+        // Fechas especiales que el modelo puede considerar dentro del mes
+        specialDates
+      };
+      
+      // 4. Construir contexto completo para la IA
+      const context = {
+        client: {
+          id: clientId,
+          name: client?.name || '',
+          sector: client?.industry || 'general',
+          description: client?.description || ''
+        },
+        userPrompt,
+        selectedTones,
+        chatHistory: chatContext?.messages || [],
+        currentEvents: events,
+        currentMonth: m,
+        currentYear: y,
+        specialDates,
+        seasonalContext,
+        requestedIdeasCount: 10
+      };
+
+      console.log('🧠 Generando ideas con contexto:', context);
+
+      // 5. Generar ideas con contexto
+      const response = await generateIdeas(clientId, {
+        userPrompt: userPrompt || "Genera 10 ideas creativas y alineadas para el cronograma mensual",
+        context,
+        monthContext
+      });
+
+      console.log('✅ Ideas generadas:', response);
+
+      // 6. Procesar y mostrar ideas
+      const ideasArray = response?.ideas || response?.data?.ideas || response;
+      console.log('📋 Ideas recibidas:', { response, ideasArray });
+      
+      if (Array.isArray(ideasArray) && ideasArray.length > 0) {
+        // Agregar IDs únicos y campos requeridos si no existen
+        const ideasWithIds = ideasArray.map((idea, index) => ({
+          ...idea,
+          id: idea.id || `idea-${Date.now()}-${index}`,
+          title: idea.title || `Idea ${index + 1}`,
+          copy: idea.copy || idea.description || '',
+          suggestedDate: idea.suggestedDate || idea.scheduled_at || new Date().toISOString().split('T')[0],
+          suggestedTime: idea.suggestedTime || '09:00',
+          channel: idea.channel || 'IG',
+          hashtags: idea.hashtags || [],
+          status: idea.status || 'pendiente',
+          relevanceScore: idea.relevanceScore || Math.random() * 0.3 + 0.7, // Score entre 0.7-1.0
+        }));
+
+        setGeneratedIdeas(ideasWithIds);
+        setIsIdeasModalOpen(true);
+        
+        // Guardar prompt si fue exitoso
+        if (userPrompt) {
+          setLastUsedPrompt(userPrompt);
+          localStorage.setItem('lastIdeaPrompt', userPrompt);
+        }
+        
+        // Guardar tonos si fueron seleccionados
+        if (selectedTones.length > 0) {
+          localStorage.setItem('lastSelectedTones', JSON.stringify(selectedTones));
+        }
+        
+        smartToast.ai.success(getMessage('ai.ideasGenerated', ideasWithIds.length));
+      } else {
+        smartToast.ai.error(getMessage('ai.ideasGenerationError'));
+      }
+    } catch (error) {
+      console.error('❌ Error generando ideas:', error);
+      smartToast.ai.error(getMessage('ai.ideasGenerationErrorGeneric'));
+    } finally {
+      setIsGeneratingIdeas(false);
+    }
+  }, [clientId, client, events, currentDate]);
+
+  // Handler para aceptar ideas seleccionadas
+  const handleAcceptSelectedIdeas = useCallback(async (selectedIdeas) => {
+    try {
+      let createdCount = 0;
+      let errorCount = 0;
+
+      // Crear eventos para cada idea seleccionada
+      for (const idea of selectedIdeas) {
+        try {
+          const eventData = {
+            title: idea.title,
+            status: 'pendiente',
+            scheduled_at: new Date(`${idea.suggestedDate}T${idea.suggestedTime || '09:00'}:00`).toISOString(),
+            copy: idea.copy || '',
+            channel: idea.channel || 'IG'
+          };
+
+          await createEvent(eventData);
+          createdCount++;
+        } catch (error) {
+          console.error('Error creando evento:', error);
+          errorCount++;
+        }
+      }
+
+      // Mostrar resultado
+      if (createdCount > 0) {
+        smartToast.ai.success(getMessage('ai.ideasAdded', createdCount));
+      }
+      if (errorCount > 0) {
+        smartToast.ai.error(getMessage('ai.ideasAddError', errorCount));
+      }
+
+      // Cerrar modal
+      setIsIdeasModalOpen(false);
+      setGeneratedIdeas([]);
+      
+    } catch (error) {
+      smartToast.ai.error(getMessage('ai.ideasProcessError'));
+    }
+  }, [createEvent]);
+
+  // Handler para regenerar ideas
+  const handleRegenerateIdeas = useCallback(() => {
+    // Regenerar con los mismos parámetros
+    const lastTones = JSON.parse(localStorage.getItem('lastSelectedTones') || '[]');
+    const lastPrompt = localStorage.getItem('lastIdeaPrompt') || '';
+    
+    handleGenerateIdeas({
+      userPrompt: lastPrompt || null,
+      selectedTones: lastTones
+    });
+  }, [handleGenerateIdeas]);
+
+  // Handler para cancelar generación
+  const handleCancelGeneration = useCallback(() => {
+    setIsGeneratingIdeas(false);
+    smartToast.ai.info(getMessage('ai.generationCancelled'));
   }, []);
 
   // Estados de carga y error
@@ -318,21 +511,62 @@ export const ScheduleSection = ({ clientId }) => {
               </div>
             </div>
             
-            {/* Botón principal mejorado */}
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleDateClick(getCurrentDate())}
-              className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              <div className="relative flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Nuevo Evento</span>
+            {/* Botones principales */}
+            <div className="flex items-center gap-4">
+              {/* Botón Nuevo Evento */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleDateClick(getCurrentDate())}
+                className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="relative flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Nuevo Evento</span>
+                </div>
+              </motion.button>
+
+              {/* NUEVO: Botón Generar Ideas */}
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsPromptOpen(true)}
+                  disabled={isGeneratingIdeas}
+                  className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-purple-500/25 transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <div className="relative flex items-center gap-2">
+                    {isGeneratingIdeas ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                        <span>Generando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <span>Generar Ideas</span>
+                      </>
+                    )}
+                  </div>
+                </motion.button>
+
+                {/* Popover de configuración de prompt */}
+                <PromptPopover
+                  isOpen={isPromptOpen && !isGeneratingIdeas}
+                  onClose={() => setIsPromptOpen(false)}
+                  onGenerate={handleGenerateIdeas}
+                  isLoading={isGeneratingIdeas}
+                  lastUsedPrompt={lastUsedPrompt}
+                  aiDetectedTones={aiDetectedTones}
+                />
               </div>
-            </motion.button>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -426,14 +660,12 @@ export const ScheduleSection = ({ clientId }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className={`flex-1 min-w-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isChatOpen ? 'xl:mr-[33.333333%]' : 'xl:mr-0'
-          }`}
+          className="flex-1 min-w-0"
         >
           <div className="bg-surface-900/70 
                           border border-white/10 rounded-xl p-6 shadow-lg">
             <FullCalendarWrapper
-              key={`${currentDate.getTime()}-${currentView}-${isChatOpen ? 'chat' : 'full'}`}
+              key={`${currentDate.getTime()}-${currentView}`}
               events={events}
               currentDate={currentDate}
               currentView={currentView}
@@ -445,7 +677,6 @@ export const ScheduleSection = ({ clientId }) => {
               onEventDrop={handleEventDrop}
               height="800px"
               clientName={client?.name || ''}
-              isChatOpen={isChatOpen}
             />
           </div>
         </motion.div>
@@ -635,7 +866,7 @@ export const ScheduleSection = ({ clientId }) => {
         initial={{ x: '100%' }}
         animate={{ x: isChatOpen ? 0 : '100%' }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-1/3 z-40 bg-surface-strong/95 backdrop-blur-md border-l border-border-subtle shadow-2xl"
+        className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-1/3 z-50 bg-surface-strong/95 backdrop-blur-md border-l border-border-subtle shadow-2xl"
         style={{
           background: 'linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft))',
           borderColor: 'var(--color-border-subtle)',
@@ -704,7 +935,7 @@ export const ScheduleSection = ({ clientId }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsChatOpen(false)}
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
         />
       )}
 
@@ -716,6 +947,27 @@ export const ScheduleSection = ({ clientId }) => {
         selectedDate={quickTaskDate}
         clientId={clientId}
         onCreateTask={handleCreateQuickTask}
+      />
+
+      {/* === NUEVOS MODALES DE GENERACIÓN DE IDEAS === */}
+
+      {/* Modal de carga con mensajes amables */}
+      <IdeasLoadingModal
+        isOpen={isGeneratingIdeas}
+        onCancel={handleCancelGeneration}
+      />
+
+      {/* Modal con las 10 ideas generadas */}
+      <IdeasModal
+        isOpen={isIdeasModalOpen}
+        onClose={() => {
+          setIsIdeasModalOpen(false);
+          setGeneratedIdeas([]);
+        }}
+        ideas={generatedIdeas}
+        onAcceptSelected={handleAcceptSelectedIdeas}
+        onRegenerate={handleRegenerateIdeas}
+        isRegenerating={isGeneratingIdeas}
       />
 
     </motion.div>

@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../api/clients';
 import { getSchedule } from '../api/schedule';
 import { supabase } from '../supabaseClient';
-import toast from 'react-hot-toast';
+import { getMessage } from '../constants/notificationMessages';
+import { smartToast } from '../utils/toastManager';
 
 /**
  * Hook para manejar notificaciones y recordatorios
@@ -81,7 +82,7 @@ export const useNotifications = () => {
         type: 'overdue',
         priority: 'high',
         title: 'Tarea vencida',
-        message: `"${task.title}" en ${clientName} está vencida`,
+        message: getMessage('reminders.taskOverdue', task.title, clientName),
         taskId: task.id,
         clientName,
         task,
@@ -96,7 +97,7 @@ export const useNotifications = () => {
         type: 'due-today',
         priority: 'high',
         title: 'Tarea para hoy',
-        message: `"${task.title}" en ${clientName} es para hoy`,
+        message: getMessage('reminders.taskDueToday', task.title, clientName),
         taskId: task.id,
         clientName,
         task,
@@ -111,7 +112,7 @@ export const useNotifications = () => {
         type: 'due-tomorrow',
         priority: 'medium',
         title: 'Tarea para mañana',
-        message: `"${task.title}" en ${clientName} es para mañana`,
+        message: getMessage('reminders.taskDueTomorrow', task.title, clientName),
         taskId: task.id,
         clientName,
         task,
@@ -126,7 +127,7 @@ export const useNotifications = () => {
         type: 'upcoming',
         priority: 'low',
         title: 'Tarea próxima',
-        message: `"${task.title}" en ${clientName} es en ${daysDiff} días`,
+        message: getMessage('reminders.taskUpcoming', task.title, clientName, daysDiff),
         taskId: task.id,
         clientName,
         task,
@@ -233,37 +234,30 @@ export const useNotifications = () => {
             newToastShown.add(notification.id);
             
             if (notification.type === 'overdue') {
-              toast.error(notification.message, {
-                duration: 6000,
-                icon: '⚠️',
-              });
+              smartToast.task.overdue(
+                notification.task.title,
+                notification.clientName,
+                notification.task.clientId,
+                notification.task.id
+              );
             } else if (notification.type === 'due-today') {
-              toast(notification.message, {
-                duration: 4000,
-                icon: '📅',
-                style: {
-                  background: '#f59e0b',
-                  color: 'white',
-                },
-              });
+              smartToast.task.reminder(
+                notification.task.title,
+                notification.clientName,
+                notification.task.clientId,
+                notification.task.id
+              );
             }
           } else {
             // Si hay múltiples, mostrar un toast resumen
             const overdueCount = highPriorityNew.filter(n => n.type === 'overdue').length;
             const dueTodayCount = highPriorityNew.filter(n => n.type === 'due-today').length;
             
-            let message = '';
-            if (overdueCount > 0 && dueTodayCount > 0) {
-              message = `${overdueCount} tareas vencidas y ${dueTodayCount} para hoy`;
-            } else if (overdueCount > 0) {
-              message = `${overdueCount} tarea${overdueCount > 1 ? 's' : ''} vencida${overdueCount > 1 ? 's' : ''}`;
-            } else if (dueTodayCount > 0) {
-              message = `${dueTodayCount} tarea${dueTodayCount > 1 ? 's' : ''} para hoy`;
-            }
+            const message = getMessage('reminders.multipleTasks', overdueCount, dueTodayCount);
             
-            toast.error(message, {
-              duration: 6000,
-              icon: '🔔',
+            smartToast.error(message, {
+              priority: 'high',
+              category: 'reminder'
             });
             
             // Marcar todas como mostradas

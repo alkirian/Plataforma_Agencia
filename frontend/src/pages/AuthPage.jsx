@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../supabaseClient';
-import toast from 'react-hot-toast';
+import { getMessage } from '../constants/notificationMessages';
+import { smartToast } from '../utils/toastManager';
 
 const inputClass =
   'w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30';
@@ -46,7 +47,7 @@ export const AuthPage = () => {
       return result.data.exists;
     } catch (error) {
       console.error('Error checking email:', error);
-      toast.error('Error al verificar el email');
+      smartToast.auth.error(getMessage('auth.emailVerificationError'));
       return false;
     } finally {
       setIsCheckingEmail(false);
@@ -81,10 +82,10 @@ export const AuthPage = () => {
       });
       if (error) throw error;
       reset();
-      toast.success('¡Bienvenido de vuelta!');
+      smartToast.auth.success(getMessage('auth.loginSuccess'));
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
-      toast.error('Email o contraseña incorrectos.');
+      smartToast.auth.error(getMessage('auth.loginError'));
     }
   };
 
@@ -115,10 +116,10 @@ export const AuthPage = () => {
       });
 
       reset();
-      toast.success('¡Cuenta creada exitosamente!');
+      smartToast.auth.success(getMessage('auth.registerSuccess'));
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
-      toast.error('Error al crear la cuenta');
+      smartToast.auth.error(getMessage('auth.registerError'));
     }
   };
 
@@ -132,7 +133,7 @@ export const AuthPage = () => {
         }
       });
     } catch (err) {
-      toast.error('No se pudo iniciar con Google');
+      smartToast.auth.error(getMessage('auth.googleAuthError'));
     }
   };
 

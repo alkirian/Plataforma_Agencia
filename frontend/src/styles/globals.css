@@ -238,7 +238,7 @@
 
   /* Text gradient (always grayscale) */
   .text-cyber-gradient {
-    background: linear-gradient(to right, #80cc94, #3a9f5f);
+    background: linear-gradient(to right, #abccfe, #676eff);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;

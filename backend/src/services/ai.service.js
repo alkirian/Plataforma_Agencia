@@ -51,14 +51,27 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
 
   // Fallback de desarrollo si no hay OpenAI
   if (!openaiApiKey) {
-    const baseDate = new Date();
+    // Intentar programar dentro del mes objetivo si se proporcionó
+    let baseYear, baseMonth;
+    if (monthContext && typeof monthContext === 'object') {
+      baseYear = Number(monthContext.year) || new Date().getFullYear();
+      baseMonth = Number(monthContext.month) || (new Date().getMonth() + 1);
+    } else {
+      const now = new Date();
+      baseYear = now.getFullYear();
+      baseMonth = now.getMonth() + 1;
+    }
+    const baseDate = new Date(baseYear, (baseMonth - 1), 1);
     const pad = (n) => String(n).padStart(2, '0');
     const nextDate = (offset) => {
       const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + offset * 7); // Una por semana
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      // Distribuir semanalmente pero dentro del mismo mes
+      d.setDate(1 + (offset * 3)); // cada ~3 días para repartir 10 ideas en el mes
+      const endDay = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
+      const day = Math.min(Math.max(d.getDate(), 1), endDay);
+      return `${baseDate.getFullYear()}-${pad(baseDate.getMonth() + 1)}-${pad(day)}`;
     };
-    const ideas = Array.from({ length: 5 }, (_, i) => ({
+    const ideas = Array.from({ length: 10 }, (_, i) => ({
       title: `${userPrompt} — Idea ${i + 1} (${client.name})`,
       copy: `🚀 ${userPrompt} para ${client.name}! 
 
@@ -85,52 +98,71 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
   if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
   const topContext = (matches || []).map(m => m.content).join('\n---\n');
 
-  const calendarCtx = Array.isArray(monthContext) ? monthContext.join(', ') : '';
+  // Normalizar contexto de mes si viene del frontend
+  let calendarCtx = '';
+  let targetYear, targetMonthNum, targetMonthLabel;
+  if (monthContext && typeof monthContext === 'object') {
+    const pad = (n) => String(n).padStart(2, '0');
+    targetYear = Number(monthContext.year);
+    targetMonthNum = Number(monthContext.month);
+    const startLabelDate = new Date(targetYear, (targetMonthNum || 1) - 1, 1);
+    targetMonthLabel = startLabelDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+    const sd = monthContext.range?.start;
+    const ed = monthContext.range?.end;
+    const specials = monthContext.specialDates || [];
+    calendarCtx = [
+      sd && ed ? `Rango visible: ${sd} a ${ed}` : null,
+      specials.length ? `Fechas especiales: ${specials.join(', ')}` : null
+    ].filter(Boolean).join(' | ');
+  } else if (Array.isArray(monthContext)) {
+    calendarCtx = monthContext.join(', ');
+  }
 
-  // Obtener fechas actuales para contexto
+  // Fallback a mes actual si no se envía monthContext
   const now = new Date();
-  const currentMonth = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-  const currentYear = now.getFullYear();
-  const currentMonthNum = now.getMonth() + 1; // 1-12
-  const nextMonthNum = (now.getMonth() + 2) > 12 ? 1 : (now.getMonth() + 2);
-  const nextMonthYear = (now.getMonth() + 2) > 12 ? currentYear + 1 : currentYear;
+  const fallbackYear = now.getFullYear();
+  const fallbackMonthNum = now.getMonth() + 1;
+  const fallbackMonthLabel = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  if (!targetYear) targetYear = fallbackYear;
+  if (!targetMonthNum) targetMonthNum = fallbackMonthNum;
+  if (!targetMonthLabel) targetMonthLabel = fallbackMonthLabel;
 
   const megaPrompt = `Eres un estratega de redes sociales experto especializado en crear contenido atractivo y efectivo.
 
 CONTEXTO TEMPORAL:
 - Fecha actual: ${now.toLocaleDateString('es-ES')}
-- Mes actual: ${currentMonth}
-- Próximo mes: ${nextMonth}
-- Las ideas deben programarse para ${currentMonth} y ${nextMonth}
+- Mes objetivo: ${targetMonthLabel}
+- Todas las ideas deben programarse dentro de ${targetMonthLabel}
 
 CONTEXTO DEL CLIENTE:
 ${topContext}
 
-FECHAS IMPORTANTES: ${calendarCtx}
+${calendarCtx ? `CONTEXTO DEL CALENDARIO: ${calendarCtx}` : ''}
 
-TAREA: Genera 5 ideas de posteos creativos sobre el tema: "${userPrompt}" para el cliente ${client.name}.
+TAREA: Genera 8 a 10 ideas de posteos creativos alineadas a: "${userPrompt}" para el cliente ${client.name}.
 
 INSTRUCCIONES ESPECÍFICAS:
 1. Cada idea debe incluir COPY COMPLETO para redes sociales (texto del post listo para publicar)
-2. Programa las ideas en fechas del mes actual (${currentMonth}) y próximo (${nextMonth})
+2. Programa estrictamente las ideas en fechas del mes objetivo (${targetMonthLabel})
 3. Considera las fechas importantes mencionadas para timing estratégico
-4. El copy debe ser engaging, usar emojis apropiados y llamadas a la acción
-5. Adapta el tono a la marca y audiencia del cliente
+4. Varía formatos (reel, carrusel, post estático, story, live, ilustración, producción con cámara, animado)
+5. Ajusta el tono a la marca y al historial conocido del cliente
 
-FORMATO DE RESPUESTA: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga:
-- title (string): Título descriptivo de la idea
-- copy (string): Texto completo del post listo para publicar en redes sociales
-- scheduled_at (string): Fecha en formato 'YYYY-MM-DD' (usar ${currentYear}-${String(currentMonthNum).padStart(2, '0')} para este mes o ${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')} para el próximo)
-- status (string): Siempre 'Pendiente'
+FORMATO DE RESPUESTA: Devuelve únicamente un JSON válido (sin texto adicional). Un array de objetos con:
+- title (string)
+- copy (string)
+- scheduled_at (string): 'YYYY-MM-DD' con año ${targetYear} y mes ${String(targetMonthNum).padStart(2, '0')}
+- status (string): 'Pendiente'
+- channel (string) opcional: IG | FB | TikTok | LinkedIn
 
 Ejemplo de estructura:
 [
   {
     "title": "Título descriptivo",
     "copy": "🌟 Texto completo del post con emojis y call-to-action #hashtags",
-    "scheduled_at": "${currentYear}-${String(currentMonthNum).padStart(2, '0')}-15",
-    "status": "Pendiente"
+    "scheduled_at": "${targetYear}-${String(targetMonthNum).padStart(2, '0')}-15",
+    "status": "Pendiente",
+    "channel": "IG"
   }
 ]`;
 
@@ -204,6 +236,26 @@ const analyzeImage = async (imageUrl) => {
       throw new Error('La respuesta del modelo no es JSON válido');
     }
   }
+  // Post-procesar: asegurar que las fechas caen dentro del mes objetivo si se proporcionó
+  try {
+    if (Array.isArray(ideas) && targetYear && targetMonthNum) {
+      const pad = (n) => String(n).padStart(2, '0');
+      const endDay = new Date(targetYear, targetMonthNum, 0).getDate();
+      ideas = ideas.map((it, idx) => {
+        const safe = { ...it };
+        let day = 1 + (idx % endDay);
+        try {
+          if (safe.scheduled_at) {
+            const d = new Date(safe.scheduled_at);
+            if (!isNaN(d.getTime())) day = Math.min(Math.max(d.getDate(), 1), endDay);
+          }
+        } catch {}
+        safe.scheduled_at = `${targetYear}-${pad(targetMonthNum)}-${pad(day)}`;
+        if (!safe.status) safe.status = 'Pendiente';
+        return safe;
+      });
+    }
+  } catch {}
 
   return ideas;
 };

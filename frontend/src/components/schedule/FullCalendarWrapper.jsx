@@ -27,8 +27,7 @@ const FullCalendarWrapper = ({
   height = '600px',
   headerToolbar = false, // Disable default toolbar
   className = '',
-  clientName = '',
-  isChatOpen = false
+  clientName = ''
 }) => {
   const calendarRef = useRef(null);
   const [calendarLabel, setCalendarLabel] = useState('');
@@ -71,19 +70,6 @@ const FullCalendarWrapper = ({
       calendarApi.changeView(currentView);
     }
   }, [currentView]);
-
-  // Forzar re-render cuando cambie el estado del chat
-  useEffect(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      // Pequeño delay para permitir que la transición CSS termine
-      const timer = setTimeout(() => {
-        calendarApi.updateSize();
-        calendarApi.render();
-      }, 600); // Mismo duration que la transición del calendario
-      return () => clearTimeout(timer);
-    }
-  }, [isChatOpen]);
 
 
   // Handlers optimizados
@@ -425,7 +411,6 @@ const FullCalendarWrapper = ({
         view={currentView}
         events={events}
         clientName={clientName}
-  isChatOpen={isChatOpen}
       />
       
       {loading && (

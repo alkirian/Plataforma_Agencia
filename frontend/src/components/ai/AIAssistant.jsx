@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom';
 import { ChatInput } from './ChatInput.jsx';
 import { MessageList } from './MessageList.jsx';
 import { getChatResponse, getChatHistory } from '../../api/ai.js';
+import { getMessage } from '../../constants/notificationMessages';
+import { smartToast } from '../../utils/toastManager';
 export const AIAssistant = () => {
   const { id: clientId } = useParams();
   const [messages, setMessages] = useState([]);
@@ -69,7 +71,7 @@ export const AIAssistant = () => {
       };
       setMessages(prev => [...prev, assistantResponse]);
     },
-    onError: error => toast.error(`Error del asistente: ${error.message}`),
+    onError: error => smartToast.ai.error(getMessage('ai.chatError')),
   });
 
   const handleSendMessage = prompt => {
@@ -102,7 +104,7 @@ export const AIAssistant = () => {
       setCursor(result.nextCursor || null);
       setHasMore(!!result.hasMore);
     } catch (error) {
-      toast.error('Error al cargar mensajes anteriores');
+      smartToast.ai.error(getMessage('ai.loadHistoryError'));
     }
   };
 
