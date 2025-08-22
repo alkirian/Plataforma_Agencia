@@ -1,41 +1,47 @@
 import { supabaseAdmin } from '../config/supabaseClient.js';
 
 /**
- * Obtiene el agency_id de un usuario
- * @param {string} userId - ID del usuario
- * @returns {Promise<string>} Agency ID del usuario
- * @throws {Error} Si no se puede obtener el perfil
- */
-export const getUserAgencyId = async (userId) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('agency_id')
-    .eq('id', userId)
-    .single();
-  
-  if (error) {
-    throw new Error('No se pudo obtener el perfil del usuario.');
-  }
-  
-  return data.agency_id;
-};
-
-/**
- * Obtiene el perfil completo de un usuario
- * @param {string} userId - ID del usuario  
- * @returns {Promise<object>} Perfil completo del usuario
- * @throws {Error} Si no se puede obtener el perfil
+ * Busca el perfil de usuario intentando primero en 'profiles' y, si no existe,
+ * en 'profile' (singular), para cubrir diferencias de esquema.
+ * @param {string} userId
+ * @returns {Promise<object>} Perfil completo
  */
 export const getUserProfile = async (userId) => {
-  const { data, error } = await supabaseAdmin
+  // Intento 1: tabla plural 'profiles'
+  let { data, error } = await supabaseAdmin
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single();
-    
-  if (error) {
-    throw new Error('No se pudo encontrar el perfil del usuario.');
+    .maybeSingle();
+
+  // Si no hay resultado, intentamos con la tabla singular 'profile'
+  if ((!data || Object.keys(data).length === 0) || error) {
+    const fallback = await supabaseAdmin
+      .from('profile')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
   }
-  
+
+  if (!data || error) {
+    const msg = `No se pudo encontrar el perfil del usuario (id=${userId}). Verifica que exista en 'profiles' o 'profile' y que el id coincida con auth.users.id.`;
+    throw new Error(msg);
+  }
+
   return data;
+};
+
+/**
+ * Obtiene el agency_id desde el perfil del usuario
+ * @param {string} userId
+ * @returns {Promise<string>}
+ */
+export const getUserAgencyId = async (userId) => {
+  const profile = await getUserProfile(userId);
+  if (!profile.agency_id) {
+    throw new Error('El perfil no tiene agency_id asociado.');
+  }
+  return profile.agency_id;
 };
