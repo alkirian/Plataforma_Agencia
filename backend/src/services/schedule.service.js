@@ -12,7 +12,6 @@ const normalizeStatus = (status) => {
     'en diseño': 'En Diseño',
     'en diseno': 'En Diseño',
     'en-diseño': 'En Diseño',
-    'en-progreso': 'En Progreso',
     'aprobado': 'Aprobado',
     'publicado': 'Publicado',
     'cancelado': 'Cancelado',
@@ -20,7 +19,6 @@ const normalizeStatus = (status) => {
     'pending': 'Pendiente',
     'in_design': 'En Diseño',
     'in design': 'En Diseño',
-    'in_progress': 'En Progreso',
     'approved': 'Aprobado',
     'published': 'Publicado',
     'cancelled': 'Cancelado',
@@ -49,7 +47,7 @@ export const getScheduleItemsByClient = async (clientId, token) => {
 export const createScheduleItem = async (itemData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
   // Normalizar y validar status antes de insertar
-  const allowed = ['Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'];
+  const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
   const normalizedStatus = normalizeStatus(itemData.status);
   if (normalizedStatus && !allowed.includes(normalizedStatus)) {
     console.warn('[schedule] Status no permitido, recibido:', itemData.status, '-> normalizado:', normalizedStatus);
@@ -109,7 +107,7 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token, us
   // Normalizar status si viene en el update
   let normalizedUpdate = { ...updateData };
   if (Object.prototype.hasOwnProperty.call(updateData, 'status')) {
-    const allowed = ['Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'];
+    const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
     const normalizedStatus = normalizeStatus(updateData.status);
     if (normalizedStatus && !allowed.includes(normalizedStatus)) {
       console.warn('[schedule] Update status no permitido, recibido:', updateData.status, '-> normalizado:', normalizedStatus);

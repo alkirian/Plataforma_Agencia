@@ -8,11 +8,13 @@ import { Tooltip } from '../ui/Tooltip';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { Avatar } from '../ui/Avatar';
 import { supabase } from '../../supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 export const SettingsMenu = ({ userEmail, profile }) => {
   const [open, setOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const ref = useClickOutside(() => setOpen(false), open);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [uploading, setUploading] = useState(false);
@@ -114,6 +116,14 @@ export const SettingsMenu = ({ userEmail, profile }) => {
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </div>
             <div className="py-1">
+              <button
+                className="w-full px-3 py-2.5 flex items-center gap-2 text-sm text-text-primary hover:bg-[color:var(--color-surface-soft)] transition-colors"
+                onClick={() => { setOpen(false); navigate('/settings'); }}
+                role="menuitem"
+              >
+                <SettingsIcon className='h-4 w-4' /> Configuración
+              </button>
+
               <button
                 className="w-full px-3 py-2.5 flex items-center justify-between text-sm text-text-primary hover:bg-[color:var(--color-surface-soft)] transition-colors"
                 onClick={() => { setTheme(nextTheme); setOpen(false); }}

@@ -11,9 +11,16 @@ export const WelcomeEmptyState = ({ onActionClick }) => {
       </p>
       <button
         onClick={onActionClick}
-        className='mt-6 rounded-md bg-glow-cyan px-4 py-2 font-semibold text-black transition hover:opacity-90'
+        aria-label="Crear mi primer cliente"
+        className="mt-6 inline-flex items-center gap-3 rounded-full px-5 py-3 font-semibold text-black
+                   bg-gradient-to-r from-cyan-300 to-violet-400
+                   shadow-[0_10px_30px_rgba(99,102,241,0.18)] hover:-translate-y-1 active:translate-y-0
+                   focus:outline-none focus:ring-4 focus:ring-cyan-200 transition-transform duration-150 glow-gold"
       >
-        Crear mi primer cliente
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Crear mi primer cliente</span>
       </button>
     </div>
   );

@@ -223,15 +223,7 @@ export const Header = ({ userEmail, onLogout, profile }) => {
               )}
             </motion.button>
             
-            <Tooltip content="Configuración de la aplicación (Alt+S)">
-              <NavLink 
-                to='/settings' 
-                className={navLinkClasses} 
-                title='Configuración'
-                aria-label="Ir a configuración"
-              >
-              </NavLink>
-            </Tooltip>
+            {/* Removed invisible settings NavLink; use SettingsMenu button instead */}
             <SettingsMenu userEmail={userEmail} profile={profile} />
           </motion.nav>
 

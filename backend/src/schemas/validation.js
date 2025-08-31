@@ -28,7 +28,7 @@ export const scheduleItemSchema = z.object({
     .nullable(),
   scheduled_at: z.string()
     .datetime('Fecha y hora deben estar en formato ISO 8601'),
-  status: z.enum(['pendiente', 'en-diseño', 'en-progreso', 'aprobado', 'publicado', 'cancelado', 'Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'])
+  status: z.enum(['pendiente', 'en-diseño', 'aprobado', 'publicado', 'cancelado', 'Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'])
     .default('pendiente'),
   priority: z.enum(['baja', 'media', 'alta', 'urgente', 'low', 'medium', 'high', 'Baja', 'Media', 'Alta', 'Urgente'])
     .optional(),

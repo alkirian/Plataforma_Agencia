@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { ExportModal } from './ExportModal';
+import { SearchBar } from './SearchBar';
 
-// Botón minimalista reutilizable
+// Botón minimalista reutilizable (tabs sutiles / estética de referencia)
 const MiniButton = ({ children, onClick, active, title, className = '' }) => (
   <button
     onClick={onClick}
     title={title}
-    className={`px-2 py-1 text-xs rounded-md border [color:var(--color-border-subtle)] text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors ${active ? 'bg-surface-strong text-text-primary' : ''} ${className}`}
+    className={`px-2.5 py-1 text-[11px] rounded-md border border-[color:var(--color-border-subtle)] text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors ${active ? 'bg-[#151a21] text-text-primary border-[color:var(--color-border-strong)]' : ''} ${className}`}
+    style={{ fontWeight: 600, letterSpacing: '0.02em' }}
   >
     {children}
   </button>
@@ -20,7 +22,8 @@ export const CalendarToolbar = ({
   view,
   events = [],
   clientName = '',
-  isChatOpen = false
+  isChatOpen = false,
+  onJumpToEvent
 }) => {
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -30,7 +33,7 @@ export const CalendarToolbar = ({
   const isAgenda = view === 'listMonth' || view === 'agenda';
 
   return (
-    <div className="bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg p-2 mb-3">
+    <div className="bg-surface-strong/70 border border-[color:var(--color-border-subtle)] rounded-lg p-2 mb-3 backdrop-blur-sm">
       <div className="flex items-center justify-between gap-2">
         {/* Izquierda: navegación */}
         <div className="flex items-center gap-2 min-w-0">
@@ -46,7 +49,7 @@ export const CalendarToolbar = ({
             </svg>
           </MiniButton>
 
-          <div className={`text-xs font-medium text-gray-200 capitalize truncate ${isChatOpen ? 'max-w-[110px] sm:max-w-[160px]' : 'max-w-[200px]'}`}>
+          <div className={`text-xs font-semibold text-text-primary/90 tracking-wide truncate ${isChatOpen ? 'max-w-[110px] sm:max-w-[160px]' : 'max-w-[200px]'}`}>
             {label}
           </div>
 
@@ -57,7 +60,7 @@ export const CalendarToolbar = ({
           </MiniButton>
         </div>
 
-        {/* Centro: vistas */}
+        {/* Centro: vistas tipo segmented */}
         <div className="flex items-center gap-1 bg-surface-soft p-1 rounded-md border border-[color:var(--color-border-subtle)]">
           <MiniButton onClick={() => onView('month')} active={isMonth} title="Vista mes">
             {isChatOpen ? 'M' : 'Mes'}
@@ -73,11 +76,14 @@ export const CalendarToolbar = ({
           </MiniButton>
         </div>
 
-        {/* Derecha: export */}
-        <MiniButton onClick={() => setShowExportModal(true)} title="Exportar calendario" className="!py-1.5">
-          <span className="sr-only">Exportar</span>
-          <Download className="w-4 h-4" />
-        </MiniButton>
+        {/* Derecha: búsqueda + export */}
+        <div className="flex items-center gap-2 min-w-[180px]">
+          <SearchBar events={events} onSelect={onJumpToEvent} />
+          <MiniButton onClick={() => setShowExportModal(true)} title="Exportar calendario" className="!py-1.5">
+            <span className="sr-only">Exportar</span>
+            <Download className="w-4 h-4" />
+          </MiniButton>
+        </div>
       </div>
 
       <ExportModal

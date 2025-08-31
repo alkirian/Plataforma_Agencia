@@ -17,13 +17,6 @@ export const TASK_STATES = {
   },
 
   // 🚀 Ejecución
-  'en-progreso': {
-    color: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.1)',
-    name: 'En Progreso',
-    description: 'Tarea actualmente en desarrollo',
-    icon: '🚀',
-  },
   'en-diseño': {
     color: '#06b6d4',
     bg: 'rgba(6, 182, 212, 0.1)',
@@ -106,7 +99,6 @@ export const TASK_STATES = {
 export const STATE_ORDER = [
   'planificacion',
   'pendiente',
-  'en-progreso',
   'en-diseño',
   'en-revision',
   'esperando-aprobacion',
@@ -122,7 +114,7 @@ export const STATE_ORDER = [
 // Grupos de estados para organización
 export const STATE_GROUPS = {
   planeacion: ['planificacion', 'pendiente'],
-  ejecucion: ['en-progreso', 'en-diseño', 'en-revision'],
+  ejecucion: ['en-diseño', 'en-revision'],
   aprobacion: ['esperando-aprobacion', 'aprobado', 'requiere-cambios'],
   finalizacion: ['listo-publicar', 'publicado', 'completado'],
   especiales: ['pausado', 'cancelado'],
@@ -137,16 +129,15 @@ export const getStateStyle = state => {
 export const getNextStates = currentState => {
   const transitions = {
     planificacion: ['pendiente', 'cancelado'],
-    pendiente: ['en-progreso', 'pausado', 'cancelado'],
-    'en-progreso': ['en-diseño', 'en-revision', 'pausado'],
+    pendiente: ['en-diseño', 'pausado', 'cancelado'],
     'en-diseño': ['en-revision', 'requiere-cambios'],
     'en-revision': ['esperando-aprobacion', 'requiere-cambios'],
     'esperando-aprobacion': ['aprobado', 'requiere-cambios'],
-    'requiere-cambios': ['en-diseño', 'en-progreso'],
+    'requiere-cambios': ['en-diseño'],
     aprobado: ['listo-publicar'],
     'listo-publicar': ['publicado'],
     publicado: ['completado'],
-    pausado: ['en-progreso', 'cancelado'],
+    pausado: ['en-diseño', 'cancelado'],
     cancelado: ['planificacion'],
     completado: [],
   };

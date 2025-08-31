@@ -57,3 +57,32 @@ export const upsertClientContacts = (clientId, contacts) => {
 export const deleteClientContact = (clientId, contactId) => {
   return apiFetch(`/clients/${clientId}/contacts/${contactId}`, { method: 'DELETE' });
 };
+
+/**
+ * Elimina un cliente por ID.
+ */
+export const deleteClient = (clientId) => {
+  return apiFetch(`/clients/${clientId}`, { method: 'DELETE' });
+};
+
+/**
+ * Preferencias por usuario: obtener todas (mapa client_id -> { color })
+ */
+export const getClientPreferences = () => {
+  return apiFetch('/clients/preferences');
+};
+
+/**
+ * Establecer preferencia (p.ej. color) para un cliente
+ */
+export const setClientPreference = (clientId, pref) => {
+  return apiFetch(`/clients/${clientId}/preferences`, {
+    method: 'PUT',
+    body: JSON.stringify(pref)
+  });
+};
+
+// Eliminar preferencia (reset a default)
+export const deleteClientPreference = (clientId) => {
+  return apiFetch(`/clients/${clientId}/preferences`, { method: 'DELETE' });
+};

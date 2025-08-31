@@ -1,8 +1,8 @@
 // src/api/clients.routes.js
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
-import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed } from '../controllers/clients.controller.js';
-import { handleUpdateClientMeta, handleListContacts, handleUpsertContacts, handleDeleteContact } from '../controllers/clientsExtra.controller.js';
+import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed, handleDeleteClient } from '../controllers/clients.controller.js';
+import { handleUpdateClientMeta, handleListContacts, handleUpsertContacts, handleDeleteContact, handleGetClientUserPreferences, handleUpsertClientUserPreference, handleDeleteClientUserPreference } from '../controllers/clientsExtra.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
 import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleIdeaFeedback, handleListIdeas } from '../controllers/ai.controller.js';
 import scheduleRoutes from './schedule.routes.js';
@@ -41,19 +41,28 @@ router.post('/:clientId/ideas/:ideaId/feedback', handleIdeaFeedback);
 // Ruta para el feed de actividad de un cliente
 router.get('/:clientId/activity-feed', handleGetActivityFeed);
 
+// Preferencias de usuario por cliente (p.ej. color de tarjeta) - deben ir ANTES de rutas paramétricas
+router.get('/preferences', handleGetClientUserPreferences);
+
 // Rutas anidadas para el calendario - ESTA LÍNEA FALTABA
 router.use('/:clientId/schedule', scheduleRoutes);
 
 // Ruta para un cliente específico - DEBE IR AL FINAL
 router.route('/:clientId')
-  .get(handleGetClientById);
+  .get(handleGetClientById)
+  .delete(handleDeleteClient);
 
-// Actualizar metadatos del cliente (website, social_links)
+// Actualizar metadatos del cliente (website, social_links, name, industry)
 router.patch('/:clientId', handleUpdateClientMeta);
 
 // Contactos del cliente
 router.get('/:clientId/contacts', handleListContacts);
 router.post('/:clientId/contacts', handleUpsertContacts); // admite crear varios
 router.delete('/:clientId/contacts/:contactId', handleDeleteContact);
+
+// Preferencias de usuario por cliente (p.ej. color de tarjeta)
+router.put('/:clientId/preferences', handleUpsertClientUserPreference);
+// Eliminar preferencia de cliente para el usuario (reset a default)
+router.delete('/:clientId/preferences', handleDeleteClientUserPreference);
 
 export default router;

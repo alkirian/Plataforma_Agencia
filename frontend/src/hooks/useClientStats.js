@@ -30,7 +30,7 @@ export const useClientStats = (clientId) => {
       
       if (status === 'publicado' || status === 'completado') {
         stats.completed++;
-      } else if (status === 'en-progreso' || status === 'en-diseño' || status === 'en-revision') {
+      } else if (status === 'en-diseño' || status === 'en-revision') {
         stats.inProgress++;
       } else {
         stats.pending++;
@@ -84,7 +84,7 @@ export const useMultipleClientStats = (clientIds = []) => {
         
         if (status === 'publicado' || status === 'completado') {
           stats.completed++;
-        } else if (status === 'en-progreso' || status === 'en-diseño' || status === 'en-revision') {
+        } else if (status === 'en-diseño' || status === 'en-revision') {
           stats.inProgress++;
         } else {
           stats.pending++;

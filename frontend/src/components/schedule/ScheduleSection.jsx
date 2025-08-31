@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -14,6 +15,7 @@ import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 import { MiniMonth } from './MiniMonth';
 import { MonthAgenda } from './MonthAgenda';
 import { AIAssistant } from '../ai/AIAssistant';
+import { MessageSquare, X } from 'lucide-react';
 import { IdeasAIButton } from '../ideas/IdeasAIButton.jsx';
 import { IdeasModal } from '../ideas/IdeasModal.jsx';
 
@@ -34,6 +36,7 @@ export const ScheduleSection = ({ clientId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const chatPanelRef = useRef(null);
   const [isIdeasOpen, setIsIdeasOpen] = useState(false);
   // Estados para el nuevo popover
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
@@ -249,6 +252,13 @@ export const ScheduleSection = ({ clientId }) => {
     setClickCoords(null);
   }, []);
 
+  // Enfocar el panel al abrir para accesibilidad
+  useEffect(() => {
+    if (isChatOpen && chatPanelRef.current) {
+      try { chatPanelRef.current.focus({ preventScroll: true }); } catch {}
+    }
+  }, [isChatOpen]);
+
   // Estados de carga y error
   if (error) {
     return (
@@ -418,7 +428,6 @@ export const ScheduleSection = ({ clientId }) => {
         >
           <div className={`bg-surface-900/70 border border-white/10 rounded-xl p-6 shadow-lg ${isChatOpen ? 'no-transitions' : ''}`}>
             <FullCalendarWrapper
-              key={`${currentDate.getTime()}-${currentView}-${isChatOpen ? 'chat' : 'full'}`}
               events={events}
               currentDate={currentDate}
               currentView={currentView}
@@ -525,7 +534,6 @@ export const ScheduleSection = ({ clientId }) => {
                       >
                         <option value="pendiente">Pendiente</option>
                         <option value="en-diseño">En Diseño</option>
-                        <option value="en-progreso">En Progreso</option>
                         <option value="aprobado">Aprobado</option>
                         <option value="publicado">Publicado</option>
                         <option value="cancelado">Cancelado</option>
@@ -601,16 +609,8 @@ export const ScheduleSection = ({ clientId }) => {
         }}
         title={isChatOpen ? 'Cerrar chat' : 'Abrir chat AI'}
       >
-        {isChatOpen ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        )}
-  </button>
+        {/* Reemplazado por portal minimalista */}
+      </button>
 
       {/* Panel del chat AI */}
       <div

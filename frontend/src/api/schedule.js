@@ -35,8 +35,8 @@ const normalizeSchedulePayload = (raw = {}) => {
     const s = raw.status.trim();
     // Mantener en español/minúsculas si viene así; el backend normaliza a mayúsculas donde aplica
     const allowed = new Set([
-      'pendiente','en-diseño','en-progreso','aprobado','publicado','cancelado',
-      'Pendiente','En Diseño','En Progreso','Aprobado','Publicado','Cancelado',
+      'pendiente','en-diseño','aprobado','publicado','cancelado',
+      'Pendiente','En Diseño','Aprobado','Publicado','Cancelado',
     ]);
     out.status = allowed.has(s) ? s : 'pendiente';
   }

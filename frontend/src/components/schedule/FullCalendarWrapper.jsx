@@ -32,6 +32,8 @@ const FullCalendarWrapper = ({
 }) => {
   const calendarRef = useRef(null);
   const [calendarLabel, setCalendarLabel] = useState('');
+  const [highlightId, setHighlightId] = useState(null);
+  const isAgendaView = currentView === 'listMonth' || currentView === 'agenda' || (typeof currentView === 'string' && currentView.startsWith('list'));
   // Ancla de mes/año para mantener consistencia al cambiar de vista
   const anchorYMRef = useRef(() => {
     const d = currentDate || getCurrentDate();
@@ -169,6 +171,110 @@ const FullCalendarWrapper = ({
     }
   };
 
+  // Render personalizado para vista Agenda (list*)
+  const renderEventContent = (arg) => {
+    const viewType = arg?.view?.type || '';
+    if (!viewType.startsWith('list')) return undefined;
+
+    try {
+      const start = arg.event.start ? new Date(arg.event.start) : null;
+      const fecha = start
+        ? start.toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : (arg.timeText || '');
+      const ext = arg.event.extendedProps || {};
+      const copy = (ext.description || ext.originalData?.description || arg.event.title || '').toString();
+      const media = (ext.channel || ext.originalData?.channel || '').toString();
+      const estadoRaw = (ext.status || '').toString();
+      const estado = estadoRaw.replace('-', ' ');
+
+      const statusClass = (() => {
+        const s = estadoRaw.toLowerCase();
+        const base = 'px-2 py-0.5 text-[10px] font-medium rounded border';
+        if (s === 'aprobado') return `${base} bg-green-500/10 border-green-400/20 text-green-300`;
+        if (s === 'publicado') return `${base} bg-emerald-500/10 border-emerald-400/20 text-emerald-300`;
+        if (s === 'pendiente') return `${base} bg-orange-500/10 border-orange-400/20 text-orange-300`;
+        if (s === 'en-diseño' || s === 'en-diseno') return `${base} bg-gray-500/10 border-gray-400/20 text-gray-300`;
+        if (s === 'en-progreso') return `${base} bg-blue-500/10 border-blue-400/20 text-blue-300`;
+        if (s === 'en-revision' || s === 'en-revisión') return `${base} bg-indigo-500/10 border-indigo-400/20 text-indigo-300`;
+        if (s === 'cancelado') return `${base} bg-red-500/10 border-red-400/20 text-red-300`;
+        return `${base} bg-accent-500/10 border-accent-400/20 text-accent-300`;
+      })();
+
+      const mediaChip = media
+        ? `<span class="px-2 py-0.5 text-[10px] font-medium rounded bg-accent-500/10 border border-accent-400/20 text-accent-300">${media}</span>`
+        : '<span class="text-[11px] text-text-muted">—</span>';
+
+      const safeCopy = copy.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      return {
+        html: `
+          <div class="fc-agenda-grid-row">
+            <div class="fc-ag-col fc-ag-fecha">${fecha}</div>
+            <div class="fc-ag-col fc-ag-copy" title="${safeCopy}">
+              <div class="truncate">${safeCopy}</div>
+            </div>
+            <div class="fc-ag-col fc-ag-media">${mediaChip}</div>
+            <div class="fc-ag-col fc-ag-estado"><span class="${statusClass}">${estado}</span></div>
+          </div>
+        `
+      };
+    } catch {
+      return undefined;
+    }
+  };
+
+  // Render personalizado para vista Agenda (list*)
+  const renderEventContent = (arg) => {
+    const viewType = arg?.view?.type || '';
+    if (!viewType.startsWith('list')) return undefined;
+
+    try {
+      const start = arg.event.start ? new Date(arg.event.start) : null;
+      const fecha = start
+        ? start.toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : (arg.timeText || '');
+      const ext = arg.event.extendedProps || {};
+      const copy = (ext.description || ext.originalData?.description || arg.event.title || '').toString();
+      const media = (ext.channel || ext.originalData?.channel || '').toString();
+      const estadoRaw = (ext.status || '').toString();
+      const estado = estadoRaw.replace('-', ' ');
+
+      const statusClass = (() => {
+        const s = estadoRaw.toLowerCase();
+        const base = 'px-2 py-0.5 text-[10px] font-medium rounded border';
+        if (s === 'aprobado') return `${base} bg-green-500/10 border-green-400/20 text-green-300`;
+        if (s === 'publicado') return `${base} bg-emerald-500/10 border-emerald-400/20 text-emerald-300`;
+        if (s === 'pendiente') return `${base} bg-orange-500/10 border-orange-400/20 text-orange-300`;
+        if (s === 'en-diseño' || s === 'en-diseno') return `${base} bg-gray-500/10 border-gray-400/20 text-gray-300`;
+        if (s === 'en-progreso') return `${base} bg-blue-500/10 border-blue-400/20 text-blue-300`;
+        if (s === 'en-revision' || s === 'en-revisión') return `${base} bg-indigo-500/10 border-indigo-400/20 text-indigo-300`;
+        if (s === 'cancelado') return `${base} bg-red-500/10 border-red-400/20 text-red-300`;
+        return `${base} bg-accent-500/10 border-accent-400/20 text-accent-300`;
+      })();
+
+      const mediaChip = media
+        ? `<span class="px-2 py-0.5 text-[10px] font-medium rounded bg-accent-500/10 border border-accent-400/20 text-accent-300">${media}</span>`
+        : '<span class="text-[11px] text-text-muted">—</span>';
+
+      const safeCopy = copy.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      return {
+        html: `
+          <div class="fc-agenda-grid-row">
+            <div class="fc-ag-col fc-ag-fecha">${fecha}</div>
+            <div class="fc-ag-col fc-ag-copy" title="${safeCopy}">
+              <div class="truncate">${safeCopy}</div>
+            </div>
+            <div class="fc-ag-col fc-ag-media">${mediaChip}</div>
+            <div class="fc-ag-col fc-ag-estado"><span class="${statusClass}">${estado}</span></div>
+          </div>
+        `
+      };
+    } catch {
+      return undefined;
+    }
+  };
+
   // Configuración optimizada de FullCalendar
   const calendarOptions = {
     // Plugins requeridos
@@ -183,6 +289,16 @@ const FullCalendarWrapper = ({
     
     // Datos
     events,
+
+    // Variantes de evento por estado + resaltado
+    eventClassNames: (arg) => {
+      const status = arg.event.extendedProps?.status;
+      const classes = [];
+      if (status) classes.push(`fc-event--${status}`);
+      classes.push('fc-event-base');
+      if (highlightId && arg.event.id === highlightId) classes.push('fc-event--highlight');
+      return classes;
+    },
     
     // Interactividad
     selectable: true,
@@ -198,6 +314,21 @@ const FullCalendarWrapper = ({
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
     slotDuration: '00:30:00',
+    eventDidMount: (info) => {
+      // marcar elemento con id para poder desplazar y resaltar
+      try { info.el.setAttribute('data-event-id', info.event.id); } catch {}
+      if (highlightId && info.event.id === highlightId) {
+        // scroll suave al centro
+        setTimeout(() => {
+          try {
+            info.el.classList.add('fc-event--highlight');
+            info.el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          } catch {}
+        }, 50);
+        // limpiar highlight automáticamente
+        setTimeout(() => setHighlightId(null), 5000);
+      }
+    },
     
     // Header y navegación
     headerToolbar,
@@ -315,6 +446,21 @@ const FullCalendarWrapper = ({
     }
   };
 
+  // Aplicar renderer solo en vistas list* y mensaje sin eventos en ES
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    try {
+      api.setOption('noEventsText', 'No hay tareas programadas para este mes');
+      const type = api.view?.type || '';
+      if (typeof type === 'string' && type.startsWith('list')) {
+        api.setOption('eventContent', renderEventContent);
+      } else {
+        api.setOption('eventContent', undefined);
+      }
+    } catch {}
+  }, [currentView]);
+
   // Keyboard shortcuts para navegación rápida
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -414,6 +560,20 @@ const FullCalendarWrapper = ({
     onViewChange?.(fullCalendarView);
   };
 
+  // Búsqueda: saltar a un evento y resaltarlo
+  const jumpToEvent = (eventId) => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    const ev = api.getEventById(eventId);
+    if (!ev) return;
+    const start = ev.start || getCurrentDate();
+    api.gotoDate(start);
+    // activar highlight; eventDidMount hará scroll
+    setHighlightId(eventId);
+    // en month view el render puede tardar un frame
+    requestAnimationFrame(() => api.updateSize());
+  };
+
   return (
     <div className={`fullcalendar-wrapper ${className}`}>
       {/* Custom Toolbar */}
@@ -425,6 +585,7 @@ const FullCalendarWrapper = ({
         events={events}
         clientName={clientName}
   isChatOpen={isChatOpen}
+        onJumpToEvent={jumpToEvent}
       />
       
       {loading && (
@@ -436,6 +597,17 @@ const FullCalendarWrapper = ({
         </div>
       )}
       
+      {isAgendaView && (
+        <div className="fc-agenda-header bg-surface-800/60 border border-[color:var(--color-border-subtle)] rounded-md mb-2">
+          <div className="fc-agenda-grid-row px-2 py-2">
+            <div className="fc-ag-col fc-ag-fecha text-xs font-semibold uppercase tracking-wide text-text-muted">Fecha</div>
+            <div className="fc-ag-col fc-ag-copy text-xs font-semibold uppercase tracking-wide text-text-muted">Copy</div>
+            <div className="fc-ag-col fc-ag-media text-xs font-semibold uppercase tracking-wide text-text-muted">Media</div>
+            <div className="fc-ag-col fc-ag-estado text-xs font-semibold uppercase tracking-wide text-text-muted">Estado</div>
+          </div>
+        </div>
+      )}
+
       <FullCalendar
         ref={calendarRef}
         {...calendarOptions}

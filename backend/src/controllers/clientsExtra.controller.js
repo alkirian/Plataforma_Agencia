@@ -5,12 +5,29 @@ export const handleUpdateClientMeta = async (req, res, next) => {
   try {
     const { clientId } = req.params;
     const agencyId = await getUserAgencyId(req.user.id);
-    const { website, social_links } = req.body || {};
+    const { website, social_links, name, industry } = req.body || {};
 
     const updates = {};
     if (typeof website === 'string') updates.website = website || null;
     if (social_links && typeof social_links === 'object') updates.social_links = social_links;
+    if (typeof name === 'string') updates.name = name.trim();
+    if (typeof industry === 'string') updates.industry = industry.trim();
     if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: 'Sin cambios' });
+
+    // Si se actualiza el nombre, validar unicidad por agencia (case-insensitive)
+    if (updates.name) {
+      const nameToCheck = updates.name;
+      const { data: existing, error: existErr } = await supabaseAdmin
+        .from('clients')
+        .select('id')
+        .eq('agency_id', agencyId)
+        .ilike('name', nameToCheck)
+        .neq('id', clientId);
+      if (existErr) return res.status(400).json({ success: false, message: existErr.message });
+      if (existing && existing.length > 0) {
+        return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese nombre en tu agencia.' });
+      }
+    }
 
     const { data, error } = await supabaseAdmin
       .from('clients')
@@ -22,6 +39,66 @@ export const handleUpdateClientMeta = async (req, res, next) => {
 
     if (error) return res.status(400).json({ success: false, message: error.message });
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Preferencias por usuario para clientes (p.ej. color de tarjeta)
+export const handleGetClientUserPreferences = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { data, error } = await supabaseAdmin
+      .from('client_user_preferences')
+      .select('client_id, color, pinned, favorite')
+      .eq('user_id', userId);
+    if (error) throw new Error(error.message);
+    const map = {};
+    (data || []).forEach(row => { map[row.client_id] = { color: row.color, pinned: !!row.pinned, favorite: !!row.favorite }; });
+    res.status(200).json({ success: true, data: map });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleUpsertClientUserPreference = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { clientId } = req.params;
+    const { color, pinned, favorite } = req.body || {};
+    if (!clientId) return res.status(400).json({ success: false, message: 'clientId requerido' });
+    const row = { user_id: userId, client_id: clientId };
+    if (color === null) row.color = null; // permitir limpiar color
+    if (typeof color === 'string' && color.trim()) row.color = color.trim();
+    if (typeof pinned === 'boolean') row.pinned = pinned;
+    if (typeof favorite === 'boolean') row.favorite = favorite;
+    if (!('color' in row) && !('pinned' in row) && !('favorite' in row)) {
+      return res.status(400).json({ success: false, message: 'Sin cambios' });
+    }
+    const { data, error } = await supabaseAdmin
+      .from('client_user_preferences')
+      .upsert(row, { onConflict: 'user_id,client_id' })
+      .select('client_id, color, pinned, favorite')
+      .single();
+    if (error) throw new Error(error.message);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleDeleteClientUserPreference = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { clientId } = req.params;
+    if (!clientId) return res.status(400).json({ success: false, message: 'clientId requerido' });
+    const { error } = await supabaseAdmin
+      .from('client_user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('client_id', clientId);
+    if (error) throw new Error(error.message);
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }
@@ -89,4 +166,3 @@ export const handleDeleteContact = async (req, res, next) => {
     next(error);
   }
 };
-

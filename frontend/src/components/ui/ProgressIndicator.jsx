@@ -78,25 +78,15 @@ export const ProgressIndicator = ({
 };
 
 export const ProgressBadge = ({ percentage = 0, total = 0 }) => {
-  const getColor = (percentage) => {
-    if (percentage >= 80) return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (percentage >= 50) return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    if (percentage >= 20) return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-    return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-  };
+  // Si no hay tareas, no renderizamos el badge (evita el span "Sin tareas")
+  if (!total || total === 0) return null;
 
-  if (total === 0) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                       bg-gray-500/20 text-gray-400 border border-gray-500/30">
-        Sin tareas
-      </span>
-    );
-  }
-
+  const pct = Math.round(Math.max(0, Math.min(100, percentage || 0)));
+  const color = pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-blue-500';
   return (
-    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getColor(percentage)}`}>
-      {percentage}% completado
-    </span>
+    <div className="inline-flex items-center gap-2">
+      <div className={`h-2 w-12 rounded-full ${color}`} style={{ opacity: 0.95 }} />
+      <div className="text-xs font-medium text-text-primary">{pct}%</div>
+    </div>
   );
 };

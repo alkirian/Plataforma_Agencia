@@ -1,6 +1,6 @@
 // src/services/clients.service.js
 
-import { createAuthenticatedClient } from '../config/supabaseClient.js';
+import { createAuthenticatedClient, supabaseAdmin } from '../config/supabaseClient.js';
 
 /**
  * Obtiene todos los clientes de una agencia, usando los permisos del usuario.
@@ -53,4 +53,19 @@ export const getClientById = async (clientId, token) => {
   }
 
   return data;
+};
+
+/**
+ * Elimina un cliente por ID dentro de una agencia (verificado previamente en el controlador).
+ * Usa supabaseAdmin para asegurar borrado atómico y respetar FKs ON DELETE CASCADE.
+ */
+export const deleteClientById = async (clientId, agencyId) => {
+  const { error } = await supabaseAdmin
+    .from('clients')
+    .delete()
+    .eq('id', clientId)
+    .eq('agency_id', agencyId)
+    .single();
+  if (error) throw new Error(`No se pudo eliminar el cliente: ${error.message}`);
+  return true;
 };

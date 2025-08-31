@@ -104,7 +104,6 @@ const TaskForm = ({
           >
             <option value="pendiente">Pendiente</option>
             <option value="en-diseño">En Diseño</option>
-            <option value="en-progreso">En Progreso</option>
             <option value="aprobado">Aprobado</option>
             <option value="publicado">Publicado</option>
             <option value="cancelado">Cancelado</option>

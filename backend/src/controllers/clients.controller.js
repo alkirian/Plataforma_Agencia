@@ -1,4 +1,4 @@
-import { createClient, getClientsByAgency, getClientById } from '../services/clients.service.js';
+import { createClient, getClientsByAgency, getClientById, deleteClientById } from '../services/clients.service.js';
 import { getActivityFeedByClient } from '../services/activity.service.js';
 import { getUserAgencyId, getUserProfile } from '../helpers/userHelpers.js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
@@ -81,6 +81,43 @@ export const handleGetActivityFeed = async (req, res, next) => {
     const agencyId = await getUserAgencyId(req.user.id);
     const feed = await getActivityFeedByClient(clientId, agencyId);
     res.status(200).json({ success: true, data: feed });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleDeleteClient = async (req, res, next) => {
+  try {
+    const { clientId } = req.params;
+    const userId = req.user?.id;
+    if (!clientId) return res.status(400).json({ success: false, message: 'clientId requerido' });
+
+    // 1) Verificar perfil y rol
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return res.status(401).json({ success: false, message: 'Perfil de usuario no encontrado' });
+    }
+    if (profile.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Solo administradores pueden eliminar clientes' });
+    }
+
+    // 2) Verificar que el cliente pertenece a la misma agencia
+    const { data: client, error: clientErr } = await supabaseAdmin
+      .from('clients')
+      .select('id, agency_id')
+      .eq('id', clientId)
+      .single();
+    if (clientErr || !client) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+    if (client.agency_id !== profile.agency_id) {
+      return res.status(403).json({ success: false, message: 'No tienes permisos para este cliente' });
+    }
+
+    // 3) Eliminar cliente (cascade en tablas relacionadas)
+    await deleteClientById(clientId, profile.agency_id);
+
+    return res.status(204).send();
   } catch (error) {
     next(error);
   }

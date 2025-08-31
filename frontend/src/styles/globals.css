@@ -19,6 +19,12 @@
 
 @layer base {
   :root {
+  /* Golden glow tokens (centralized for easy tuning) */
+  --glow-gold-strong: rgba(255,206,84,0.18);
+  --glow-gold-medium: rgba(255,206,84,0.14);
+  --glow-gold-subtle: rgba(255,206,84,0.08);
+  --glow-gold-border: rgba(255,206,84,0.35);
+  --glow-gold-focus-ring: rgba(255,206,84,0.06);
     /* App background and gradients */
     --color-app-bg: #131516;
     --color-app-gradient-start: #1f2124;  /* lighter dark gray */
@@ -297,6 +303,73 @@
   .hover-cyber-glow:hover {
   box-shadow: 0 12px 24px -10px rgba(0,0,0,0.7);
     border-color: var(--color-border-strong);
+  }
+
+  /* Golden glow utility - subtle, accessible on hover and focus */
+  .glow-gold {
+    transition: box-shadow 180ms ease, transform 150ms ease, border-color 180ms ease;
+    position: relative;
+  }
+
+  .glow-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -12px rgba(255,206,84,0.14), 0 6px 18px -8px rgba(255,206,84,0.08);
+    border-color: rgba(255,206,84,0.35);
+  }
+
+  .glow-gold:focus {
+    outline: none;
+    box-shadow: 0 14px 40px -10px rgba(255,206,84,0.18), 0 0 0 6px rgba(255,206,84,0.06);
+    border-color: rgba(255,206,84,0.45);
+  }
+
+  /* Global application: apply golden glow to common interactive elements for a consistent effect
+     Use CSS variables defined above to tune intensity. Add .no-glow on a container to opt-out. */
+  button:not(.no-glow *),
+  .btn-cyber,
+  .icon-btn,
+  .btn-tone,
+  a[role="button"],
+  .card-cyber {
+    --_glow-strong: var(--glow-gold-strong);
+    --_glow-medium: var(--glow-gold-medium);
+    --_glow-subtle: var(--glow-gold-subtle);
+    --_glow-border: var(--glow-gold-border);
+  }
+
+  /* Hover/focus styles using the tokens - only when not explicitly opted out */
+  :root :not(.no-glow) .btn-cyber:hover,
+  :root :not(.no-glow) .icon-btn:hover,
+  :root :not(.no-glow) .btn-tone:hover,
+  :root :not(.no-glow) button:hover,
+  :root :not(.no-glow) a[role="button"]:hover,
+  :root :not(.no-glow) .card-cyber:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -12px var(--_glow-medium), 0 6px 18px -8px var(--_glow-subtle);
+    border-color: var(--_glow-border);
+  }
+
+  :root :not(.no-glow) .btn-cyber:focus-visible,
+  :root :not(.no-glow) .icon-btn:focus-visible,
+  :root :not(.no-glow) .btn-tone:focus-visible,
+  :root :not(.no-glow) button:focus-visible,
+  :root :not(.no-glow) a[role="button"]:focus-visible,
+  :root :not(.no-glow) .card-cyber:focus-visible {
+    outline: none;
+    box-shadow: 0 14px 40px -10px var(--_glow-strong), 0 0 0 6px var(--glow-gold-focus-ring);
+    border-color: var(--_glow-border);
+  }
+
+  /* Allow developers to quickly disable glow for specific elements */
+  .no-glow .btn-cyber,
+  .no-glow .icon-btn,
+  .no-glow .btn-tone,
+  .no-glow button,
+  .no-glow a[role="button"],
+  .no-glow .card-cyber {
+    box-shadow: none !important;
+    transform: none !important;
+    border-color: initial !important;
   }
 
   /* App background utility */
