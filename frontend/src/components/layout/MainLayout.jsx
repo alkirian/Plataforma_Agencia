@@ -1,6 +1,6 @@
 import React from 'react';
 import { Header } from './Header';
-import { Breadcrumbs } from './Breadcrumbs';
+import { Breadcrumbs } from '../ui/Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
