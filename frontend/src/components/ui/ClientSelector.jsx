@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getClients, getClientById } from '../../api/clients';
-import { ChevronDownIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ChevronDown, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const ClientSelector = ({ currentClientId }) => {
@@ -55,12 +55,12 @@ export const ClientSelector = ({ currentClientId }) => {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <UserGroupIcon className="h-4 w-4 text-gray-400" />
-        <span className="text-sm text-white font-medium truncate max-w-[120px]">
+        <Users className="h-4 w-4 text-text-muted" />
+        <span className="text-sm text-text-primary font-medium truncate max-w-[120px]">
           {currentClient?.name || 'Cliente'}
         </span>
-        <ChevronDownIcon 
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+        <ChevronDown 
+          className={`h-4 w-4 text-text-muted transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`} 
         />

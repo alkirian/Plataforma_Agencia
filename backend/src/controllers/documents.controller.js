@@ -44,7 +44,8 @@ export const handleUploadDocument = async (req, res, next) => {
     // Creamos el objeto que vamos a insertar
     const documentData = {
       client_id: clientId,
-      agency_id: agencyId, // <-- Sospechamos que este valor puede ser null
+      agency_id: agencyId,
+      user_id: req.user.id, // ✅ AGREGADO: Campo user_id requerido
       file_name,
       storage_path,
       file_type,
@@ -57,7 +58,7 @@ export const handleUploadDocument = async (req, res, next) => {
     console.log('--- DATOS A INSERTAR EN LA TABLA documents ---', documentData);
 
     // 1. Crea el registro del documento
-    const createdDocument = await createDocument(documentData, req.user.id);
+    const createdDocument = await createDocument(documentData);
 
     // ... (el resto de la función se mantiene igual)
     if (createdDocument) {

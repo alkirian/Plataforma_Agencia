@@ -2,8 +2,9 @@
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
 import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed } from '../controllers/clients.controller.js';
+import { handleUpdateClientMeta, handleListContacts, handleUpsertContacts, handleDeleteContact } from '../controllers/clientsExtra.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
-import { handleGenerateIdeas, handleChat, handleGetChatHistory } from '../controllers/ai.controller.js';
+import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleIdeaFeedback, handleListIdeas } from '../controllers/ai.controller.js';
 import scheduleRoutes from './schedule.routes.js';
 
 const router = Router();
@@ -34,6 +35,8 @@ router.delete('/:clientId/documents/:documentId', handleDeleteDocument);
 router.post('/:clientId/generate-ideas', handleGenerateIdeas);
 router.post('/:clientId/chat', handleChat);
 router.get('/:clientId/chat/history', handleGetChatHistory);
+router.get('/:clientId/ideas', handleListIdeas);
+router.post('/:clientId/ideas/:ideaId/feedback', handleIdeaFeedback);
 
 // Ruta para el feed de actividad de un cliente
 router.get('/:clientId/activity-feed', handleGetActivityFeed);
@@ -44,5 +47,13 @@ router.use('/:clientId/schedule', scheduleRoutes);
 // Ruta para un cliente específico - DEBE IR AL FINAL
 router.route('/:clientId')
   .get(handleGetClientById);
+
+// Actualizar metadatos del cliente (website, social_links)
+router.patch('/:clientId', handleUpdateClientMeta);
+
+// Contactos del cliente
+router.get('/:clientId/contacts', handleListContacts);
+router.post('/:clientId/contacts', handleUpsertContacts); // admite crear varios
+router.delete('/:clientId/contacts/:contactId', handleDeleteContact);
 
 export default router;

@@ -76,14 +76,30 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
   // Embedding de la consulta
   const queryEmbedding = await embedText(userPrompt);
 
-  // Buscar chunks relevantes (asume función SQL match_document_chunks(query_embedding vector, client_id uuid))
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
+  // Buscar chunks relevantes usando la función search_context_chunks
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('search_context_chunks', {
     query_embedding: queryEmbedding,
     match_client_id: clientId,
     match_count: 8,
+    match_threshold: 0.78
   });
   if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
-  const topContext = (matches || []).map(m => m.content).join('\n---\n');
+  
+  // Crear contexto enriquecido con información de las fuentes
+  const topContext = (matches || []).map(match => {
+    const sourceType = match.document_source_type;
+    let sourceLabel = '';
+    
+    switch(sourceType) {
+      case 'document': sourceLabel = '📄 [DOCUMENTO]'; break;
+      case 'url': sourceLabel = '🌐 [WEB]'; break;
+      case 'manual': sourceLabel = '✍️ [INFORMACIÓN MANUAL]'; break;
+      case 'note': sourceLabel = '📝 [NOTA]'; break;
+      default: sourceLabel = '📋 [CONTEXTO]'; break;
+    }
+    
+    return `${sourceLabel} ${match.document_name}: ${match.content}`;
+  }).join('\n---\n');
 
   const calendarCtx = Array.isArray(monthContext) ? monthContext.join(', ') : '';
 
@@ -234,14 +250,30 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
   // Embedding de la consulta
   const queryEmbedding = await embedText(userPrompt);
 
-  // Buscar chunks relevantes
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
+  // Buscar chunks relevantes usando la función search_context_chunks
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('search_context_chunks', {
     query_embedding: queryEmbedding,
     match_client_id: clientId,
     match_count: 5,
+    match_threshold: 0.78
   });
   if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
-  const topContext = (matches || []).map(m => m.content).join('\n---\n');
+  
+  // Crear contexto enriquecido con información de las fuentes
+  const topContext = (matches || []).map(match => {
+    const sourceType = match.document_source_type;
+    let sourceLabel = '';
+    
+    switch(sourceType) {
+      case 'document': sourceLabel = '📄 [DOCUMENTO]'; break;
+      case 'url': sourceLabel = '🌐 [WEB]'; break;
+      case 'manual': sourceLabel = '✍️ [INFO MANUAL]'; break;
+      case 'note': sourceLabel = '📝 [NOTA]'; break;
+      default: sourceLabel = '📋 [CONTEXTO]'; break;
+    }
+    
+    return `${sourceLabel} ${match.document_name}: ${match.content}`;
+  }).join('\n---\n');
 
   // Construir historial de conversación
   const conversationHistory = Array.isArray(chatHistory) 

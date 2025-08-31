@@ -29,3 +29,31 @@ export const createClient = clientData => {
     body: JSON.stringify(clientData),
   });
 };
+
+/**
+ * Actualiza metadatos del cliente (website y social_links)
+ */
+export const updateClientMeta = (clientId, { website, social_links }) => {
+  return apiFetch(`/clients/${clientId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ website, social_links })
+  });
+};
+
+/**
+ * Contactos del cliente
+ */
+export const listClientContacts = (clientId) => {
+  return apiFetch(`/clients/${clientId}/contacts`);
+};
+
+export const upsertClientContacts = (clientId, contacts) => {
+  return apiFetch(`/clients/${clientId}/contacts`, {
+    method: 'POST',
+    body: JSON.stringify({ contacts })
+  });
+};
+
+export const deleteClientContact = (clientId, contactId) => {
+  return apiFetch(`/clients/${clientId}/contacts/${contactId}`, { method: 'DELETE' });
+};

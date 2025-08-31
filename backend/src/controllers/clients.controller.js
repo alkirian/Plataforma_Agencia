@@ -1,6 +1,7 @@
 import { createClient, getClientsByAgency, getClientById } from '../services/clients.service.js';
 import { getActivityFeedByClient } from '../services/activity.service.js';
 import { getUserAgencyId, getUserProfile } from '../helpers/userHelpers.js';
+import { supabaseAdmin } from '../config/supabaseClient.js';
 import { validateData, clientSchema } from '../schemas/validation.js';
 
 export const handleCreateClient = async (req, res, next) => {
@@ -16,6 +17,21 @@ export const handleCreateClient = async (req, res, next) => {
         message: 'Datos de entrada inválidos',
         errors: validation.errors
       });
+    }
+
+    // Unicidad por agencia (case-insensitive)
+    const userProfile = await getUserProfile(req.user.id);
+    const nameToCheck = validation.data.name.trim();
+    const { data: existing, error: existErr } = await supabaseAdmin
+      .from('clients')
+      .select('id')
+      .eq('agency_id', userProfile.agency_id)
+      .ilike('name', nameToCheck);
+    if (existErr) {
+      return res.status(400).json({ success: false, message: existErr.message });
+    }
+    if (existing && existing.length > 0) {
+      return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese nombre en tu agencia.' });
     }
 
     const newClient = await createClient(validation.data, token);

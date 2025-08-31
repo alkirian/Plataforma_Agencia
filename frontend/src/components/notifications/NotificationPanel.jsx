@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { 
-  BellIcon, 
-  XMarkIcon,
-  CheckIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  CalendarDaysIcon,
-  TrashIcon 
-} from '@heroicons/react/24/outline';
+  Bell, 
+  X,
+  Check,
+  Clock,
+  AlertTriangle,
+  CalendarDays,
+  Trash 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,15 +46,15 @@ export const NotificationPanel = ({
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'overdue':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />;
+        return <AlertTriangle className="h-5 w-5 text-red-400" />;
       case 'due-today':
-        return <CalendarDaysIcon className="h-5 w-5 text-orange-400" />;
+        return <CalendarDays className="h-5 w-5 text-orange-400" />;
       case 'due-tomorrow':
-        return <ClockIcon className="h-5 w-5 text-gray-400" />;
+        return <Clock className="h-5 w-5 text-gray-400" />;
       case 'upcoming':
-        return <BellIcon className="h-5 w-5 text-green-400" />;
+        return <Bell className="h-5 w-5 text-green-400" />;
       default:
-        return <BellIcon className="h-5 w-5 text-gray-400" />;
+        return <Bell className="h-5 w-5 text-gray-400" />;
     }
   };
 
@@ -125,7 +125,7 @@ export const NotificationPanel = ({
                 {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[color:var(--color-border-subtle)]">
                   <div className="flex items-center space-x-2">
-          <BellIcon className="h-5 w-5 text-[color:var(--color-accent-blue)]" />
+          <Bell className="h-5 w-5 text-[color:var(--color-accent-blue)]" />
           <Dialog.Title className="text-lg font-medium text-text-primary">
                       Notificaciones
                     </Dialog.Title>
@@ -159,7 +159,7 @@ export const NotificationPanel = ({
               className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center space-x-1"
                           title="Eliminar todas las notificaciones"
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <Trash className="h-3 w-3" />
                           <span>Limpiar todas</span>
                         </motion.button>
                       </>
@@ -172,7 +172,7 @@ export const NotificationPanel = ({
             className="rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-surface-soft 
                                  transition-colors"
                     >
-                      <XMarkIcon className="h-4 w-4" />
+                      <X className="h-4 w-4" />
                     </motion.button>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export const NotificationPanel = ({
                 <div className="flex-1 overflow-y-auto">
                   {getDisplayNotifications().length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-text-muted">
-                      <BellIcon className="h-12 w-12 mb-4 opacity-50" />
+                      <Bell className="h-12 w-12 mb-4 opacity-50" />
                       <p className="text-center">
                         {selectedTab === 'all' 
                           ? 'No hay notificaciones' 
@@ -262,7 +262,7 @@ export const NotificationPanel = ({
                                         className="text-text-muted hover:text-text-primary transition-colors"
                                         title="Marcar como leída"
                                       >
-                                        <CheckIcon className="h-4 w-4" />
+                                        <Check className="h-4 w-4" />
                                       </motion.button>
                                     )}
                                     
@@ -276,7 +276,7 @@ export const NotificationPanel = ({
                                       className="text-text-muted hover:text-red-400 transition-colors"
                                       title="Eliminar notificación"
                                     >
-                                      <TrashIcon className="h-4 w-4" />
+                                      <Trash className="h-4 w-4" />
                                     </motion.button>
                                   </div>
                                 </div>
@@ -327,3 +327,4 @@ export const NotificationPanel = ({
     </Transition>
   );
 };
+

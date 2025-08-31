@@ -89,7 +89,7 @@ export const processDocument = async (documentId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: doc, error: docErr } = await supabaseAuth
     .from('documents')
-    .select('id, storage_path, file_type, client_id, agency_id')
+    .select('id, storage_path, file_type, client_id, agency_id, user_id')
     .eq('id', documentId)
     .single();
   if (docErr) throw new Error(`No se pudo cargar el documento: ${docErr.message}`);
@@ -114,10 +114,10 @@ export const processDocument = async (documentId, token) => {
       if (!chunk || chunk.trim() === '') continue;
       const sanitizedChunk = chunk.replace(/\u0000/g, '');
       const vector = await embedText(sanitizedChunk);
-      const { error: insErr } = await supabaseAdmin.from('document_chunks').insert({
+  const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
         client_id: doc.client_id,
-        agency_id: doc.agency_id,
-        document_id: doc.id,
+        user_id: doc.user_id,
+        source_id: doc.id,
         content: sanitizedChunk,
         embedding: vector,
       });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { Download } from 'lucide-react';
 import { ExportModal } from './ExportModal';
 
 // Botón minimalista reutilizable
@@ -7,7 +7,7 @@ const MiniButton = ({ children, onClick, active, title, className = '' }) => (
   <button
     onClick={onClick}
     title={title}
-    className={`px-2 py-1 text-xs rounded-md border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800/60 transition-colors ${active ? 'bg-gray-800 text-white border-gray-600' : ''} ${className}`}
+    className={`px-2 py-1 text-xs rounded-md border [color:var(--color-border-subtle)] text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors ${active ? 'bg-surface-strong text-text-primary' : ''} ${className}`}
   >
     {children}
   </button>
@@ -30,7 +30,7 @@ export const CalendarToolbar = ({
   const isAgenda = view === 'listMonth' || view === 'agenda';
 
   return (
-    <div className="bg-gray-900/50 border border-gray-700/50 rounded-lg p-2 mb-3">
+    <div className="bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg p-2 mb-3">
       <div className="flex items-center justify-between gap-2">
         {/* Izquierda: navegación */}
         <div className="flex items-center gap-2 min-w-0">
@@ -58,7 +58,7 @@ export const CalendarToolbar = ({
         </div>
 
         {/* Centro: vistas */}
-        <div className="flex items-center gap-1 bg-gray-800/40 p-1 rounded-md border border-gray-700/50">
+        <div className="flex items-center gap-1 bg-surface-soft p-1 rounded-md border border-[color:var(--color-border-subtle)]">
           <MiniButton onClick={() => onView('month')} active={isMonth} title="Vista mes">
             {isChatOpen ? 'M' : 'Mes'}
           </MiniButton>
@@ -76,7 +76,7 @@ export const CalendarToolbar = ({
         {/* Derecha: export */}
         <MiniButton onClick={() => setShowExportModal(true)} title="Exportar calendario" className="!py-1.5">
           <span className="sr-only">Exportar</span>
-          <ArrowDownTrayIcon className="w-4 h-4" />
+          <Download className="w-4 h-4" />
         </MiniButton>
       </div>
 
@@ -89,3 +89,4 @@ export const CalendarToolbar = ({
     </div>
   );
 };
+

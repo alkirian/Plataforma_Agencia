@@ -1,0 +1,21 @@
+      {/* Overlay para móvil (instantáneo) */}
+      {isChatOpen && (
+        <div
+          onClick={() => setIsChatOpen(false)}
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+        />
+      )}
+
+      {/* QuickTaskPopover - Nuevo sistema de creación de tareas */}
+      <QuickTaskPopover
+        isOpen={isQuickTaskOpen}
+        onClose={handleCloseQuickTask}
+        clickCoords={clickCoords}
+        selectedDate={quickTaskDate}
+        clientId={clientId}
+        onCreateTask={handleCreateQuickTask}
+      />
+
+    </motion.div>
+  );
+};

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { 
-  ArrowDownTrayIcon,
-  XMarkIcon,
-  DocumentTextIcon,
-  CalendarDaysIcon,
-  CodeBracketIcon,
-  ChartBarIcon
-} from '@heroicons/react/24/outline';
+  Download,
+  X,
+  FileText,
+  CalendarDays,
+  Code,
+  BarChart2
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { exportToCSV, exportToICS, exportToJSON, getExportSummary } from '../../utils/calendarExport';
 
@@ -27,7 +27,7 @@ export const ExportModal = ({
       id: 'csv',
       name: 'CSV (Excel)',
       description: 'Perfecto para análisis en Excel o Google Sheets',
-      icon: DocumentTextIcon,
+      icon: FileText,
       color: 'text-green-400',
       bgColor: 'bg-green-500/10 border-green-500/30'
     },
@@ -35,16 +35,16 @@ export const ExportModal = ({
       id: 'ics',
       name: 'iCal (ICS)',
       description: 'Importar a Google Calendar, Outlook, Apple Calendar',
-      icon: CalendarDaysIcon,
-      color: 'text-gray-400',
+      icon: CalendarDays,
+      color: 'text-text-muted',
       bgColor: 'bg-gray-500/10 border-gray-500/30'
     },
     {
       id: 'json',
       name: 'JSON',
       description: 'Para integraciones técnicas y backup completo',
-      icon: CodeBracketIcon,
-      color: 'text-gray-300',
+      icon: Code,
+      color: 'text-text-primary',
       bgColor: 'bg-gray-600/10 border-gray-600/30'
     }
   ];
@@ -108,13 +108,13 @@ export const ExportModal = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl 
-                                        bg-surface-900/95 border border-white/10 
+                                        bg-surface-strong border border-[color:var(--color-border-subtle)] 
                                         p-6 shadow-xl transition-all">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
-                    <ArrowDownTrayIcon className="h-6 w-6 text-primary-400" />
-                    <Dialog.Title className="text-xl font-semibold text-white">
+                    <Download className="h-6 w-6 text-primary-400" />
+                    <Dialog.Title className="text-xl font-semibold text-text-primary">
                       Exportar Calendario
                     </Dialog.Title>
                   </div>
@@ -123,37 +123,37 @@ export const ExportModal = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-surface-soft 
+                    className="rounded-full p-2 text-text-muted hover:text-text-primary hover:bg-surface-soft 
                                transition-colors"
                   >
-                    <XMarkIcon className="h-5 w-5" />
+                    <X className="h-5 w-5" />
                   </motion.button>
                 </div>
 
                 {/* Resumen de eventos */}
-                <div className="mb-6 p-4 bg-surface-soft rounded-lg border border-white/10">
+                <div className="mb-6 p-4 bg-surface-soft rounded-lg border border-[color:var(--color-border-subtle)]">
                   <div className="flex items-center space-x-2 mb-3">
-                    <ChartBarIcon className="h-5 w-5 text-gray-400" />
-                    <h3 className="text-sm font-medium text-white">Resumen de exportación</h3>
+                    <BarChart2 className="h-5 w-5 text-text-muted" />
+                    <h3 className="text-sm font-medium text-text-primary">Resumen de exportación</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-400">Total de eventos:</span>
-                      <span className="ml-2 text-white font-medium">{exportSummary.total}</span>
+                      <span className="text-text-muted">Total de eventos:</span>
+                      <span className="ml-2 text-text-primary font-medium">{exportSummary.total}</span>
                     </div>
                     
                     {clientName && (
                       <div>
-                        <span className="text-gray-400">Cliente:</span>
-                        <span className="ml-2 text-white font-medium">{clientName}</span>
+                        <span className="text-text-muted">Cliente:</span>
+                        <span className="ml-2 text-text-primary font-medium">{clientName}</span>
                       </div>
                     )}
                     
                     {exportSummary.dateRange && (
                       <div className="col-span-2">
-                        <span className="text-gray-400">Período:</span>
-                        <span className="ml-2 text-white font-medium">
+                        <span className="text-text-muted">Período:</span>
+                        <span className="ml-2 text-text-primary font-medium">
                           {exportSummary.dateRange.from} - {exportSummary.dateRange.to}
                         </span>
                       </div>
@@ -162,13 +162,13 @@ export const ExportModal = ({
 
                   {/* Estados */}
                   {Object.keys(exportSummary.byStatus).length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <span className="text-xs text-gray-400 uppercase tracking-wide">Por estado:</span>
+                    <div className="mt-3 pt-3 border-t border-[color:var(--color-border-subtle)]">
+                      <span className="text-xs text-text-muted uppercase tracking-wide">Por estado:</span>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {Object.entries(exportSummary.byStatus).map(([status, count]) => (
                           <span 
                             key={status}
-                            className="px-2 py-1 bg-white/10 rounded text-xs text-gray-300"
+                            className="px-2 py-1 bg-white/10 rounded text-xs text-text-primary"
                           >
                             {status}: {count}
                           </span>
@@ -180,7 +180,7 @@ export const ExportModal = ({
 
                 {/* Selección de formato */}
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium text-white mb-3">Seleccionar formato:</h3>
+                  <h3 className="text-sm font-medium text-text-primary mb-3">Seleccionar formato:</h3>
                   <div className="space-y-3">
                     {exportFormats.map((format) => {
                       const Icon = format.icon;
@@ -194,18 +194,18 @@ export const ExportModal = ({
                           className={`p-4 rounded-lg border transition-all cursor-pointer ${
                             isSelected 
                               ? format.bgColor
-                              : 'border-white/10 hover:border-white/20 bg-surface-soft'
+                              : 'border-[color:var(--color-border-subtle)] hover:border-white/20 bg-surface-soft'
                           }`}
                           onClick={() => setSelectedFormat(format.id)}
                         >
                           <div className="flex items-start space-x-3">
                             <Icon className={`h-6 w-6 mt-0.5 ${
-                              isSelected ? format.color : 'text-gray-400'
+                              isSelected ? format.color : 'text-text-muted'
                             }`} />
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <h4 className={`font-medium ${
-                                  isSelected ? 'text-white' : 'text-gray-300'
+                                  isSelected ? 'text-text-primary' : 'text-text-primary'
                                 }`}>
                                   {format.name}
                                 </h4>
@@ -217,7 +217,7 @@ export const ExportModal = ({
                                   />
                                 )}
                               </div>
-                              <p className="text-sm text-gray-400 mt-1">
+                              <p className="text-sm text-text-muted mt-1">
                                 {format.description}
                               </p>
                             </div>
@@ -234,7 +234,7 @@ export const ExportModal = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                    className="px-4 py-2 text-text-muted hover:text-text-primary transition-colors"
                     disabled={isExporting}
                   >
                     Cancelar
@@ -246,7 +246,7 @@ export const ExportModal = ({
                     whileTap={{ scale: 0.95 }}
                     disabled={isExporting || events.length === 0}
                     className="px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 
-                               text-white rounded-lg transition-colors flex items-center space-x-2"
+                               text-text-primary rounded-lg transition-colors flex items-center space-x-2"
                   >
                     {isExporting ? (
                       <>
@@ -259,7 +259,7 @@ export const ExportModal = ({
                       </>
                     ) : (
                       <>
-                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        <Download className="h-4 w-4" />
                         <span>Exportar</span>
                       </>
                     )}

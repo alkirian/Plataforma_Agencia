@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { getClientById } from '../api/clients';
 import { ScheduleSection } from '../components/schedule/ScheduleSection';
 import { DocumentsSection } from '../components/documents/DocumentsSection';
+import { ContextSourcesSection } from '../components/contextSources/ContextSourcesSection';
+import { ClientFooterInfo } from '../components/client/ClientFooterInfo.jsx';
 
 export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
@@ -11,21 +13,21 @@ export const ClientDetailPage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
 
+  const refreshClient = async () => {
+    try {
+      setLoading(true);
+      const response = await getClientById(clientId);
+      setClient(response.data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true);
-        // Accedemos a la propiedad .data de la respuesta
-        const response = await getClientById(clientId);
-        setClient(response.data);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    run();
+    refreshClient();
   }, [clientId]);
 
   if (loading) return <div className='text-center text-text-muted'>Cargando...</div>;
@@ -33,7 +35,7 @@ export const ClientDetailPage = () => {
   if (!client) return <div>Cliente no encontrado.</div>;
 
   return (
-    <div>
+    <>
       <div className='mb-6'>
         <Link
           to='/dashboard'
@@ -69,15 +71,28 @@ export const ClientDetailPage = () => {
           >
             Documentos
           </button>
+          <button
+            onClick={() => setActiveTab('context-sources')}
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              activeTab === 'context-sources'
+                ? 'bg-surface-strong text-text-primary shadow-halo'
+                : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
+            }`}
+          >
+            Fuentes de Contexto
+          </button>
         </div>
         <div className='card rounded-xl p-4'>
           {activeTab === 'schedule' ? (
             <ScheduleSection clientId={clientId} />
-          ) : (
+          ) : activeTab === 'documents' ? (
             <DocumentsSection clientId={clientId} />
+          ) : (
+            <ContextSourcesSection clientId={clientId} clientName={client.name} />
           )}
         </div>
       </div>
-    </div>
+      <ClientFooterInfo client={client} onClientUpdated={refreshClient} />
+    </>
   );
 };

@@ -20,10 +20,10 @@
 @layer base {
   :root {
     /* App background and gradients */
-    --color-app-bg: #0b0d10;
-    --color-app-gradient-start: #111111;  /* darkest */
-    --color-app-gradient-mid: #0b0b0b;    /* mid dark gray */
-    --color-app-gradient-end: #000000;    /* slightly lighter */
+    --color-app-bg: #131516;
+    --color-app-gradient-start: #1f2124;  /* lighter dark gray */
+    --color-app-gradient-mid: #181818;    /* mid dark gray */
+    --color-app-gradient-end: #232425;    /* deep gray */
     /* Neutral dark gradient background (no blue/violet tint) */
     --gradient-cyber:
       radial-gradient(1500px 600px at 10% 10%, rgba(82, 82, 82, 0.178), transparent 100%),
@@ -31,11 +31,11 @@
   --gradient-glow: linear-gradient(135deg, #262626 0%, #0b0d10 100%);
 
   /* Surfaces and borders (neutral gray, no blue tint) */
-  --color-surface: rgba(23, 23, 23, 0.65);       /* neutral-900 @ 65% */
-  --color-surface-soft: rgba(23, 23, 23, 0.5);   /* neutral-900 @ 50% */
-  --color-surface-strong: rgba(23, 23, 23, 0.85);/* neutral-900 @ 85% */
-  --color-border-subtle: rgba(163, 163, 163, 0.2);  /* neutral-400 @ 20% */
-  --color-border-strong: rgba(163, 163, 163, 0.35); /* neutral-400 @ 35% */
+  --color-surface: rgba(35, 35, 36, 0.65);       /* slightly lighter */
+  --color-surface-soft: rgba(35, 35, 36, 0.5);
+  --color-surface-strong: rgba(27, 27, 28, 0.9);
+  --color-border-subtle: rgba(172, 172, 175, 0.28);
+  --color-border-strong: rgba(200, 200, 203, 0.4);
 
     /* Typography - WCAG 2.1 AA compliant colors */
   --color-text-primary: #F1F5F9; /* High contrast */
@@ -48,6 +48,38 @@
     --color-accent-cyan: #9CA3AF;   /* Gray instead of cyan */
     --color-accent-blue: #9CA3AF;   /* Gray instead of blue */
     --color-accent-violet: #E5E7EB; /* Light gray instead of violet */
+    --color-accent-purple: var(--color-accent-violet);
+  }
+
+  /* Light theme overrides */
+  :root[data-theme="light"],
+  body[data-theme="light"] {
+    /* App background and gradients (light grays) */
+    --color-app-bg: #F5F7FA;
+    --color-app-gradient-start: #FFFFFF;
+    --color-app-gradient-mid: #F8FAFC;
+    --color-app-gradient-end: #EEF2F7;
+    --gradient-cyber:
+      radial-gradient(1200px 500px at 15% 10%, rgba(0, 93, 255, 0.06), transparent 70%),
+      linear-gradient(180deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-mid) 50%, var(--color-app-gradient-end) 100%);
+    --gradient-glow: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+
+    /* Surfaces and borders */
+    --color-surface: rgba(255, 255, 255, 0.85);
+    --color-surface-soft: rgba(255, 255, 255, 0.7);
+    --color-surface-strong: #ffffff;
+    --color-border-subtle: rgba(15, 23, 42, 0.08);
+    --color-border-strong: rgba(15, 23, 42, 0.16);
+
+    /* Typography */
+    --color-text-primary: #0F172A; /* slate-900 */
+    --color-text-muted: #475569;   /* slate-600 */
+    --color-text-secondary: #334155; /* slate-700 */
+
+    /* Accent tokens (blue family) */
+    --color-accent-cyan: #22D3EE;
+    --color-accent-blue: #3B82F6;
+    --color-accent-violet: #60A5FA;
     --color-accent-purple: var(--color-accent-violet);
   }
 
@@ -147,11 +179,11 @@
 
   /* Cards */
   .card-cyber {
-    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
-    backdrop-filter: blur(14px);
+    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface));
+    backdrop-filter: blur(10px);
     border-radius: 1rem;
     border: 1px solid var(--color-border-subtle);
-  box-shadow: var(--tw-shadow, 0 12px 22px -8px rgba(0,0,0,0.6));
+    box-shadow: 0 2px 0 rgba(255,255,255,0.02) inset, 0 14px 28px -12px rgba(0,0,0,0.7);
     position: relative;
     overflow: hidden;
     transition: all 0.3s ease;
@@ -166,8 +198,8 @@
 
   .card-cyber:hover {
     border-color: var(--color-border-strong);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 16px 32px -14px rgba(0,0,0,0.65);
-    transform: scale(1.01);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 18px 36px -14px rgba(0,0,0,0.65);
+    transform: translateY(-1px);
   }
 
   /* Inputs */
@@ -207,6 +239,11 @@
     background: var(--color-surface);
     backdrop-filter: none;
   }
+
+  [data-theme="light"] .header-cyber {
+    background: linear-gradient(to right, rgba(255,255,255,0.85), rgba(255,255,255,0.6));
+    border-bottom-color: var(--color-border-subtle);
+  }
 }
 
 @layer utilities {
@@ -236,9 +273,17 @@
     border-color: var(--color-border-subtle);
   }
 
-  /* Text gradient (always grayscale) */
+  /* Text gradient (grayscale) */
   .text-cyber-gradient {
-    background: linear-gradient(to right, #80cc94, #3a9f5f);
+    background: linear-gradient(to right, #E5E7EB, #9CA3AF);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Brand text gradient: celeste → blanco → azul */
+  .text-brand-gradient {
+    background: linear-gradient(135deg, #5BE7FF 0%, #FFFFFF 40%, #005DFF 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -455,6 +500,15 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Utility to temporarily disable transitions/animations for a container and its children */
+.no-transitions,
+.no-transitions * ,
+.no-animations,
+.no-animations * {
+  transition: none !important;
+  animation: none !important;
 }
 
 @layer components {

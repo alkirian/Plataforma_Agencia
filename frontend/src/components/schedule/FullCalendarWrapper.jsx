@@ -76,12 +76,11 @@ const FullCalendarWrapper = ({
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
-      // Pequeño delay para permitir que la transición CSS termine
-      const timer = setTimeout(() => {
+      // Actualiza inmediatamente en el próximo frame para evitar retrasos
+      requestAnimationFrame(() => {
         calendarApi.updateSize();
         calendarApi.render();
-      }, 600); // Mismo duration que la transición del calendario
-      return () => clearTimeout(timer);
+      });
     }
   }, [isChatOpen]);
 

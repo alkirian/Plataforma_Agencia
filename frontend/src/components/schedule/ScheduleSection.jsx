@@ -14,6 +14,8 @@ import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 import { MiniMonth } from './MiniMonth';
 import { MonthAgenda } from './MonthAgenda';
 import { AIAssistant } from '../ai/AIAssistant';
+import { IdeasAIButton } from '../ideas/IdeasAIButton.jsx';
+import { IdeasModal } from '../ideas/IdeasModal.jsx';
 
 // Estilos
 import '../../styles/fullcalendar-custom.css';
@@ -32,6 +34,7 @@ export const ScheduleSection = ({ clientId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isIdeasOpen, setIsIdeasOpen] = useState(false);
   // Estados para el nuevo popover
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
   const [quickTaskDate, setQuickTaskDate] = useState(null);
@@ -255,7 +258,7 @@ export const ScheduleSection = ({ clientId }) => {
           <p className="text-red-300 text-sm mt-1">{error}</p>
           <button 
             onClick={loadEvents}
-            className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-text-primary rounded-lg transition-colors"
           >
             Reintentar
           </button>
@@ -265,36 +268,26 @@ export const ScheduleSection = ({ clientId }) => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="calendar-container"
-    >
+    <div className="calendar-container">
       {/* Header rediseñado con mejor jerarquía */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="bg-gradient-to-r from-gray-900/90 to-gray-800/80 border border-gray-700/50 rounded-2xl p-6 mb-8 backdrop-blur-sm"
-      >
+      <div className="card-cyber p-6 mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Título y contexto */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full"></div>
+              <div className="w-2 h-8 bg-gradient-to-b from-[color:var(--color-border-strong)] to-[color:var(--color-border-subtle)] rounded-full"></div>
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">
+                <h1 className="text-3xl font-bold text-text-primary tracking-tight">
                   Cronograma de Contenidos
                 </h1>
                 {client && (
                   <div className="flex items-center gap-2 mt-2">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    <p className="text-gray-300 font-medium">
+                    <p className="text-text-primary font-medium">
                       {client.name}
                     </p>
                     <span className="text-gray-500">•</span>
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-text-muted text-sm">
                       {visibleStats.total} eventos visibles
                     </p>
                   </div>
@@ -306,15 +299,15 @@ export const ScheduleSection = ({ clientId }) => {
           {/* Acciones principales */}
           <div className="flex items-center gap-4">
             {/* Quick stats */}
-            <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-gray-800/60 rounded-lg border border-gray-600/30">
+            <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-surface-soft rounded-lg border border-[color:var(--color-border-subtle)]">
               <div className="text-center">
                 <div className="text-lg font-bold text-green-400">{visibleStats.byStatus.publicado || 0}</div>
-                <div className="text-xs text-gray-400">Publicados</div>
+                <div className="text-xs text-text-muted">Publicados</div>
               </div>
               <div className="w-px h-8 bg-gray-600"></div>
               <div className="text-center">
                 <div className="text-lg font-bold text-orange-400">{visibleStats.byStatus.pendiente || 0}</div>
-                <div className="text-xs text-gray-400">Pendientes</div>
+                <div className="text-xs text-text-muted">Pendientes</div>
               </div>
             </div>
             
@@ -323,7 +316,7 @@ export const ScheduleSection = ({ clientId }) => {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleDateClick(getCurrentDate())}
-              className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 overflow-hidden"
+              className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-text-primary font-semibold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               <div className="relative flex items-center gap-2">
@@ -333,9 +326,10 @@ export const ScheduleSection = ({ clientId }) => {
                 <span>Nuevo Evento</span>
               </div>
             </motion.button>
+            <IdeasAIButton onClick={() => setIsIdeasOpen(true)} />
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Estadísticas sutiles y compactas */}
       <motion.div 
@@ -344,69 +338,64 @@ export const ScheduleSection = ({ clientId }) => {
         transition={{ duration: 0.4, delay: 0.15 }}
         className="mb-6"
       >
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-gray-800/30 border border-gray-700/30 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-lg">
           {/* Total */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-700/40 border border-gray-600/30 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg hover:bg-gray-700/50 transition-all duration-200">
             <div className="w-8 h-8 bg-gray-600/40 rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400">Total</p>
-              <p className="text-lg font-bold text-white">{visibleStats.total}</p>
+              <p className="text-xs font-medium text-text-muted">Total</p>
+              <p className="text-lg font-bold text-text-primary">{visibleStats.total}</p>
             </div>
           </div>
 
           {/* Pendientes */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-orange-900/20 border border-orange-700/20 rounded-lg hover:bg-orange-900/30 transition-all duration-200">
-            <div className="w-8 h-8 bg-orange-600/30 rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-soft border border-orange-700/20 rounded-lg hover:bg-orange-900/30 transition-all duration-200">
+            <div className="w-8 h-8 bg-surface-strong rounded-md flex items-center justify-center">
+              <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-xs font-medium text-orange-300/80">Pendientes</p>
-              <p className="text-lg font-bold text-orange-300">{visibleStats.byStatus.pendiente || 0}</p>
+              <p className="text-xs font-medium text-text-muted/80">Pendientes</p>
+              <p className="text-lg font-bold text-text-muted">{visibleStats.byStatus.pendiente || 0}</p>
             </div>
           </div>
 
           {/* Aprobados */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-blue-900/20 border border-blue-700/20 rounded-lg hover:bg-blue-900/30 transition-all duration-200">
-            <div className="w-8 h-8 bg-blue-600/30 rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-soft border border-blue-700/20 rounded-lg hover:bg-blue-900/30 transition-all duration-200">
+            <div className="w-8 h-8 bg-surface-strong rounded-md flex items-center justify-center">
+              <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-xs font-medium text-blue-300/80">Aprobados</p>
-              <p className="text-lg font-bold text-blue-300">{visibleStats.byStatus.aprobado || 0}</p>
+              <p className="text-xs font-medium text-text-muted/80">Aprobados</p>
+              <p className="text-lg font-bold text-text-muted">{visibleStats.byStatus.aprobado || 0}</p>
             </div>
           </div>
 
           {/* Publicados */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-900/20 border border-green-700/20 rounded-lg hover:bg-green-900/30 transition-all duration-200">
-            <div className="w-8 h-8 bg-green-600/30 rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-soft border border-green-700/20 rounded-lg hover:bg-green-900/30 transition-all duration-200">
+            <div className="w-8 h-8 bg-surface-strong rounded-md flex items-center justify-center">
+              <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
-              <p className="text-xs font-medium text-green-300/80">Publicados</p>
-              <p className="text-lg font-bold text-green-300">{visibleStats.byStatus.publicado || 0}</p>
+              <p className="text-xs font-medium text-text-muted/80">Publicados</p>
+              <p className="text-lg font-bold text-text-muted">{visibleStats.byStatus.publicado || 0}</p>
             </div>
           </div>
         </div>
       </motion.div>
       
-      <div className="flex flex-col xl:flex-row gap-6 transition-all duration-300">
+      <div className="flex flex-col xl:flex-row gap-6">
         {/* Izquierda: mini calendario */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="xl:w-80 xl:flex-shrink-0"
-        >
+        <div className="xl:w-80 xl:flex-shrink-0">
           <MiniMonth 
             currentDate={currentDate}
             onNavigate={setCurrentDate}
@@ -419,19 +408,15 @@ export const ScheduleSection = ({ clientId }) => {
             loading={loading}
             onEventClick={handleEventClick}
           />
-        </motion.div>
+        </div>
 
         {/* Centro: calendario principal ampliado */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className={`flex-1 min-w-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        <div
+          className={`flex-1 min-w-0 ${
             isChatOpen ? 'xl:mr-[33.333333%]' : 'xl:mr-0'
           }`}
         >
-          <div className="bg-surface-900/70 
-                          border border-white/10 rounded-xl p-6 shadow-lg">
+          <div className={`bg-surface-900/70 border border-white/10 rounded-xl p-6 shadow-lg ${isChatOpen ? 'no-transitions' : ''}`}>
             <FullCalendarWrapper
               key={`${currentDate.getTime()}-${currentView}-${isChatOpen ? 'chat' : 'full'}`}
               events={events}
@@ -448,7 +433,7 @@ export const ScheduleSection = ({ clientId }) => {
               isChatOpen={isChatOpen}
             />
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Modales */}
@@ -478,65 +463,65 @@ export const ScheduleSection = ({ clientId }) => {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-lg bg-[#1a1a1a] border border-gray-600 rounded-xl p-6 shadow-2xl backdrop-blur-none">
-                  <Dialog.Title className="mb-6 text-2xl font-bold text-white">
+                  <Dialog.Title className="mb-6 text-2xl font-bold text-text-primary">
                     {selectedEvent ? 'Editar Evento' : 'Nuevo Evento'}
                   </Dialog.Title>
                   
                   <form onSubmit={handleFormSubmit} className="space-y-6">
                     <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-300">Título</label>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Título</label>
                       <input 
                         type="text" 
                         value={formData.title} 
                         onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} 
-                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
+                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
                         placeholder="Nombre del evento" 
                         required 
                       />
                     </div>
 
                     <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-300">Copy</label>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Copy</label>
                       <textarea
                         rows={5}
                         maxLength={2000}
                         value={formData.copy}
                         onChange={(e) => setFormData(prev => ({ ...prev, copy: e.target.value }))}
-                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all resize-none min-h-[120px]"
+                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all resize-none min-h-[120px]"
                         placeholder="Texto del post (emojis, hashtags)…"
                       />
-                      <div className="mt-1 text-[11px] text-gray-400">{(formData.copy || '').length}/2000</div>
+                      <div className="mt-1 text-[11px] text-text-muted">{(formData.copy || '').length}/2000</div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-3 block text-sm font-semibold text-gray-300">Fecha</label>
+                        <label className="mb-3 block text-sm font-semibold text-text-primary">Fecha</label>
                         <input 
                           type="date" 
                           value={formData.date} 
                           onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))} 
-                          className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
+                          className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
                           required 
                         />
                       </div>
                       <div>
-                        <label className="mb-3 block text-sm font-semibold text-gray-300">Hora</label>
+                        <label className="mb-3 block text-sm font-semibold text-text-primary">Hora</label>
                         <input 
                           type="time" 
                           value={formData.time} 
                           onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))} 
-                          className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
+                          className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
                           required 
                         />
                       </div>
                     </div>
                     
                     <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-300">Estado</label>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Estado</label>
                       <select 
                         value={formData.status} 
                         onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))} 
-                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
                       >
                         <option value="pendiente">Pendiente</option>
                         <option value="en-diseño">En Diseño</option>
@@ -548,11 +533,11 @@ export const ScheduleSection = ({ clientId }) => {
                     </div>
 
                     <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-300">Canal</label>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Canal</label>
                       <select
                         value={formData.channel}
                         onChange={(e) => setFormData(prev => ({ ...prev, channel: e.target.value }))}
-                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-white focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
                       >
                         <option value="IG">Instagram</option>
                         <option value="FB">Facebook</option>
@@ -569,7 +554,7 @@ export const ScheduleSection = ({ clientId }) => {
                           onClick={handleDeleteEvent}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-red-500/25"
+                          className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-text-primary font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-red-500/25"
                         >
                           Eliminar
                         </motion.button>
@@ -580,7 +565,7 @@ export const ScheduleSection = ({ clientId }) => {
                         onClick={closeModal}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-6 py-2.5 border-2 border-gray-600 rounded-lg text-gray-300 hover:border-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-800/50"
+                        className="px-6 py-2.5 border-2 border-gray-600 rounded-lg text-text-primary hover:border-gray-400 hover:text-text-primary transition-all duration-200 hover:bg-gray-800/50"
                       >
                         Cancelar
                       </motion.button>
@@ -589,7 +574,7 @@ export const ScheduleSection = ({ clientId }) => {
                         type="submit"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-text-primary font-medium rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
                       >
                         {selectedEvent ? 'Actualizar' : 'Crear'} Evento
                       </motion.button>
@@ -603,10 +588,7 @@ export const ScheduleSection = ({ clientId }) => {
       </Transition>
 
       {/* Botón flotante del chat AI */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
+      <button
         onClick={() => setIsChatOpen(!isChatOpen)}
         className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center hover:scale-110 active:scale-95"
         style={{
@@ -628,15 +610,14 @@ export const ScheduleSection = ({ clientId }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         )}
-      </motion.button>
+  </button>
 
       {/* Panel del chat AI */}
-      <motion.div
-        initial={{ x: '100%' }}
-        animate={{ x: isChatOpen ? 0 : '100%' }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-1/3 z-40 bg-surface-strong/95 backdrop-blur-md border-l border-border-subtle shadow-2xl"
+      <div
+        className={`fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-1/3 z-40 bg-surface-strong/95 backdrop-blur-md border-l border-border-subtle shadow-2xl ${isChatOpen ? '' : 'translate-x-full'}`}
         style={{
+          transform: isChatOpen ? 'translateX(0)' : 'translateX(100%)',
+          transitionDuration: '0ms',
           background: 'linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft))',
           borderColor: 'var(--color-border-subtle)',
           backdropFilter: 'blur(16px)'
@@ -695,18 +676,26 @@ export const ScheduleSection = ({ clientId }) => {
             <AIAssistant />
           </div>
         </div>
-      </motion.div>
+  </div>
 
-      {/* Overlay para móvil */}
+      {/* Overlay para móvil (instantáneo) */}
       {isChatOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+        <div
           onClick={() => setIsChatOpen(false)}
           className="fixed inset-0 bg-black/50 z-20 md:hidden"
         />
       )}
+
+      {/* Modal de ideas IA */}
+      <IdeasModal
+        isOpen={isIdeasOpen}
+        onClose={() => setIsIdeasOpen(false)}
+        clientId={clientId}
+        onCreateEvent={async (payload) => {
+          // Use store's createEvent for optimistic UI
+          await createEvent(payload);
+        }}
+      />
 
       {/* QuickTaskPopover - Nuevo sistema de creación de tareas */}
       <QuickTaskPopover
@@ -718,6 +707,6 @@ export const ScheduleSection = ({ clientId }) => {
         onCreateTask={handleCreateQuickTask}
       />
 
-    </motion.div>
+    </div>
   );
 };

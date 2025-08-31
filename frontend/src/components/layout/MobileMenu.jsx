@@ -2,13 +2,13 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { 
-  XMarkIcon, 
-  HomeIcon, 
-  Cog6ToothIcon,
-  UserCircleIcon,
-  BellIcon
-} from '@heroicons/react/24/outline';
-import { CyberButton } from '../ui';
+  X, 
+  Home, 
+  Settings,
+  User,
+  Bell
+} from 'lucide-react';
+import { CyberButton, Avatar } from '../ui';
 
 export const MobileMenu = ({ 
   isOpen, 
@@ -16,7 +16,8 @@ export const MobileMenu = ({
   userEmail, 
   onLogout,
   notifications,
-  onNotificationsClick 
+  onNotificationsClick,
+  profile
 }) => {
   const location = useLocation();
 
@@ -24,16 +25,18 @@ export const MobileMenu = ({
     {
       label: 'Dashboard',
       path: '/dashboard',
-      icon: HomeIcon,
+      icon: Home,
       shortcut: 'Alt+D'
     },
     {
       label: 'Configuración',
       path: '/settings', 
-      icon: Cog6ToothIcon,
+      icon: Settings,
       shortcut: 'Alt+S'
     }
   ];
+
+  const visibleItems = menuItems.filter(item => item.path !== '/settings');
 
   const isActiveRoute = (path) => {
     return location.pathname === path || 
@@ -76,13 +79,13 @@ export const MobileMenu = ({
                   className="p-2 rounded-lg hover:bg-surface-soft transition-colors"
                   aria-label="Cerrar menú"
                 >
-                  <XMarkIcon className="h-6 w-6 text-text-muted" />
+                  <X className="h-6 w-6 text-text-muted" />
                 </button>
               </div>
 
               {/* Navigation */}
               <nav className="flex-1 p-6 space-y-2" role="navigation">
-                {menuItems.map((item) => (
+                {visibleItems.map((item) => (
                   <NavLink
                     key={item.path}
                     to={item.path}
@@ -112,7 +115,7 @@ export const MobileMenu = ({
                   aria-label={`Notificaciones${notifications?.total > 0 ? ` - ${notifications.total} sin leer` : ''}`}
                 >
                   <div className="relative">
-                    <BellIcon className="h-6 w-6" />
+                    <Bell className="h-6 w-6" />
                     {notifications?.total > 0 && (
                       <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                         {notifications.total > 9 ? '9+' : notifications.total}
@@ -129,7 +132,7 @@ export const MobileMenu = ({
               {/* User Section */}
               <div className="p-6 border-t border-[color:var(--color-border-subtle)] space-y-4">
                 <div className="flex items-center space-x-3">
-                  <UserCircleIcon className="h-10 w-10 text-text-muted" />
+                  <Avatar src={profile?.avatar_url} name={userEmail} size={40} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-text-primary truncate">
                       {userEmail}

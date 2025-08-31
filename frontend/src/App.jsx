@@ -1,6 +1,7 @@
 // src/App.jsx
 
 import { useState, useEffect, Suspense, lazy } from 'react';
+import { useTheme } from './hooks/useTheme.js';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient.js';
 import { Onboarding } from '@components/Onboarding.jsx';
@@ -11,6 +12,9 @@ import './App.css';
 const AuthPage = lazy(() =>
   import('@pages/AuthPage.jsx').then(module => ({ default: module.AuthPage }))
 );
+const WelcomePage = lazy(() =>
+  import('@pages/WelcomePage.jsx').then(module => ({ default: module.WelcomePage }))
+);
 const DashboardPage = lazy(() =>
   import('@pages/DashboardPage.jsx').then(module => ({ default: module.DashboardPage }))
 );
@@ -19,6 +23,9 @@ const ClientDetailPage = lazy(() =>
 );
 const SettingsPage = lazy(() =>
   import('@pages/SettingsPage.jsx').then(module => ({ default: module.SettingsPage }))
+);
+const InviteAcceptPage = lazy(() =>
+  import('@pages/InviteAcceptPage.jsx').then(module => ({ default: module.InviteAcceptPage }))
 );
 
 // Componente de loading
@@ -37,11 +44,12 @@ const MainApp = ({ session, profile }) => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    window.location.href = '/welcome';
   };
 
   return (
     <BrowserRouter>
-      <MainLayout userEmail={session.user.email} onLogout={handleLogout}>
+      <MainLayout userEmail={session.user.email} onLogout={handleLogout} profile={profile}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path='/dashboard' element={<DashboardPage />} />
@@ -57,6 +65,8 @@ const MainApp = ({ session, profile }) => {
 
 // Componente Raíz que gestiona el estado de autenticación
 function App() {
+  // Inicializa tema oscuro por defecto
+  useTheme('dark');
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -101,8 +111,32 @@ function App() {
       handleSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    const onProfileRefresh = () => {
+      const current = supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) getProfile(session.user);
+      });
+    };
+    window.addEventListener('profile:refresh', onProfileRefresh);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('profile:refresh', onProfileRefresh);
+    };
   }, []);
+
+  // Public invite route short-circuit to ensure access without auth gating
+  const path = window.location.pathname;
+  if (path.startsWith('/invite/')) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path='/invite/:token' element={<InviteAcceptPage />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    );
+  }
 
   if (loading) {
     return <div className='min-h-screen flex items-center justify-center'>Cargando...</div>;
@@ -110,7 +144,7 @@ function App() {
   if (!session) {
     return (
       <Suspense fallback={<PageLoader />}>
-        <AuthPage />
+        <WelcomePage />
       </Suspense>
     );
   }

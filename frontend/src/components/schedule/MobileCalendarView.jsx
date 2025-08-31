@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ChevronLeftIcon, 
-  ChevronRightIcon, 
-  CalendarIcon,
-  PlusIcon 
-} from '@heroicons/react/24/outline';
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar as CalendarIcon,
+  Plus 
+} from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCalendarSwipe } from '../../hooks/useSwipeGestures';
@@ -64,7 +64,7 @@ export const MobileCalendarView = ({
               className="p-3 rounded-lg bg-surface-soft hover:bg-surface-strong transition-colors touch-target"
               aria-label="Mes anterior"
             >
-              <ChevronLeftIcon className="h-5 w-5 text-text-primary" />
+              <ChevronLeft className="h-5 w-5 text-text-primary" />
             </button>
             
             <h2 className="text-lg font-semibold text-text-primary">
@@ -76,7 +76,7 @@ export const MobileCalendarView = ({
               className="p-3 rounded-lg bg-surface-soft hover:bg-surface-strong transition-colors touch-target"
               aria-label="Mes siguiente"
             >
-              <ChevronRightIcon className="h-5 w-5 text-text-primary" />
+              <ChevronRight className="h-5 w-5 text-text-primary" />
             </button>
           </div>
 
@@ -85,7 +85,7 @@ export const MobileCalendarView = ({
             className="p-3 rounded-lg bg-gradient-to-r from-[var(--color-accent-blue)]/20 to-[var(--color-accent-violet)]/20 border border-[color:var(--color-border-subtle)] touch-target"
             aria-label="Nuevo evento"
           >
-            <PlusIcon className="h-5 w-5 text-text-primary" />
+            <Plus className="h-5 w-5 text-text-primary" />
           </button>
         </div>
       </div>

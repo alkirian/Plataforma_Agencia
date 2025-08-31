@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, FolderIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Home, Folder, Settings } from 'lucide-react';
 
 export const Sidebar = () => {
   const getLinkClasses = ({ isActive }) =>
@@ -15,15 +15,15 @@ export const Sidebar = () => {
   <h1 className='px-4 text-2xl font-bold text-cyber-gradient'>Cadence</h1>
       <nav className='flex-1 space-y-2'>
         <NavLink to='/dashboard' className={getLinkClasses}>
-          <HomeIcon className='h-6 w-6' />
+          <Home className='h-6 w-6' />
           <span>Dashboard</span>
         </NavLink>
         <NavLink to='/dashboard' className={getLinkClasses}>
-          <FolderIcon className='h-6 w-6' />
+          <Folder className='h-6 w-6' />
           <span>Clientes</span>
         </NavLink>
         <NavLink to='/settings' className={getLinkClasses}>
-          <Cog6ToothIcon className='h-6 w-6' />
+          <Settings className='h-6 w-6' />
           <span>Configuración</span>
         </NavLink>
       </nav>

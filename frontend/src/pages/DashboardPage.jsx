@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getClients, createClient } from '../api/clients.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MagnifyingGlassIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import { Search, ArrowUpDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { WelcomeEmptyState } from '../components/dashboard/WelcomeEmptyState.jsx';
 import { ClientCreationModal } from '../components/dashboard/ClientCreationModal.jsx';
@@ -159,7 +159,7 @@ export const DashboardPage = () => {
               aria-expanded={isSortOpen}
               aria-label='Cambiar orden de clientes'
             >
-              <ArrowsUpDownIcon className='h-4 w-4' />
+              <ArrowUpDown className='h-4 w-4' />
               <span className='hidden sm:inline'>Ordenar: {sortBy === 'name' ? 'Nombre' : sortBy === 'date' ? 'Fecha' : 'Industria'}</span>
               <span className='sm:hidden'>Orden</span>
             </button>
@@ -207,8 +207,8 @@ export const DashboardPage = () => {
           animate={{ opacity: 1 }}
           className='text-center py-12'
         >
-          <MagnifyingGlassIcon className='mx-auto h-12 w-12 text-gray-400 mb-4' />
-          <p className='text-gray-400 text-lg mb-2'>No se encontraron clientes</p>
+          <Search className='mx-auto h-12 w-12 text-text-muted mb-4' />
+          <p className='text-text-muted text-lg mb-2'>No se encontraron clientes</p>
           <p className='text-gray-500 text-sm mb-4'>
             Intenta con un término de búsqueda diferente
           </p>
@@ -268,13 +268,13 @@ export const DashboardPage = () => {
                     {statsMap[client.id]?.hasEvents ? (
                         <div className='flex items-center justify-between text-xs'>
                         <div className='flex space-x-3'>
-                          <span className='text-green-400'>
+                          <span className='text-text-primary'>
                             ✓ {statsMap[client.id].stats.completed}
                           </span>
-                          <span className='text-gray-400'>
+                          <span className='text-text-muted'>
                             ⟳ {statsMap[client.id].stats.inProgress}
                           </span>
-                          <span className='text-orange-400'>
+                          <span className='text-text-muted'>
                             ◯ {statsMap[client.id].stats.pending}
                           </span>
                         </div>
@@ -307,3 +307,6 @@ export const DashboardPage = () => {
     </div>
   );
 };
+
+
+

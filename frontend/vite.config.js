@@ -27,7 +27,7 @@ export default defineConfig({
         manualChunks: {
           // Vendor libraries
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['framer-motion', '@headlessui/react', '@heroicons/react'],
+          'vendor-ui': ['framer-motion', '@headlessui/react', 'lucide-react'],
           'vendor-data': ['@tanstack/react-query', '@supabase/supabase-js'],
           'vendor-forms': ['react-hook-form', 'react-hot-toast'],
           'vendor-calendar': ['@fullcalendar/react', '@fullcalendar/core', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/list'],

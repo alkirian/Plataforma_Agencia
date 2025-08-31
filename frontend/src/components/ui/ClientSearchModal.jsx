@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Search, X } from 'lucide-react';
 
 export const ClientSearchModal = ({ isOpen, onClose }) => {
   const [term, setTerm] = React.useState('');
@@ -44,7 +44,7 @@ export const ClientSearchModal = ({ isOpen, onClose }) => {
             className="relative w-full max-w-2xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong shadow-xl no-focus-within"
           >
             <div className="flex items-center gap-3 p-4">
-              <MagnifyingGlassIcon className="h-6 w-6 text-text-muted" />
+              <Search className="h-6 w-6 text-text-muted" />
               <input
                 ref={inputRef}
                 type="text"
@@ -62,7 +62,7 @@ export const ClientSearchModal = ({ isOpen, onClose }) => {
                 className="p-2 rounded-lg text-text-muted hover:text-text-primary border border-transparent hover-surface"
                 aria-label="Cerrar búsqueda"
               >
-                <XMarkIcon className="h-5 w-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
             {term.trim() && (

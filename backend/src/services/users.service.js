@@ -49,7 +49,7 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName 
  * @param {string} profileData.agencyName - El nombre de la nueva agencia.
  * @returns {Promise<object>} Los datos de la nueva agencia.
  */
-export const completeUserProfile = async ({ userId, fullName, agencyName }) => {
+export const completeUserProfile = async ({ userId, fullName, agencyName, role, website }) => {
   // ✅ ASEGÚRATE DE QUE LA LLAMADA INCLUYA 'user_id'
   const { data, error } = await supabase.rpc('create_new_agency_and_admin', {
     user_id: userId, // <-- Esta línea es importante
@@ -61,9 +61,34 @@ export const completeUserProfile = async ({ userId, fullName, agencyName }) => {
     throw new Error(`Error al completar el perfil: ${error.message}`);
   }
 
-  return {
-    agencyId: data,
-  };
+  const agencyId = data;
+
+  // Actualizaciones opcionales: role en profiles, website en agencies (si existe la columna)
+  try {
+    if (role && String(role).trim()) {
+      const { error: roleErr } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', userId);
+      if (roleErr) console.warn('[users.service] No se pudo actualizar role en profiles:', roleErr.message);
+    }
+  } catch (e) {
+    console.warn('[users.service] Excepción actualizando role:', e.message);
+  }
+
+  try {
+    if (website && String(website).trim()) {
+      const { error: siteErr } = await supabase
+        .from('agencies')
+        .update({ website })
+        .eq('id', agencyId);
+      if (siteErr) console.warn('[users.service] No se pudo actualizar website en agencies:', siteErr.message);
+    }
+  } catch (e) {
+    console.warn('[users.service] Excepción actualizando website:', e.message);
+  }
+
+  return { agencyId };
 };
 
 /**

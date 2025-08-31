@@ -1,23 +1,27 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useParams, useLocation } from 'react-router-dom';
 import { 
-  HomeIcon, 
-  Cog6ToothIcon, 
-  UserCircleIcon, 
-  BellIcon,
-  Bars3Icon,
-  MagnifyingGlassIcon
-} from '@heroicons/react/24/outline';
+  Home,
+  Settings,
+  User,
+  Bell,
+  Menu,
+  Search
+} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getMyAgency } from '@api/agencies';;
 import { motion, AnimatePresence } from 'framer-motion';
-import { CyberButton } from '../ui';
+import { CyberButton, Avatar } from '../ui';
 import { ClientSelector } from '../ui/ClientSelector';
 import { NotificationPanel } from '../notifications/NotificationPanel';
 import { useNotifications } from '../../hooks/useNotifications';
 import { Tooltip } from '../ui/Tooltip';
 import { MobileMenu } from './MobileMenu';
+import { Logo } from '../Logo';
 import { ClientSearchModal } from '../ui/ClientSearchModal';
+import { SettingsMenu } from './SettingsMenu';
 
-export const Header = ({ userEmail, onLogout }) => {
+export const Header = ({ userEmail, onLogout, profile }) => {
   const location = useLocation();
   const params = useParams();
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
@@ -52,6 +56,10 @@ export const Header = ({ userEmail, onLogout }) => {
   const navLinkClasses = ({ isActive }) =>
     `icon-btn ${isActive ? 'icon-btn--active' : ''}`;
 
+  // Website de la agencia (para enlace rápido)
+  const { data: agencyResp } = useQuery({ queryKey: ['my-agency'], queryFn: getMyAgency });
+  const website = agencyResp?.data?.website;
+
   return (
     <motion.header
       className='header-cyber sticky top-0 z-50'
@@ -69,7 +77,7 @@ export const Header = ({ userEmail, onLogout }) => {
             className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors"
             aria-label="Abrir menú de navegación"
           >
-            <Bars3Icon className="h-6 w-6" />
+            <Menu className="h-6 w-6" />
           </button>
         </div>
 
@@ -82,23 +90,13 @@ export const Header = ({ userEmail, onLogout }) => {
           <Tooltip content="Ve al inicio">
             <Link 
               to='/dashboard' 
-              className='text-xl sm:text-2xl font-bold text-cyber-gradient'
+              className='flex items-center gap-2'
               aria-label="Ir al dashboard - Cadence"
             >
-              Cadence
+              <Logo size={40} />
+              <span className='text-xl sm:text-2xl font-bold text-brand-gradient'>Cadence</span>
             </Link>
           </Tooltip>
-          <motion.div
-            className='ml-2 w-2 h-2 bg-[var(--color-accent-blue)] rounded-full'
-            animate={{
-              boxShadow: [
-                '0 0 5px rgb(0 246 255 / 0.5)',
-                '0 0 15px rgb(0 246 255 / 0.8)',
-                '0 0 5px rgb(0 246 255 / 0.5)',
-              ],
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
         </motion.div>
 
         {/* Centro: Client Selector (solo en páginas de cliente y desktop) */}
@@ -124,7 +122,7 @@ export const Header = ({ userEmail, onLogout }) => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <MagnifyingGlassIcon className='h-6 w-6' aria-hidden="true" />
+                <Search className='h-6 w-6' aria-hidden="true" />
           </motion.button>
 
           <motion.button
@@ -135,7 +133,7 @@ export const Header = ({ userEmail, onLogout }) => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <BellIcon className='h-6 w-6' aria-hidden="true" />
+              <Bell className='h-6 w-6' aria-hidden="true" />
             {stats.total > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
@@ -167,7 +165,7 @@ export const Header = ({ userEmail, onLogout }) => {
                 title='Dashboard'
                 aria-label="Ir al dashboard"
               >
-                <HomeIcon className='h-5 w-5' aria-hidden="true" />
+                <Home className='h-5 w-5' aria-hidden="true" />
               </NavLink>
             </Tooltip>
 
@@ -180,9 +178,23 @@ export const Header = ({ userEmail, onLogout }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <MagnifyingGlassIcon className='h-5 w-5' aria-hidden="true" />
+                <Search className='h-5 w-5' aria-hidden="true" />
               </motion.button>
             </Tooltip>
+            {website && (
+              <Tooltip content="Abrir sitio de la agencia">
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={navLinkClasses({ isActive: false })}
+                  title="Sitio web de la agencia"
+                  aria-label="Abrir sitio web de la agencia"
+                >
+                  <User className="h-5 w-5" aria-hidden="true" />
+                </a>
+              </Tooltip>
+            )}
             
             {/* Botón de notificaciones - Desktop */}
             <motion.button
@@ -198,7 +210,7 @@ export const Header = ({ userEmail, onLogout }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <BellIcon className='h-5 w-5' aria-hidden="true" />
+              <Bell className='h-5 w-5' aria-hidden="true" />
               {stats.total > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -218,9 +230,9 @@ export const Header = ({ userEmail, onLogout }) => {
                 title='Configuración'
                 aria-label="Ir a configuración"
               >
-                <Cog6ToothIcon className='h-5 w-5' aria-hidden="true" />
               </NavLink>
             </Tooltip>
+            <SettingsMenu userEmail={userEmail} profile={profile} />
           </motion.nav>
 
           {/* Separador Visual con glow */}
@@ -238,10 +250,10 @@ export const Header = ({ userEmail, onLogout }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ duration: 0.2 }}>
-              <UserCircleIcon className='h-7 w-7 text-primary-400' />
+            <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
+              <Avatar src={profile?.avatar_url} name={userEmail} size={28} />
             </motion.div>
-            <span className='hidden lg:inline text-sm font-medium text-text-primary'>{userEmail}</span>
+            <span className='hidden lg:inline text-sm font-medium text-text-primary max-w-[220px] truncate'>{userEmail}</span>
             <Tooltip content="Cerrar sesión y salir de la aplicación">
               <CyberButton
                 variant='ghost'
@@ -278,6 +290,7 @@ export const Header = ({ userEmail, onLogout }) => {
         onLogout={onLogout}
         notifications={stats}
         onNotificationsClick={handleOpenNotifications}
+        profile={profile}
       />
 
   {/* Client Search Modal */}
@@ -285,3 +298,4 @@ export const Header = ({ userEmail, onLogout }) => {
     </motion.header>
   );
 };
+

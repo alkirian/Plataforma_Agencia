@@ -1,30 +1,23 @@
 /* FullCalendar Custom Styles - Dark Grayscale Theme */
 
 :root {
-  /* Neutral grayscale palette */
-  --fc-primary-color: #9CA3AF;            /* gray-400 */
+  /* Alineado con tokens del tema gris */
+  --fc-primary-color: var(--color-text-muted);
   --fc-primary-light: rgba(156, 163, 175, 0.15);
-  --fc-surface: #0c0c0c;                  /* slate-900 */
-  --fc-surface-soft: #111827;             /* gray-900 */
-  --fc-border: rgb(26, 25, 25); /* gray-300/16 */
-  --fc-text: #E5E7EB;                     /* gray-200 */
-  --fc-text-secondary: #9CA3AF;           /* gray-400 */
-  --fc-hover: rgb(40, 38, 49);
-  --fc-bg: #121212;
-  --fc-bg-soft: #171717;
-  --fc-border-strong: rgba(163, 163, 163, .35);
-  --fc-text-muted: #9ca3af;
-  --ev-default: #1f1f1f;
-  --ev-draft: #1a1a1a;
-  --ev-pending: #202020;
-  --ev-approved: #222;
-  --ev-scheduled: #242424;
-  --ev-published: #262626;
-  --ev-blocked: #2b2b2b;
+  --fc-surface: var(--color-surface-strong);
+  --fc-surface-soft: var(--color-surface);
+  --fc-border: var(--color-border-subtle);
+  --fc-border-strong: var(--color-border-strong);
+  --fc-text: var(--color-text-primary);
+  --fc-text-secondary: var(--color-text-muted);
+  --fc-hover: var(--color-surface);
+  --fc-bg: var(--color-surface-strong);
+  --fc-bg-soft: var(--color-surface);
+  --fc-text-muted: var(--color-text-muted);
 }
 
 /* Container */
-.fullcalendar-wrapper { position: relative; }
+.fullcalendar-wrapper { position: relative; contain: layout paint; }
 
 /* Base reset */
 .fc {
@@ -37,12 +30,12 @@
 
 /* Toolbar */
 .fc .fc-toolbar {
-  background: var(--fc-surface);
+  background: var(--fc-surface-soft);
   border: 1px solid var(--fc-border);
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .fc .fc-toolbar-title {
@@ -54,42 +47,42 @@
 
 /* Toolbar buttons */
 .fc .fc-button-primary {
-  background: var(--fc-primary-light);
+  background: var(--fc-surface);
   border: 1px solid var(--fc-border);
-  color: var(--fc-primary-color);
+  color: var(--fc-text);
   border-radius: 8px;
   padding: 6px 12px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   box-shadow: none;
 }
 
 .fc .fc-button-primary:hover,
 .fc .fc-button-primary:focus {
-  background: rgba(34, 35, 37, 0.25);
-  border-color: var(--fc-border);
-  color: #ff3007;
+  background: var(--fc-surface-strong);
+  border-color: var(--fc-border-strong);
+  color: var(--fc-text);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.fc .fc-button-primary:active { background: rgba(156, 163, 175, 0.3); transform: translateY(0); }
-.fc .fc-button-primary.fc-button-active { background: #2c2c2d; color: #F3F4F6; border-color: var(--fc-border); }
+.fc .fc-button-primary:active { background: var(--fc-surface); transform: translateY(0); }
+.fc .fc-button-primary.fc-button-active { background: var(--fc-surface-strong); color: var(--fc-text); border-color: var(--fc-border-strong); }
 .fc .fc-button-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 /* Grid mejorado */
 .fc .fc-scrollgrid { 
-  border: 2px solid var(--fc-border); 
+  border: 1px solid var(--fc-border); 
   border-radius: 16px; 
   overflow: hidden; 
-  background: linear-gradient(135deg, var(--fc-surface), var(--fc-bg-soft));
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, var(--fc-surface-strong), var(--fc-bg-soft));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
 }
 
 /* Headers mejorados */
 .fc .fc-col-header { 
-  background: linear-gradient(135deg, var(--fc-surface-soft), var(--fc-bg)); 
-  border-bottom: 2px solid var(--fc-border-strong); 
+  background: var(--fc-surface-soft); 
+  border-bottom: 1px solid var(--fc-border); 
   backdrop-filter: blur(8px);
 }
 .fc .fc-col-header-cell { 
@@ -98,8 +91,8 @@
   font-size: 0.8rem; 
   text-transform: uppercase; 
   letter-spacing: 0.1em; 
-  color: var(--fc-text);
-  transition: all 0.2s ease;
+  color: var(--fc-text-secondary);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .fc .fc-col-header-cell:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -110,44 +103,34 @@
 .fc .fc-timegrid-col { 
   border-color: var(--fc-border); 
   background: transparent; 
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.15s ease;
   position: relative;
 }
 .fc .fc-daygrid-day:hover { 
-  background: linear-gradient(135deg, var(--fc-hover), rgba(255, 255, 255, 0.02)); 
+  background: var(--fc-surface); 
   transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px var(--fc-border);
 }
 .fc .fc-daygrid-day.fc-day-today { 
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(29, 78, 216, 0.1)); 
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  background: var(--fc-surface); 
+  border: 1px solid var(--fc-border-strong);
+  box-shadow: inset 0 0 0 1px var(--fc-border);
 }
-.fc .fc-daygrid-day.fc-day-today:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(29, 78, 216, 0.15));
-}
+.fc .fc-daygrid-day.fc-day-today:hover { background: var(--fc-surface); }
 
 /* Day numbers mejorados */
 .fc .fc-daygrid-day-number { 
   color: var(--fc-text); 
   font-weight: 700; 
   padding: 10px 12px; 
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
   border-radius: 8px;
   display: inline-block;
   min-width: 32px;
   text-align: center;
 }
-.fc .fc-daygrid-day-number:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-.fc .fc-day-today .fc-daygrid-day-number { 
-  color: #60A5FA; 
-  font-weight: 800; 
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-}
+.fc .fc-daygrid-day-number:hover { background: rgba(255, 255, 255, 0.06); transform: scale(1.05); }
+.fc .fc-day-today .fc-daygrid-day-number { color: var(--fc-text); font-weight: 800; background: transparent; border: 0; }
 .fc .fc-day-other .fc-daygrid-day-number { 
   opacity: 0.3; 
   font-weight: 500;
@@ -156,33 +139,26 @@
 /* Events rediseñados */
 .fc .fc-event { 
   border-radius: 8px; 
-  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border: 1px solid var(--fc-border); 
   padding: 6px 10px; 
   font-size: 12px; 
   font-weight: 600; 
   margin: 2px 1px; 
   cursor: pointer; 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); 
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); 
   animation: eventFadeIn 0.4s ease-out;
   backdrop-filter: blur(4px);
   position: relative;
   overflow: hidden;
+  background: var(--fc-surface);
 }
-.fc .fc-event::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
-}
+.fc .fc-event::before { display: none; }
 .fc .fc-event:hover { 
   transform: translateY(-2px) scale(1.02); 
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); 
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); 
   z-index: 20;
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--fc-border-strong);
 }
 .fc .fc-event:active {
   transform: translateY(-1px) scale(1.01);
@@ -210,22 +186,22 @@
 /* List view */
 .fc .fc-list { background: transparent; border: 1px solid var(--fc-border); border-radius: 12px; }
 .fc .fc-list-event { border-color: var(--fc-border); transition: background 0.15s ease; }
-.fc .fc-list-event:hover { background: var(--fc-hover); }
+.fc .fc-list-event:hover { background: var(--fc-surface); }
 .fc .fc-list-event-title { color: var(--fc-text); }
 .fc .fc-list-event-time { color: var(--fc-text-secondary); }
 .fc .fc-list-day-text { color: var(--fc-text-secondary); font-weight: 600; }
-.fc .fc-list-empty { color: var(--fc-text-secondary); background: var(--fc-surface); padding: 2rem; text-align: center; border-radius: 8px; font-style: italic; }
-.fc .fc-list-day-side { background: var(--fc-surface); border-radius: 8px; padding: 0.5rem; }
+.fc .fc-list-empty { color: var(--fc-text-secondary); background: var(--fc-surface-soft); padding: 2rem; text-align: center; border-radius: 8px; font-style: italic; }
+.fc .fc-list-day-side { background: var(--fc-surface-soft); border-radius: 8px; padding: 0.5rem; }
 .fc .fc-list-event-graphic { background: var(--fc-primary-color); border-radius: 4px; }
 
 /* Popover */
-.fc .fc-popover { background: #646464; border: 1px solid var(--fc-border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: var(--fc-text); }
-.fc .fc-popover-header { background: #111827; border-bottom: 1px solid var(--fc-border); color: var(--fc-text-secondary); font-weight: 600; padding: 8px 12px; }
+.fc .fc-popover { background: var(--fc-surface-strong); border: 1px solid var(--fc-border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: var(--fc-text); }
+.fc .fc-popover-header { background: var(--fc-surface); border-bottom: 1px solid var(--fc-border); color: var(--fc-text-secondary); font-weight: 600; padding: 8px 12px; }
 .fc .fc-popover-body { padding: 8px; }
 
 /* Scrollbars */
 .fc-scroller::-webkit-scrollbar { width: 6px; height: 6px; }
-.fc-scroller::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+.fc-scroller::-webkit-scrollbar-track { background: var(--fc-surface); border-radius: 3px; }
 .fc-scroller::-webkit-scrollbar-thumb { background: #6B7280; border-radius: 3px; }
 .fc-scroller::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
 
@@ -265,7 +241,8 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
-.fc { animation: calendarLoad 0.6s ease-out; }
+ /* Disable calendar load animation to make view switches instant */
+ /* .fc { animation: calendarLoad 0.6s ease-out; } */
 
 /* Efecto shimmer en eventos nuevos */
 .fc .fc-event.event-new::after {

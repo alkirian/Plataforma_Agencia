@@ -1,0 +1,52 @@
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              <div className="relative flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Nuevo Evento</span>
+              </div>
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Estadísticas sutiles y compactas */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="mb-6"
+      >
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-lg">
+          {/* Total */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+            <div className="w-8 h-8 bg-gray-600/40 rounded-md flex items-center justify-center">
+              <svg className="w-4 h-4 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+                leaveFrom="opacity-100 scale-100" 
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-lg bg-[#1a1a1a] border border-gray-600 rounded-xl p-6 shadow-2xl backdrop-blur-none">
+                  <Dialog.Title className="mb-6 text-2xl font-bold text-text-primary">
+                    {selectedEvent ? 'Editar Evento' : 'Nuevo Evento'}
+                  </Dialog.Title>
+                  
+                  <form onSubmit={handleFormSubmit} className="space-y-6">
+                    <div>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Título</label>
+                      <input 
+                        type="text" 
+                        value={formData.title} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} 
+                        className="w-full rounded-lg border-2 border-gray-600 bg-gray-800 px-4 py-3 text-text-primary placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" 
+                        placeholder="Nombre del evento" 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-3 block text-sm font-semibold text-text-primary">Copy</label>
+                      <textarea
+                        rows={5}
+                        maxLength={2000}

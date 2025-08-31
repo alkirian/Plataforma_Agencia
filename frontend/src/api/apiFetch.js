@@ -1,7 +1,7 @@
 // src/api/apiFetch.js
 import { supabase } from '../supabaseClient.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
 /**
  * Ayudante centralizado para realizar peticiones a la API del backend.
@@ -83,4 +83,21 @@ export const apiFetch = async (endpoint, options = {}) => {
   }
 
   return response.json();
+};
+
+/**
+ * Manage active agency ID for API requests
+ */
+const ACTIVE_AGENCY_KEY = 'activeAgencyId';
+
+export const setActiveAgencyIdForAPI = (agencyId) => {
+  if (agencyId) {
+    localStorage.setItem(ACTIVE_AGENCY_KEY, agencyId);
+  } else {
+    localStorage.removeItem(ACTIVE_AGENCY_KEY);
+  }
+};
+
+export const getActiveAgencyIdFromAPI = () => {
+  return localStorage.getItem(ACTIVE_AGENCY_KEY);
 };

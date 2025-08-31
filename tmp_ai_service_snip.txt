@@ -1,0 +1,11 @@
+  const json = await resp.json();
+  const content = json.choices?.[0]?.message?.content || '';
+  return content;
+};
+
+export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext, token }) => {
+  // Validar acceso al cliente vía RLS
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data: client, error: clientErr } = await supabaseAuth
+    .from('clients')
+    .select('id, name, agency_id')

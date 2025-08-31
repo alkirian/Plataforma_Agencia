@@ -4,7 +4,7 @@ import { Breadcrumbs } from './Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
-export const MainLayout = ({ children, userEmail, onLogout }) => {
+export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
   // Activar atajos de teclado globales
   useAppKeyboardShortcuts();
 
@@ -19,14 +19,14 @@ export const MainLayout = ({ children, userEmail, onLogout }) => {
         Saltar a la navegación
       </a>
       
-      <Header userEmail={userEmail} onLogout={onLogout} />
+      <Header userEmail={userEmail} onLogout={onLogout} profile={profile} />
       <Toaster
         position='bottom-right'
         toastOptions={{
           style: {
-      background: 'rgba(15,23,42,0.85)',
-      color: 'var(--color-text-primary)',
-      border: '1px solid var(--color-border-subtle)',
+            background: 'var(--color-surface-strong)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border-subtle)',
           },
         }}
       />

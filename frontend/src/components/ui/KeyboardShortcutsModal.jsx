@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { 
-  XMarkIcon,
-  CommandLineIcon,
-  MagnifyingGlassIcon
-} from '@heroicons/react/24/outline';
+  X,
+  Terminal,
+  Search
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
@@ -83,12 +83,12 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
                   <div className="flex items-center space-x-3">
-                    <CommandLineIcon className="h-6 w-6 text-primary-400" />
+                    <Terminal className="h-6 w-6 text-primary-400" />
                     <div>
-                      <Dialog.Title className="text-xl font-semibold text-white">
+                      <Dialog.Title className="text-xl font-semibold text-text-primary">
                         Atajos de Teclado
                       </Dialog.Title>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className="text-sm text-text-muted mt-1">
                         Usa estos atajos para navegar más rápidamente
                       </p>
                     </div>
@@ -98,24 +98,24 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                     onClick={handleClose}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-surface-soft 
+                    className="rounded-full p-2 text-text-muted hover:text-text-primary hover:bg-surface-soft 
                                transition-colors"
                   >
-                    <XMarkIcon className="h-5 w-5" />
+                    <X className="h-5 w-5" />
                   </motion.button>
                 </div>
 
                 {/* Búsqueda */}
                 <div className="p-6 border-b border-white/10">
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                     <input
                       type="text"
                       placeholder="Buscar atajos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full rounded-lg border border-white/10 bg-surface-soft py-2 pl-10 pr-4 
-                                 text-white placeholder-gray-400 transition-all 
+                                 text-text-primary placeholder-gray-400 transition-all 
                                  focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
@@ -124,8 +124,8 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                 {/* Lista de atajos */}
                 <div className="max-h-96 overflow-y-auto p-6">
                   {categories.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-                      <MagnifyingGlassIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <div className="text-center py-8 text-text-muted">
+                      <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No se encontraron atajos que coincidan con tu búsqueda</p>
                     </div>
                   ) : (
@@ -154,7 +154,7 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                                              bg-surface-soft border border-white/10 hover:bg-surface-strong 
                                              transition-colors"
                                 >
-                                  <span className="text-white text-sm">
+                                  <span className="text-text-primary text-sm">
                                     {shortcut.description}
                                   </span>
                                   
@@ -162,7 +162,7 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                                     {shortcut.shortcut.split(' + ').map((key, keyIndex) => (
                                       <React.Fragment key={keyIndex}>
                                         {keyIndex > 0 && (
-                                          <span className="text-gray-400 text-xs">+</span>
+                                          <span className="text-text-muted text-xs">+</span>
                                         )}
                                         <kbd className="px-2 py-1 bg-gray-700 text-gray-300 rounded 
                                                        text-xs font-mono border border-gray-600 
@@ -185,11 +185,11 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
                 {/* Footer */}
                 <div className="p-6 border-t border-white/10 bg-black/20">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-text-muted">
                       <strong>{allShortcuts.length}</strong> atajos disponibles
                     </div>
                     
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-text-muted">
                       Presiona <kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300">Escape</kbd> para cerrar
                     </div>
                   </div>
@@ -204,3 +204,4 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
 };
 
 export { KeyboardShortcutsModal };
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ChevronRightIcon, HomeIcon } from '@heroicons/react/24/outline';
+import { ChevronRight, Home } from 'lucide-react';
 import { getClientById } from '../../api/clients.js';
 
 // Enhanced breadcrumbs with context-aware labels
@@ -82,7 +82,7 @@ export const Breadcrumbs = () => {
             className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
             aria-label="Ir al dashboard"
           >
-            <HomeIcon className='h-4 w-4' />
+            <Home className='h-4 w-4' />
             <span>Dashboard</span>
           </Link>
         </li>
@@ -90,7 +90,7 @@ export const Breadcrumbs = () => {
         {/* Dynamic breadcrumb items */}
         {crumbs.map((crumb) => (
           <li key={crumb.path} className='flex items-center'>
-            <ChevronRightIcon className='h-4 w-4 text-text-muted/80 mx-1' aria-hidden="true" />
+            <ChevronRight className='h-4 w-4 text-text-muted/80 mx-1' aria-hidden="true" />
             {crumb.isClickable ? (
               <Link 
                 to={crumb.path} 
