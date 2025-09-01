@@ -13,7 +13,13 @@ import {
   FolderOpenIcon,
   DocumentIcon,
   EyeIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
+  DocumentTextIcon,
+  PhotoIcon,
+  FilmIcon,
+  TableCellsIcon,
+  PresentationChartBarIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 
 import DocumentGrid from './DocumentGrid';
@@ -24,6 +30,24 @@ import {
   getCategoryConfig,
   formatFileSize
 } from '../../../utils/documentCategories';
+
+/**
+ * Maps category keys to Heroicons for cleaner visual presentation
+ */
+const getCategoryIcon = (categoryKey) => {
+  const iconMap = {
+    documents: DocumentTextIcon,
+    images: PhotoIcon,
+    videos: FilmIcon,
+    spreadsheets: TableCellsIcon,
+    presentations: PresentationChartBarIcon,
+    archives: ArchiveBoxIcon,
+    others: FolderIcon
+  };
+  
+  const IconComponent = iconMap[categoryKey] || FolderIcon;
+  return <IconComponent className="h-4 w-4" />;
+};
 
 /**
  * DocumentFolder - Main component for visual folder organization
@@ -160,20 +184,20 @@ const DocumentFolder = ({
 
   if (documents.length === 0 && !searchQuery) {
     return (
-      <div className="text-center py-12">
-        <FolderIcon className="h-16 w-16 text-text-muted mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-text-primary mb-2">No documents yet</h3>
-        <p className="text-text-muted">Upload documents to organize them into folders</p>
+      <div className="text-center py-8">
+        <FolderIcon className="h-12 w-12 text-text-muted mx-auto mb-3" />
+        <h3 className="text-base font-medium text-text-primary mb-2">No documents yet</h3>
+        <p className="text-sm text-text-muted">Upload documents to organize them into folders</p>
       </div>
     );
   }
 
   if (searchQuery && overallStats.totalDocuments === 0) {
     return (
-      <div className="text-center py-12">
-        <DocumentIcon className="h-16 w-16 text-text-muted mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-text-primary mb-2">No documents found</h3>
-        <p className="text-text-muted">Try adjusting your search terms</p>
+      <div className="text-center py-8">
+        <DocumentIcon className="h-12 w-12 text-text-muted mx-auto mb-3" />
+        <h3 className="text-base font-medium text-text-primary mb-2">No documents found</h3>
+        <p className="text-sm text-text-muted">Try adjusting your search terms</p>
       </div>
     );
   }
@@ -184,18 +208,18 @@ const DocumentFolder = ({
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-surface-soft rounded-lg border border-border-muted p-4 mb-6"
+        className="bg-surface-soft rounded-lg border border-border-muted/50 p-3 mb-4"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <FolderOpenIcon className="h-5 w-5 text-primary-500" />
-              <h2 className="text-lg font-semibold text-text-primary">
+              <FolderOpenIcon className="h-4 w-4 text-primary-500" />
+              <h2 className="text-base font-medium text-text-primary">
                 Document Folders
               </h2>
             </div>
             
-            <div className="flex items-center space-x-4 text-sm text-text-muted">
+            <div className="flex items-center space-x-3 text-xs text-text-muted">
               <span>
                 {overallStats.totalDocuments} document{overallStats.totalDocuments !== 1 ? 's' : ''}
               </span>
@@ -211,9 +235,9 @@ const DocumentFolder = ({
           <div className="flex items-center space-x-2">
             <motion.button
               onClick={toggleAllFolders}
-              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-surface-muted hover:bg-surface-pressed rounded-md transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="flex items-center space-x-1.5 px-2 py-1 text-xs bg-surface-muted hover:bg-surface-pressed rounded transition-colors"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
               {allExpanded ? (
                 <>
@@ -232,7 +256,7 @@ const DocumentFolder = ({
       </motion.div>
 
       {/* Folder list with staggered animations */}
-      <motion.div className="space-y-4">
+      <motion.div className="space-y-2">
         <AnimatePresence>
           {visibleCategories.map((categoryKey, index) => (
             <DocumentFolderCategory
@@ -334,7 +358,7 @@ const DocumentFolderCategory = React.memo(({
       initial="initial"
       animate="animate"
       exit="exit"
-      className="bg-white rounded-lg border border-border-muted shadow-sm overflow-hidden"
+      className="bg-surface-soft rounded-lg border border-border-muted/50 overflow-hidden"
     >
       {/* Folder Header */}
       <motion.div
@@ -343,12 +367,12 @@ const DocumentFolderCategory = React.memo(({
         whileHover="hover"
         whileTap="tap"
         className={`
-          flex items-center justify-between p-4 cursor-pointer transition-all
+          flex items-center justify-between p-3 cursor-pointer transition-all
           ${hasDocuments 
-            ? 'hover:bg-surface-soft' 
+            ? 'hover:bg-surface-muted/30' 
             : 'opacity-50 cursor-not-allowed'
           }
-          ${categoryConfig.bgColor}
+          bg-surface-muted/10 border-l-2 ${categoryConfig.borderColor}
         `}
         onClick={hasDocuments ? onToggle : undefined}
         onKeyDown={hasDocuments ? onKeyDown : undefined}
@@ -357,31 +381,31 @@ const DocumentFolderCategory = React.memo(({
         aria-expanded={isExpanded}
         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${categoryConfig.label} folder`}
       >
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           {/* Expand/Collapse Icon */}
           <motion.div
             animate={{ rotate: isExpanded ? 90 : 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ duration: 0.15, ease: 'easeInOut' }}
           >
             {hasDocuments ? (
-              <ChevronRightIcon className="h-5 w-5 text-text-muted" />
+              <ChevronRightIcon className="h-3.5 w-3.5 text-text-muted" />
             ) : (
-              <div className="h-5 w-5" />
+              <div className="h-3.5 w-3.5" />
             )}
           </motion.div>
 
           {/* Category Icon */}
-          <div className="text-2xl" role="img" aria-label={categoryConfig.label}>
-            {categoryConfig.icon}
+          <div className="flex items-center" aria-label={categoryConfig.label}>
+            {getCategoryIcon(categoryKey)}
           </div>
 
           {/* Category Info */}
-          <div className="flex items-center space-x-3">
-            <h3 className={`font-medium ${categoryConfig.textColor}`}>
+          <div className="flex items-center space-x-2">
+            <h3 className={`text-sm font-medium ${categoryConfig.textColor}`}>
               {categoryConfig.label}
             </h3>
             
-            <div className="flex items-center space-x-2 text-sm text-text-muted">
+            <div className="flex items-center space-x-1.5 text-xs text-text-muted">
               <span>
                 ({stats?.count || 0})
               </span>
@@ -398,27 +422,27 @@ const DocumentFolderCategory = React.memo(({
         {/* Status indicators */}
         <div className="flex items-center space-x-2">
           {!hasDocuments && !searchQuery && (
-            <span className="text-xs text-text-muted bg-surface-muted px-2 py-1 rounded">
+            <span className="text-xs text-text-muted bg-surface-muted px-1.5 py-0.5 rounded-sm">
               Empty
             </span>
           )}
           
           {searchQuery && !hasDocuments && (
-            <span className="text-xs text-text-muted bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+            <span className="text-xs text-text-muted bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">
               No matches
             </span>
           )}
           
           {hasDocuments && (
             <motion.div
-              className={`w-3 h-3 rounded-full ${
+              className={`w-2 h-2 rounded-full ${
                 isExpanded ? 'bg-green-400' : 'bg-gray-300'
               }`}
               animate={{ 
-                scale: isExpanded ? [1, 1.2, 1] : 1,
+                scale: isExpanded ? [1, 1.1, 1] : 1,
                 backgroundColor: isExpanded ? '#4ade80' : '#d1d5db'
               }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
             />
           )}
         </div>
@@ -434,7 +458,7 @@ const DocumentFolderCategory = React.memo(({
             exit="collapsed"
             className="overflow-hidden"
           >
-            <div className="p-4 pt-0 border-t border-border-muted/50">
+            <div className="p-3 pt-0 border-t border-border-muted/30">
               {/* Document Grid */}
               <DocumentGrid
                 documents={documents}
@@ -454,7 +478,7 @@ const DocumentFolderCategory = React.memo(({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="mt-4 pt-3 border-t border-border-muted/50 text-xs text-text-muted"
+                  className="mt-3 pt-2 border-t border-border-muted/30 text-xs text-text-muted"
                 >
                   <div className="flex items-center justify-between">
                     <span>
@@ -482,15 +506,15 @@ DocumentFolderCategory.displayName = 'DocumentFolderCategory';
  * Loading skeleton for folders
  */
 const FolderSkeleton = () => (
-  <div className="bg-white rounded-lg border border-border-muted shadow-sm">
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center space-x-3">
-        <div className="h-5 w-5 bg-surface-muted rounded animate-pulse" />
-        <div className="h-6 w-6 bg-surface-muted rounded animate-pulse" />
-        <div className="h-5 w-32 bg-surface-muted rounded animate-pulse" />
-        <div className="h-4 w-16 bg-surface-muted rounded animate-pulse" />
+  <div className="bg-surface-soft rounded-lg border border-border-muted/50">
+    <div className="flex items-center justify-between p-3">
+      <div className="flex items-center space-x-2">
+        <div className="h-3.5 w-3.5 bg-surface-muted rounded animate-pulse" />
+        <div className="h-4 w-4 bg-surface-muted rounded animate-pulse" />
+        <div className="h-4 w-24 bg-surface-muted rounded animate-pulse" />
+        <div className="h-3 w-12 bg-surface-muted rounded animate-pulse" />
       </div>
-      <div className="h-3 w-3 bg-surface-muted rounded-full animate-pulse" />
+      <div className="h-2 w-2 bg-surface-muted rounded-full animate-pulse" />
     </div>
   </div>
 );
