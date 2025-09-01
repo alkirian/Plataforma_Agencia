@@ -156,7 +156,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
               placeholder="Search documents..."
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 bg-surface-soft border border-border-muted rounded-lg focus:outline-none focus:border-primary-500 text-text-primary"
+              className="w-full pl-10 pr-4 py-2 bg-surface-soft border border-border-muted/30 rounded-lg focus:outline-none focus:border-primary-500 text-text-primary"
             />
             {searchQuery && (
               <button
@@ -294,7 +294,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-surface-soft border border-border-muted rounded-xl p-4"
+            className="bg-surface-soft border border-border-muted/20 rounded-xl p-4"
           >
             <h3 className="text-lg font-semibold text-text-primary mb-3">Storage Statistics</h3>
             {isLoadingStats ? (
@@ -334,7 +334,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-surface-soft border border-border-muted rounded-xl p-6"
+            className="bg-surface-soft border border-border-muted/20 rounded-xl p-6"
           >
             <UploadZone
               onFilesSelected={handleFilesSelected}
@@ -354,7 +354,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
       )}
 
       {/* Main Content - Document Grid or Folders */}
-      <div className="bg-surface-soft border border-border-muted rounded-xl p-6">
+      <div className="bg-surface-soft border border-border-muted/20 rounded-xl p-6">
         {isLoading ? (
           viewMode === 'folders' ? (
             <DocumentFolder
@@ -426,7 +426,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
 
                 {/* Pagination - Only show for grid/list view */}
                 {pagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-border-muted">
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-border-muted/20">
                     <div className="text-sm text-text-muted">
                       Showing {pagination.offset + 1}-{Math.min(pagination.offset + pagination.limit, pagination.total)} of {pagination.total} documents
                     </div>
@@ -435,7 +435,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
                       <button
                         onClick={() => handlePageChange(pagination.currentPage - 1)}
                         disabled={pagination.currentPage <= 1}
-                        className="px-3 py-2 text-sm bg-surface-strong border border-border-muted rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors"
+                        className="px-3 py-2 text-sm bg-surface-strong border border-border-muted/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors"
                       >
                         Previous
                       </button>
@@ -447,7 +447,7 @@ export const DocumentsSectionV2 = ({ clientId, clientName = 'Cliente' }) => {
                       <button
                         onClick={() => handlePageChange(pagination.currentPage + 1)}
                         disabled={pagination.currentPage >= pagination.totalPages}
-                        className="px-3 py-2 text-sm bg-surface-strong border border-border-muted rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors"
+                        className="px-3 py-2 text-sm bg-surface-strong border border-border-muted/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors"
                       >
                         Next
                       </button>
