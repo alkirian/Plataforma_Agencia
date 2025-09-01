@@ -1,12 +1,27 @@
-// src/components/ai/AIAssistant.jsx
+﻿// src/components/ai/AIAssistant.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { ChatInput } from './ChatInput.jsx';
 import { MessageList } from './MessageList.jsx';
 import { getChatResponse, getChatHistory } from '../../api/ai.js';
-export const AIAssistant = () => {
-  const { id: clientId } = useParams();
+export const AIAssistant = ({ clientId: propClientId }) => {
+  const { id: paramsClientId } = useParams();
+  let clientId = propClientId || paramsClientId;\n  try {\n    if (paramsClientId && paramsClientId !== \"undefined\") {\n      localStorage.setItem(\"ai:lastClientId\", paramsClientId);\n    }\n    if (!clientId || clientId === \"undefined\") {\n      const saved = localStorage.getItem(\"ai:lastClientId\");\n      if (saved) clientId = saved;\n    }\n  } catch (_) {}
+  
+  // Handle missing clientId gracefully
+  if (!clientId || clientId === 'undefined') {
+    return (
+      <div className="flex items-center justify-center h-full bg-[#1a1a1a] rounded-lg">
+        <div className="text-center text-gray-400">
+          <p>No se pudo cargar el asistente</p>
+          <p className="text-sm">ID de cliente no vÃ¡lido</p>
+        </div>
+      </div>
+    );
+  }
+
   const [messages, setMessages] = useState([]);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
@@ -33,14 +48,14 @@ export const AIAssistant = () => {
           setMessages([{
             id: 'initial',
             role: 'assistant',
-            content: '¡Hola! Soy tu asistente de marketing digital. Estoy aquí para ayudarte con estrategias de contenido, análisis de audiencia y optimización de campañas.',
+            content: 'Â¡Hola! Soy tu asistente de marketing digital. Estoy aquÃ­ para ayudarte con estrategias de contenido, anÃ¡lisis de audiencia y optimizaciÃ³n de campaÃ±as.',
           }]);
         }
       } catch (e) {
         setMessages([{
           id: 'initial',
           role: 'assistant',
-          content: '¡Hola! Soy tu asistente de marketing digital. Estoy aquí para ayudarte con estrategias de contenido, análisis de audiencia y optimización de campañas.',
+          content: 'Â¡Hola! Soy tu asistente de marketing digital. Estoy aquÃ­ para ayudarte con estrategias de contenido, anÃ¡lisis de audiencia y optimizaciÃ³n de campaÃ±as.',
         }]);
       }
     };
@@ -57,7 +72,7 @@ export const AIAssistant = () => {
     }
   }, [messages]);
 
-  // Mutación para el chat conversacional
+  // MutaciÃ³n para el chat conversacional
   const chatMutation = useMutation({
     mutationFn: ({ prompt, history }) =>
       getChatResponse(clientId, { userPrompt: prompt, chatHistory: history }),
@@ -132,13 +147,13 @@ export const AIAssistant = () => {
         </div>
       </div>
 
-      {/* Área de mensajes */}
+      {/* Ãrea de mensajes */}
       <div 
         className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent min-h-0" 
         ref={scrollRef} 
         onScroll={handleScroll}
       >
-        {/* Botón cargar más */}
+        {/* BotÃ³n cargar mÃ¡s */}
         {hasMore && (
           <div className="sticky top-0 z-10 px-3 py-2 bg-[#1a1a1a]/95 backdrop-blur-sm border-b border-gray-800/30">
             <button
@@ -177,3 +192,4 @@ export const AIAssistant = () => {
     </div>
   );
 };
+

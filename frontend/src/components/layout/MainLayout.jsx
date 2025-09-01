@@ -4,8 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { AIAssistantDock } from '../ai/AIAssistantDock.jsx';
 
-import { AIAssistantDock } from '../ai/AIAssistantDock.jsx';
-
 export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
   // Activar atajos de teclado globales
   useAppKeyboardShortcuts();

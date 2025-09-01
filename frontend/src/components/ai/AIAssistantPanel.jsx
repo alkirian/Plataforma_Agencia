@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Minus, X, PanelRightOpen, PanelLeftOpen } from 'lucide-react';
 
 const AIAssistant = lazy(() => import('./AIAssistant.jsx').then(m => ({ default: m.AIAssistant })));
@@ -12,6 +12,7 @@ export const AIAssistantPanel = ({ open, minimized, onMinimize, onClose }) => {
   const [docked, setDocked] = useState(false);
   const [edges, setEdges] = useState({ top: 8, bottom: 8 });
   const panelRef = useRef(null);
+  const dragControls = useDragControls();
 
   useEffect(() => {
     try {
@@ -61,6 +62,22 @@ export const AIAssistantPanel = ({ open, minimized, onMinimize, onClose }) => {
     try { localStorage.setItem('ai:panel:mode', docked ? 'docked' : 'float'); } catch (_) {}
   }, [docked]);
 
+  // Close on ESC and click-outside
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const onClick = (e) => {
+      if (!panelRef.current) return;
+      if (!panelRef.current.contains(e.target)) onClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, [open, onClose]);
+
   // Update body dataset to push layout when docked
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -96,8 +113,8 @@ export const AIAssistantPanel = ({ open, minimized, onMinimize, onClose }) => {
             ? { left: 0, right: 0, bottom: 0 }
             : docked
               ? (dockedSide === 'right'
-                  ? { right: 8, top: edges.top, bottom: edges.bottom, width: 380 }
-                  : { left: 8, top: edges.top, bottom: edges.bottom, width: 380 })
+                  ? { right: 0, top: edges.top, bottom: edges.bottom, width: 380 }
+                  : { left: 0, top: edges.top, bottom: edges.bottom, width: 380 })
               : { top: pos.top, left: pos.left, width: 380 }
           }
           initial={{ opacity: 0, scale: 0.98, y: 8 }}
@@ -106,14 +123,28 @@ export const AIAssistantPanel = ({ open, minimized, onMinimize, onClose }) => {
           transition={{ duration: 0.18 }}
         >
           <motion.div
-            className={`rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-strong)] shadow-2xl overflow-hidden ${mobile ? 'h-[70vh] mx-3' : docked ? 'h-full' : 'h-[480px]'}`}
-            drag={!mobile && !minimized && !docked}
+            className={`rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-strong)] shadow-2xl overflow-hidden ${mobile ? (minimized ? 'h-[44px] mx-3' : 'h-[70vh] mx-3') : docked ? (minimized ? 'h-[44px]' : 'h-full') : (minimized ? 'h-[44px]' : 'h-[480px]')}`}
+            drag={!mobile && !docked}
+            dragControls={dragControls}
+            dragListener={false}
             dragMomentum={false}
             onDragStart={() => { if (docked) setDocked(false); }}
             onDragEnd={snapToEdge}
           >
             {/* Header grip */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[color:var(--color-border-subtle)] cursor-move select-none">
+            <div
+              className="flex items-center justify-between px-3 py-2 border-b border-[color:var(--color-border-subtle)] cursor-move select-none"
+              onPointerDown={(e) => {
+                if (mobile) return;
+                if (docked) {
+                  // Undock then start dragging on next tick
+                  setDocked(false);
+                  requestAnimationFrame(() => dragControls.start(e));
+                } else {
+                  dragControls.start(e);
+                }
+              }}
+            >
               <div className="text-sm font-medium">Asistente IA</div>
               <div className="flex items-center gap-1">
                 <button
