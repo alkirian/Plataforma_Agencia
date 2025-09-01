@@ -1,22 +1,24 @@
-import React from 'react';
+﻿import React from 'react';
 import { Header } from './Header';
-import { Breadcrumbs } from '../ui/Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { AIAssistantDock } from '../ai/AIAssistantDock.jsx';
+
+import { AIAssistantDock } from '../ai/AIAssistantDock.jsx';
 
 export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
   // Activar atajos de teclado globales
   useAppKeyboardShortcuts();
 
   return (
-    // El fondo y el texto principal se definen aquí
+    // El fondo y el texto principal se definen aquÃ­
   <div className='min-h-screen bg-app text-text-primary keyboard-nav'>
       {/* Skip links for accessibility */}
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
       <a href="#navigation" className="skip-link">
-        Saltar a la navegación
+        Saltar a la navegaciÃ³n
       </a>
       
       <Header userEmail={userEmail} onLogout={onLogout} profile={profile} />
@@ -30,10 +32,12 @@ export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
           },
         }}
       />
-    <main id="main-content" className='w-full py-8 px-6'>
-        <Breadcrumbs />
+    <main id="main-content" className='app-content w-full py-8 px-6'>
         {children}
       </main>
+
+      <AIAssistantDock />
     </div>
   );
 };
+

@@ -55,6 +55,7 @@
 
 @layer base {
   :root {
+  --ai-dock-width: 380px;
   /* Breadcrumb tokens */
   --breadcrumb-overlap: 10px;
   --breadcrumb-active-gradient: linear-gradient(90deg, #0ea5e9, #7c3aed);
@@ -711,4 +712,10 @@
     background-color: var(--color-surface) !important;
     border-color: var(--color-border-subtle) !important;
   }
+}
+/* Adjust layout when AI panel is docked */
+body[data-ai-dock="right"] .app-content { margin-right: var(--ai-dock-width); }
+body[data-ai-dock="left"] .app-content { margin-left: var(--ai-dock-width); }
+@media (max-width: 768px) {
+  body[data-ai-dock] .app-content { margin-right: 0; margin-left: 0; }
 }
