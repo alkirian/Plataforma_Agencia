@@ -30,6 +30,7 @@
     "bundle:analyze": "vite build --mode analyze",
     "validate:imports": "node scripts/validate-imports.js",
     "validate:imports:fix": "node scripts/validate-imports.js --fix",
+    "cleanup:console-logs": "node scripts/cleanup-console-logs.js",
     "bundle:visualize": "npx vite-bundle-analyzer dist/stats.json",
     "pre-commit": "npm run quality:check && npm run component:check",
     "prepare": "cd .. && husky install frontend/.husky",

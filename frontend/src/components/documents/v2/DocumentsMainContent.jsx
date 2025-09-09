@@ -152,11 +152,7 @@ const FoldersView = ({
   onDocumentAction,
   onPreview,
 }) => (
-  <DocumentErrorBoundary
-    componentName='Document Folder'
-    fallbackType='folder'
-    showDetails={false}
-  >
+  <DocumentErrorBoundary componentName='Document Folder' fallbackType='folder' showDetails={false}>
     <DocumentFolder
       documents={documents}
       viewMode='grid'
@@ -186,11 +182,7 @@ const GridListView = ({
   onPageChange,
 }) => (
   <>
-    <DocumentErrorBoundary
-      componentName='Document Grid'
-      fallbackType='grid'
-      showDetails={false}
-    >
+    <DocumentErrorBoundary componentName='Document Grid' fallbackType='grid' showDetails={false}>
       <DocumentGrid
         documents={documents}
         viewMode={viewMode}
@@ -215,15 +207,11 @@ const PaginationControls = ({ pagination, onPageChange }) => (
   <div className='flex items-center justify-between mt-6 pt-4 border-t border-gray-200/10'>
     <div className='text-sm text-text-muted'>
       Showing {pagination.offset + 1}-
-      {Math.min(pagination.offset + pagination.limit, pagination.total)} of{' '}
-      {pagination.total} documents
+      {Math.min(pagination.offset + pagination.limit, pagination.total)} of {pagination.total}{' '}
+      documents
     </div>
 
-    <DocumentErrorBoundary
-      componentName='Pagination'
-      fallbackType='default'
-      showDetails={false}
-    >
+    <DocumentErrorBoundary componentName='Pagination' fallbackType='default' showDetails={false}>
       <div className='flex items-center space-x-2'>
         <button
           onClick={() => onPageChange(pagination.currentPage - 1)}

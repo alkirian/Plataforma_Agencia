@@ -170,7 +170,7 @@ export const Modal: React.FC<ModalProps> = ({
         >
           {/* Backdrop */}
           <motion.div
-            className='absolute inset-0 bg-gray-900'
+            className='absolute inset-0 bg-[var(--palette-primary-bg)]/80'
             onClick={() => {
               if (closeOnBackdrop) onClose?.()
             }}
@@ -194,14 +194,14 @@ export const Modal: React.FC<ModalProps> = ({
             <div
               ref={contentRef}
               style={{ maxHeight }}
-              className={`flex flex-col border border-gray-700 rounded-2xl shadow-2xl overflow-hidden bg-gray-800`}
+              className={`flex flex-col border border-[var(--palette-secondary-accent)]/30 rounded-2xl shadow-2xl overflow-hidden bg-[var(--palette-secondary-bg)]`}
             >
               {/* Header */}
               {(title || showClose) && (
                 <div className='flex items-start gap-3 px-5 pt-5 pb-4 border-b border-gray-700'>
                   {icon && (
                     <div
-                      className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-gray-700 text-white ${variant !== 'default' ? variantClasses[variant] : ''}`}
+                      className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--palette-primary-bg)] text-[var(--palette-primary-text)] ${variant !== 'default' ? variantClasses[variant] : ''}`}
                     >
                       {icon}
                     </div>
@@ -210,13 +210,16 @@ export const Modal: React.FC<ModalProps> = ({
                     {title && (
                       <h2
                         id='modal-title'
-                        className='text-base font-semibold text-white leading-tight truncate'
+                        className='text-base font-semibold text-[var(--palette-primary-text)] leading-tight truncate'
                       >
                         {title}
                       </h2>
                     )}
                     {description && (
-                      <p id='modal-desc' className='mt-1 text-sm text-text-muted leading-snug'>
+                      <p
+                        id='modal-desc'
+                        className='mt-1 text-sm text-[var(--palette-primary-text)]/70 leading-snug'
+                      >
                         {description}
                       </p>
                     )}
@@ -226,7 +229,7 @@ export const Modal: React.FC<ModalProps> = ({
                       onClick={onClose}
                       variant='ghost'
                       size='sm'
-                      className='p-2 text-gray-400 hover:text-white hover:bg-gray-700'
+                      className='p-2 text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] hover:bg-[var(--palette-primary-bg)]'
                       aria-label='Cerrar'
                       icon={<XMarkIcon className='w-5 h-5' />}
                     />
@@ -235,7 +238,7 @@ export const Modal: React.FC<ModalProps> = ({
               )}
 
               {/* Body */}
-              <div className='px-5 pb-6 pt-2 overflow-y-auto custom-scrollbar text-sm text-text-primary'>
+              <div className='px-5 pb-6 pt-2 overflow-y-auto custom-scrollbar text-sm text-[var(--palette-primary-text)]'>
                 {children}
               </div>
 

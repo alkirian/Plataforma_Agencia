@@ -5,7 +5,7 @@ import {
   upsertClientContacts,
   deleteClientContact,
   updateClientMeta,
-} from '../../api/clients.js'
+} from '../../api/clients.api'
 import { Globe, Linkedin, Instagram, Facebook, Twitter, Youtube, Phone, Music2 } from 'lucide-react'
 
 const IconLink = ({ icon: Icon, label, url }) => {

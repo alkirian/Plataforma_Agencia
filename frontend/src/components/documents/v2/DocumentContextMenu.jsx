@@ -66,21 +66,14 @@ const DocumentContextMenu = ({ x, y, document, onAction, onClose }) => {
         item.divider ? (
           <MenuDivider key={index} />
         ) : (
-          <MenuItem
-            key={index}
-            item={item}
-            document={document}
-            onAction={onAction}
-          />
+          <MenuItem key={index} item={item} document={document} onAction={onAction} />
         )
       )}
     </motion.div>
   )
 }
 
-const MenuDivider = () => (
-  <div className='border-t border-border-muted my-1' />
-)
+const MenuDivider = () => <div className='border-t border-border-muted my-1' />
 
 const MenuItem = ({ item, document, onAction }) => (
   <button

@@ -10,12 +10,11 @@ import FullCalendarWrapper from './calendar/FullCalendarWrapper'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
 
 // Chat embebido antiguo removido: usamos el nuevo dock global
-import { IdeasAIButton } from '@components/ideas/IdeasAIButton'
 import { IdeasModal } from '@components/ideas/IdeasModal'
 
 // Estilos del módulo schedule
 import '../styles'
-import { getClientById } from '@api/clients'
+import { getClientById } from '@api/clients.api'
 
 /**
  * Componente de calendario renovado con FullCalendar

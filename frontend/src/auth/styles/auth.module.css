@@ -1,0 +1,253 @@
+/**
+ * Auth Module Styles
+ * Centralized styling for authentication components
+ */
+
+/* Container Styles */
+.authContainer {
+  @apply flex min-h-screen items-center p-4;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.authOverlay {
+  @apply absolute inset-0 bg-black/40;
+}
+
+.authFormWrapper {
+  @apply relative z-10 ml-8 lg:ml-16;
+}
+
+.authFormCard {
+  @apply w-full max-w-md rounded-xl border border-white/10 bg-surface-strong/95 backdrop-blur-sm p-6 shadow-2xl;
+}
+
+/* Form Header Styles */
+.authHeader {
+  @apply mb-6 text-center;
+}
+
+.authTitle {
+  @apply text-2xl font-bold text-text-primary mb-2;
+}
+
+.authSubtitle {
+  @apply text-text-muted;
+}
+
+/* Form Styles */
+.authForm {
+  @apply space-y-4;
+}
+
+/* Input Styles */
+.inputBase {
+  @apply w-full rounded-md border border-[color:var(--color-border-subtle)] 
+         bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted 
+         focus:border-[color:var(--color-border-strong)] focus:outline-none 
+         focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30
+         transition-colors duration-200;
+}
+
+.inputError {
+  @apply border-red-400 focus:border-red-400 focus:ring-red-400/30;
+}
+
+.inputDisabled {
+  @apply opacity-50 cursor-not-allowed bg-white/5;
+}
+
+/* Button Styles */
+.buttonPrimary {
+  @apply w-full btn-cyber px-4 py-2 font-semibold
+         transition-all duration-200 
+         hover:scale-[1.02] active:scale-[0.98];
+}
+
+.buttonGoogle {
+  @apply w-full rounded-md border border-[color:var(--color-border-subtle)] 
+         bg-white/5 px-4 py-2 font-semibold text-text-primary 
+         transition-all duration-200 
+         hover:bg-white/10 hover:border-[color:var(--color-border-strong)]
+         active:scale-[0.98];
+}
+
+.buttonDisabled {
+  @apply opacity-50 cursor-not-allowed hover:scale-100;
+}
+
+.buttonLoading {
+  @apply cursor-wait;
+}
+
+/* Label and Text Styles */
+.labelText {
+  @apply text-sm text-text-muted;
+}
+
+.errorText {
+  @apply mt-1 text-sm text-red-400;
+}
+
+.successText {
+  @apply mt-1 text-sm text-green-400;
+}
+
+.requiredStar {
+  @apply text-red-400 ml-1;
+}
+
+/* Email Display Styles */
+.emailDisplay {
+  @apply px-3 py-2 bg-white/5 border border-[color:var(--color-border-subtle)] 
+         rounded-md text-text-primary;
+}
+
+.changeEmailButton {
+  @apply text-xs text-[color:var(--color-accent-blue)] 
+         hover:underline focus:outline-none 
+         focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30 
+         rounded px-1;
+}
+
+/* Separator Styles */
+.separatorContainer {
+  @apply relative my-6;
+}
+
+.separatorLine {
+  @apply w-full border-t border-[color:var(--color-border-subtle)];
+}
+
+.separatorText {
+  @apply bg-surface-strong px-3 text-text-muted;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply w-5 h-5 border-2 border-current border-t-transparent 
+         rounded-full animate-spin;
+}
+
+/* Icon Styles */
+.iconSmall {
+  @apply w-5 h-5;
+}
+
+.iconMedium {
+  @apply w-6 h-6;
+}
+
+/* Animation Classes */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.slideOutLeft {
+  animation: slideOutLeft 0.3s ease-in;
+}
+
+.shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(10px);
+  }
+  60% {
+    transform: translateX(-10px);
+  }
+  80% {
+    transform: translateX(10px);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+  .authFormWrapper {
+    @apply ml-4;
+  }
+
+  .authFormCard {
+    @apply p-4;
+  }
+
+  .authTitle {
+    @apply text-xl;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .inputBase {
+    @apply bg-gray-800 border-gray-700 text-gray-100;
+  }
+
+  .emailDisplay {
+    @apply bg-gray-800/50 border-gray-700;
+  }
+}
+
+/* Focus Visible for Accessibility */
+.buttonPrimary:focus-visible,
+.buttonGoogle:focus-visible,
+.changeEmailButton:focus-visible {
+  @apply outline-none ring-2 ring-[color:var(--color-accent-blue)] ring-offset-2 ring-offset-surface-strong;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .inputBase {
+    @apply border-2;
+  }
+
+  .buttonPrimary,
+  .buttonGoogle {
+    @apply border-2;
+  }
+}

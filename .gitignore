@@ -33,3 +33,22 @@ Thumbs.db
 # Archivos de configuración de IDEs
 .idea/
 .vscode/
+
+# Archivos temporales
+tmp_*
+temp_*
+*.tmp
+*.temp
+*_backup/
+.temp/
+*/.temp/
+
+# Scripts temporales (excepto los en frontend/scripts/)
+test-*.js
+cleanup-*.js
+fix-*.js
+
+# Reportes temporales generados por scripts
+*_REPORT.md
+*_ANALYSIS.md
+*_PLAN.md

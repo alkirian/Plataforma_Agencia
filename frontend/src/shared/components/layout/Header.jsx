@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Link, NavLink, useParams, useLocation } from 'react-router-dom'
 import { Home, Settings, User, Bell, Menu, Search } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyAgency } from '@api/agencies'
+import { getMyAgency } from '@api/agencies.api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CyberButton,
@@ -55,7 +55,7 @@ export const Header = ({ userEmail, onLogout, profile }) => {
 
   return (
     <motion.header
-      className='header-cyber sticky top-0 z-50'
+      className='header-cyber sticky top-0 z-50 use-new-palette'
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}

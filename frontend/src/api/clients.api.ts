@@ -109,6 +109,68 @@ export const clientsApi = {
   async getClientActivity(clientId: string, limit = 20): Promise<ApiResponse<any[]>> {
     return apiClient.get<ApiResponse<any[]>>(`/clients/${clientId}/activity?limit=${limit}`)
   },
+
+  /**
+   * Update client metadata (website and social_links)
+   */
+  async updateClientMeta(
+    clientId: string,
+    { website, social_links }: { website?: string; social_links?: Record<string, string> }
+  ): Promise<ApiResponse<Client>> {
+    return apiClient.patch<ApiResponse<Client>>(`/clients/${clientId}`, { website, social_links })
+  },
+
+  /**
+   * Client contacts management
+   */
+  contacts: {
+    /**
+     * List client contacts
+     */
+    async list(clientId: string): Promise<ApiResponse<any[]>> {
+      return apiClient.get<ApiResponse<any[]>>(`/clients/${clientId}/contacts`)
+    },
+
+    /**
+     * Upsert client contacts
+     */
+    async upsert(clientId: string, contacts: any[]): Promise<ApiResponse<any[]>> {
+      return apiClient.post<ApiResponse<any[]>>(`/clients/${clientId}/contacts`, { contacts })
+    },
+
+    /**
+     * Delete client contact
+     */
+    async delete(clientId: string, contactId: string): Promise<ApiResponse<void>> {
+      return apiClient.delete<ApiResponse<void>>(`/clients/${clientId}/contacts/${contactId}`)
+    },
+  },
+
+  /**
+   * Client preferences management
+   */
+  preferences: {
+    /**
+     * Get all client preferences (client_id -> { color })
+     */
+    async getAll(): Promise<ApiResponse<Record<string, any>>> {
+      return apiClient.get<ApiResponse<Record<string, any>>>('/clients/preferences')
+    },
+
+    /**
+     * Set client preference (e.g. color)
+     */
+    async set(clientId: string, preference: any): Promise<ApiResponse<any>> {
+      return apiClient.put<ApiResponse<any>>(`/clients/${clientId}/preferences`, preference)
+    },
+
+    /**
+     * Delete client preference (reset to default)
+     */
+    async delete(clientId: string): Promise<ApiResponse<void>> {
+      return apiClient.delete<ApiResponse<void>>(`/clients/${clientId}/preferences`)
+    },
+  },
 }
 
 // Legacy exports for backward compatibility during migration
@@ -117,3 +179,12 @@ export const getClientById = clientsApi.getClientById
 export const createClient = clientsApi.createClient
 export const updateClient = clientsApi.updateClient
 export const deleteClient = clientsApi.deleteClient
+
+// Additional legacy exports from clients.js
+export const updateClientMeta = clientsApi.updateClientMeta
+export const listClientContacts = clientsApi.contacts.list
+export const upsertClientContacts = clientsApi.contacts.upsert
+export const deleteClientContact = clientsApi.contacts.delete
+export const getClientPreferences = clientsApi.preferences.getAll
+export const setClientPreference = clientsApi.preferences.set
+export const deleteClientPreference = clientsApi.preferences.delete

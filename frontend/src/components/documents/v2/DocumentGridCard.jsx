@@ -88,16 +88,14 @@ const DocumentGridCard = ({
         onAction={onAction}
         getFileIcon={getFileIcon}
       />
-      
+
       <DocumentGridCardInfo
         document={document}
         formatFileSize={formatFileSize}
         formatDate={formatDate}
       />
-      
-      <DocumentGridCardContextButton
-        onContextMenu={onContextMenu}
-      />
+
+      <DocumentGridCardContextButton onContextMenu={onContextMenu} />
     </motion.div>
   )
 }

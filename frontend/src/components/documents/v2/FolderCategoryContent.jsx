@@ -53,10 +53,7 @@ const FolderCategoryContent = ({
             />
 
             {/* Folder Footer with additional info */}
-            <FolderFooter 
-              documents={documents}
-              searchQuery={searchQuery}
-            />
+            <FolderFooter documents={documents} searchQuery={searchQuery} />
           </div>
         </motion.div>
       )}

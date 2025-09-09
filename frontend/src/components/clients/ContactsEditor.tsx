@@ -1,6 +1,6 @@
 import React, { useCallback, type ChangeEvent } from 'react'
-import { Button } from '../ui/Button'
-import type { Contact } from '../../../shared/types'
+import { Button } from '@components/ui/Button'
+import type { Contact } from '@shared/types'
 
 /**
  * ContactsEditor Component

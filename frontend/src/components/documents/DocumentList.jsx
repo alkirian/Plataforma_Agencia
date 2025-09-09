@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   deleteDocument as deleteDocumentApi,
   downloadDocument as downloadDocumentApi,
-} from '../../api/documents.js'
+} from '../../api/documents.api'
 import { DocumentPreview } from './DocumentPreview'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 

@@ -14,3 +14,6 @@ export * from './forms'
 
 // AI components
 export * from './ai'
+
+// Sidebar components
+export * from './sidebar'

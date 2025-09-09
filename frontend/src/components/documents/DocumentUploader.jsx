@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { ArrowUpTrayIcon, DocumentIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { motion, AnimatePresence } from 'framer-motion'
-import { uploadDocument } from '../../api/documents'
+import { uploadDocument } from '../../api/documents.api'
 import { Button } from '@components/ui/Button'
 
 export const DocumentUploader = ({ clientId, onUploaded, onUpload }) => {

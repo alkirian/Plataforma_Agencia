@@ -266,7 +266,10 @@ const TaskPopover = ({
   const handleSubmit = useCallback(
     async data => {
       if (!data.title?.trim()) return
-
+      if ((mode === 'create' || mode === 'ai-generate') && !selectedDate) {
+        // Prevent creating without a valid date
+        return
+      }
       setIsLoading(true)
       try {
         const taskData = {

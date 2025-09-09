@@ -3,7 +3,7 @@
 // Refactored: Component broken down into smaller, focused components
 
 import React, { useState, useCallback } from 'react'
-import { useDocumentsV2 } from '../../hooks/useDocumentsV2.js'
+import { useDocumentsV2 } from '@hooks/useDocumentsV2'
 import DocumentErrorBoundary from './ErrorBoundary.jsx'
 
 // Extracted components for better maintainability
@@ -191,11 +191,7 @@ const DocumentsSectionV2Component = ({ clientId, clientName = 'Cliente' }) => {
       />
 
       {/* Storage Stats Panel */}
-      <DocumentsStatsPanel
-        showStats={showStats}
-        stats={stats}
-        isLoadingStats={isLoadingStats}
-      />
+      <DocumentsStatsPanel showStats={showStats} stats={stats} isLoadingStats={isLoadingStats} />
 
       {/* Upload Zone - Expandable with Error Boundary */}
       <DocumentsUploadSection
@@ -243,4 +239,3 @@ export const DocumentsSectionV2 = props => (
     <DocumentsSectionV2Component {...props} />
   </DocumentErrorBoundary>
 )
-

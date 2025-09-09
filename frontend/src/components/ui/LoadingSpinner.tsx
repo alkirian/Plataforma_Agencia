@@ -27,8 +27,8 @@ const sizeStyles = {
 } as const
 
 const variantStyles = {
-  primary: 'border-[var(--color-accent-blue)] border-t-transparent',
-  secondary: 'border-text-muted border-t-transparent',
+  primary: 'border-[var(--palette-primary-accent)] border-t-transparent',
+  secondary: 'border-[var(--palette-primary-text)]/60 border-t-transparent',
   white: 'border-white border-t-transparent',
   success: 'border-green-500 border-t-transparent',
   danger: 'border-red-500 border-t-transparent',

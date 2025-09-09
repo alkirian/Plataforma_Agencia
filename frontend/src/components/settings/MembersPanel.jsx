@@ -4,7 +4,7 @@ import {
   createInvitations,
   revokeInvitation,
   resendInvitation,
-} from '../../api/invitations.js'
+} from '../../api/invitations.api'
 import { Button } from '../ui'
 
 export const MembersPanel = () => {

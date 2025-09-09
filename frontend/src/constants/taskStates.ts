@@ -1,153 +1,156 @@
-import type {
-  TaskStateConfig,
-  TaskState,
-  StateGroup,
-  TaskStateTransitions,
-} from '../schedule/models/index'
+import type { TaskState } from '@schedule/types'
 
-// Constantes para estados de tareas del cronograma
-export const TASK_STATES: Record<TaskState, TaskStateConfig> = {
-  // 📋 Planeación
-  planificacion: {
+// Canonical domain (internal) uses ASCII/English kebab-case
+// UI labels (Spanish) live here; backend mapping uses ASCII Spanish codes
+
+export interface TaskStateInfo {
+  label: string // Spanish label for UI
+  color: string
+  bg: string
+  externalCode: string // Spanish ASCII code used by backend/api
+}
+
+export const TASK_STATE_INFO: Record<TaskState, TaskStateInfo> = {
+  planned: {
+    label: 'Planificación',
     color: '#8b5cf6',
     bg: 'rgba(139, 92, 246, 0.1)',
-    name: 'Planificación',
-    description: 'Tarea en fase de planificación inicial',
-    icon: '📋',
+    externalCode: 'planificacion',
   },
-  pendiente: {
+  pending: {
+    label: 'Pendiente',
     color: '#f59e0b',
     bg: 'rgba(245, 158, 11, 0.1)',
-    name: 'Pendiente',
-    description: 'Tarea programada, esperando inicio',
-    icon: '⏳',
+    externalCode: 'pendiente',
   },
-
-  // 🚀 Ejecución
-  'en-diseño': {
+  'in-design': {
+    label: 'En Diseño',
     color: '#06b6d4',
     bg: 'rgba(6, 182, 212, 0.1)',
-    name: 'En Diseño',
-    description: 'Tarea en fase de diseño creativo',
-    icon: '🎨',
+    externalCode: 'en-diseno',
   },
-  'en-revision': {
+  'in-review': {
+    label: 'En Revisión',
     color: '#8b5cf6',
     bg: 'rgba(139, 92, 246, 0.1)',
-    name: 'En Revisión',
-    description: 'Tarea completada, esperando revisión',
-    icon: '👀',
+    externalCode: 'en-revision',
   },
-
-  // ✅ Aprobación
-  'esperando-aprobacion': {
+  'waiting-approval': {
+    label: 'Esperando Aprobación',
     color: '#f97316',
     bg: 'rgba(249, 115, 22, 0.1)',
-    name: 'Esperando Aprobación',
-    description: 'Tarea revisada, esperando aprobación del cliente',
-    icon: '⏰',
+    externalCode: 'esperando-aprobacion',
   },
-  aprobado: {
+  approved: {
+    label: 'Aprobado',
     color: '#10b981',
     bg: 'rgba(16, 185, 129, 0.1)',
-    name: 'Aprobado',
-    description: 'Tarea aprobada por el cliente',
-    icon: '✅',
+    externalCode: 'aprobado',
   },
-  'requiere-cambios': {
+  'needs-changes': {
+    label: 'Requiere Cambios',
     color: '#dc2626',
     bg: 'rgba(220, 38, 38, 0.1)',
-    name: 'Requiere Cambios',
-    description: 'Tarea necesita modificaciones',
-    icon: '🔄',
+    externalCode: 'requiere-cambios',
   },
-
-  // 🚀 Finalización
-  'listo-publicar': {
+  'ready-to-publish': {
+    label: 'Listo para Publicar',
     color: '#059669',
     bg: 'rgba(5, 150, 105, 0.1)',
-    name: 'Listo para Publicar',
-    description: 'Tarea lista para publicación',
-    icon: '📤',
+    externalCode: 'listo-publicar',
   },
-  publicado: {
+  published: {
+    label: 'Publicado',
     color: '#047857',
     bg: 'rgba(4, 120, 87, 0.1)',
-    name: 'Publicado',
-    description: 'Tarea publicada exitosamente',
-    icon: '📢',
+    externalCode: 'publicado',
   },
-  completado: {
+  completed: {
+    label: 'Completado',
     color: '#065f46',
     bg: 'rgba(6, 95, 70, 0.1)',
-    name: 'Completado',
-    description: 'Tarea completada totalmente',
-    icon: '🎉',
+    externalCode: 'completado',
   },
-
-  // ⚠️ Estados especiales
-  pausado: {
+  paused: {
+    label: 'Pausado',
     color: '#6b7280',
     bg: 'rgba(107, 114, 128, 0.1)',
-    name: 'Pausado',
-    description: 'Tarea temporalmente pausada',
-    icon: '⏸️',
+    externalCode: 'pausado',
   },
-  cancelado: {
+  cancelled: {
+    label: 'Cancelado',
     color: '#ef4444',
     bg: 'rgba(239, 68, 68, 0.1)',
-    name: 'Cancelado',
-    description: 'Tarea cancelada',
-    icon: '❌',
+    externalCode: 'cancelado',
   },
 }
 
-// Orden de estados para selectores
-export const STATE_ORDER: readonly TaskState[] = [
-  'planificacion',
-  'pendiente',
-  'en-diseño',
-  'en-revision',
-  'esperando-aprobacion',
-  'requiere-cambios',
-  'aprobado',
-  'listo-publicar',
-  'publicado',
-  'completado',
-  'pausado',
-  'cancelado',
-]
+export const TASK_STATE_ORDER: readonly TaskState[] = [
+  'planned',
+  'pending',
+  'in-design',
+  'in-review',
+  'waiting-approval',
+  'approved',
+  'needs-changes',
+  'ready-to-publish',
+  'published',
+  'completed',
+  'paused',
+  'cancelled',
+] as const
 
-// Grupos de estados para organización
-export const STATE_GROUPS: Record<StateGroup, TaskState[]> = {
-  planeacion: ['planificacion', 'pendiente'],
-  ejecucion: ['en-diseño', 'en-revision'],
-  aprobacion: ['esperando-aprobacion', 'aprobado', 'requiere-cambios'],
-  finalizacion: ['listo-publicar', 'publicado', 'completado'],
-  especiales: ['pausado', 'cancelado'],
-}
-
-// Utilidad para obtener estilo de un estado
-export const getStateStyle = (state: TaskState): TaskStateConfig => {
-  return TASK_STATES[state] || TASK_STATES.pendiente
-}
-
-// Utilidad para obtener siguientes estados posibles
-export const getNextStates = (currentState: TaskState): TaskState[] => {
-  const transitions: TaskStateTransitions = {
-    planificacion: ['pendiente', 'cancelado'],
-    pendiente: ['en-diseño', 'pausado', 'cancelado'],
-    'en-diseño': ['en-revision', 'requiere-cambios'],
-    'en-revision': ['esperando-aprobacion', 'requiere-cambios'],
-    'esperando-aprobacion': ['aprobado', 'requiere-cambios'],
-    'requiere-cambios': ['en-diseño'],
-    aprobado: ['listo-publicar'],
-    'listo-publicar': ['publicado'],
-    publicado: ['completado'],
-    pausado: ['en-diseño', 'cancelado'],
-    cancelado: ['planificacion'],
-    completado: [],
+// Mapping helpers for API boundaries
+export const toExternalTaskState = (state: string | undefined | null): string | undefined => {
+  if (!state) return undefined
+  const key = state.toLowerCase() as TaskState
+  if (TASK_STATE_INFO[key]) return TASK_STATE_INFO[key].externalCode
+  // Accept some Spanish legacy inputs
+  const normalized = (state || '').toLowerCase()
+  const legacyMap: Record<string, TaskState> = {
+    planificacion: 'planned',
+    pendiente: 'pending',
+    'en-diseno': 'in-design',
+    'en-diseño': 'in-design',
+    'en-revision': 'in-review',
+    'en-revisión': 'in-review',
+    'esperando-aprobacion': 'waiting-approval',
+    aprobado: 'approved',
+    'requiere-cambios': 'needs-changes',
+    'listo-publicar': 'ready-to-publish',
+    publicado: 'published',
+    completado: 'completed',
+    pausado: 'paused',
+    cancelado: 'cancelled',
   }
-
-  return transitions[currentState] || []
+  const mapped = legacyMap[normalized]
+  return mapped ? TASK_STATE_INFO[mapped].externalCode : undefined
 }
+
+export const fromExternalTaskState = (external: string | undefined | null): TaskState => {
+  const normalized = (external || '').toLowerCase()
+  const reverse = Object.entries(TASK_STATE_INFO).reduce<Record<string, TaskState>>(
+    (acc, [k, v]) => {
+      acc[v.externalCode] = k as TaskState
+      return acc
+    },
+    {}
+  )
+  if (reverse[normalized]) return reverse[normalized]
+  // Accept English inputs as pass-through
+  if ((TASK_STATE_ORDER as readonly string[]).includes(normalized)) return normalized as TaskState
+  return 'pending'
+}
+
+// Priorities (canonical EN, UI labels ES)
+export type Priority = 'low' | 'medium' | 'high' | 'urgent'
+export const PRIORITY_INFO: Record<Priority, { label: string }> = {
+  low: { label: 'Baja' },
+  medium: { label: 'Media' },
+  high: { label: 'Alta' },
+  urgent: { label: 'Urgente' },
+}
+
+// Re-exports suited for schedule module
+export const TASK_STATES = TASK_STATE_INFO // legacy name compatibility
+export type { TaskState }

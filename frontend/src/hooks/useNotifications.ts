@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import toast from 'react-hot-toast'
 
-import { getClients } from '../api/clients'
-import { getSchedule } from '../schedule/services/schedule'
+import { getClients } from '../api/clients.api'
+import { getSchedule } from '@schedule'
 import { supabase } from '../supabaseClient'
 import type {
   TaskReminder,

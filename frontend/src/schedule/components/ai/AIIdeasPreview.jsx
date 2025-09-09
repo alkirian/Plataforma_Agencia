@@ -129,7 +129,6 @@ const AIIdeasPreview = ({
       size='xl'
       actions={modalActions}
     >
-
       {/* Prompt Input */}
       <div className='mb-6 pb-6 border-b border-white/10'>
         <label className='block text-sm font-medium text-gray-300 mb-2'>
@@ -178,9 +177,7 @@ const AIIdeasPreview = ({
         ) : (
           <div className='space-y-3'>
             <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-medium text-white'>
-                Ideas Generadas ({ideas.length})
-              </h3>
+              <h3 className='text-lg font-medium text-white'>Ideas Generadas ({ideas.length})</h3>
               <div className='flex items-center space-x-2 text-sm text-gray-400'>
                 <span>{selectedIdeas.size} seleccionadas</span>
               </div>
@@ -273,7 +270,7 @@ const AIIdeasPreview = ({
               Seleccioná las ideas que querés agregar al calendario
             </div>
           </div>
-          
+
           <div className='flex items-center justify-end space-x-3'>
             <motion.button
               onClick={onClose}

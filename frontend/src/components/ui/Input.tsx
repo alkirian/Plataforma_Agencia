@@ -48,7 +48,7 @@ const InputFieldWrapper: React.FC<{
           htmlFor={id}
           className={cn(
             'block text-sm font-medium',
-            cyber ? 'text-text-primary' : 'text-surface-200',
+            cyber ? 'text-[var(--palette-primary-text)]' : 'text-surface-200',
             required && "after:content-['*'] after:text-red-400 after:ml-1"
           )}
           initial={{ opacity: 0, x: -10 }}
@@ -64,7 +64,7 @@ const InputFieldWrapper: React.FC<{
 
         {/* Cyber theme glow effect */}
         {cyber && (
-          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--color-accent-blue)]/0 via-[var(--color-accent-blue)]/10 to-[var(--color-accent-violet)]/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
+          <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--palette-primary-accent)]/0 via-[var(--palette-primary-accent)]/10 to-[var(--palette-secondary-accent)]/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none' />
         )}
       </div>
 
@@ -84,7 +84,9 @@ const InputFieldWrapper: React.FC<{
       )}
 
       {/* Help text */}
-      {helpText && !hasError && <p className='text-xs text-text-muted'>{helpText}</p>}
+      {helpText && !hasError && (
+        <p className='text-xs text-[var(--palette-primary-text)]/70'>{helpText}</p>
+      )}
     </div>
   )
 }
@@ -148,12 +150,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputClasses = useMemo(() => {
       return cn(
         // Base styles
-        'w-full border transition-all duration-200 placeholder:text-text-muted/60',
-        'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-blue)]/50',
+        'w-full border transition-all duration-200 placeholder:text-[var(--palette-primary-text)]/60',
+        'focus:outline-none focus:ring-2 focus:ring-[var(--palette-primary-accent)]/50',
 
         // Theme-specific styles
         cyber
-          ? 'input-cyber bg-surface-soft/50 border-[color:var(--color-border-subtle)] text-text-primary focus:border-[var(--color-accent-blue)] focus:bg-surface-soft'
+          ? 'input-cyber bg-[var(--palette-secondary-bg)]/50 border-[var(--palette-secondary-accent)]/30 text-[var(--palette-primary-text)] focus:border-[var(--palette-primary-accent)] focus:bg-[var(--palette-secondary-bg)]/70'
           : 'input-modern bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500/20',
 
         // Size styles
@@ -250,12 +252,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const textareaClasses = useMemo(() => {
       return cn(
         // Base styles
-        'w-full border transition-all duration-200 placeholder:text-text-muted/60',
-        'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-blue)]/50',
+        'w-full border transition-all duration-200 placeholder:text-[var(--palette-primary-text)]/60',
+        'focus:outline-none focus:ring-2 focus:ring-[var(--palette-primary-accent)]/50',
 
         // Theme-specific styles
         cyber
-          ? 'input-cyber bg-surface-soft/50 border-[color:var(--color-border-subtle)] text-text-primary focus:border-[var(--color-accent-blue)] focus:bg-surface-soft'
+          ? 'input-cyber bg-[var(--palette-secondary-bg)]/50 border-[var(--palette-secondary-accent)]/30 text-[var(--palette-primary-text)] focus:border-[var(--palette-primary-accent)] focus:bg-[var(--palette-secondary-bg)]/70'
           : 'input-modern bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500/20',
 
         // Size styles (using md as base for textareas)

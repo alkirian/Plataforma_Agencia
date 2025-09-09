@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { Minus, X, PanelRightOpen, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@components/ui'
+import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 const AIAssistant = lazy(() => import('./AIAssistant.jsx').then(m => ({ default: m.AIAssistant })))
 
@@ -326,7 +327,13 @@ export const AIAssistantPanel = ({ open, minimized, onMinimize, onClose }) => {
               <div
                 className={`w-full ${mobile ? 'h-[calc(70vh-44px)]' : docked ? 'h-[calc(100%-44px)]' : 'h-[calc(480px-44px)]'}`}
               >
-                <Suspense fallback={<div className='p-4 text-sm'>Cargando asistente…</div>}>
+                <Suspense
+                  fallback={
+                    <div className='p-4 flex items-center justify-center'>
+                      <LoadingSpinner size='md' variant='primary' label='Cargando asistente…' />
+                    </div>
+                  }
+                >
                   <AIAssistant />
                 </Suspense>
               </div>

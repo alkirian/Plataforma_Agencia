@@ -1,10 +1,7 @@
 // FolderEmptyState.jsx - Empty state components for Document Folder
 import React from 'react'
 import { motion } from 'framer-motion'
-import {
-  FolderIcon,
-  DocumentIcon,
-} from '@heroicons/react/24/outline'
+import { FolderIcon, DocumentIcon } from '@heroicons/react/24/outline'
 
 const FolderEmptyState = ({ searchQuery, documents, overallStats }) => {
   if (documents.length === 0 && !searchQuery) {

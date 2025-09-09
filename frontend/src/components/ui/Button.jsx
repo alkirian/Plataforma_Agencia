@@ -16,14 +16,14 @@ export const Button = ({
 }) => {
   const variants = {
     primary: cyber
-      ? 'btn-cyber bg-gradient-to-r from-[var(--color-accent-blue)]/20 to-[var(--color-accent-violet)]/20 text-text-primary border-[color:var(--color-border-subtle)]'
-      : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/25',
+      ? 'btn-cyber bg-gradient-to-r from-[var(--palette-primary-accent)]/20 to-[var(--palette-secondary-accent)]/20 text-[var(--palette-primary-text)] border-[var(--palette-primary-accent)]/40'
+      : 'bg-gradient-to-r from-[var(--palette-primary-accent)] to-[var(--palette-secondary-accent)] text-white hover:from-[var(--palette-secondary-accent)] hover:to-[var(--palette-hover-state)] shadow-lg shadow-[var(--palette-primary-accent)]/25',
     secondary: cyber
-      ? 'btn-cyber bg-surface-soft text-text-primary border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-strong)]'
-      : 'bg-surface-800 text-surface-100 hover:bg-surface-700 border border-surface-700',
+      ? 'btn-cyber bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] border-[var(--palette-secondary-accent)]/60 hover:border-[var(--palette-primary-accent)]/60'
+      : 'bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] hover:bg-[var(--palette-primary-bg)] border border-[var(--palette-secondary-accent)]/60',
     ghost: cyber
-      ? 'bg-transparent text-text-muted hover:text-text-primary hover:bg-[rgba(96,165,250,0.05)] border border-transparent hover:border-[color:var(--color-border-subtle)]'
-      : 'bg-transparent text-surface-300 hover:bg-surface-800/50 hover:text-surface-100',
+      ? 'bg-transparent text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] hover:bg-[var(--palette-secondary-bg)]/50 border border-transparent hover:border-[var(--palette-secondary-accent)]/40'
+      : 'bg-transparent text-[var(--palette-primary-text)]/70 hover:bg-[var(--palette-secondary-bg)]/50 hover:text-[var(--palette-primary-text)]',
     danger: cyber
       ? 'btn-cyber bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-100 border-red-500/40'
       : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
@@ -53,7 +53,7 @@ export const Button = ({
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       className={cn(
         'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300',
-        'focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/50 focus:ring-offset-2 focus:ring-offset-[color:var(--color-app-bg)]',
+        'focus:outline-none focus:ring-2 focus:ring-[var(--palette-primary-accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--palette-primary-bg)]',
         !cyber && 'btn-modern',
         variants[variant],
         sizes[size],

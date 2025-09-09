@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { Home } from 'lucide-react'
-import { getClientById } from '../../api/clients'
+import { getClientById } from '../../api/clients.api'
 
 // Dark, connected pill breadcrumbs
 // API: items: [{ label, href, icon?, className? }]

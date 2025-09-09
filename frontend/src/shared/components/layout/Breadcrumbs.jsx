@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
-import { getClientById } from '../../api/clients.js'
+import { getClientById } from '../../api/clients.api'
 
 // Enhanced breadcrumbs with context-aware labels
 export const Breadcrumbs = () => {
@@ -81,7 +81,7 @@ export const Breadcrumbs = () => {
         <li className='flex items-center'>
           <Link
             to='/dashboard'
-            className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
+            className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] bg-transparent hover:bg-[var(--palette-secondary-bg)]/50 border border-transparent hover:border-[var(--palette-secondary-accent)]/30 transition-colors'
             aria-label='Ir al dashboard'
           >
             <Home className='h-4 w-4' />
@@ -92,18 +92,21 @@ export const Breadcrumbs = () => {
         {/* Dynamic breadcrumb items */}
         {crumbs.map(crumb => (
           <li key={crumb.path} className='flex items-center'>
-            <ChevronRight className='h-4 w-4 text-text-muted/80 mx-1' aria-hidden='true' />
+            <ChevronRight
+              className='h-4 w-4 text-[var(--palette-primary-text)]/60 mx-1'
+              aria-hidden='true'
+            />
             {crumb.isClickable ? (
               <Link
                 to={crumb.path}
-                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
+                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] bg-transparent hover:bg-[var(--palette-secondary-bg)]/50 border border-transparent hover:border-[var(--palette-secondary-accent)]/30 transition-colors'
                 aria-label={`Ir a ${crumb.label}`}
               >
                 <span className='truncate'>{crumb.label}</span>
               </Link>
             ) : (
               <span
-                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface-soft border border-[color:var(--color-border-subtle)] text-text-primary font-medium'
+                className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[var(--palette-secondary-bg)] border border-[var(--palette-secondary-accent)]/40 text-[var(--palette-primary-text)] font-medium'
                 aria-current='page'
               >
                 <span className='truncate'>{crumb.label}</span>

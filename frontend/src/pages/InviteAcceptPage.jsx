@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import logger from '@shared/utils/logger'
 import toast from 'react-hot-toast'
-import { validateInvitation, acceptInvitation } from '../api/invitations.js'
+import { validateInvitation, acceptInvitation } from '../api/invitations.api'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 import { Button } from '@components/ui/Button'
 

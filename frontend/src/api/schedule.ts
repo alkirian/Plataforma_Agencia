@@ -1,5 +1,5 @@
 // src/api/schedule.ts
-import { apiFetch } from './apiFetch.js'
+import { apiClient } from './api-client'
 import type {
   ScheduleItem,
   CreateScheduleItemPayload,
@@ -9,7 +9,7 @@ import type {
   TaskState,
   Priority,
   SocialChannel,
-} from '../schedule/models'
+} from '@schedule/types'
 
 interface RawSchedulePayload {
   title?: string
@@ -133,7 +133,7 @@ const toArray = (resp: any): ScheduleItem[] => {
  * @returns La lista de ítems del cronograma.
  */
 export const getSchedule = async (clientId: string): Promise<ScheduleItem[]> => {
-  const resp = await apiFetch(`/clients/${clientId}/schedule`)
+  const resp = await apiClient.get(`/clients/${clientId}/schedule`)
   return toArray(resp)
 }
 
@@ -148,10 +148,7 @@ export const createScheduleItem = async (
   itemData: CreateScheduleItemPayload
 ): Promise<ScheduleItem> => {
   const payload = normalizeSchedulePayload(itemData)
-  const resp = await apiFetch(`/clients/${clientId}/schedule`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  const resp = await apiClient.post(`/clients/${clientId}/schedule`, payload)
   return (resp?.data ?? resp) as ScheduleItem
 }
 
@@ -162,7 +159,7 @@ export const createScheduleItem = async (
  * @returns Los datos del ítem.
  */
 export const getScheduleItem = async (clientId: string, itemId: string): Promise<ScheduleItem> => {
-  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}`)
+  const resp = await apiClient.get(`/clients/${clientId}/schedule/${itemId}`)
   return (resp?.data ?? resp) as ScheduleItem
 }
 
@@ -179,10 +176,7 @@ export const updateScheduleItem = async (
   updateData: UpdateScheduleItemPayload
 ): Promise<ScheduleItem> => {
   const payload = normalizeSchedulePayload(updateData)
-  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  })
+  const resp = await apiClient.put(`/clients/${clientId}/schedule/${itemId}`, payload)
   return (resp?.data ?? resp) as ScheduleItem
 }
 
@@ -196,8 +190,6 @@ export const deleteScheduleItem = async (
   clientId: string,
   itemId: string
 ): Promise<{ success: boolean }> => {
-  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}`, {
-    method: 'DELETE',
-  })
+  const resp = await apiClient.delete(`/clients/${clientId}/schedule/${itemId}`)
   return (resp?.data ?? resp ?? { success: true }) as { success: boolean }
 }

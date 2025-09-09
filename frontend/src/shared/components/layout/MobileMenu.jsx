@@ -45,7 +45,7 @@ export const MobileMenu = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className='fixed inset-0 bg-black/60 z-40'
+            className='fixed inset-0 bg-[var(--palette-primary-bg)]/70 z-40'
             onClick={onClose}
           />
 
@@ -55,11 +55,11 @@ export const MobileMenu = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className='fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-surface-strong border-r border-[color:var(--color-border-subtle)] z-50'
+            className='fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-[var(--palette-secondary-bg)] border-r border-[var(--palette-secondary-accent)]/30 z-50'
           >
             <div className='flex flex-col h-full'>
               {/* Header */}
-              <div className='flex items-center justify-between p-6 border-b border-[color:var(--color-border-subtle)]'>
+              <div className='flex items-center justify-between p-6 border-b border-[var(--palette-secondary-accent)]/30'>
                 <Link
                   to='/dashboard'
                   className='text-2xl font-bold text-cyber-gradient'
@@ -69,10 +69,10 @@ export const MobileMenu = ({
                 </Link>
                 <button
                   onClick={onClose}
-                  className='p-2 rounded-lg hover:bg-surface-soft transition-colors'
+                  className='p-2 rounded-lg hover:bg-[var(--palette-primary-bg)] transition-colors'
                   aria-label='Cerrar menú'
                 >
-                  <X className='h-6 w-6 text-text-muted' />
+                  <X className='h-6 w-6 text-[var(--palette-primary-text)]/70' />
                 </button>
               </div>
 
@@ -93,7 +93,9 @@ export const MobileMenu = ({
                     <item.icon className='h-6 w-6' />
                     <div className='flex-1'>
                       <div className='font-medium'>{item.label}</div>
-                      <div className='text-xs text-text-muted mt-0.5'>{item.shortcut}</div>
+                      <div className='text-xs text-[var(--palette-primary-text)]/60 mt-0.5'>
+                        {item.shortcut}
+                      </div>
                     </div>
                   </NavLink>
                 ))}
@@ -104,7 +106,7 @@ export const MobileMenu = ({
                     onNotificationsClick()
                     onClose()
                   }}
-                  className='flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 text-text-muted hover:bg-surface-soft hover:text-text-primary w-full'
+                  className='flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 text-[var(--palette-primary-text)]/70 hover:bg-[var(--palette-primary-bg)] hover:text-[var(--palette-primary-text)] w-full'
                   aria-label={`Notificaciones${notifications?.total > 0 ? ` - ${notifications.total} sin leer` : ''}`}
                 >
                   <div className='relative'>
@@ -117,20 +119,24 @@ export const MobileMenu = ({
                   </div>
                   <div className='flex-1'>
                     <div className='font-medium'>Notificaciones</div>
-                    <div className='text-xs text-text-muted mt-0.5'>Alt+N</div>
+                    <div className='text-xs text-[var(--palette-primary-text)]/60 mt-0.5'>
+                      Alt+N
+                    </div>
                   </div>
                 </button>
               </nav>
 
               {/* User Section */}
-              <div className='p-6 border-t border-[color:var(--color-border-subtle)] space-y-4'>
+              <div className='p-6 border-t border-[var(--palette-secondary-accent)]/30 space-y-4'>
                 <div className='flex items-center space-x-3'>
                   <Avatar src={profile?.avatar_url} name={userEmail} size={40} />
                   <div className='flex-1 min-w-0'>
-                    <div className='text-sm font-medium text-text-primary truncate'>
+                    <div className='text-sm font-medium text-[var(--palette-primary-text)] truncate'>
                       {userEmail}
                     </div>
-                    <div className='text-xs text-text-muted'>Usuario activo</div>
+                    <div className='text-xs text-[var(--palette-primary-text)]/70'>
+                      Usuario activo
+                    </div>
                   </div>
                 </div>
 

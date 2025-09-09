@@ -204,10 +204,7 @@ const DocumentFolder = ({
       </motion.div>
 
       {/* Loading states for individual folders */}
-      <FolderLoadingState 
-        searchQuery={searchQuery}
-        visibleCategories={visibleCategories}
-      />
+      <FolderLoadingState searchQuery={searchQuery} visibleCategories={visibleCategories} />
     </div>
   )
 }
@@ -289,6 +286,5 @@ const DocumentFolderCategory = React.memo(
 )
 
 DocumentFolderCategory.displayName = 'DocumentFolderCategory'
-
 
 export default DocumentFolder

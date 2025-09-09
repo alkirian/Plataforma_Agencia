@@ -5,7 +5,7 @@ import { Menu, X, Calendar, Sparkles } from 'lucide-react'
 import { getCurrentDate } from '@shared/utils/dateHelpers'
 
 // Import schedule components
-import { MonthAgenda } from '../../../schedule/components/calendar/MonthAgenda'
+import { MonthAgenda } from '@schedule/components/calendar/MonthAgenda'
 
 /**
  * Global Schedule Sidebar that overlays the entire application

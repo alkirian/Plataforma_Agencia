@@ -97,7 +97,7 @@ import axios from 'axios'
 
 // 2. Internal aliases (grouped by importance)
 import { SharedComponent } from '@shared/components'
-import { FeatureHook } from '@features/auth'
+import { FeatureHook } from '@auth'
 import { ApiService } from '@api/clients'
 
 // 3. Relative imports
@@ -151,7 +151,7 @@ import { Button } from '@shared/components/ui'
 import { Button, Modal, Input } from '@shared/components/ui'
 
 // Feature Components
-import { AuthForm } from '@features/auth/components'
+import { AuthForm } from '@auth/components'
 import { DocumentList } from '@features/documents/components'
 
 // Layout Components
@@ -165,7 +165,7 @@ import { Header, Sidebar } from '@shared/components/layout'
 import { useTheme, useClickOutside } from '@shared/hooks'
 
 // Feature Hooks
-import { useAuth } from '@features/auth/hooks'
+import { useAuth } from '@auth/hooks'
 import { useDocuments } from '@features/documents/hooks'
 
 // Legacy Hook (during migration)

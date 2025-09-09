@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateIdeas } from '@api/ai'
 import toast from 'react-hot-toast'
+import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 /**
  * Mini componente IA para sugerencias de tareas contextuales
@@ -119,13 +120,11 @@ const TaskIdeasAI = ({ clientId, selectedDate, onSuggestionClick, currentFormDat
           whileHover={!isLoading ? { scale: 1.02 } : {}}
           whileTap={!isLoading ? { scale: 0.98 } : {}}
         >
-          <motion.span
-            className='text-base'
-            animate={isLoading ? { rotate: 360 } : {}}
-            transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
-          >
-            🤖
-          </motion.span>
+          {isLoading ? (
+            <LoadingSpinner size='sm' variant='white' />
+          ) : (
+            <span className='text-base'>🤖</span>
+          )}
           {isLoading ? 'Generando ideas...' : 'Ideas IA'}
         </motion.button>
 

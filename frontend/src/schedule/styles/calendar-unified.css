@@ -310,11 +310,11 @@
   .rbc-calendar {
     overflow: visible !important;
   }
-  
+
   .rbc-month-view {
     overflow: visible !important;
   }
-  
+
   .rbc-month-view .rbc-event {
     display: block !important;
     visibility: visible !important;
@@ -325,22 +325,22 @@
     width: auto !important;
     max-width: none !important;
   }
-  
+
   .rbc-month-view .rbc-row-segment {
     overflow: visible !important;
     position: relative !important;
     display: block !important;
   }
-  
+
   .rbc-month-view .rbc-date-cell {
     overflow: visible !important;
     position: relative !important;
   }
-  
+
   .rbc-month-view .rbc-row {
     overflow: visible !important;
   }
-  
+
   .rbc-month-view .rbc-row-content {
     overflow: visible !important;
     position: relative !important;

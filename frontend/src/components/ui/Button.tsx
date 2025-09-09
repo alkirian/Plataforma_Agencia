@@ -48,14 +48,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variants = {
       primary: cyber
-        ? 'btn-cyber bg-gradient-to-r from-green-600/20 to-green-500/20 text-white border-green-600/40'
-        : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 shadow-lg shadow-green-500/25',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--palette-primary-accent)]/20 to-[var(--palette-secondary-accent)]/20 text-[var(--palette-primary-text)] border-[var(--palette-primary-accent)]/40'
+        : 'bg-gradient-to-r from-[var(--palette-primary-accent)] to-[var(--palette-secondary-accent)] text-white hover:from-[var(--palette-secondary-accent)] hover:to-[var(--palette-hover-state)] shadow-lg shadow-[var(--palette-primary-accent)]/25',
       secondary: cyber
-        ? 'btn-cyber bg-gray-700 text-white border-gray-600 hover:border-gray-500'
-        : 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600',
+        ? 'btn-cyber bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] border-[var(--palette-secondary-accent)]/60 hover:border-[var(--palette-primary-accent)]/60'
+        : 'bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] hover:bg-[var(--palette-primary-bg)] border border-[var(--palette-secondary-accent)]/60',
       ghost: cyber
-        ? 'bg-transparent text-gray-300 hover:text-white hover:bg-gray-700/50 border border-transparent hover:border-gray-600'
-        : 'bg-transparent text-gray-300 hover:bg-gray-700/50 hover:text-white',
+        ? 'bg-transparent text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] hover:bg-[var(--palette-secondary-bg)]/50 border border-transparent hover:border-[var(--palette-secondary-accent)]/40'
+        : 'bg-transparent text-[var(--palette-primary-text)]/70 hover:bg-[var(--palette-secondary-bg)]/50 hover:text-[var(--palette-primary-text)]',
       danger: cyber
         ? 'btn-cyber bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-100 border-red-500/40'
         : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
@@ -66,8 +66,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ? 'btn-cyber bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-100 border-yellow-500/40'
         : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700',
       info: cyber
-        ? 'btn-cyber bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-100 border-blue-500/40'
-        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--palette-cold-alt)]/20 to-[var(--palette-soft-alt)]/20 text-[var(--palette-soft-alt)] border-[var(--palette-cold-alt)]/40'
+        : 'bg-gradient-to-r from-[var(--palette-cold-alt)] to-[var(--palette-soft-alt)] text-white hover:from-[var(--palette-soft-alt)] hover:to-[var(--palette-cold-alt)]',
     } as const
 
     const sizes = {
@@ -96,7 +96,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...motionProps}
         className={cn(
           'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300',
-          'focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/50 focus:ring-offset-2 focus:ring-offset-[color:var(--color-app-bg)]',
+          'focus:outline-none focus:ring-2 focus:ring-[var(--palette-primary-accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--palette-primary-bg)]',
           !cyber && 'btn-modern',
           variants[variant],
           sizes[size],

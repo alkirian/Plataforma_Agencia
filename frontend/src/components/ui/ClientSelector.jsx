@@ -1,6 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getClients, getClientById } from '../../api/clients'
+import { getClients, getClientById } from '../../api/clients.api'
 import { ChevronDown, Users } from 'lucide-react'
 import { SimpleDropdown } from '@shared/components/ui'
 import { ClientSelectionContent } from '@shared/components/layout/ClientSelectionContent'

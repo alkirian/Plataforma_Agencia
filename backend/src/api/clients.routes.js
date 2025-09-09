@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
 import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed, handleDeleteClient } from '../controllers/clients.controller.js';
 import { handleUpdateClientMeta, handleListContacts, handleUpsertContacts, handleDeleteContact, handleGetClientUserPreferences, handleUpsertClientUserPreference, handleDeleteClientUserPreference } from '../controllers/clientsExtra.controller.js';
-import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
+import { getDocumentsForClient as handleGetDocumentsForClient, uploadDocumentLegacy as handleUploadDocument, deleteDocument as handleDeleteDocument } from '../controllers/documents.controller.js';
 import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleIdeaFeedback, handleListIdeas } from '../controllers/ai.controller.js';
 import scheduleRoutes from './schedule.routes.js';
 

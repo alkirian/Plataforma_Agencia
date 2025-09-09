@@ -82,7 +82,6 @@ export const InviteUserModal = ({ isOpen, onClose }) => {
       actions={actions}
       closeOnBackdrop={!submitting}
     >
-
       <div className='space-y-4'>
         <div>
           <label className='block text-sm font-medium text-text-primary mb-2'>Emails</label>

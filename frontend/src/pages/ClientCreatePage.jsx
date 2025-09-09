@@ -11,7 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { ContactsEditor } from '../components/clients/ContactsEditor'
 
-import { getClients, createClient, updateClientMeta, upsertClientContacts } from '../api/clients'
+import {
+  getClients,
+  createClient,
+  updateClientMeta,
+  upsertClientContacts,
+} from '../api/clients.api'
 
 const industries = [
   'Tecnología',

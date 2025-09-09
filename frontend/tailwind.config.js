@@ -8,46 +8,83 @@ export default {
     extend: {
       colors: {
         // Design tokens (mapped to CSS variables for fine-grain tuning)
+        // Updated for Deep Orange Modern Dark Theme
         app: {
-          bg: 'var(--color-app-bg)', // #0B1020 base
+          bg: 'var(--color-app-bg)', // #1D1E22 Dark Slate
           gradientStart: 'var(--color-app-gradient-start)',
+          gradientMid: 'var(--color-app-gradient-mid)', 
           gradientEnd: 'var(--color-app-gradient-end)'
         },
         surface: {
-          DEFAULT: 'var(--color-surface)', // rgba(15,23,42,0.65)
-          soft: 'var(--color-surface-soft)', // rgba(15,23,42,0.5)
-          strong: 'var(--color-surface-strong)' // rgba(15,23,42,0.8)
+          DEFAULT: 'var(--color-surface)', // rgba(57,63,77,0.65) Deep Matte Grey
+          soft: 'var(--color-surface-soft)', // rgba(57,63,77,0.5)
+          strong: 'var(--color-surface-strong)' // rgba(57,63,77,0.9)
         },
         border: {
-          subtle: 'var(--color-border-subtle)',
-          strong: 'var(--color-border-strong)'
+          subtle: 'var(--color-border-subtle)', // rgba(212,212,220,0.12)
+          strong: 'var(--color-border-strong)'  // rgba(212,212,220,0.24)
         },
         text: {
-          primary: 'var(--color-text-primary)', // #E5E7EB
-          muted: 'var(--color-text-muted)', // #94A3B8
+          primary: 'var(--color-text-primary)', // #D4D4DC Silver Fox
+          muted: 'var(--color-text-muted)',     // rgba(212,212,220,0.7)
+          secondary: 'var(--color-text-secondary)' // rgba(212,212,220,0.85)
         },
+        // New palette-specific colors
+        palette: {
+          'primary-bg': 'var(--palette-primary-bg)',        // #1D1E22
+          'secondary-bg': 'var(--palette-secondary-bg)',    // #393F4D  
+          'primary-text': 'var(--palette-primary-text)',    // #D4D4DC
+          'primary-accent': 'var(--palette-primary-accent)', // #FF5A09
+          'secondary-accent': 'var(--palette-secondary-accent)', // #BE4F0C
+          'hover-state': 'var(--palette-hover-state)',      // #EC7F37
+          'cold-alt': 'var(--palette-cold-alt)',           // #00303F
+          'soft-alt': 'var(--palette-soft-alt)'            // #7A9D96
+        },
+        // Updated accent colors using new palette
         accent: {
-          cyan: 'var(--color-accent-cyan)', // #67E8F9
-          blue: 'var(--color-accent-blue)', // #60A5FA
-          violet: 'var(--color-accent-violet)', // #A78BFA
+          primary: 'var(--color-accent-primary-new)',    // #FF5A09 Deep Orange
+          secondary: 'var(--color-accent-secondary-new)', // #BE4F0C Orange Yellow
+          hover: 'var(--color-accent-hover-new)',         // #EC7F37 Light Orange
+          cold: 'var(--color-accent-cold-new)',           // #00303F Cerulean
+          soft: 'var(--color-accent-soft-new)',           // #7A9D96 Mist
+          // Legacy compatibility
+          cyan: 'var(--color-accent-cyan)', 
+          blue: 'var(--color-accent-blue)', 
+          violet: 'var(--color-accent-violet)'
         },
+        // Orange-themed variants
+        orange: {
+          50: '#FFF7ED',
+          100: '#FFEDD5', 
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: 'var(--palette-primary-accent)',    // #FF5A09
+          600: 'var(--palette-secondary-accent)',  // #BE4F0C
+          700: '#C2410C',
+          800: '#9A3412',
+          900: '#7C2D12',
+          950: '#431407'
+        },
+        // Updated brand colors to match orange theme
         brand: {
-          50: '#EEF2FF',
-          100: '#E0E7FF',
-          200: '#C7D2FE',
-          300: '#A5B4FC',
-          400: '#818CF8',
-          500: '#6366F1',
-          600: '#4F46E5',
-          700: '#4338CA',
-          800: '#3730A3',
-          900: '#312E81',
-          950: '#1E1B4B'
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          200: '#FED7AA', 
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: 'var(--palette-primary-accent)',    // #FF5A09 Primary brand
+          600: 'var(--palette-secondary-accent)',  // #BE4F0C Secondary brand
+          700: 'var(--palette-hover-state)',      // #EC7F37 Hover states
+          800: '#9A3412',
+          900: '#7C2D12', 
+          950: '#431407'
         },
-        success: '#16A34A',
-        warning: '#D97706',
-        error: '#DC2626',
-        info: '#0EA5E9',
+        // Status colors integrated with new palette
+        success: 'var(--palette-soft-alt)',     // #7A9D96 Mist for success
+        warning: 'var(--palette-secondary-accent)', // #BE4F0C Orange Yellow for warning  
+        error: '#DC2626',   // Keep red for error
+        info: 'var(--palette-cold-alt)',        // #00303F Cerulean for info
       },
       backdropBlur: {
         xs: '2px',

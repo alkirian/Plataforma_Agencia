@@ -163,7 +163,7 @@ export const Tooltip = ({
         <motion.div
           ref={tooltipRef}
           className={cn(
-            'fixed z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none',
+            'fixed z-50 px-3 py-2 text-sm font-medium text-[var(--palette-primary-text)] bg-[var(--palette-secondary-bg)] rounded-lg shadow-lg pointer-events-none border border-[var(--palette-secondary-accent)]/30',
             maxWidth,
             className
           )}
@@ -178,7 +178,7 @@ export const Tooltip = ({
 
           {/* Arrow */}
           <div
-            className={cn('absolute w-2 h-2 bg-gray-900 rotate-45', {
+            className={cn('absolute w-2 h-2 bg-[var(--palette-secondary-bg)] rotate-45', {
               'bottom-[-4px] left-1/2 transform -translate-x-1/2': side === 'top',
               'top-[-4px] left-1/2 transform -translate-x-1/2': side === 'bottom',
               'right-[-4px] top-1/2 transform -translate-y-1/2': side === 'left',
@@ -211,7 +211,7 @@ export const Tooltip = ({
 export const HelpTooltip = ({ content, children, ...props }) => (
   <Tooltip content={content} side='top' maxWidth='max-w-sm' {...props}>
     {children || (
-      <span className='inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-600 text-white rounded-full cursor-help'>
+      <span className='inline-flex items-center justify-center w-4 h-4 text-xs bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] rounded-full cursor-help'>
         ?
       </span>
     )}
@@ -224,8 +224,11 @@ export const ShortcutTooltip = ({ shortcut, description, children, ...props }) =
     content={
       <div className='space-y-1'>
         <div>{description}</div>
-        <div className='text-xs text-gray-300'>
-          Atajo: <kbd className='px-1 py-0.5 bg-gray-700 rounded text-xs'>{shortcut}</kbd>
+        <div className='text-xs text-[var(--palette-primary-text)]/70'>
+          Atajo:{' '}
+          <kbd className='px-1 py-0.5 bg-[var(--palette-primary-bg)] rounded text-xs'>
+            {shortcut}
+          </kbd>
         </div>
       </div>
     }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getClients, createClient } from '@api/clients.js'
+import { getClients, createClient } from '@api/clients.api'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -22,18 +22,18 @@ import toast from 'react-hot-toast'
 import { WelcomeEmptyState } from './components/WelcomeEmptyState.tsx'
 import { ActivityFeed } from './components/ActivityFeed.tsx'
 import { InviteUserModal } from './components/InviteUserModal.jsx'
-import { useMultipleClientStats } from './hooks/useClientStats.js'
+import { useMultipleClientStats } from './hooks/useClientStats'
 import { ProgressBadge } from '@components/ui/ProgressIndicator.jsx'
 import { LoadingCard, ErrorCard, HelpTooltip } from '@components/ui/index.js'
-import { useUIState } from '@hooks/useUIState.js'
+import { useUIState } from '@hooks/useUIState'
 import {
   deleteClient as deleteClientApi,
   getClientPreferences,
   setClientPreference,
   deleteClientPreference,
-} from '@api/clients.js'
-import { getMyAgency } from '@api/agencies.js'
-import { apiFetch } from '@api/apiFetch.js'
+} from '@api/clients.api'
+import { getMyAgency } from '@api/agencies.api'
+import { apiClient } from '@api/api-client'
 import { Button } from '@components/ui'
 
 export const DashboardPage = () => {
@@ -227,14 +227,11 @@ export const DashboardPage = () => {
 
   const updateClientMutation = useMutation({
     mutationFn: ({ clientId, payload }) =>
-      toast.promise(
-        apiFetch(`/clients/${clientId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
-        {
-          loading: 'Guardando cambios…',
-          success: 'Cambios guardados',
-          error: e => e.message || 'No se pudo guardar',
-        }
-      ),
+      toast.promise(apiClient.patch(`/clients/${clientId}`, payload), {
+        loading: 'Guardando cambios…',
+        success: 'Cambios guardados',
+        error: e => e.message || 'No se pudo guardar',
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clients'] }),
   })
 

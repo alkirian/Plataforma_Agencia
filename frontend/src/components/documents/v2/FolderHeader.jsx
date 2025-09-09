@@ -1,17 +1,9 @@
 // FolderHeader.jsx - Header component for Document Folder system
 import React from 'react'
 import { motion } from 'framer-motion'
-import {
-  FolderOpenIcon,
-  EyeIcon,
-  EyeSlashIcon,
-} from '@heroicons/react/24/outline'
+import { FolderOpenIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 
-const FolderHeader = ({ 
-  overallStats, 
-  allExpanded, 
-  onToggleAllFolders 
-}) => {
+const FolderHeader = ({ overallStats, allExpanded, onToggleAllFolders }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -20,10 +12,7 @@ const FolderHeader = ({
     >
       <div className='flex items-center justify-between'>
         <FolderInfo overallStats={overallStats} />
-        <FolderControls 
-          allExpanded={allExpanded}
-          onToggleAllFolders={onToggleAllFolders}
-        />
+        <FolderControls allExpanded={allExpanded} onToggleAllFolders={onToggleAllFolders} />
       </div>
     </motion.div>
   )

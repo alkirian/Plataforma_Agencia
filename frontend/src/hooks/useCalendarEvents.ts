@@ -4,7 +4,7 @@ import {
   createScheduleItem,
   updateScheduleItem,
   deleteScheduleItem,
-} from '../api/schedule'
+} from '@schedule'
 import { TASK_STATES } from '../constants/taskStates'
 import toast from 'react-hot-toast'
 import type {
@@ -15,7 +15,7 @@ import type {
   EventStatistics,
   UseCalendarEventsReturn,
   TaskState,
-} from '../schedule/models'
+} from '@schedule'
 
 /**
  * Hook personalizado para manejar eventos del calendario con FullCalendar

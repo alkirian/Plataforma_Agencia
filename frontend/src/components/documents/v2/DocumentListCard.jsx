@@ -88,7 +88,7 @@ const DocumentListCard = ({
         formatDate={formatDate}
         formatFileSize={formatFileSize}
       />
-      
+
       <DocumentListCardActions
         isHovered={isHovered}
         onPreview={onPreview}
@@ -153,13 +153,7 @@ const DocumentListCardContent = ({
   </>
 )
 
-const DocumentListCardActions = ({
-  isHovered,
-  onPreview,
-  onAction,
-  onContextMenu,
-  document,
-}) => (
+const DocumentListCardActions = ({ isHovered, onPreview, onAction, onContextMenu, document }) => (
   <div className='flex-shrink-0 flex items-center space-x-1'>
     {isHovered && (
       <>

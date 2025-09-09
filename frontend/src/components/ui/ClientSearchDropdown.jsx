@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import { Search, User, Building, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { getClients } from '@api/clients'
+import { getClients } from '@api/clients.api'
 import { Avatar, Button } from '@shared/components/ui'
+import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 export const ClientSearchDropdown = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -55,7 +56,9 @@ export const ClientSearchDropdown = ({ onClose }) => {
       {/* Results */}
       <div className='max-h-80 overflow-y-auto'>
         {isLoading && (
-          <div className='p-4 text-center text-text-muted text-sm'>Cargando clientes...</div>
+          <div className='p-4 flex items-center justify-center'>
+            <LoadingSpinner size='sm' variant='primary' label='Cargando clientes...' />
+          </div>
         )}
 
         {!isLoading && filteredClients.length === 0 && searchTerm && (

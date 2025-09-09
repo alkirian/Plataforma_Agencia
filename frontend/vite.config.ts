@@ -39,6 +39,7 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared'),
       '@app': path.resolve(__dirname, './src/app'),
       '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
+      '@auth': path.resolve(__dirname, './src/auth'),
       // Legacy aliases (to be deprecated after migration)
       '@components': path.resolve(__dirname, './src/components'),
       '@pages': path.resolve(__dirname, './src/pages'),
@@ -51,7 +52,12 @@ export default defineConfig({
       '@services': path.resolve(__dirname, './src/services'),
       '@stores': path.resolve(__dirname, './src/stores'),
       '@contexts': path.resolve(__dirname, './src/contexts'),
-      '@schedule': path.resolve(__dirname, './src/schedule')
+      '@schedule': path.resolve(__dirname, './src/schedule'),
+      '@constants': path.resolve(__dirname, './src/constants')
+      ,
+      // Back-compat for imports without '@' prefix
+      'api': path.resolve(__dirname, './src/api'),
+      'components': path.resolve(__dirname, './src/components')
     }
   },
   build: {

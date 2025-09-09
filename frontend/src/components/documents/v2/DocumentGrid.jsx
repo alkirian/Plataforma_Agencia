@@ -71,13 +71,7 @@ const DocumentGrid = ({
   }
 
   if (isLoading) {
-    return (
-      <DocumentGridSkeleton 
-        viewMode={viewMode} 
-        count={12} 
-        className={className}
-      />
-    )
+    return <DocumentGridSkeleton viewMode={viewMode} count={12} className={className} />
   }
 
   if (documents.length === 0) {
@@ -103,7 +97,7 @@ const DocumentGrid = ({
       >
         {groupedDocuments.map((group, index) => {
           const CardComponent = viewMode === 'list' ? DocumentListCard : DocumentGridCard
-          
+
           return (
             <DocumentErrorBoundary
               key={group.latest.id}
@@ -149,8 +143,5 @@ const DocumentGrid = ({
     </DocumentErrorBoundary>
   )
 }
-
-
-
 
 export default DocumentGrid

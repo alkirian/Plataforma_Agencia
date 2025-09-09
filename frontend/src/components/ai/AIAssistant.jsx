@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { ChatInput } from './ChatInput.jsx'
 import { MessageList } from './MessageList.jsx'
-import { getChatResponse, getChatHistory } from '@api/ai.js'
+import { getChatResponse, getChatHistory } from '@api/ai.api'
 export const AIAssistant = ({ clientId: propClientId }) => {
   const { id: paramsClientId } = useParams()
   let clientId = propClientId || paramsClientId

@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
-import { apiFetch, setActiveAgencyIdForAPI, getActiveAgencyIdFromAPI } from '../api/apiFetch'
+import { apiFetch, setActiveAgencyIdForAPI, getActiveAgencyIdFromAPI } from '../api/api-client'
 import { getMyAgency } from '../api/agencies'
 import logger from '@shared/utils/logger'
 import toast from 'react-hot-toast'

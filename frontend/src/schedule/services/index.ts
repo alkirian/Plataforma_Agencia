@@ -1,2 +1,8 @@
 // Schedule services
-export * from './schedule'
+export {
+  getSchedule,
+  createScheduleItem,
+  getScheduleItem,
+  updateScheduleItem,
+  deleteScheduleItem,
+} from './schedule'

@@ -8,7 +8,7 @@ export const SettingsMenu = ({ userEmail, profile }) => {
     <AnchorPopover
       trigger={
         <button
-          className='icon-btn p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors'
+          className='icon-btn p-2 rounded-lg text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] hover:bg-[var(--palette-secondary-bg)]/50 transition-colors'
           title='Ajustes rápidos'
           aria-label='Ajustes rápidos'
         >

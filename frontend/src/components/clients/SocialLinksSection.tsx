@@ -1,6 +1,6 @@
 import React, { type ChangeEvent } from 'react'
 import type { UseFormRegister, UseFormSetValue } from 'react-hook-form'
-import type { ClientCreationFormData } from '../../../shared/types'
+import type { ClientCreationFormData } from '@shared/types'
 
 /**
  * SocialLinksSection Component

@@ -3,7 +3,7 @@
  * Provides unified interface for all document operations
  */
 
-import { apiFetch } from '../../api/apiFetch.js'
+import { apiClient } from '../../api/api-client'
 import { supabase } from '../../supabaseClient.js'
 import type {
   DocumentV2,
@@ -62,7 +62,7 @@ export const documentsV1Service: Partial<DocumentsService> = {
         throw new Error('Client ID is required')
       }
 
-      const response = await apiFetch(`${ENDPOINTS.V1.BASE}/${clientId}`)
+      const response = await apiClient.get(`${ENDPOINTS.V1.BASE}/${clientId}`)
 
       if (!response?.success) {
         throw new Error(response?.message || 'Error loading documents')
@@ -110,13 +110,12 @@ export const documentsV1Service: Partial<DocumentsService> = {
 
       const results = await Promise.all(
         files.map(async ({ file }) => {
-          const response = await apiFetch(ENDPOINTS.V1.UPLOAD(clientId), {
-            method: 'POST',
-            body: (() => {
-              const formData = new FormData()
-              formData.append('file', file)
-              return formData
-            })(),
+          const formData = new FormData()
+          formData.append('file', file)
+          const response = await apiClient.post(ENDPOINTS.V1.UPLOAD(clientId), formData, {
+            headers: {
+              'Content-Type': undefined,
+            } as any,
           })
 
           if (!response?.success) {
@@ -184,7 +183,7 @@ export const documentsV2Service: DocumentsService = {
         ...(params.dateTo && { dateTo: params.dateTo }),
       })
 
-      const response = await apiFetch(`${ENDPOINTS.V2.BASE}?${searchParams}`)
+      const response = await apiClient.get(`${ENDPOINTS.V2.BASE}?${searchParams}`)
 
       if (!response?.success) {
         throw new Error(response?.message || 'Error loading documents')
@@ -281,10 +280,7 @@ export const documentsV2Service: DocumentsService = {
 
   async updateDocument(id: string | number, updates: DocumentUpdatePayload): Promise<DocumentV2> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.DELETE(id), {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      })
+      const response = await apiClient.patch(ENDPOINTS.V2.DELETE(id), updates)
 
       if (!response?.success) {
         throw new Error(response?.message || 'Update failed')
@@ -298,9 +294,7 @@ export const documentsV2Service: DocumentsService = {
 
   async deleteDocument(id: string | number): Promise<void> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.DELETE(id), {
-        method: 'DELETE',
-      })
+      const response = await apiClient.delete(ENDPOINTS.V2.DELETE(id))
 
       if (!response?.success) {
         throw new Error(response?.message || 'Delete failed')
@@ -312,9 +306,7 @@ export const documentsV2Service: DocumentsService = {
 
   async togglePin(id: string | number): Promise<DocumentV2> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.PIN(id), {
-        method: 'PATCH',
-      })
+      const response = await apiClient.patch(ENDPOINTS.V2.PIN(id))
 
       if (!response?.success) {
         throw new Error(response?.message || 'Pin toggle failed')
@@ -328,9 +320,7 @@ export const documentsV2Service: DocumentsService = {
 
   async restoreDocument(id: string | number): Promise<DocumentV2> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.RESTORE(id), {
-        method: 'PATCH',
-      })
+      const response = await apiClient.patch(ENDPOINTS.V2.RESTORE(id))
 
       if (!response?.success) {
         throw new Error(response?.message || 'Restore failed')
@@ -348,7 +338,7 @@ export const documentsV2Service: DocumentsService = {
         throw new Error('Client ID is required')
       }
 
-      const response = await apiFetch(`${ENDPOINTS.V2.STATS}?clientId=${clientId}`)
+      const response = await apiClient.get(`${ENDPOINTS.V2.STATS}?clientId=${clientId}`)
 
       if (!response?.success) {
         throw new Error(response?.message || 'Stats fetch failed')
@@ -362,7 +352,7 @@ export const documentsV2Service: DocumentsService = {
 
   async getDownloadUrl(id: string | number): Promise<string> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.DOWNLOAD(id))
+      const response = await apiClient.get(ENDPOINTS.V2.DOWNLOAD(id))
 
       if (!response?.success) {
         throw new Error(response?.message || 'Download URL fetch failed')
@@ -376,7 +366,7 @@ export const documentsV2Service: DocumentsService = {
 
   async getPreviewUrl(id: string | number): Promise<string> {
     try {
-      const response = await apiFetch(ENDPOINTS.V2.PREVIEW(id))
+      const response = await apiClient.get(ENDPOINTS.V2.PREVIEW(id))
 
       if (!response?.success) {
         throw new Error(response?.message || 'Preview URL fetch failed')

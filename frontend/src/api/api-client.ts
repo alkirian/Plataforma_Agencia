@@ -231,7 +231,22 @@ class ApiError extends Error implements ApiErrorInterface {
 export const apiClient = new ApiClient()
 export { ApiError }
 
-// Export the old apiFetch function for backward compatibility during migration
-export const apiFetch = async (endpoint: string, options: any = {}) => {
-  return apiClient.request(endpoint, options)
+// Legacy apiFetch export removed - use apiClient directly
+
+/**
+ * Agency management functions
+ * Manage active agency ID for API requests
+ */
+const ACTIVE_AGENCY_KEY = 'activeAgencyId'
+
+export const setActiveAgencyIdForAPI = (agencyId: string | null): void => {
+  if (agencyId) {
+    localStorage.setItem(ACTIVE_AGENCY_KEY, agencyId)
+  } else {
+    localStorage.removeItem(ACTIVE_AGENCY_KEY)
+  }
+}
+
+export const getActiveAgencyIdFromAPI = (): string | null => {
+  return localStorage.getItem(ACTIVE_AGENCY_KEY)
 }

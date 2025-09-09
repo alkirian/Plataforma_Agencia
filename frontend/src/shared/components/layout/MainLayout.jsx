@@ -11,7 +11,7 @@ export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
 
   return (
     // El fondo y el texto principal se definen aquÃ­
-    <div className='min-h-screen bg-app text-text-primary keyboard-nav'>
+    <div className='min-h-screen use-new-palette keyboard-nav'>
       {/* Skip links for accessibility */}
       <a href='#main-content' className='skip-link'>
         Saltar al contenido principal
@@ -25,9 +25,9 @@ export const MainLayout = ({ children, userEmail, onLogout, profile }) => {
         position='bottom-right'
         toastOptions={{
           style: {
-            background: 'var(--color-surface-strong)',
-            color: 'var(--color-text-primary)',
-            border: '1px solid var(--color-border-subtle)',
+            background: 'var(--palette-primary-bg)',
+            color: 'var(--palette-primary-text)',
+            border: '1px solid var(--palette-secondary-accent)',
           },
         }}
       />

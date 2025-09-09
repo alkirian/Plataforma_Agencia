@@ -6,7 +6,7 @@ import type {
   FormFieldConfig,
   ValidationRules,
 } from '../../types/form.types'
-import type { ModalAction } from '../../types/modal.types'
+import type { ModalAction } from '@shared/types/modal.types'
 
 /**
  * Generic FormModal component following Scope Rules principles.

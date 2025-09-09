@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import { useState, useEffect, Suspense, lazy } from 'react'
-import { useTheme } from '@shared/hooks/useTheme.js'
+import { useTheme } from '@shared/hooks/useTheme'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient.js'
 import { Onboarding } from '@components/Onboarding.jsx'
@@ -10,11 +10,8 @@ import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 import './App.css'
 
 // Lazy loading de páginas para mejor performance
-const AuthPage = lazy(() =>
-  import('@pages/AuthPage.jsx').then(module => ({ default: module.AuthPage }))
-)
 const WelcomePage = lazy(() =>
-  import('@pages/WelcomePage.jsx').then(module => ({ default: module.WelcomePage }))
+  import('@auth/pages/WelcomePage.tsx').then(module => ({ default: module.WelcomePage }))
 )
 const DashboardPage = lazy(() =>
   import('./dashboard/DashboardPage.jsx').then(module => ({ default: module.DashboardPage }))
@@ -117,7 +114,7 @@ function App() {
     })
 
     const onProfileRefresh = () => {
-      const current = supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) getProfile(session.user)
       })
     }

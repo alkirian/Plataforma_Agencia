@@ -77,13 +77,7 @@ const FolderCategoryHeader = ({
   )
 }
 
-const FolderCategoryInfo = ({
-  categoryKey,
-  categoryConfig,
-  stats,
-  hasDocuments,
-  isExpanded,
-}) => (
+const FolderCategoryInfo = ({ categoryKey, categoryConfig, stats, hasDocuments, isExpanded }) => (
   <div className='flex items-center space-x-2'>
     {/* Expand/Collapse Icon */}
     <motion.div
@@ -104,9 +98,7 @@ const FolderCategoryInfo = ({
 
     {/* Category Info */}
     <div className='flex items-center space-x-2'>
-      <h3 className={`text-sm font-medium ${categoryConfig.textColor}`}>
-        {categoryConfig.label}
-      </h3>
+      <h3 className={`text-sm font-medium ${categoryConfig.textColor}`}>{categoryConfig.label}</h3>
 
       <div className='flex items-center space-x-1.5 text-xs text-text-muted'>
         <span>({stats?.count || 0})</span>

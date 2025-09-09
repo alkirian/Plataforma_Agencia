@@ -11,7 +11,7 @@ export const Sidebar = () => {
     }`
 
   return (
-    <div className='flex h-full w-64 flex-col space-y-6 bg-surface-soft py-4 px-2 border-r border-[color:var(--color-border-subtle)] text-text-primary'>
+    <div className='flex h-full w-64 flex-col space-y-6 use-new-palette py-4 px-2 border-r border-[color:var(--palette-secondary-accent)] surface'>
       <h1 className='px-4 text-2xl font-bold text-cyber-gradient'>Cadence</h1>
       <nav className='flex-1 space-y-2'>
         <NavLink to='/dashboard' className={getLinkClasses}>

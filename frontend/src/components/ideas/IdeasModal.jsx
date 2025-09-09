@@ -1,22 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Lightbulb } from 'lucide-react'
-import { Modal } from '../ui/Modal'
-import { generateIdeas, sendIdeaFeedback } from '../../api/ai.js'
-import { createScheduleItem } from '../../schedule/services/schedule.js'
+import { Modal } from '@components/ui/Modal'
+import { generateIdeas, sendIdeaFeedback } from '@api/ai'
+import { createScheduleItem } from '@schedule'
 
-const TONE_PRESETS = [
-  'Profesional',
-  'Simpático',
-  'Inspirador',
-  'Informativo',
-  'Humor ligero',
-  'Empático',
-  'Premium',
-  'Directo y claro',
-]
-
-const COUNT_PRESETS = [3, 5, 10]
+// Extracted components for better maintainability
+import IdeasModalControls from './IdeasModalControls.jsx'
+import IdeasMinimizedBar from './IdeasMinimizedBar.jsx'
+import IdeaCardDisplay from './IdeaCardDisplay.jsx'
+import IdeaCardEditor from './IdeaCardEditor.jsx'
+import IdeaCardLikes from './IdeaCardLikes.jsx'
 
 export const IdeasModal = ({
   isOpen,

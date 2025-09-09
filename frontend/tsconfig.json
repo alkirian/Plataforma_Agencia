@@ -21,6 +21,7 @@
       "@shared/*": ["./src/shared/*"],
       "@app/*": ["./src/app/*"],
       "@infrastructure/*": ["./src/infrastructure/*"],
+      "@auth/*": ["./src/auth/*"],
       "@components/*": ["./src/components/*"],
       "@pages/*": ["./src/pages/*"],
       "@hooks/*": ["./src/hooks/*"],
@@ -28,7 +29,11 @@
       "@lib/*": ["./src/lib/*"],
       "@styles/*": ["./src/styles/*"],
       "@types/*": ["./src/types/*"],
-      "@schedule/*": ["./src/schedule/*"]
+      "@schedule/*": ["./src/schedule/*"],
+      "@constants/*": ["./src/constants/*"],
+      // Back-compat for imports without '@' prefix
+      "api/*": ["./src/api/*"],
+      "components/*": ["./src/components/*"]
     },
 
     /* Linting - Progressive strictness for migration */

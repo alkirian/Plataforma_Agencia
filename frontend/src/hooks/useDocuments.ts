@@ -21,7 +21,7 @@ import {
   uploadDocument,
   deleteDocument,
   downloadDocument,
-} from '../api/documents'
+} from '../api/documents.api'
 
 // Query key for legacy compatibility
 const QUERY_KEY = (clientId: string) => ['documents', clientId]
