@@ -278,3 +278,5 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
     </motion.div>
   )
 }
+
+export default MiniMonth

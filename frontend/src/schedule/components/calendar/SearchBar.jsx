@@ -119,3 +119,5 @@ export const SearchBar = ({ events = [], onSelect }) => {
     </div>
   )
 }
+
+export default SearchBar

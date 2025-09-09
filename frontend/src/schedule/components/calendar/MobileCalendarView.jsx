@@ -223,3 +223,5 @@ export const MobileCalendarView = ({
     </div>
   )
 }
+
+export default MobileCalendarView
