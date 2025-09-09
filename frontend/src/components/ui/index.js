@@ -1,5 +1,5 @@
 // Componentes UI modernos con tema cyber
-export { Card, CardHeader, CardTitle, CardContent, CardFooter, StatCard } from './Card'
+export { Card, CardHeader, CardTitle, CardContent, CardFooter, StatCard } from './Card.tsx'
 export { Button, CyberButton } from './Button'
 export { Input, Textarea } from './Input'
 export { AnimatedText, useStaggerDelay } from './AnimatedText'
@@ -12,12 +12,15 @@ export { Icon } from './Icon'
 export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay } from './LoadingSpinner'
 export {
   ErrorBoundary,
-  ErrorFallback,
-  ErrorCard,
-  NetworkError,
-  NotFoundError,
-} from './ErrorBoundary'
-export { Tooltip, HelpTooltip, ShortcutTooltip } from './Tooltip'
+  withErrorBoundary,
+  useErrorHandler,
+  catchAsyncErrors,
+  AppErrorBoundary,
+  PageErrorBoundary,
+  FeatureErrorBoundary,
+  ComponentErrorBoundary,
+} from '../system/ErrorBoundary'
+export { Tooltip, HelpTooltip, ShortcutTooltip } from './Tooltip.tsx'
 export { Avatar } from './Avatar'
 
 // Re-exportar utilidades
