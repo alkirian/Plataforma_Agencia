@@ -1,35 +1,35 @@
-import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import React, { useState } from 'react'
+import { supabase } from '../../supabaseClient'
+import { Button } from '../ui'
 
 const inputClass =
-  'w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30';
-const primaryBtn = 'w-full btn-cyber px-4 py-2 font-semibold';
+  'w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30'
 
 export const RegisterForm = () => {
-  const [fullName, setFullName] = useState('');
-  const [agencyName, setAgencyName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [fullName, setFullName] = useState('')
+  const [agencyName, setAgencyName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleRegister = async e => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
       // Opcional: guardar datos extra en tabla profiles después de confirmar email
       if (process.env.NODE_ENV === 'development') {
-        console.log('SignUp sent. Confirm email flow may be required.', data);
+        console.log('SignUp sent. Confirm email flow may be required.', data)
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <form onSubmit={handleRegister} className='space-y-4'>
@@ -66,9 +66,16 @@ export const RegisterForm = () => {
         onChange={e => setPassword(e.target.value)}
         required
       />
-      <button type='submit' disabled={loading} className={primaryBtn}>
-        {loading ? 'Creando…' : 'Crear Cuenta'}
-      </button>
+      <Button
+        type='submit'
+        disabled={loading}
+        loading={loading}
+        variant='primary'
+        size='md'
+        className='w-full'
+      >
+        Crear Cuenta
+      </Button>
     </form>
-  );
-};
+  )
+}

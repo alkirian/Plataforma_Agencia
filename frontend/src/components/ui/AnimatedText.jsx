@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from 'react'
+import { motion } from 'framer-motion'
 
 /**
  * Componente seguro para texto animado con efectos cyber
@@ -12,10 +12,10 @@ import { motion } from 'framer-motion';
  */
 export const AnimatedText = ({ text, delay = 0.05, className = '', variant = 'modern' }) => {
   if (!text || typeof text !== 'string') {
-    return null;
+    return null
   }
 
-  const chars = text.split('');
+  const chars = text.split('')
 
   const variants = {
     cyber: {
@@ -30,7 +30,7 @@ export const AnimatedText = ({ text, delay = 0.05, className = '', variant = 'mo
       initial: { opacity: 0, y: 10 },
       animate: { opacity: 1, y: 0 },
     },
-  };
+  }
 
   return (
     <span className={`inline-block ${className}`}>
@@ -51,8 +51,8 @@ export const AnimatedText = ({ text, delay = 0.05, className = '', variant = 'mo
         </motion.span>
       ))}
     </span>
-  );
-};
+  )
+}
 
 /**
  * Hook para delay escalonado seguro
@@ -62,5 +62,5 @@ export const AnimatedText = ({ text, delay = 0.05, className = '', variant = 'mo
  * @returns {number} Delay calculado
  */
 export const useStaggerDelay = (index, baseDelay = 0.1) => {
-  return React.useMemo(() => index * baseDelay, [index, baseDelay]);
-};
+  return React.useMemo(() => index * baseDelay, [index, baseDelay])
+}

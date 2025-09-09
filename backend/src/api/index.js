@@ -2,6 +2,7 @@ import { Router } from 'express';
 import userRoutes from './users.routes.js';
 import clientRoutes from './clients.routes.js';
 import documentsRoutes from './documents.routes.js';
+import documentsV2Routes from './documentsV2.routes.js';
 import contextSourcesRoutes from './contextSources.routes.js';
 import agenciesRoutes from './agencies.routes.js';
 import aiRoutes from './ai.routes.js';
@@ -20,6 +21,7 @@ router.get('/health', (_req, res) => {
 router.use('/users', userRoutes);
 router.use('/clients', clientRoutes);
 router.use('/documents', documentsRoutes);
+router.use('/documents-v2', protect, documentsV2Routes);
 router.use('/context-sources', contextSourcesRoutes);
 router.use('/agencies', agenciesRoutes);
 router.use('/ai', aiRoutes);

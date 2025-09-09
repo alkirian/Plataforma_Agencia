@@ -1,5 +1,5 @@
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 /**
  * Combina clases de Tailwind CSS de forma inteligente
@@ -7,5 +7,5 @@ import { twMerge } from 'tailwind-merge';
  * @returns String de clases combinadas
  */
 export function cn(...inputs) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }

@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit quality gates..."
+
+# 1. Lint staged files
+echo "📋 ESLint validation..."
+npx lint-staged
+
+# 2. Type checking
+echo "🔧 TypeScript validation..."
+npm run type-check
+
+# 3. Component duplication check
+echo "🔍 Component duplication analysis..."
+node scripts/detect-component-duplication.js
+
+# 4. Build validation (quick check)
+echo "🏗️  Build validation..."
+npm run build:js
+
+# 5. Test validation (if tests exist)
+if [ -d "src/__tests__" ] || find src -name "*.test.*" -o -name "*.spec.*" | grep -q .; then
+  echo "🧪 Running tests..."
+  npm test -- --passWithNoTests --watchAll=false
+fi
+
+echo "✅ Pre-commit validation completed!"

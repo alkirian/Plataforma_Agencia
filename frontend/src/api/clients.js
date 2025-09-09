@@ -1,13 +1,13 @@
 // src/api/clients.js
-import { apiFetch } from './apiFetch.js';
+import { apiFetch } from './apiFetch.js'
 
 /**
  * Obtiene la lista de todos los clientes.
  * @returns {Promise<Array>} Lista de clientes.
  */
 export const getClients = () => {
-  return apiFetch('/clients');
-};
+  return apiFetch('/clients')
+}
 
 /**
  * Obtiene un cliente específico por su ID.
@@ -15,8 +15,8 @@ export const getClients = () => {
  * @returns {Promise<object>} Los datos del cliente.
  */
 export const getClientById = clientId => {
-  return apiFetch(`/clients/${clientId}`);
-};
+  return apiFetch(`/clients/${clientId}`)
+}
 
 /**
  * Crea un nuevo cliente.
@@ -27,8 +27,8 @@ export const createClient = clientData => {
   return apiFetch('/clients', {
     method: 'POST',
     body: JSON.stringify(clientData),
-  });
-};
+  })
+}
 
 /**
  * Actualiza metadatos del cliente (website y social_links)
@@ -36,41 +36,41 @@ export const createClient = clientData => {
 export const updateClientMeta = (clientId, { website, social_links }) => {
   return apiFetch(`/clients/${clientId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ website, social_links })
-  });
-};
+    body: JSON.stringify({ website, social_links }),
+  })
+}
 
 /**
  * Contactos del cliente
  */
-export const listClientContacts = (clientId) => {
-  return apiFetch(`/clients/${clientId}/contacts`);
-};
+export const listClientContacts = clientId => {
+  return apiFetch(`/clients/${clientId}/contacts`)
+}
 
 export const upsertClientContacts = (clientId, contacts) => {
   return apiFetch(`/clients/${clientId}/contacts`, {
     method: 'POST',
-    body: JSON.stringify({ contacts })
-  });
-};
+    body: JSON.stringify({ contacts }),
+  })
+}
 
 export const deleteClientContact = (clientId, contactId) => {
-  return apiFetch(`/clients/${clientId}/contacts/${contactId}`, { method: 'DELETE' });
-};
+  return apiFetch(`/clients/${clientId}/contacts/${contactId}`, { method: 'DELETE' })
+}
 
 /**
  * Elimina un cliente por ID.
  */
-export const deleteClient = (clientId) => {
-  return apiFetch(`/clients/${clientId}`, { method: 'DELETE' });
-};
+export const deleteClient = clientId => {
+  return apiFetch(`/clients/${clientId}`, { method: 'DELETE' })
+}
 
 /**
  * Preferencias por usuario: obtener todas (mapa client_id -> { color })
  */
 export const getClientPreferences = () => {
-  return apiFetch('/clients/preferences');
-};
+  return apiFetch('/clients/preferences')
+}
 
 /**
  * Establecer preferencia (p.ej. color) para un cliente
@@ -78,11 +78,11 @@ export const getClientPreferences = () => {
 export const setClientPreference = (clientId, pref) => {
   return apiFetch(`/clients/${clientId}/preferences`, {
     method: 'PUT',
-    body: JSON.stringify(pref)
-  });
-};
+    body: JSON.stringify(pref),
+  })
+}
 
 // Eliminar preferencia (reset a default)
-export const deleteClientPreference = (clientId) => {
-  return apiFetch(`/clients/${clientId}/preferences`, { method: 'DELETE' });
-};
+export const deleteClientPreference = clientId => {
+  return apiFetch(`/clients/${clientId}/preferences`, { method: 'DELETE' })
+}

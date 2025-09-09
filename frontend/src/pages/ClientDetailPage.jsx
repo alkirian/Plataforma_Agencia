@@ -1,38 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getClientById } from '../api/clients';
-import { ScheduleSection } from '../components/schedule/ScheduleSection';
-import { DocumentsSection } from '../components/documents/DocumentsSection';
-import { ContextSourcesSection } from '../components/contextSources/ContextSourcesSection';
-import { ClientFooterInfo } from '../components/client/ClientFooterInfo.jsx';
+import React, { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { getClientById } from '@api/clients.js'
+import { ScheduleSection } from '@schedule/components/ScheduleSection.jsx'
+import { DocumentsSectionV2 } from '@components/documents/DocumentsSectionV2.jsx'
+import { ContextSourcesSection } from '@components/contextSources/ContextSourcesSection.jsx'
+import { ClientFooterInfo } from '@components/client/ClientFooterInfo.jsx'
+import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 export const ClientDetailPage = () => {
-  const { id: clientId } = useParams();
-  const [client, setClient] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('schedule');
+  const { id: clientId } = useParams()
+  const [client, setClient] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState('schedule')
 
   const refreshClient = async () => {
     try {
-      setLoading(true);
-      const response = await getClientById(clientId);
-      setClient(response.data);
-      setError(null);
+      setLoading(true)
+      const response = await getClientById(clientId)
+      setClient(response.data)
+      setError(null)
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    refreshClient();
-  }, [clientId]);
+    refreshClient()
+  }, [clientId])
 
-  if (loading) return <div className='text-center text-text-muted'>Cargando...</div>;
-  if (error) return <div className='text-center text-red-500'>Error: {error}</div>;
-  if (!client) return <div>Cliente no encontrado.</div>;
+  if (loading)
+    return (
+      <div className='text-center'>
+        <LoadingSpinner size='lg' variant='primary' />
+      </div>
+    )
+  if (error) return <div className='text-center text-red-500'>Error: {error}</div>
+  if (!client) return <div>Cliente no encontrado.</div>
 
   return (
     <>
@@ -86,7 +92,7 @@ export const ClientDetailPage = () => {
           {activeTab === 'schedule' ? (
             <ScheduleSection clientId={clientId} />
           ) : activeTab === 'documents' ? (
-            <DocumentsSection clientId={clientId} />
+            <DocumentsSectionV2 clientId={clientId} clientName={client.name} />
           ) : (
             <ContextSourcesSection clientId={clientId} clientName={client.name} />
           )}
@@ -94,5 +100,5 @@ export const ClientDetailPage = () => {
       </div>
       <ClientFooterInfo client={client} onClientUpdated={refreshClient} />
     </>
-  );
-};
+  )
+}

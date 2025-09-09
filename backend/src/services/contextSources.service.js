@@ -175,35 +175,39 @@ export const processDocumentSource = async (file, clientId, agencyId, token, met
     actualUserId = user.id;
   }
   
-  // Crear registro en la tabla documents con source_type
-  const documentData = {
+  // Crear registro en la tabla context_sources
+  const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
-    user_id: actualUserId, // ✅ AGREGADO: Campo user_id requerido
-    file_name: file.originalname,
-    storage_path: metadata.storage_path,
-    file_type: file.mimetype,
-    file_size: file.size,
-    ai_status: 'pending',
-    source_type: 'document', // Nuevo campo para identificar el tipo
-    source_metadata: {
+    user_id: actualUserId,
+    source_type: 'document',
+    title: metadata.title || file.originalname,
+    description: metadata.description || '',
+    source_data: {
+      file_name: file.originalname,
+      storage_path: metadata.storage_path,
+      file_type: file.mimetype,
+      file_size: file.size,
       original_filename: file.originalname,
-      upload_method: 'context_source'
-    }
+      upload_method: 'context_source',
+      ...metadata
+    },
+    processing_status: 'pending',
+    tags: metadata.tags || []
   };
   
-  const { data: doc, error: docErr } = await supabaseAdmin
-    .from('documents')
-    .insert(documentData)
+  const { data: source, error: sourceErr } = await supabaseAdmin
+    .from('context_sources')
+    .insert(sourceData)
     .select()
     .single();
     
-  if (docErr) throw new Error(`No se pudo crear el documento: ${docErr.message}`);
+  if (sourceErr) throw new Error(`No se pudo crear la fuente de contexto: ${sourceErr.message}`);
   
   // Procesar el archivo usando la lógica existente
-  await processDocumentChunks(doc.id, token);
+  await processSourceChunks(source.id, token);
   
-  return doc;
+  return source;
 };
 
 export const processUrlSource = async (url, clientId, agencyId, token, metadata = {}, userId = null) => {
@@ -229,43 +233,43 @@ export const processUrlSource = async (url, clientId, agencyId, token, metadata 
       actualUserId = user.id;
     }
     
-    // Crear registro en la tabla documents
-    const documentData = {
+    // Crear registro en la tabla context_sources
+    const sourceData = {
       client_id: clientId,
       agency_id: agencyId,
-      user_id: actualUserId, // ✅ AGREGADO: Campo user_id requerido
-      file_name: scrapedContent.title || 'Página Web',
-      storage_path: null, // No hay archivo físico
-      file_type: 'text/html',
-      file_size: scrapedContent.content.length,
-      ai_status: 'processing',
+      user_id: actualUserId,
       source_type: 'url',
-      source_metadata: {
+      title: metadata.user_title || scrapedContent.title || 'Página Web',
+      description: metadata.user_description || scrapedContent.excerpt || '',
+      source_data: {
         url: url,
         title: scrapedContent.title,
         excerpt: scrapedContent.excerpt,
+        content_length: scrapedContent.content.length,
         scraped_at: new Date().toISOString(),
         ...metadata
-      }
+      },
+      processing_status: 'processing',
+      tags: metadata.tags || []
     };
     
-    const { data: doc, error: docErr } = await supabaseAdmin
-      .from('documents')
-      .insert(documentData)
+    const { data: source, error: sourceErr } = await supabaseAdmin
+      .from('context_sources')
+      .insert(sourceData)
       .select()
       .single();
       
-    if (docErr) throw new Error(`No se pudo crear el registro de URL: ${docErr.message}`);
+    if (sourceErr) throw new Error(`No se pudo crear la fuente de URL: ${sourceErr.message}`);
     
     // Procesar el contenido extraído directamente a chunks
-    await processTextToChunks(scrapedContent.content, doc);
+    await processTextToChunksForSource(scrapedContent.content, source);
     
     await supabaseAdmin
-      .from('documents')
-      .update({ ai_status: 'ready' })
-      .eq('id', doc.id);
+      .from('context_sources')
+      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
+      .eq('id', source.id);
     
-    return doc;
+    return source;
     
   } catch (error) {
     console.error('[ERROR URL PROCESSING]:', error.message);
@@ -289,48 +293,50 @@ export const processManualSource = async (content, title, clientId, agencyId, to
     actualUserId = user.id;
   }
   
-  // Crear registro en la tabla documents
-  const documentData = {
+  // Crear registro en la tabla context_sources
+  const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
-    user_id: actualUserId, // ✅ AGREGADO: Campo user_id requerido
-    file_name: title || 'Información Manual',
-    storage_path: null,
-    file_type: 'text/plain',
-    file_size: content.length,
-    ai_status: 'processing',
-    source_type: 'manual',
-    source_metadata: {
+    user_id: actualUserId,
+    source_type: 'text', // Usar 'text' del enum en lugar de 'manual'
+    title: title || 'Información Manual',
+    description: metadata.description || '',
+    source_data: {
+      content_length: content.length,
       created_method: 'manual_input',
+      category: metadata.category,
+      importance: metadata.importance,
       created_at: new Date().toISOString(),
       ...metadata
-    }
+    },
+    processing_status: 'processing',
+    tags: metadata.tags || []
   };
   
-  const { data: doc, error: docErr } = await supabaseAdmin
-    .from('documents')
-    .insert(documentData)
+  const { data: source, error: sourceErr } = await supabaseAdmin
+    .from('context_sources')
+    .insert(sourceData)
     .select()
     .single();
     
-  if (docErr) throw new Error(`No se pudo crear el registro manual: ${docErr.message}`);
+  if (sourceErr) throw new Error(`No se pudo crear la fuente manual: ${sourceErr.message}`);
   
   try {
     // Procesar el contenido directamente a chunks
-    await processTextToChunks(content, doc);
+    await processTextToChunksForSource(content, source);
     
     await supabaseAdmin
-      .from('documents')
-      .update({ ai_status: 'ready' })
-      .eq('id', doc.id);
+      .from('context_sources')
+      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
+      .eq('id', source.id);
     
-    return doc;
+    return source;
     
   } catch (error) {
     await supabaseAdmin
-      .from('documents')
-      .update({ ai_status: 'error' })
-      .eq('id', doc.id);
+      .from('context_sources')
+      .update({ processing_status: 'error' })
+      .eq('id', source.id);
     throw error;
   }
 };
@@ -351,32 +357,33 @@ export const processNoteSource = async (note, title, clientId, agencyId, token, 
     actualUserId = user.id;
   }
   
-  // Las notas son contenido contextual adicional
-  const documentData = {
+  // Las notas son contenido contextual adicional - usar 'text' porque no hay enum 'note'
+  const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
-    user_id: actualUserId, // ✅ AGREGADO: Campo user_id requerido
-    file_name: title || 'Nota Contextual',
-    storage_path: null,
-    file_type: 'text/note',
-    file_size: note.length,
-    ai_status: 'processing',
-    source_type: 'note',
-    source_metadata: {
+    user_id: actualUserId,
+    source_type: 'text', // Usar 'text' del enum disponible
+    title: title || 'Nota Contextual',
+    description: metadata.description || '',
+    source_data: {
+      content_length: note.length,
       note_type: metadata.note_type || 'general',
       importance: metadata.importance || 'medium',
+      created_method: 'note_input',
       created_at: new Date().toISOString(),
       ...metadata
-    }
+    },
+    processing_status: 'processing',
+    tags: metadata.tags || []
   };
   
-  const { data: doc, error: docErr } = await supabaseAdmin
-    .from('documents')
-    .insert(documentData)
+  const { data: source, error: sourceErr } = await supabaseAdmin
+    .from('context_sources')
+    .insert(sourceData)
     .select()
     .single();
     
-  if (docErr) throw new Error(`No se pudo crear la nota: ${docErr.message}`);
+  if (sourceErr) throw new Error(`No se pudo crear la nota: ${sourceErr.message}`);
   
   try {
     // Procesar la nota directamente (sin chunks si es muy corta)
@@ -388,16 +395,16 @@ export const processNoteSource = async (note, title, clientId, agencyId, token, 
       const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
         client_id: clientId,
         agency_id: agencyId,
-        user_id: actualUserId, // ✅ AGREGADO: Campo user_id requerido
-        source_id: null, // ✅ AGREGADO: null porque usamos document_id
-        document_id: doc.id, // ✅ Relación con documents
-        chunk_index: 0, // ✅ AGREGADO: Para notas cortas, un solo chunk
+        user_id: actualUserId,
+        source_id: source.id, // ✅ Usar source_id para context_sources
+        document_id: null, // ✅ null porque usamos source_id
+        chunk_index: 0,
         content: sanitizedNote,
         embedding: vector,
-        chunk_type: 'text', // ✅ AGREGADO: Tipo de chunk
+        chunk_type: 'text',
         metadata: {
           processing_method: 'note_source',
-          source_type: 'note',
+          source_type: 'text',
           note_type: metadata.note_type || 'general'
         }
       });
@@ -405,26 +412,56 @@ export const processNoteSource = async (note, title, clientId, agencyId, token, 
       if (insErr) throw new Error(`Error guardando chunk de nota: ${insErr.message}`);
     } else {
       // Para notas largas, usar el procesamiento de chunks normal
-      await processTextToChunks(note, doc);
+      await processTextToChunksForSource(note, source);
     }
     
     await supabaseAdmin
-      .from('documents')
-      .update({ ai_status: 'ready' })
-      .eq('id', doc.id);
+      .from('context_sources')
+      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
+      .eq('id', source.id);
     
-    return doc;
+    return source;
     
   } catch (error) {
     await supabaseAdmin
-      .from('documents')
-      .update({ ai_status: 'error' })
-      .eq('id', doc.id);
+      .from('context_sources')
+      .update({ processing_status: 'error' })
+      .eq('id', source.id);
     throw error;
   }
 };
 
 // --- Funciones Auxiliares de Procesamiento ---
+
+const processTextToChunksForSource = async (text, source) => {
+  const chunks = chunkText(text);
+  
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    if (!chunk || chunk.trim() === '') continue;
+    
+    const sanitizedChunk = chunk.replace(/\u0000/g, '');
+    const vector = await embedText(sanitizedChunk);
+    
+    const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
+      client_id: source.client_id,
+      agency_id: source.agency_id,
+      user_id: source.user_id,
+      source_id: source.id, // ✅ Usar source_id para context_sources
+      document_id: null, // ✅ null porque usamos source_id
+      chunk_index: i,
+      content: sanitizedChunk,
+      chunk_type: 'text',
+      embedding: vector,
+      metadata: {
+        processing_method: 'context_source',
+        source_type: source.source_type
+      }
+    });
+    
+    if (insErr) throw new Error(`Error guardando chunk: ${insErr.message}`);
+  }
+};
 
 const processTextToChunks = async (text, doc) => {
   const chunks = chunkText(text);
@@ -456,11 +493,47 @@ const processTextToChunks = async (text, doc) => {
   }
 };
 
+const processSourceChunks = async (sourceId, token) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data: source, error: sourceErr } = await supabaseAuth
+    .from('context_sources')
+    .select('id, source_data, source_type, client_id, agency_id, user_id')
+    .eq('id', sourceId)
+    .single();
+  if (sourceErr) throw new Error(`No se pudo cargar la fuente de contexto: ${sourceErr.message}`);
+
+  try {
+    await supabaseAdmin.from('context_sources').update({ processing_status: 'processing' }).eq('id', sourceId);
+    let textToProcess = '';
+    
+    if (source.source_type === 'document') {
+      const isImage = source.source_data.file_type?.startsWith('image/');
+      if (isImage) {
+        const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(source.source_data.storage_path);
+        if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
+        console.log(`Analizando imagen: ${publicUrlData.publicUrl}`);
+        textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
+      } else {
+        const fileData = await fetchFileFromStorage(source.source_data.storage_path);
+        const arrayBuffer = await fileData.arrayBuffer?.();
+        const buffer = arrayBuffer ? Buffer.from(arrayBuffer) : fileData;
+        textToProcess = await extractText(buffer, source.source_data.file_type?.toLowerCase());
+      }
+    }
+    
+    await processTextToChunksForSource(textToProcess, source);
+    await supabaseAdmin.from('context_sources').update({ processing_status: 'ready', last_processed_at: new Date().toISOString() }).eq('id', sourceId);
+  } catch (error) {
+    await supabaseAdmin.from('context_sources').update({ processing_status: 'error' }).eq('id', sourceId);
+    throw error;
+  }
+};
+
 const processDocumentChunks = async (documentId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: doc, error: docErr } = await supabaseAuth
     .from('documents')
-    .select('id, storage_path, file_type, client_id, agency_id')
+    .select('id, storage_path, file_type, client_id, agency_id, user_id')
     .eq('id', documentId)
     .single();
   if (docErr) throw new Error(`No se pudo cargar el documento: ${docErr.message}`);
@@ -493,11 +566,10 @@ const processDocumentChunks = async (documentId, token) => {
 
 export const getContextSourcesByClient = async (clientId, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('documents')
+    .from('context_sources')
     .select('*')
     .eq('client_id', clientId)
     .eq('agency_id', agencyId)
-    .not('source_type', 'is', null) // Solo fuentes de contexto
     .order('created_at', { ascending: false });
   if (error) throw new Error(`No se pudieron obtener las fuentes de contexto: ${error.message}`);
   return data || [];
@@ -505,7 +577,7 @@ export const getContextSourcesByClient = async (clientId, agencyId) => {
 
 export const updateContextSource = async (sourceId, updateData, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('documents')
+    .from('context_sources')
     .update(updateData)
     .eq('id', sourceId)
     .eq('agency_id', agencyId)
@@ -516,24 +588,24 @@ export const updateContextSource = async (sourceId, updateData, agencyId) => {
 };
 
 export const deleteContextSource = async (sourceId, agencyId) => {
-  // Primero obtener información del documento
-  const { data: doc, error: docError } = await supabaseAdmin
-    .from('documents')
-    .select('storage_path, source_type')
+  // Primero obtener información de la fuente de contexto
+  const { data: source, error: sourceError } = await supabaseAdmin
+    .from('context_sources')
+    .select('source_data, source_type')
     .eq('id', sourceId)
     .eq('agency_id', agencyId)
     .single();
-  if (docError) throw new Error(`No se encontró la fuente de contexto para eliminar: ${docError.message}`);
+  if (sourceError) throw new Error(`No se encontró la fuente de contexto para eliminar: ${sourceError.message}`);
   
   // Eliminar archivo del storage solo si existe (documentos)
-  if (doc.storage_path && doc.source_type === 'document') {
-    const { error: storageError } = await supabaseAdmin.storage.from('documents').remove([doc.storage_path]);
+  if (source.source_data?.storage_path && source.source_type === 'document') {
+    const { error: storageError } = await supabaseAdmin.storage.from('documents').remove([source.source_data.storage_path]);
     if (storageError) console.error(`Advertencia: No se pudo eliminar el archivo del storage: ${storageError.message}`);
   }
   
   // Eliminar el registro (los chunks se eliminan automáticamente por cascade)
   const { error } = await supabaseAdmin
-    .from('documents')
+    .from('context_sources')
     .delete()
     .eq('id', sourceId)
     .eq('agency_id', agencyId);
@@ -570,11 +642,10 @@ export const searchContextChunks = async (query, clientId, agencyId, sourceTypes
 
 export const getContextSourceStats = async (clientId, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('documents')
-    .select('source_type, ai_status')
+    .from('context_sources')
+    .select('source_type, processing_status')
     .eq('client_id', clientId)
-    .eq('agency_id', agencyId)
-    .not('source_type', 'is', null);
+    .eq('agency_id', agencyId);
     
   if (error) throw new Error(`Error al obtener estadísticas: ${error.message}`);
   
@@ -593,13 +664,13 @@ export const getContextSourceStats = async (clientId, agencyId) => {
     stats.by_type[item.source_type]++;
     
     // Por estado
-    if (!stats.by_status[item.ai_status]) {
-      stats.by_status[item.ai_status] = 0;
+    if (!stats.by_status[item.processing_status]) {
+      stats.by_status[item.processing_status] = 0;
     }
-    stats.by_status[item.ai_status]++;
+    stats.by_status[item.processing_status]++;
     
     // Contar listos para usar
-    if (item.ai_status === 'ready') {
+    if (item.processing_status === 'ready') {
       stats.ready_count++;
     }
   });

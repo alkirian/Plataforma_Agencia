@@ -1,0 +1,151 @@
+import React from 'react'
+import { useActivityFeed } from '../../hooks/useActivityFeed.ts'
+import { Link } from 'react-router-dom'
+import { DocumentArrowUpIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline'
+import type {
+  ActivityFeedProps,
+  ActivityEvent,
+  ActivityTypeConfig,
+  ActivityDetails,
+  ActivityType,
+} from '../../shared/types'
+
+const typeMeta: Record<ActivityType, ActivityTypeConfig> = {
+  DOCUMENT_UPLOADED: {
+    icon: DocumentArrowUpIcon,
+    text: (actor: string, client: string, meta: ActivityDetails) =>
+      `${actor} subió "${meta?.file_name || 'un archivo'}" en ${client}`,
+  },
+  DOCUMENT_DELETED: {
+    icon: TrashIcon,
+    text: (actor: string, client: string, meta: ActivityDetails) =>
+      `${actor} eliminó "${meta?.file_name || 'un archivo'}" en ${client}`,
+  },
+  SCHEDULE_ITEM_CREATED: {
+    icon: CalendarIcon,
+    text: (actor: string, client: string, meta: ActivityDetails) =>
+      `${actor} creó "${meta?.title || 'un evento'}" en ${client}`,
+  },
+  CLIENT_CREATED: {
+    icon: DocumentArrowUpIcon,
+    text: (actor: string, client: string, meta: ActivityDetails) =>
+      `${actor} creó el cliente ${client}`,
+  },
+  CLIENT_UPDATED: {
+    icon: DocumentArrowUpIcon,
+    text: (actor: string, client: string, meta: ActivityDetails) => `${actor} actualizó ${client}`,
+  },
+} as const
+
+const timeAgo = (iso: string): string => {
+  const d = new Date(iso)
+  const diff = Date.now() - d.getTime()
+  const s = Math.floor(diff / 1000)
+  if (s < 60) return `hace ${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `hace ${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `hace ${h}h`
+  const d2 = Math.floor(h / 24)
+  return `hace ${d2}d`
+}
+
+export const ActivityFeed: React.FC<ActivityFeedProps> = ({ limit = 20 }) => {
+  const { items, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useActivityFeed({ limit })
+
+  return (
+    <section className='space-y-4'>
+      <div className='relative'>
+        <div className='mx-auto mb-4 h-px w-full border-t border-[color:var(--color-border-subtle)]' />
+        <div className='-mt-4 mb-2 flex justify-center'>
+          <span className='rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-1 text-xs tracking-wide text-text-muted'>
+            ACTIVIDAD RECIENTE
+          </span>
+        </div>
+      </div>
+
+      <div className='card rounded-xl p-4'>
+        {isLoading && (
+          <div className='space-y-3'>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className='h-5 w-full animate-pulse rounded bg-white/10' />
+            ))}
+          </div>
+        )}
+        {error && (
+          <div className='text-sm text-red-400'>Error: {error.message || String(error)}</div>
+        )}
+        {!isLoading && !error && items.length === 0 && (
+          <div className='text-sm text-text-muted'>No hay actividad reciente.</div>
+        )}
+        {!isLoading && !error && items.length > 0 && (
+          <ul className='divide-y divide-[color:var(--color-border-subtle)]'>
+            {items.map((evt: ActivityEvent) => {
+              const conf = typeMeta[evt.action_type] || {}
+              const Icon = conf.icon || DocumentArrowUpIcon
+              const actor = evt.author?.full_name || 'Alguien'
+              const client = (
+                <Link
+                  className='text-[color:var(--color-accent-blue)] hover:underline'
+                  to={`/clients/${evt.client_id}`}
+                >
+                  {evt.client_name || 'Cliente'}
+                </Link>
+              )
+              const details: ActivityDetails =
+                typeof evt.details === 'object'
+                  ? evt.details
+                  : evt.details
+                    ? (() => {
+                        try {
+                          return JSON.parse(evt.details) as ActivityDetails
+                        } catch {
+                          return {}
+                        }
+                      })()
+                    : {}
+              const text = conf.text
+                ? conf.text(actor, 'CLIENTE', details)
+                : `${actor} realizó una acción`
+              return (
+                <li key={evt.id} className='flex items-center gap-3 py-3'>
+                  <div className='flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft'>
+                    <Icon className='h-4 w-4 text-text-primary/80' />
+                  </div>
+                  <div className='flex-1 text-sm text-text-primary/90'>
+                    {conf.text ? (
+                      <>
+                        <span>{conf.text(actor, 'Cliente', details)} </span>
+                        <Link
+                          className='text-[color:var(--color-accent-blue)] hover:underline'
+                          to={`/clients/${evt.client_id}`}
+                        >
+                          ver cliente
+                        </Link>
+                      </>
+                    ) : (
+                      <span>{text}</span>
+                    )}
+                    <div className='text-xs text-text-muted'>{timeAgo(evt.created_at)}</div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {hasNextPage && (
+          <div className='mt-4 flex justify-center'>
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-4 py-2 text-sm text-text-primary hover:border-[color:var(--color-accent-blue)] disabled:opacity-60'
+            >
+              {isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}

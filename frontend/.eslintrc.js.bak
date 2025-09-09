@@ -1,0 +1,259 @@
+// Enhanced TypeScript ESLint Configuration
+// This configuration provides comprehensive TypeScript support with
+// component duplication prevention and architectural enforcement
+
+module.exports = {
+  root: true,
+  env: {
+    browser: true,
+    es2022: true,
+    node: true,
+  },
+  extends: [
+    'eslint:recommended',
+    '@typescript-eslint/recommended',
+    '@typescript-eslint/recommended-requiring-type-checking',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:react/jsx-runtime',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+    'plugin:jsx-a11y/recommended',
+    'prettier'
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    project: ['./tsconfig.json', './tsconfig.node.json'],
+    tsconfigRootDir: __dirname,
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+  plugins: [
+    '@typescript-eslint',
+    'react',
+    'react-hooks',
+    'react-refresh',
+    'import',
+    'jsx-a11y',
+    'prettier'
+  ],
+  settings: {
+    react: {
+      version: 'detect',
+    },
+    'import/resolver': {
+      typescript: {
+        alwaysTryTypes: true,
+        project: './tsconfig.json',
+      },
+    },
+  },
+  rules: {
+    // TypeScript-specific rules
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
+    '@typescript-eslint/prefer-optional-chain': 'error',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      {
+        prefer: 'type-imports',
+        fixStyle: 'inline-type-imports',
+      },
+    ],
+    '@typescript-eslint/consistent-type-exports': 'error',
+    '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
+    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    
+    // React-specific rules
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
+    'react/jsx-uses-react': 'off',
+    'react/jsx-uses-vars': 'error',
+    'react/jsx-key': 'error',
+    'react/jsx-no-duplicate-props': 'error',
+    'react/jsx-pascal-case': [
+      'error',
+      {
+        allowAllCaps: false,
+        allowNamespace: false,
+      },
+    ],
+    'react/function-component-definition': [
+      'error',
+      {
+        namedComponents: 'arrow-function',
+        unnamedComponents: 'arrow-function',
+      },
+    ],
+    'react-refresh/only-export-components': [
+      'warn',
+      { allowConstantExport: true },
+    ],
+    
+    // Import organization
+    'import/order': [
+      'error',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          'parent',
+          'sibling',
+          'index',
+        ],
+        pathGroups: [
+          {
+            pattern: '@/**',
+            group: 'internal',
+            position: 'before',
+          },
+        ],
+        pathGroupsExcludedImportTypes: ['builtin'],
+        'newlines-between': 'always',
+        alphabetize: {
+          order: 'asc',
+          caseInsensitive: true,
+        },
+      },
+    ],
+    'import/no-unresolved': 'error',
+    'import/no-cycle': ['error', { maxDepth: 3 }],
+    'import/no-duplicates': 'error',
+    
+    // Code quality
+    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-debugger': 'error',
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'object-shorthand': 'error',
+    
+    // Prettier integration
+    'prettier/prettier': [
+      'error',
+      {
+        singleQuote: true,
+        semi: false,
+        tabWidth: 2,
+        trailingComma: 'es5',
+        printWidth: 100,
+        arrowParens: 'avoid',
+        endOfLine: 'lf',
+      },
+    ],
+  },
+  overrides: [
+    // UI Base Components - Stricter rules
+    {
+      files: ['src/components/ui/**/*.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'error',
+        '@typescript-eslint/no-explicit-any': 'error',
+        'react/display-name': 'error',
+      },
+    },
+    // Feature Components - Architecture enforcement
+    {
+      files: [
+        'src/components/{dashboard,schedule,documents,auth,ai,contextSources,ideas,client,settings,notifications}/**/*.{ts,tsx}',
+      ],
+      rules: {
+        'import/no-restricted-paths': [
+          'error',
+          {
+            zones: [
+              {
+                target:
+                  './src/components/{dashboard,schedule,documents,auth,ai,contextSources,ideas,client,settings,notifications}/**/*',
+                from: './src/components/**/*',
+                except: [
+                  './src/components/ui/**/*',
+                  './src/components/layout/**/*',
+                ],
+                message:
+                  'Feature components should only import from ui/layout components or within their own feature',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    // Hooks
+    {
+      files: ['src/hooks/**/*.{ts,tsx}', 'src/**/use*.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'error',
+        'react-hooks/rules-of-hooks': 'error',
+        'react-hooks/exhaustive-deps': 'error',
+      },
+    },
+    // API and Services
+    {
+      files: ['src/api/**/*.{ts,tsx}', 'src/services/**/*.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/no-floating-promises': 'error',
+        '@typescript-eslint/require-await': 'error',
+        'no-console': ['error', { allow: ['warn', 'error'] }],
+      },
+    },
+    // Type definitions
+    {
+      files: ['src/types/**/*.ts', '**/*.d.ts'],
+      rules: {
+        '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+        '@typescript-eslint/no-empty-interface': [
+          'error',
+          { allowSingleExtends: true },
+        ],
+      },
+    },
+    // Test files
+    {
+      files: [
+        '**/*.{test,spec}.{ts,tsx,js,jsx}',
+        '**/__tests__/**/*.{ts,tsx,js,jsx}',
+      ],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-console': 'off',
+      },
+    },
+    // JavaScript files (during migration)
+    {
+      files: ['**/*.{js,jsx}'],
+      rules: {
+        '@typescript-eslint/no-unused-vars': 'off',
+        'no-unused-vars': 'warn',
+      },
+    },
+  ],
+  ignorePatterns: [
+    'dist',
+    'build',
+    'node_modules',
+    '*.config.js',
+    '*.config.ts',
+    'vite.config.ts',
+    'tailwind.config.js',
+    'postcss.config.js',
+    '**/*.js.bak',
+    '**/*.jsx.bak',
+    'scripts/**/*',
+    'public/**/*',
+    '**/.tsbuildinfo',
+    'coverage/**/*',
+  ],
+}

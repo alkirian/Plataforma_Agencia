@@ -1,13 +1,15 @@
 // src/components/ai/MessageList.jsx
-import React from 'react';
+import React from 'react'
 
 export const MessageList = ({ messages }) => {
   return (
-    <div className="space-y-3">
+    <div className='space-y-3' role='list' aria-label='Historial de mensajes'>
       {messages.map(msg => (
         <div
           key={msg.id}
           className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          role='listitem'
+          aria-label={msg.role === 'user' ? 'Mensaje de usuario' : 'Mensaje del asistente'}
         >
           <div
             className={`max-w-[75%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${
@@ -16,10 +18,10 @@ export const MessageList = ({ messages }) => {
                 : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-bl-md'
             }`}
           >
-            <p className="whitespace-pre-wrap">{msg.content}</p>
+            <p className='whitespace-pre-wrap'>{msg.content}</p>
           </div>
         </div>
       ))}
     </div>
-  );
-};
+  )
+}

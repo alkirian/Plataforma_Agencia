@@ -1,1 +1,1 @@
-export { NotificationPanel } from './NotificationPanel';
+export { NotificationPanel } from './NotificationPanel'

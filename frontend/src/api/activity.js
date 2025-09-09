@@ -1,5 +1,5 @@
 // Activity API functions for frontend
-import { apiFetch } from './apiFetch.js';
+import { apiFetch } from './apiFetch.js'
 
 /**
  * Get activity feed for a specific client
@@ -9,15 +9,15 @@ import { apiFetch } from './apiFetch.js';
  * @returns {Promise<Array>} Array of activity objects
  */
 export const getClientActivityFeed = async (clientId, options = {}) => {
-  const { limit = 50 } = options;
+  const { limit = 50 } = options
 
-  const params = new URLSearchParams();
-  if (limit) params.append('limit', limit.toString());
+  const params = new URLSearchParams()
+  if (limit) params.append('limit', limit.toString())
 
-  const url = `/clients/${clientId}/activity-feed${params.toString() ? '?' + params.toString() : ''}`;
+  const url = `/clients/${clientId}/activity-feed${params.toString() ? '?' + params.toString() : ''}`
 
-  return apiFetch(url);
-};
+  return apiFetch(url)
+}
 
 /**
  * Get global activity feed for the current agency (dashboard)
@@ -26,9 +26,9 @@ export const getClientActivityFeed = async (clientId, options = {}) => {
  * @param {string} options.cursor
  */
 export const getAgencyActivityFeed = async ({ limit = 20, cursor } = {}) => {
-  const params = new URLSearchParams();
-  if (limit) params.append('limit', String(limit));
-  if (cursor) params.append('cursor', cursor);
-  const url = `/activity-feed${params.toString() ? '?' + params.toString() : ''}`;
-  return apiFetch(url);
-};
+  const params = new URLSearchParams()
+  if (limit) params.append('limit', String(limit))
+  if (cursor) params.append('cursor', cursor)
+  const url = `/activity-feed${params.toString() ? '?' + params.toString() : ''}`
+  return apiFetch(url)
+}

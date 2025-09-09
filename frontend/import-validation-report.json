@@ -1,0 +1,1242 @@
+{
+  "timestamp": "2025-09-06T19:08:57.683Z",
+  "stats": {
+    "totalFiles": 214,
+    "totalImports": 572,
+    "brokenImports": 113,
+    "inconsistentImports": 1,
+    "duplicateComponents": 71
+  },
+  "errors": [
+    {
+      "level": "error",
+      "message": "Broken import: \"@supabase/supabase-js\" resolves to \"srcsupabase\\supabase-js\" which doesn't exist",
+      "file": "src\\supabaseClient.js",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useNotifications.js",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useDocumentsV2.js",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useDocuments.js",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useContextSources.js",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\dashboard\\hooks\\useClientStats.js",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\dashboard\\hooks\\useActivityFeed.js",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\useClientCreation.js",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\main.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useTheme.js\" resolves to \"srcshared\\hooks\\useTheme.js\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/Onboarding.jsx\" resolves to \"srccomponents\\Onboarding.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/components/layout/MainLayout.jsx\" resolves to \"srcshared\\components\\layout\\MainLayout.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/AuthPage.jsx\" resolves to \"srcpages\\AuthPage.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 13
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/WelcomePage.jsx\" resolves to \"srcpages\\WelcomePage.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 16
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/ClientDetailPage.jsx\" resolves to \"srcpages\\ClientDetailPage.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 22
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/SettingsPage.jsx\" resolves to \"srcpages\\SettingsPage.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 25
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/InviteAcceptPage.jsx\" resolves to \"srcpages\\InviteAcceptPage.jsx\" which doesn't exist",
+      "file": "src\\App.jsx",
+      "line": 28
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useTheme\" resolves to \"srcshared\\hooks\\useTheme\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\SettingsMenu.jsx",
+      "line": 11
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useClickOutside\" resolves to \"srcshared\\hooks\\useClickOutside\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\SettingsMenu.jsx",
+      "line": 14
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useKeyboardShortcuts\" resolves to \"srcshared\\hooks\\useKeyboardShortcuts\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\MainLayout.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/ai/AIAssistantDock.jsx\" resolves to \"srccomponents\\ai\\AIAssistantDock.jsx\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\MainLayout.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/agencies\" resolves to \"srcapi\\agencies\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@hooks/useNotifications\" resolves to \"srchooks\\useNotifications\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 12
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/components/Logo\" resolves to \"srcshared\\components\\Logo\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 14
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../api/clients.js\" resolves to \"src\\shared\\api\\clients.js\" which doesn't exist",
+      "file": "src\\shared\\components\\layout\\Breadcrumbs.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@headlessui/react\" resolves to \"srcheadlessui\\react\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/dateHelpers\" resolves to \"srcshared\\utils\\dateHelpers\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./QuickTaskPopover\" resolves to \"src\\schedule\\components\\QuickTaskPopover\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./FullCalendarWrapper\" resolves to \"src\\schedule\\components\\FullCalendarWrapper\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 11
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./MiniMonth\" resolves to \"src\\schedule\\components\\MiniMonth\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 15
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./MonthAgenda\" resolves to \"src\\schedule\\components\\MonthAgenda\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 16
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../ideas/IdeasAIButton.jsx\" resolves to \"src\\schedule\\ideas\\IdeasAIButton.jsx\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 18
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../ideas/IdeasModal.jsx\" resolves to \"src\\schedule\\ideas\\IdeasModal.jsx\" which doesn't exist",
+      "file": "src\\schedule\\components\\ScheduleSection.jsx",
+      "line": 19
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../hooks/usePopoverPosition\" resolves to \"src\\schedule\\hooks\\usePopoverPosition\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useClickOutside\" resolves to \"srcshared\\hooks\\useClickOutside\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../hooks/useDeviceType\" resolves to \"src\\schedule\\hooks\\useDeviceType\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../hooks/useAutoSave\" resolves to \"src\\schedule\\hooks\\useAutoSave\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./TaskForm\" resolves to \"src\\schedule\\components\\modals\\TaskForm\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./TaskIdeasAI\" resolves to \"src\\schedule\\components\\modals\\TaskIdeasAI\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\QuickTaskPopover.jsx",
+      "line": 9
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../ui/Modal\" resolves to \"src\\schedule\\components\\ui\\Modal\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\ExportModal.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../ui/Modal\" resolves to \"src\\schedule\\components\\ui\\Modal\" which doesn't exist",
+      "file": "src\\schedule\\components\\modals\\EventDetailModal.jsx",
+      "line": 10
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../hooks/useSwipeGestures\" resolves to \"src\\schedule\\hooks\\useSwipeGestures\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\MobileCalendarView.jsx",
+      "line": 14
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/dateHelpers\" resolves to \"srcshared\\utils\\dateHelpers\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\MiniMonth.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/react\" resolves to \"srcfullcalendar\\react\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/daygrid\" resolves to \"srcfullcalendar\\daygrid\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/timegrid\" resolves to \"srcfullcalendar\\timegrid\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/interaction\" resolves to \"srcfullcalendar\\interaction\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/list\" resolves to \"srcfullcalendar\\list\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@fullcalendar/core/locales/es\" resolves to \"srcfullcalendar\\core\\locales\\es\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/dateHelpers\" resolves to \"srcshared\\utils\\dateHelpers\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\FullCalendarWrapper.jsx",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"./ExportModal\" resolves to \"src\\schedule\\components\\calendar\\ExportModal\" which doesn't exist",
+      "file": "src\\schedule\\components\\calendar\\CalendarToolbar.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"../../api/ai.js\" resolves to \"src\\schedule\\api\\ai.js\" which doesn't exist",
+      "file": "src\\schedule\\components\\ai\\TaskIdeasAI.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@headlessui/react\" resolves to \"srcheadlessui\\react\" which doesn't exist",
+      "file": "src\\schedule\\components\\ai\\AIIdeasPreview.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@pages/AuthPage.jsx\" resolves to \"srcpages\\AuthPage.jsx\" which doesn't exist",
+      "file": "src\\pages\\WelcomePage.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useTheme\" resolves to \"srcshared\\hooks\\useTheme\" which doesn't exist",
+      "file": "src\\pages\\SettingsPage.jsx",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/logger\" resolves to \"srcshared\\utils\\logger\" which doesn't exist",
+      "file": "src\\pages\\InviteAcceptPage.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/clients.js\" resolves to \"srcapi\\clients.js\" which doesn't exist",
+      "file": "src\\pages\\ClientDetailPage.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@src/schedule/components/ScheduleSection.jsx\" resolves to \"srcsrc\\schedule\\components\\ScheduleSection.jsx\" which doesn't exist",
+      "file": "src\\pages\\ClientDetailPage.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/documents/DocumentsSectionV2.jsx\" resolves to \"srccomponents\\documents\\DocumentsSectionV2.jsx\" which doesn't exist",
+      "file": "src\\pages\\ClientDetailPage.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/contextSources/ContextSourcesSection.jsx\" resolves to \"srccomponents\\contextSources\\ContextSourcesSection.jsx\" which doesn't exist",
+      "file": "src\\pages\\ClientDetailPage.jsx",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/client/ClientFooterInfo.jsx\" resolves to \"srccomponents\\client\\ClientFooterInfo.jsx\" which doesn't exist",
+      "file": "src\\pages\\ClientDetailPage.jsx",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/logger\" resolves to \"srcshared\\utils\\logger\" which doesn't exist",
+      "file": "src\\pages\\AuthCallbackPage.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/toastManager\" resolves to \"srcshared\\utils\\toastManager\" which doesn't exist",
+      "file": "src\\pages\\AuthCallbackPage.jsx",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/clients.js\" resolves to \"srcapi\\clients.js\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@headlessui/react\" resolves to \"srcheadlessui\\react\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 19
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/ui/ProgressIndicator.jsx\" resolves to \"srccomponents\\ui\\ProgressIndicator.jsx\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 25
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/ui/index.js\" resolves to \"srccomponents\\ui\\index.js\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 26
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@hooks/useUIState.js\" resolves to \"srchooks\\useUIState.js\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 27
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/agencies.js\" resolves to \"srcapi\\agencies.js\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 34
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/apiFetch.js\" resolves to \"srcapi\\apiFetch.js\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 35
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@components/ui/Button.tsx\" resolves to \"srccomponents\\ui\\Button.tsx\" which doesn't exist",
+      "file": "src\\dashboard\\DashboardPage.jsx",
+      "line": 38
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/utils/logger\" resolves to \"srcshared\\utils\\logger\" which doesn't exist",
+      "file": "src\\contexts\\AuthContext.jsx",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Tooltip.jsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\LoadingSpinner.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@shared/hooks/useKeyboardShortcuts\" resolves to \"srcshared\\hooks\\useKeyboardShortcuts\" which doesn't exist",
+      "file": "src\\components\\ui\\KeyboardShortcutsModal.jsx",
+      "line": 5
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Input.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Icon.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\ui\\ErrorBoundary.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\components\\ui\\ClientSelector.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Card.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Button.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Avatar.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\GlobalDropZone.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\DocumentUploader.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\DocumentsSection.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@headlessui/react\" resolves to \"srcheadlessui\\react\" which doesn't exist",
+      "file": "src\\components\\documents\\DocumentPreview.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\DocumentList.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\DocumentBoard.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\documents\\ColumnModal.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@headlessui/react\" resolves to \"srcheadlessui\\react\" which doesn't exist",
+      "file": "src\\components\\documents\\BoardColumn.jsx",
+      "line": 10
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/solid\" resolves to \"srcheroicons\\react\\24\\solid\" which doesn't exist",
+      "file": "src\\components\\documents\\v2\\DocumentGrid.jsx",
+      "line": 23
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/solid\" resolves to \"srcheroicons\\react\\24\\solid\" which doesn't exist",
+      "file": "src\\components\\contextSources\\NoteSourceForm.jsx",
+      "line": 10
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\contextSources\\DocumentSourceUploader.jsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/solid\" resolves to \"srcheroicons\\react\\24\\solid\" which doesn't exist",
+      "file": "src\\components\\contextSources\\ContextSourceCard.jsx",
+      "line": 15
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/solid\" resolves to \"srcheroicons\\react\\24\\solid\" which doesn't exist",
+      "file": "src\\components\\ai\\ChatInput.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\components\\ai\\AIAssistant.jsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@api/ai.js\" resolves to \"srcapi\\ai.js\" which doesn't exist",
+      "file": "src\\components\\ai\\AIAssistant.jsx",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\shared\\hooks\\useDocumentsCore.ts",
+      "line": 6
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useNotifications.ts",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@supabase/supabase-js\" resolves to \"srcsupabase\\supabase-js\" which doesn't exist",
+      "file": "src\\hooks\\useNotifications.ts",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useDocumentsV2.ts",
+      "line": 8
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useDocuments.ts",
+      "line": 7
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\hooks\\useActivityFeed.ts",
+      "line": 1
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@tanstack/react-query\" resolves to \"srctanstack\\react-query\" which doesn't exist",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\useClientCreation.ts",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\dashboard\\components\\WelcomeEmptyState.tsx",
+      "line": 2
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\dashboard\\components\\ActivityFeed.tsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@heroicons/react/24/outline\" resolves to \"srcheroicons\\react\\24\\outline\" which doesn't exist",
+      "file": "src\\components\\ui\\Modal.tsx",
+      "line": 4
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\LoadingSpinner.tsx",
+      "line": 11
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Input.tsx",
+      "line": 11
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\ui\\Button.tsx",
+      "line": 3
+    },
+    {
+      "level": "error",
+      "message": "Broken import: \"@lib/utils\" resolves to \"srclib\\utils\" which doesn't exist",
+      "file": "src\\components\\composite\\index.tsx",
+      "line": 23
+    }
+  ],
+  "warnings": [
+    {
+      "level": "warning",
+      "message": "Mixed import styles detected: 2 relative, 1 alias",
+      "file": "src\\shared\\components\\layout\\SettingsMenu.jsx",
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/KeyboardShortcutsModal\"",
+      "file": "src\\shared\\components\\layout\\SettingsMenu.jsx",
+      "line": 13
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/Avatar\"",
+      "file": "src\\shared\\components\\layout\\SettingsMenu.jsx",
+      "line": 15
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui\"",
+      "file": "src\\shared\\components\\layout\\MobileMenu.jsx",
+      "line": 5
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 7
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/Button.tsx\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 8
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/ClientSelector\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 9
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/notifications/NotificationPanel\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 10
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/notifications/NotificationDropdown\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 11
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/ClientSearchModal\"",
+      "file": "src\\shared\\components\\layout\\Header.jsx",
+      "line": 15
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/Modal\"",
+      "file": "src\\shared\\components\\forms\\FormModal.tsx",
+      "line": 2
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../shared/types\"",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\SocialLinksSection.tsx",
+      "line": 3
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/Button\"",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\ContactsEditor.tsx",
+      "line": 2
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../shared/types\"",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\ContactsEditor.tsx",
+      "line": 3
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../components/ui/Modal\"",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\ClientCreationModal.tsx",
+      "line": 2
+    },
+    {
+      "level": "warning",
+      "message": "Complex relative import could use alias: \"../../../shared/types\"",
+      "file": "src\\dashboard\\components\\ClientCreationModal\\ClientCreationModal.tsx",
+      "line": 7
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getSchedule\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"createScheduleItem\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getScheduleItem\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"updateScheduleItem\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"deleteScheduleItem\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"TASK_STATES\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"STATE_ORDER\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"STATE_GROUPS\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getStateStyle\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getNextStates\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as EventDetailModal \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as ExportModal \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as QuickTaskPopover \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as TaskForm \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as FullCalendarWrapper \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as MiniMonth \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as MobileCalendarView \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as MonthAgenda \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as CalendarToolbar \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as SearchBar \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as AIIdeasPreview \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default as TaskIdeasAI \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Card\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"CardHeader\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"CardTitle\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"CardContent\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"CardFooter\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"StatCard\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Button\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"CyberButton\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Input\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Textarea\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"AnimatedText\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ProgressIndicator\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ProgressBadge\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"KeyboardShortcutsModal \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"LoadingSpinner\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"LoadingCard\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"LoadingPage\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"LoadingOverlay\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ErrorBoundary\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ErrorFallback\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ErrorCard\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"NetworkError\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"NotFoundError\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Tooltip\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"HelpTooltip\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ShortcutTooltip\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"SOURCE_TYPES\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"SOURCE_TYPE_CONFIG\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"PROCESSING_STATUS\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getDocumentsForClient\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"uploadDocument\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"deleteDocument\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"downloadDocument\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getClients\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"getClientById\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"createClient\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"deleteClient\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"apiFetch\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"Breadcrumbs\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"withErrorBoundary\" found in 3 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"documentsV1Service\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"documentsV2Service\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"createDocumentsService\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"documentQueryKeys\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"ClientCreationModal \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"default \" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"FormModal\" found in 2 files:",
+      "file": null,
+      "line": null
+    },
+    {
+      "level": "warning",
+      "message": "Duplicate component \"SearchInput\" found in 2 files:",
+      "file": null,
+      "line": null
+    }
+  ],
+  "config": {
+    "rootDir": "C:\\Users\\User\\Documents\\Plataforma_Agencia\\frontend",
+    "srcDir": "C:\\Users\\User\\Documents\\Plataforma_Agencia\\frontend\\src",
+    "extensions": [
+      "js",
+      "jsx",
+      "ts",
+      "tsx"
+    ],
+    "aliasMap": {
+      "@": "./src",
+      "@features": "./src/features",
+      "@shared": "./src/shared",
+      "@app": "./src/app",
+      "@infrastructure": "./src/infrastructure",
+      "@components": "./src/components",
+      "@pages": "./src/pages",
+      "@hooks": "./src/hooks",
+      "@api": "./src/api",
+      "@lib": "./src/lib",
+      "@styles": "./src/styles",
+      "@types": "./src/types",
+      "@utils": "./src/utils",
+      "@services": "./src/services",
+      "@stores": "./src/stores",
+      "@contexts": "./src/contexts"
+    }
+  }
+}

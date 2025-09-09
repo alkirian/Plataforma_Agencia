@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { motion } from 'framer-motion'
+import { cn } from '@lib/utils'
 
 export const Button = ({
   children,
@@ -16,13 +16,13 @@ export const Button = ({
 }) => {
   const variants = {
     primary: cyber
-  ? 'btn-cyber bg-gradient-to-r from-[var(--color-accent-blue)]/20 to-[var(--color-accent-violet)]/20 text-text-primary border-[color:var(--color-border-subtle)]'
+      ? 'btn-cyber bg-gradient-to-r from-[var(--color-accent-blue)]/20 to-[var(--color-accent-violet)]/20 text-text-primary border-[color:var(--color-border-subtle)]'
       : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/25',
     secondary: cyber
-  ? 'btn-cyber bg-surface-soft text-text-primary border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-strong)]'
+      ? 'btn-cyber bg-surface-soft text-text-primary border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-strong)]'
       : 'bg-surface-800 text-surface-100 hover:bg-surface-700 border border-surface-700',
     ghost: cyber
-  ? 'bg-transparent text-text-muted hover:text-text-primary hover:bg-[rgba(96,165,250,0.05)] border border-transparent hover:border-[color:var(--color-border-subtle)]'
+      ? 'bg-transparent text-text-muted hover:text-text-primary hover:bg-[rgba(96,165,250,0.05)] border border-transparent hover:border-[color:var(--color-border-subtle)]'
       : 'bg-transparent text-surface-300 hover:bg-surface-800/50 hover:text-surface-100',
     danger: cyber
       ? 'btn-cyber bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-100 border-red-500/40'
@@ -30,30 +30,30 @@ export const Button = ({
     success: cyber
       ? 'btn-cyber bg-gradient-to-r from-success/20 to-success/30 text-green-100 border-success/40'
       : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
-  };
+  }
 
   const sizes = {
     sm: 'px-4 py-2 text-sm rounded-lg min-h-[44px] sm:min-h-auto sm:px-3 sm:py-1.5',
     md: 'px-6 py-3 rounded-xl min-h-[44px] sm:min-h-auto sm:px-5 sm:py-2.5',
     lg: 'px-8 py-4 text-lg rounded-xl min-h-[48px] sm:min-h-auto sm:px-7 sm:py-3',
     xl: 'px-10 py-5 text-xl rounded-2xl min-h-[52px] sm:min-h-auto sm:px-8 sm:py-4',
-  };
+  }
 
   const handleClick = e => {
-    if (disabled || loading) return;
-    onClick?.(e);
-  };
+    if (disabled || loading) return
+    onClick?.(e)
+  }
 
   return (
     <motion.button
       whileHover={{
         scale: disabled ? 1 : 1.02,
-  boxShadow: !disabled && cyber ? '0 0 25px -5px rgba(96,165,250,0.3)' : undefined,
+        boxShadow: !disabled && cyber ? '0 0 25px -5px rgba(96,165,250,0.3)' : undefined,
       }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       className={cn(
         'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300',
-  'focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/50 focus:ring-offset-2 focus:ring-offset-[color:var(--color-app-bg)]',
+        'focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/50 focus:ring-offset-2 focus:ring-offset-[color:var(--color-app-bg)]',
         !cyber && 'btn-modern',
         variants[variant],
         sizes[size],
@@ -84,8 +84,8 @@ export const Button = ({
       ) : null}
       <span>{children}</span>
     </motion.button>
-  );
-};
+  )
+}
 
 // Variante especializada
-export const CyberButton = props => <Button {...props} cyber={true} />;
+export const CyberButton = props => <Button {...props} cyber={true} />

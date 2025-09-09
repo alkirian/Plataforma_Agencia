@@ -21,6 +21,7 @@
     "express": "^4.19.2",
     "jsdom": "^26.1.0",
     "mammoth": "^1.10.0",
+    "multer": "^2.0.1",
     "pdf-parse": "^1.1.1",
     "puppeteer": "^24.17.1",
     "tiktoken": "^1.0.22",

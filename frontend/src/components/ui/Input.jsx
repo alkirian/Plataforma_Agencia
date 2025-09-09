@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { motion } from 'framer-motion'
+import { cn } from '@lib/utils'
 
 export const Input = ({
   type = 'text',
@@ -85,8 +85,8 @@ export const Input = ({
         </motion.p>
       )}
     </div>
-  );
-};
+  )
+}
 
 export const Textarea = ({
   placeholder = '',
@@ -158,5 +158,5 @@ export const Textarea = ({
         </motion.p>
       )}
     </div>
-  );
-};
+  )
+}
