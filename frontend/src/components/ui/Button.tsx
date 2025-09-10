@@ -48,26 +48,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variants = {
       primary: cyber
-        ? 'btn-cyber bg-gradient-to-r from-[var(--palette-primary-accent)]/20 to-[var(--palette-secondary-accent)]/20 text-[var(--palette-primary-text)] border-[var(--palette-primary-accent)]/40'
-        : 'bg-gradient-to-r from-[var(--palette-primary-accent)] to-[var(--palette-secondary-accent)] text-white hover:from-[var(--palette-secondary-accent)] hover:to-[var(--palette-hover-state)] shadow-lg shadow-[var(--palette-primary-accent)]/25',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--theme-interactive-primary)]/20 to-[var(--theme-interactive-secondary)]/20 text-[var(--theme-text-primary)] border-[var(--theme-border-interactive)]'
+        : 'bg-gradient-to-r from-[var(--theme-interactive-primary)] to-[var(--theme-interactive-secondary)] text-[var(--theme-text-inverse)] hover:from-[var(--theme-interactive-primaryHover)] hover:to-[var(--theme-interactive-secondaryHover)] shadow-lg shadow-[var(--theme-shadows-medium)]',
       secondary: cyber
-        ? 'btn-cyber bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] border-[var(--palette-secondary-accent)]/60 hover:border-[var(--palette-primary-accent)]/60'
-        : 'bg-[var(--palette-secondary-bg)] text-[var(--palette-primary-text)] hover:bg-[var(--palette-primary-bg)] border border-[var(--palette-secondary-accent)]/60',
+        ? 'btn-cyber bg-[var(--theme-surface-strong)] text-[var(--theme-text-primary)] border-[var(--theme-border-default)] hover:border-[var(--theme-border-interactive)]'
+        : 'bg-[var(--theme-surface-strong)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-surface-default)] border border-[var(--theme-border-default)] hover:border-[var(--theme-border-strong)]',
       ghost: cyber
-        ? 'bg-transparent text-[var(--palette-primary-text)]/70 hover:text-[var(--palette-primary-text)] hover:bg-[var(--palette-secondary-bg)]/50 border border-transparent hover:border-[var(--palette-secondary-accent)]/40'
-        : 'bg-transparent text-[var(--palette-primary-text)]/70 hover:bg-[var(--palette-secondary-bg)]/50 hover:text-[var(--palette-primary-text)]',
+        ? 'bg-transparent text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-surface-soft)] border border-transparent hover:border-[var(--theme-border-subtle)]'
+        : 'bg-transparent text-[var(--theme-text-secondary)] hover:bg-[var(--theme-surface-soft)] hover:text-[var(--theme-text-primary)]',
       danger: cyber
-        ? 'btn-cyber bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-100 border-red-500/40'
-        : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--theme-status-error)]/20 to-[var(--theme-status-error)]/30 text-[var(--theme-status-error)] border-[var(--theme-status-error)]/40'
+        : 'bg-gradient-to-r from-[var(--theme-status-error)] to-[var(--theme-status-error)] text-[var(--theme-text-inverse)] hover:opacity-90',
       success: cyber
-        ? 'btn-cyber bg-gradient-to-r from-green-500/20 to-green-600/20 text-green-100 border-green-500/40'
-        : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--theme-status-success)]/20 to-[var(--theme-status-success)]/30 text-[var(--theme-status-success)] border-[var(--theme-status-success)]/40'
+        : 'bg-gradient-to-r from-[var(--theme-status-success)] to-[var(--theme-status-success)] text-[var(--theme-text-inverse)] hover:opacity-90',
       warning: cyber
-        ? 'btn-cyber bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-100 border-yellow-500/40'
-        : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--theme-status-warning)]/20 to-[var(--theme-status-warning)]/30 text-[var(--theme-status-warning)] border-[var(--theme-status-warning)]/40'
+        : 'bg-gradient-to-r from-[var(--theme-status-warning)] to-[var(--theme-status-warning)] text-[var(--theme-text-inverse)] hover:opacity-90',
       info: cyber
-        ? 'btn-cyber bg-gradient-to-r from-[var(--palette-cold-alt)]/20 to-[var(--palette-soft-alt)]/20 text-[var(--palette-soft-alt)] border-[var(--palette-cold-alt)]/40'
-        : 'bg-gradient-to-r from-[var(--palette-cold-alt)] to-[var(--palette-soft-alt)] text-white hover:from-[var(--palette-soft-alt)] hover:to-[var(--palette-cold-alt)]',
+        ? 'btn-cyber bg-gradient-to-r from-[var(--theme-status-info)]/20 to-[var(--theme-interactive-tertiary)]/20 text-[var(--theme-interactive-tertiary)] border-[var(--theme-status-info)]/40'
+        : 'bg-gradient-to-r from-[var(--theme-status-info)] to-[var(--theme-interactive-tertiary)] text-[var(--theme-text-inverse)] hover:from-[var(--theme-interactive-tertiary)] hover:to-[var(--theme-status-info)]',
     } as const
 
     const sizes = {
@@ -96,7 +96,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...motionProps}
         className={cn(
           'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300',
-          'focus:outline-none focus:ring-2 focus:ring-[var(--palette-primary-accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--palette-primary-bg)]',
+          'focus:outline-none focus:ring-2 focus:ring-[var(--theme-border-interactive)]/50 focus:ring-offset-2 focus:ring-offset-[var(--theme-background-primary)]',
           !cyber && 'btn-modern',
           variants[variant],
           sizes[size],

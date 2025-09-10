@@ -1,7 +1,6 @@
 // src/App.jsx
 
 import { useState, useEffect, Suspense, lazy } from 'react'
-import { useTheme } from '@shared/hooks/useTheme'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient.js'
 import { Onboarding } from '@components/Onboarding.jsx'
@@ -67,8 +66,6 @@ const MainApp = ({ session, profile }) => {
 
 // Componente Raíz que gestiona el estado de autenticación
 function App() {
-  // Inicializa tema oscuro por defecto
-  useTheme('dark')
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)

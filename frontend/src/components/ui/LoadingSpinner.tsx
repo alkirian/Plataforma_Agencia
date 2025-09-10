@@ -29,12 +29,12 @@ const sizeStyles = {
 } as const
 
 const variantStyles = {
-  primary: 'border-[var(--palette-primary-accent)] border-t-transparent',
-  secondary: 'border-[var(--palette-primary-text)]/60 border-t-transparent',
+  primary: 'border-[var(--theme-interactive-primary)] border-t-transparent',
+  secondary: 'border-[var(--theme-text-primary)]/60 border-t-transparent',
   white: 'border-white border-t-transparent',
-  success: 'border-green-500 border-t-transparent',
-  danger: 'border-red-500 border-t-transparent',
-  warning: 'border-yellow-500 border-t-transparent',
+  success: 'border-[var(--theme-status-success)] border-t-transparent',
+  danger: 'border-[var(--theme-status-error)] border-t-transparent',
+  warning: 'border-[var(--theme-status-warning)] border-t-transparent',
 } as const
 
 // ============================================================================
@@ -134,10 +134,10 @@ export const LoadingDots: React.FC<{
   const dotSize = size === 'sm' ? 'h-1.5 w-1.5' : size === 'lg' ? 'h-3 w-3' : 'h-2 w-2'
   const dotColor =
     variant === 'primary'
-      ? 'bg-[var(--color-accent-blue)]'
+      ? 'bg-[var(--theme-interactive-primary)]'
       : variant === 'white'
         ? 'bg-white'
-        : 'bg-text-muted'
+        : 'bg-[var(--theme-text-muted)]'
 
   return (
     <div className={cn('flex items-center justify-center space-x-1', className)} role='status'>
@@ -168,10 +168,10 @@ export const LoadingPulse: React.FC<{
   const pulseSize = size === 'sm' ? 'h-6 w-6' : size === 'lg' ? 'h-12 w-12' : 'h-8 w-8'
   const pulseColor =
     variant === 'primary'
-      ? 'bg-[var(--color-accent-blue)]'
+      ? 'bg-[var(--theme-interactive-primary)]'
       : variant === 'white'
         ? 'bg-white'
-        : 'bg-text-muted'
+        : 'bg-[var(--theme-text-muted)]'
 
   return (
     <div className={cn('flex items-center justify-center', className)} role='status'>
@@ -197,7 +197,7 @@ export const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-xl p-6 text-center space-y-4',
+        'bg-[var(--theme-surface-soft)] border border-[color:var(--theme-border-subtle)] rounded-xl p-6 text-center space-y-4',
         className
       )}
       data-testid={testId}
@@ -205,8 +205,8 @@ export const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
     >
       <LoadingSpinner size='lg' />
       <div className='space-y-1'>
-        <h3 className='text-lg font-medium text-text-primary'>{title}</h3>
-        {description && <p className='text-sm text-text-muted'>{description}</p>}
+        <h3 className='text-lg font-medium text-[var(--theme-text-primary)]'>{title}</h3>
+        {description && <p className='text-sm text-[var(--theme-text-muted)]'>{description}</p>}
       </div>
     </motion.div>
   )
@@ -243,18 +243,18 @@ export const ErrorCard = forwardRef<HTMLDivElement, ErrorCardProps>(
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'bg-surface-soft border border-red-500/20 rounded-xl p-6 text-center space-y-4',
+        'bg-[var(--theme-surface-soft)] border border-[var(--theme-status-error)]/20 rounded-xl p-6 text-center space-y-4',
         className
       )}
       data-testid={testId}
       {...props}
     >
       <div className='flex justify-center'>
-        <AlertCircle className='h-12 w-12 text-red-500' />
+        <AlertCircle className='h-12 w-12 text-[var(--theme-status-error)]' />
       </div>
       <div className='space-y-1'>
-        <h3 className='text-lg font-medium text-text-primary'>{title}</h3>
-        {message && <p className='text-sm text-text-muted'>{message}</p>}
+        <h3 className='text-lg font-medium text-[var(--theme-text-primary)]'>{title}</h3>
+        {message && <p className='text-sm text-[var(--theme-text-muted)]'>{message}</p>}
       </div>
       {onRetry && (
         <Button
@@ -311,9 +311,9 @@ export const LoadingOverlay = forwardRef<HTMLDivElement, LoadingOverlayProps>(
             className
           )}
         >
-          <div className='bg-surface-strong/90 border border-[color:var(--color-border-subtle)] rounded-lg p-4 flex items-center space-x-3 shadow-lg backdrop-blur-xl'>
+          <div className='bg-[var(--theme-surface-strong)]/90 border border-[color:var(--theme-border-subtle)] rounded-lg p-4 flex items-center space-x-3 shadow-lg backdrop-blur-xl'>
             <LoadingSpinner size='sm' />
-            <span className='text-sm text-text-primary font-medium'>{label}</span>
+            <span className='text-sm text-[var(--theme-text-primary)] font-medium'>{label}</span>
           </div>
         </motion.div>
       )}
@@ -334,7 +334,7 @@ export const SkeletonLine: React.FC<{
 }> = ({ width = 'w-full', height = 'h-4', className }) => (
   <motion.div
     className={cn(
-      'bg-gradient-to-r from-surface-soft via-surface-strong to-surface-soft rounded',
+      'bg-gradient-to-r from-[var(--theme-surface-soft)] via-[var(--theme-surface-strong)] to-[var(--theme-surface-soft)] rounded',
       width,
       height,
       className
@@ -360,7 +360,7 @@ export const SkeletonCard: React.FC<{
 }> = ({ lines = 3, showAvatar = false, className }) => (
   <div
     className={cn(
-      'p-4 border border-[color:var(--color-border-subtle)] rounded-xl space-y-3',
+      'p-4 border border-[color:var(--theme-border-subtle)] rounded-xl space-y-3',
       className
     )}
   >

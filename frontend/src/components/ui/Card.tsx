@@ -113,8 +113,8 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
       className={cn(
         'mb-6 pb-4',
         cyber
-          ? 'border-b border-[color:var(--color-border-subtle)]'
-          : 'border-b border-[color:var(--color-border-subtle)]',
+          ? 'border-b border-[color:var(--theme-border-subtle)]'
+          : 'border-b border-[color:var(--theme-border-subtle)]',
         className
       )}
       {...props}
@@ -180,8 +180,8 @@ export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
       className={cn(
         'mt-6 pt-4',
         cyber
-          ? 'border-t border-[color:var(--color-border-subtle)]'
-          : 'border-t border-[color:var(--color-border-subtle)]',
+          ? 'border-t border-[color:var(--theme-border-subtle)]'
+          : 'border-t border-[color:var(--theme-border-subtle)]',
         className
       )}
       {...props}
@@ -219,7 +219,7 @@ export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
           </div>
         </div>
         {Icon && (
-          <div className='h-10 w-10 rounded-xl flex items-center justify-center bg-surface-soft border border-[color:var(--color-border-subtle)] shadow-glass'>
+          <div className='h-10 w-10 rounded-xl flex items-center justify-center bg-surface-soft border border-[color:var(--theme-border-subtle)] shadow-glass'>
             <Icon className='h-5 w-5 text-[var(--color-accent-blue)]' />
           </div>
         )}
