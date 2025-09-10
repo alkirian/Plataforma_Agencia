@@ -2,8 +2,8 @@
 // Following Scope Rules: All auth-related functionality in one feature
 
 // Pages
-export { AuthPage } from './pages/AuthPage.jsx'
-export { WelcomePage } from './pages/WelcomePage.jsx'
+export { AuthPage } from './pages/AuthPage'
+export { WelcomePage } from './pages/WelcomePage'
 
 // Components
 export * from './components'

@@ -12,7 +12,7 @@ export type TaskState =
   | 'published'
   | 'completed'
   | 'paused'
-  | 'cancelled';
+  | 'cancelled'
 
 export type SocialChannel =
   | 'IG'
@@ -23,70 +23,70 @@ export type SocialChannel =
   | 'YT'
   | 'TikTok'
   | 'LinkedIn'
-  | 'WhatsApp';
+  | 'WhatsApp'
 
-export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent'
 
 export type CalendarView =
   | 'dayGridMonth'
   | 'timeGridWeek'
   | 'timeGridDay'
   | 'listWeek'
-  | 'listMonth';
+  | 'listMonth'
 
 // FullCalendar Event
 export interface FullCalendarEvent {
-  id: string;
-  title: string;
-  start: Date | string;
-  end?: Date | string;
-  allDay?: boolean;
-  extendedProps?: Record<string, any>;
-  resource?: any;
-  status?: TaskState;
+  id: string
+  title: string
+  start: Date | string
+  end?: Date | string
+  allDay?: boolean
+  extendedProps?: Record<string, any>
+  resource?: any
+  status?: TaskState
 }
 
 // Schedule Forms
 export interface ScheduleFormData {
-  title: string;
-  date: string;
-  time: string;
-  copy?: string;
-  channel: SocialChannel;
-  status: TaskState;
-  priority?: Priority;
+  title: string
+  date: string
+  time: string
+  copy?: string
+  channel: SocialChannel
+  status: TaskState
+  priority?: Priority
 }
 
 export interface QuickTaskFormData {
-  title: string;
-  date: string;
-  time: string;
-  copy?: string;
-  channel: SocialChannel;
-  status: TaskState;
+  title: string
+  date: string
+  time: string
+  copy?: string
+  channel: SocialChannel
+  status: TaskState
 }
 
 // Loading States
 export interface LoadingStates {
-  loading: boolean;
-  creating: boolean;
-  updating: boolean;
-  deleting: boolean;
-  moving?: boolean;
+  loading: boolean
+  creating: boolean
+  updating: boolean
+  deleting: boolean
+  moving?: boolean
 }
 
 // Schedule Item (main entity)
 export interface ScheduleItem {
-  id: string;
-  title: string;
-  copy?: string;
-  channel: SocialChannel;
-  status: TaskState;
-  priority?: Priority;
-  scheduled_at: string;
-  client_id: string;
-  created_at: string;
-  updated_at: string;
+  id: string
+  title: string
+  copy?: string
+  channel: SocialChannel
+  status: TaskState
+  priority?: Priority
+  scheduled_at: string
+  client_id: string
+  created_at: string
+  updated_at: string
 }
 
 // Constants arrays for type guards - exported as values
@@ -103,7 +103,7 @@ export const TASK_STATES_KEYS = [
   'completed',
   'paused',
   'cancelled',
-] as const;
+] as const
 
 export const SOCIAL_CHANNELS_KEYS = [
   'IG',
@@ -115,9 +115,9 @@ export const SOCIAL_CHANNELS_KEYS = [
   'TikTok',
   'LinkedIn',
   'WhatsApp',
-] as const;
+] as const
 
-export const PRIORITY_KEYS = ['low', 'medium', 'high', 'urgent'] as const;
+export const PRIORITY_KEYS = ['low', 'medium', 'high', 'urgent'] as const
 
 export const CALENDAR_VIEW_KEYS = [
   'dayGridMonth',
@@ -125,7 +125,7 @@ export const CALENDAR_VIEW_KEYS = [
   'timeGridDay',
   'listWeek',
   'listMonth',
-] as const;
+] as const
 
 // Default values
 export const DEFAULT_SCHEDULE_FORM_DATA: ScheduleFormData = {
@@ -136,7 +136,7 @@ export const DEFAULT_SCHEDULE_FORM_DATA: ScheduleFormData = {
   channel: 'IG',
   status: 'pending',
   priority: 'medium',
-};
+}
 
 export const DEFAULT_QUICK_TASK_DATA: QuickTaskFormData = {
   title: '',
@@ -145,7 +145,7 @@ export const DEFAULT_QUICK_TASK_DATA: QuickTaskFormData = {
   copy: '',
   channel: 'IG',
   status: 'pending',
-};
+}
 
 export const DEFAULT_LOADING_STATES: LoadingStates = {
   loading: false,
@@ -153,89 +153,88 @@ export const DEFAULT_LOADING_STATES: LoadingStates = {
   updating: false,
   deleting: false,
   moving: false,
-};
+}
 
 // Type guards
 export const isTaskState = (value: string): value is TaskState => {
-  return (TASK_STATES_KEYS as readonly string[]).includes(value);
-};
+  return (TASK_STATES_KEYS as readonly string[]).includes(value)
+}
 
 export const isSocialChannel = (value: string): value is SocialChannel => {
-  return (SOCIAL_CHANNELS_KEYS as readonly string[]).includes(value);
-};
+  return (SOCIAL_CHANNELS_KEYS as readonly string[]).includes(value)
+}
 
 export const isPriority = (value: string): value is Priority => {
-  return (PRIORITY_KEYS as readonly string[]).includes(value);
-};
+  return (PRIORITY_KEYS as readonly string[]).includes(value)
+}
 
 export const isCalendarView = (value: string): value is CalendarView => {
-  return (CALENDAR_VIEW_KEYS as readonly string[]).includes(value);
-};
+  return (CALENDAR_VIEW_KEYS as readonly string[]).includes(value)
+}
 
 // Utility types
-export type ScheduleItemWithoutDates = Omit<ScheduleItem, 'created_at' | 'updated_at'>;
+export type ScheduleItemWithoutDates = Omit<ScheduleItem, 'created_at' | 'updated_at'>
 export type ScheduleItemPreview = Pick<
   ScheduleItem,
   'id' | 'title' | 'status' | 'scheduled_at' | 'channel'
->;
+>
 export type ScheduleItemSummary = Pick<
   ScheduleItem,
   'id' | 'title' | 'status' | 'channel' | 'priority'
->;
+>
 
 // Event handlers
-export type ScheduleEventHandler = () => void;
-export type ScheduleEventHandlerWithEvent = (event: FullCalendarEvent) => void;
-export type ScheduleAsyncHandler = () => Promise<void>;
-export type ScheduleAsyncHandlerWithPayload<P> = (payload: P) => Promise<void>;
+export type ScheduleEventHandler = () => void
+export type ScheduleEventHandlerWithEvent = (event: FullCalendarEvent) => void
+export type ScheduleAsyncHandler = () => Promise<void>
+export type ScheduleAsyncHandlerWithPayload<P> = (payload: P) => Promise<void>
 
 // API Payload types
 export interface CreateScheduleItemPayload {
-  title: string;
-  description?: string;
-  copy?: string;
-  scheduled_at?: string;
-  status?: TaskState;
-  priority?: Priority;
-  channel?: SocialChannel;
+  title: string
+  description?: string
+  copy?: string
+  scheduled_at?: string
+  status?: TaskState
+  priority?: Priority
+  channel?: SocialChannel
 }
 
 export interface UpdateScheduleItemPayload {
-  title?: string;
-  description?: string;
-  copy?: string;
-  scheduled_at?: string;
-  status?: TaskState;
-  priority?: Priority;
-  channel?: SocialChannel;
+  title?: string
+  description?: string
+  copy?: string
+  scheduled_at?: string
+  status?: TaskState
+  priority?: Priority
+  channel?: SocialChannel
 }
 
 // API Response types
 export interface ScheduleAPIResponse {
-  data: ScheduleItem[];
-  success: boolean;
-  message?: string;
+  data: ScheduleItem[]
+  success: boolean
+  message?: string
 }
 
 export interface SingleScheduleAPIResponse {
-  data: ScheduleItem;
-  success: boolean;
-  message?: string;
+  data: ScheduleItem
+  success: boolean
+  message?: string
 }
 
 // Task State Configuration Types
 export interface TaskStateConfig {
-  color: string;
-  bg: string;
-  name: string;
-  description: string;
-  group?: StateGroup;
-  icon?: string;
+  color: string
+  bg: string
+  name: string
+  description: string
+  group?: StateGroup
+  icon?: string
 }
 
-export type StateGroup = 'planning' | 'design' | 'review' | 'publishing' | 'completed' | 'inactive';
+export type StateGroup = 'planning' | 'design' | 'review' | 'publishing' | 'completed' | 'inactive'
 
 export interface TaskStateTransitions {
-  [key: string]: TaskState[];
+  [key: string]: TaskState[]
 }
-

@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import esLocale from '@fullcalendar/core/locales/es'
 import { getCurrentDate } from '@shared/utils/dateHelpers'
+import { TASK_STATE_MAP } from '@constants/domainMap'
 import { CalendarToolbar } from './CalendarToolbar'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 import '../../styles/fullcalendar-custom.css'
@@ -155,7 +156,6 @@ const FullCalendarWrapper = ({
     try {
       const api = calendarRef.current?.getApi()
       if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
         console.debug('[FullCalendar] datesSet', {
           view: arg.view?.type,
           start: arg.start,
@@ -296,7 +296,16 @@ const FullCalendarWrapper = ({
     eventClassNames: arg => {
       const status = arg.event.extendedProps?.status
       const classes = []
-      if (status) classes.push(`fc-event--${status}`)
+      // Map internal EN status to legacy CSS (ES ASCII) for styling
+      let classKey = null
+      if (status && TASK_STATE_MAP[status]) {
+        classKey = TASK_STATE_MAP[status].externalCode
+      }
+      if (classKey) {
+        classes.push(`fc-event--${classKey}`)
+      } else if (status) {
+        classes.push(`fc-event--${status}`)
+      }
       classes.push('fc-event-base')
       if (highlightId && arg.event.id === highlightId) classes.push('fc-event--highlight')
       return classes
@@ -346,7 +355,7 @@ const FullCalendarWrapper = ({
     eventDisplay: 'block',
     eventStartEditable: true,
     eventDurationEditable: true,
-    eventClassNames: arg => {
+    eventClassNamesLegacy: arg => {
       const s = (arg.event.extendedProps?.status || '').toLowerCase()
       const classes = ['fc-event-base']
       // map to kebab variants used in CSS

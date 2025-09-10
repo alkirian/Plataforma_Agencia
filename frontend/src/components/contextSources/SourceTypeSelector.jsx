@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { SOURCE_TYPE_CONFIG, SOURCE_TYPES } from '../../api/contextSources'
+import { SOURCE_TYPE_CONFIG, SOURCE_TYPES } from '../../api/contextSources.api'
 
 const colorVariants = {
   blue: {

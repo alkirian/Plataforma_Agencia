@@ -53,8 +53,8 @@ export default defineConfig({
       '@stores': path.resolve(__dirname, './src/stores'),
       '@contexts': path.resolve(__dirname, './src/contexts'),
       '@schedule': path.resolve(__dirname, './src/schedule'),
-      '@constants': path.resolve(__dirname, './src/constants')
-      ,
+      '@documents': path.resolve(__dirname, './src/documents'),
+      '@constants': path.resolve(__dirname, './src/constants'),
       // Back-compat for imports without '@' prefix
       'api': path.resolve(__dirname, './src/api'),
       'components': path.resolve(__dirname, './src/components')

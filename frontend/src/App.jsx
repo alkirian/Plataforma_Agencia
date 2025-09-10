@@ -5,7 +5,7 @@ import { useTheme } from '@shared/hooks/useTheme'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient.js'
 import { Onboarding } from '@components/Onboarding.jsx'
-import { MainLayout } from '@shared/components/layout/MainLayout.jsx'
+import { MainLayout } from '@shared/components/layout/MainLayout.tsx'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 import './App.css'
 

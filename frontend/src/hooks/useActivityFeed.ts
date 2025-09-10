@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { getAgencyActivityFeed } from '../api/activity'
+import { getAgencyActivityFeed } from '../api/activity.api'
 import type {
   ActivityEvent,
   UseActivityFeedReturn,

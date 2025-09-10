@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin } from '../config/supabaseClient.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Registra un nuevo usuario en Supabase Auth y luego crea una nueva agencia
@@ -70,10 +71,10 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, role, 
         .from('profiles')
         .update({ role })
         .eq('id', userId);
-      if (roleErr) console.warn('[users.service] No se pudo actualizar role en profiles:', roleErr.message);
+      if (roleErr) logger.warn('No se pudo actualizar role en profiles', { error: roleErr.message, userId });
     }
   } catch (e) {
-    console.warn('[users.service] Excepción actualizando role:', e.message);
+    logger.warn('Excepción actualizando role', { error: e.message, userId });
   }
 
   try {
@@ -82,10 +83,10 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, role, 
         .from('agencies')
         .update({ website })
         .eq('id', agencyId);
-      if (siteErr) console.warn('[users.service] No se pudo actualizar website en agencies:', siteErr.message);
+      if (siteErr) logger.warn('No se pudo actualizar website en agencies', { error: siteErr.message, agencyId });
     }
   } catch (e) {
-    console.warn('[users.service] Excepción actualizando website:', e.message);
+    logger.warn('Excepción actualizando website', { error: e.message, agencyId });
   }
 
   return { agencyId };
@@ -110,7 +111,7 @@ export const checkUserExistsByEmail = async (email) => {
     
     return userExists;
   } catch (error) {
-    console.error('Error en checkUserExistsByEmail:', error);
+    logger.error('Error en checkUserExistsByEmail', error, { email });
     throw new Error('Error al verificar el email en el sistema');
   }
 };

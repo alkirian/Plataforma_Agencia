@@ -97,3 +97,6 @@ export const SidebarToggleButton = ({ isCollapsed, onToggle, variant = 'hamburge
     </motion.button>
   )
 }
+
+// Default export for index.ts re-export compatibility
+export default SidebarToggleButton

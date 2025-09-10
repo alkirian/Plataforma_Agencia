@@ -48,7 +48,7 @@ interface ErrorFallbackProps {
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   private retryTimeoutId: NodeJS.Timeout | null = null
-  private resetTimeoutId: NodeJS.Timeout | null = null
+  private readonly resetTimeoutId: NodeJS.Timeout | null = null
 
   constructor(props: ErrorBoundaryProps) {
     super(props)
@@ -119,7 +119,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   /**
    * Report error to monitoring service
    */
-  private reportError = (
+  private readonly reportError = (
     error: Error,
     errorInfo: ErrorInfo,
     errorId: string,
@@ -165,7 +165,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   /**
    * Retry the component with exponential backoff
    */
-  private handleRetry = () => {
+  private readonly handleRetry = () => {
     const { maxRetries = 3 } = this.props
     const { retryCount } = this.state
 
@@ -194,7 +194,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   /**
    * Reset error boundary to initial state
    */
-  private resetErrorBoundary = () => {
+  private readonly resetErrorBoundary = () => {
     this.setState({
       hasError: false,
       error: undefined,

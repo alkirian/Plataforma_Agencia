@@ -1,6 +1,7 @@
 import { handleChatConversation } from '../services/ai.service.js';
 import { generateScheduleIdeas } from '../services/aiIdeas.service.js';
 import { listChatMessages, saveChatMessage } from '../services/chat.service.js';
+import { logger } from '../utils/logger.js';
 
 export const handleGenerateIdeas = async (req, res, next) => {
   try {
@@ -85,17 +86,14 @@ export const handleListIdeas = async (req, res, next) => {
 };
 
 export const handleChat = async (req, res, next) => {
-  console.log('🔍 handleChat - Entrada completa:', {
+  logger.debug('handleChat - Entrada completa', {
     method: req.method,
     url: req.originalUrl,
     params: req.params,
-    body: req.body,
-    headers: {
-      authorization: req.headers.authorization ? 'Bearer ...' : 'NO AUTH',
-      contentType: req.headers['content-type']
-    },
-    user: req.user ? { id: req.user.id, email: req.user.email } : 'NO USER',
-    authToken: req.authToken ? 'EXISTS' : 'NO TOKEN'
+    bodyKeys: Object.keys(req.body || {}),
+    hasAuth: !!req.headers.authorization,
+    hasUser: !!req.user,
+    hasAuthToken: !!req.authToken
   });
 
   try {
@@ -104,19 +102,19 @@ export const handleChat = async (req, res, next) => {
     const { userPrompt, chatHistory } = req.body;
 
     if (!clientId) {
-      console.error('❌ clientId faltante');
+      logger.error('clientId faltante');
       return res.status(400).json({ success: false, error: 'clientId requerido' });
     }
     if (!userPrompt?.trim()) {
-      console.error('❌ userPrompt faltante o vacío:', userPrompt);
+      logger.error('userPrompt faltante o vacío', null, { userPrompt });
       return res.status(400).json({ success: false, error: 'userPrompt requerido' });
     }
     if (!req.user?.id) {
-      console.error('❌ userId no detectado. req.user:', req.user);
+      logger.error('userId no detectado', null, { user: req.user });
       return res.status(401).json({ success: false, error: 'userId no detectado' });
     }
 
-    console.log('✅ Validaciones pasadas:', {
+    logger.info('Validaciones pasadas', {
       clientId,
       userId: req.user.id,
       userPromptLength: userPrompt.trim().length
@@ -125,7 +123,7 @@ export const handleChat = async (req, res, next) => {
     // Guardar mensaje del usuario
     let userMessageId = null;
     try {
-      console.log('💾 Intentando guardar mensaje de usuario...');
+      logger.debug('Intentando guardar mensaje de usuario');
       const userMessage = await saveChatMessage({
         token,
         userId: req.user.id,
@@ -135,26 +133,22 @@ export const handleChat = async (req, res, next) => {
         metadata: { chatHistory }
       });
       userMessageId = userMessage.id;
-      console.log('✅ Mensaje de usuario guardado:', userMessage);
+      logger.info('Mensaje de usuario guardado', { messageId: userMessage.id });
     } catch (saveError) {
-      console.error('❌ Error al guardar mensaje de usuario:', {
-        error: saveError.message,
-        stack: saveError.stack,
-        details: saveError
-      });
+      logger.error('Error al guardar mensaje de usuario', saveError, { clientId, userId: req.user.id });
     }
 
     // Generar respuesta con AI
-    console.log('🤖 Generando respuesta AI...');
+    logger.debug('Generando respuesta AI');
     const response = await handleChatConversation({ clientId, userPrompt, chatHistory, token });
-    console.log('✅ Respuesta AI generada:', {
+    logger.info('Respuesta AI generada', {
       hasResponse: !!response?.response,
       responseLength: response?.response?.length
     });
 
     // Guardar respuesta del asistente
     try {
-      console.log('💾 Intentando guardar respuesta del asistente...');
+      logger.debug('Intentando guardar respuesta del asistente');
       const assistantMessage = await saveChatMessage({
         token,
         userId: req.user.id,
@@ -163,13 +157,9 @@ export const handleChat = async (req, res, next) => {
         content: response?.response || 'Lo siento, no pude generar una respuesta.',
         metadata: { chatHistory, relatedToMessageId: userMessageId }
       });
-      console.log('✅ Respuesta del asistente guardada:', assistantMessage);
+      logger.info('Respuesta del asistente guardada', { messageId: assistantMessage.id });
     } catch (saveError) {
-      console.error('❌ Error al guardar respuesta del asistente:', {
-        error: saveError.message,
-        stack: saveError.stack,
-        details: saveError
-      });
+      logger.error('Error al guardar respuesta del asistente', saveError, { clientId, userId: req.user.id });
     }
 
     // Responder al cliente
@@ -182,18 +172,14 @@ export const handleChat = async (req, res, next) => {
       }
     };
 
-    console.log('📤 Enviando respuesta al cliente:', {
+    logger.info('Enviando respuesta al cliente', {
       hasResponse: !!responseData.data.response,
       hasMessageId: !!responseData.data.messageId
     });
 
     res.json(responseData);
   } catch (error) {
-    console.error('❌ Error general en handleChat:', {
-      error: error.message,
-      stack: error.stack,
-      details: error
-    });
+    logger.error('Error general en handleChat', error, { clientId: req.params?.clientId });
     next(error);
   }
 };

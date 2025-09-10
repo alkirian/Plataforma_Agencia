@@ -1,4 +1,4 @@
-import { useQuery, useQueries, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, useQueries, type UseQueryResult } from '@tanstack/react-query'
 import { getSchedule } from '@schedule'
 
 /**
@@ -145,7 +145,7 @@ export const useMultipleClientStats = (clientIds: string[] = []): UseMultipleCli
   const statsMap: Record<string, UseClientStatsReturn> = {}
 
   clientIds.forEach((clientId, index) => {
-    const result = results[index] as UseQueryResult<ScheduleEvent[], Error>
+    const result = results[index]
     const events = result?.data || []
     const isLoading = result?.isLoading || false
 

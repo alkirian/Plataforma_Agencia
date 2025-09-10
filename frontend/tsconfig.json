@@ -30,6 +30,7 @@
       "@styles/*": ["./src/styles/*"],
       "@types/*": ["./src/types/*"],
       "@schedule/*": ["./src/schedule/*"],
+      "@documents/*": ["./src/documents/*"],
       "@constants/*": ["./src/constants/*"],
       // Back-compat for imports without '@' prefix
       "api/*": ["./src/api/*"],

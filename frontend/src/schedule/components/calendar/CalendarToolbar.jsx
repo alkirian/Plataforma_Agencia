@@ -1,19 +1,8 @@
 import React, { useState } from 'react'
 import { Download } from 'lucide-react'
+import { Button } from '@components/ui/Button'
 import { ExportModal } from '../modals/ExportModal'
 import { SearchBar } from './SearchBar'
-
-// Botón minimalista reutilizable (tabs sutiles / estética de referencia)
-const MiniButton = ({ children, onClick, active, title, className = '' }) => (
-  <button
-    onClick={onClick}
-    title={title}
-    className={`px-2.5 py-1 text-[11px] rounded-md border border-[color:var(--color-border-subtle)] text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors ${active ? 'bg-[#151a21] text-text-primary border-[color:var(--color-border-strong)]' : ''} ${className}`}
-    style={{ fontWeight: 600, letterSpacing: '0.02em' }}
-  >
-    {children}
-  </button>
-)
 
 export const CalendarToolbar = ({
   label,
@@ -37,22 +26,35 @@ export const CalendarToolbar = ({
       <div className='flex items-center justify-between gap-2'>
         {/* Izquierda: navegación */}
         <div className='flex items-center gap-2 min-w-0'>
-          <MiniButton onClick={() => onNavigate('TODAY')} title='Ir a hoy'>
+          <Button
+            onClick={() => onNavigate('TODAY')}
+            variant='ghost'
+            size='sm'
+            className='text-[11px] font-semibold tracking-[0.02em]'
+            aria-label='Ir a hoy'
+          >
             Hoy
-          </MiniButton>
+          </Button>
 
           <div className='h-4 w-px bg-gray-700/50' />
 
-          <MiniButton onClick={() => onNavigate('PREV')} title='Anterior' className='!px-1'>
-            <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-          </MiniButton>
+          <Button
+            onClick={() => onNavigate('PREV')}
+            variant='ghost'
+            size='sm'
+            className='!px-1'
+            aria-label='Anterior'
+            icon={
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M15 19l-7-7 7-7'
+                />
+              </svg>
+            }
+          />
 
           <div
             className={`text-xs font-semibold text-text-primary/90 tracking-wide truncate ${isChatOpen ? 'max-w-[110px] sm:max-w-[160px]' : 'max-w-[200px]'}`}
@@ -60,40 +62,76 @@ export const CalendarToolbar = ({
             {label}
           </div>
 
-          <MiniButton onClick={() => onNavigate('NEXT')} title='Siguiente' className='!px-1'>
-            <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5l7 7-7 7' />
-            </svg>
-          </MiniButton>
+          <Button
+            onClick={() => onNavigate('NEXT')}
+            variant='ghost'
+            size='sm'
+            className='!px-1'
+            aria-label='Siguiente'
+            icon={
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9 5l7 7-7 7'
+                />
+              </svg>
+            }
+          />
         </div>
 
         {/* Centro: vistas tipo segmented */}
         <div className='flex items-center gap-1 bg-surface-soft p-1 rounded-md border border-[color:var(--color-border-subtle)]'>
-          <MiniButton onClick={() => onView('month')} active={isMonth} title='Vista mes'>
+          <Button
+            onClick={() => onView('month')}
+            variant={isMonth ? 'primary' : 'ghost'}
+            size='sm'
+            className='text-[11px] font-semibold tracking-[0.02em]'
+            aria-label='Vista mes'
+          >
             {isChatOpen ? 'M' : 'Mes'}
-          </MiniButton>
-          <MiniButton onClick={() => onView('week')} active={isWeek} title='Vista semana'>
+          </Button>
+          <Button
+            onClick={() => onView('week')}
+            variant={isWeek ? 'primary' : 'ghost'}
+            size='sm'
+            className='text-[11px] font-semibold tracking-[0.02em]'
+            aria-label='Vista semana'
+          >
             {isChatOpen ? 'S' : 'Semana'}
-          </MiniButton>
-          <MiniButton onClick={() => onView('day')} active={isDay} title='Vista día'>
+          </Button>
+          <Button
+            onClick={() => onView('day')}
+            variant={isDay ? 'primary' : 'ghost'}
+            size='sm'
+            className='text-[11px] font-semibold tracking-[0.02em]'
+            aria-label='Vista día'
+          >
             {isChatOpen ? 'D' : 'Día'}
-          </MiniButton>
-          <MiniButton onClick={() => onView('agenda')} active={isAgenda} title='Vista agenda'>
+          </Button>
+          <Button
+            onClick={() => onView('agenda')}
+            variant={isAgenda ? 'primary' : 'ghost'}
+            size='sm'
+            className='text-[11px] font-semibold tracking-[0.02em]'
+            aria-label='Vista agenda'
+          >
             {isChatOpen ? 'A' : 'Agenda'}
-          </MiniButton>
+          </Button>
         </div>
 
         {/* Derecha: búsqueda + export */}
         <div className='flex items-center gap-2 min-w-[180px]'>
           <SearchBar events={events} onSelect={onJumpToEvent} />
-          <MiniButton
+          <Button
             onClick={() => setShowExportModal(true)}
-            title='Exportar calendario'
+            variant='ghost'
+            size='sm'
             className='!py-1.5'
-          >
-            <span className='sr-only'>Exportar</span>
-            <Download className='w-4 h-4' />
-          </MiniButton>
+            aria-label='Exportar calendario'
+            icon={<Download className='w-4 h-4' />}
+          />
         </div>
       </div>
 

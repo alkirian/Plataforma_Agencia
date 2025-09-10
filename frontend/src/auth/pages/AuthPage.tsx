@@ -1,10 +1,8 @@
-import React, { useState, useCallback, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
-import { toast } from 'react-hot-toast'
+import React, { useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 
-// Services
-import { authService } from '../services/auth.service'
+// Hook: centraliza la lógica del flujo
+import { useAuthFlow } from '../hooks/useAuthFlow'
 
 // Components
 import { GoogleLoginButton } from '../components/GoogleLoginButton'
@@ -28,8 +26,6 @@ import {
   AUTH_VALIDATION_MESSAGES,
   AUTH_UI_TEXT,
   AUTH_STYLES,
-  AUTH_SUCCESS_MESSAGES,
-  AUTH_ERROR_MESSAGES,
 } from '../constants/auth.constants'
 
 // Assets
@@ -46,123 +42,24 @@ import bgImage from '../../assets/BG.png'
  * Follows SOLID principles and clean architecture patterns
  */
 export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, redirectTo }) => {
-  // State management
-  const [flowState, setFlowState] = useState<AuthFlowState>('enterEmail')
-  const [userEmail, setUserEmail] = useState<string>('')
-  const [isCheckingEmail, setIsCheckingEmail] = useState<boolean>(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false)
-
-  // Form handling with react-hook-form
   const {
+    // State
+    flowState,
+    userEmail,
+    isCheckingEmail,
+    isGoogleLoading,
+    // Form methods
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-    setError,
-    clearErrors,
-    setValue,
-  } = useForm<EmailStepData | LoginStepData | RegisterStepData>()
-
-  /**
-   * Handle email submission and check if user exists
-   */
-  const handleEmailSubmit = useCallback(
-    async (data: EmailStepData) => {
-      try {
-        clearErrors()
-        setIsCheckingEmail(true)
-
-        const exists = await authService.checkEmailExists(data.email)
-
-        setUserEmail(data.email)
-        setValue('email', data.email)
-        setFlowState(exists ? 'login' : 'register')
-      } catch (error: any) {
-        const message = AUTH_ERROR_MESSAGES[error.code] || error.message
-        setError('email', { type: 'manual', message })
-        toast.error(message)
-      } finally {
-        setIsCheckingEmail(false)
-      }
-    },
-    [clearErrors, setError, setValue]
-  )
-
-  /**
-   * Handle user login
-   */
-  const handleLogin = useCallback(
-    async (data: LoginStepData) => {
-      try {
-        clearErrors()
-        await authService.login({
-          email: data.email,
-          password: data.password,
-        })
-
-        reset()
-        toast.success(AUTH_SUCCESS_MESSAGES.LOGIN)
-        onSuccess?.()
-      } catch (error: any) {
-        const message = AUTH_ERROR_MESSAGES[error.code] || error.message
-        setError('root', { type: 'manual', message })
-        toast.error(message)
-      }
-    },
-    [clearErrors, reset, setError, onSuccess]
-  )
-
-  /**
-   * Handle user registration
-   */
-  const handleRegister = useCallback(
-    async (data: RegisterStepData) => {
-      try {
-        clearErrors()
-        await authService.register({
-          email: data.email,
-          password: data.password,
-          name: data.fullName,
-          agencyName: data.agencyName,
-          confirmPassword: data.password, // For now, using same password
-        })
-
-        reset()
-        toast.success(AUTH_SUCCESS_MESSAGES.REGISTER)
-        onSuccess?.()
-      } catch (error: any) {
-        const message = AUTH_ERROR_MESSAGES[error.code] || error.message
-        setError('root', { type: 'manual', message })
-        toast.error(message)
-      }
-    },
-    [clearErrors, reset, setError, onSuccess]
-  )
-
-  /**
-   * Handle Google OAuth login
-   */
-  const handleGoogleLogin = useCallback(async () => {
-    try {
-      setIsGoogleLoading(true)
-      await authService.loginWithOAuth('google', redirectTo)
-    } catch (error: any) {
-      const message = AUTH_ERROR_MESSAGES[error.code] || error.message
-      toast.error(message)
-    } finally {
-      setIsGoogleLoading(false)
-    }
-  }, [redirectTo])
-
-  /**
-   * Handle navigation back to email step
-   */
-  const handleBackToEmail = useCallback(() => {
-    setFlowState('enterEmail')
-    setUserEmail('')
-    reset()
-    clearErrors()
-  }, [reset, clearErrors])
+    errors,
+    isSubmitting,
+    // Actions
+    handleEmailSubmit,
+    handleLogin,
+    handleRegister,
+    handleGoogleLogin,
+    handleBackToEmail,
+  } = useAuthFlow(onSuccess, redirectTo)
 
   /**
    * Memoized form configurations for each step
@@ -315,7 +212,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, redirectTo }) => 
                         },
                         pattern: {
                           value: AUTH_PATTERNS.AGENCY_NAME,
-                          message: 'Formato de nombre inválido',
+                          message: 'Formato de nombre inv�lido',
                         },
                       }}
                       autoComplete='organization'
@@ -369,3 +266,4 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, redirectTo }) => 
 }
 
 export default AuthPage
+

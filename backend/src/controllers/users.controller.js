@@ -2,14 +2,12 @@ import { registerNewAgency, completeUserProfile, checkUserExistsByEmail } from '
 
 /**
  * Maneja la petición HTTP para registrar un nuevo usuario y su agencia.
+ * Uses validated data from Zod middleware for enhanced security.
  */
 export const registerUser = async (req, res, next) => {
   try {
-    const { email, password, fullName, agencyName } = req.body;
-
-    if (!email || !password || !fullName || !agencyName) {
-      return res.status(400).json({ success: false, message: 'Todos los campos son requeridos.' });
-    }
+    // Use validated data from middleware - guaranteed to be clean and secure
+    const { email, password, fullName, agencyName } = req.validatedBody;
 
     const newAgencyInfo = await registerNewAgency({ email, password, fullName, agencyName });
 
@@ -25,15 +23,13 @@ export const registerUser = async (req, res, next) => {
 
 /**
  * Maneja la petición HTTP para completar el perfil de un usuario.
+ * Uses validated data from Zod middleware for enhanced security.
  */
 export const handleCompleteProfile = async (req, res, next) => {
   try {
     const userId = req.user.id; // Obtenemos el ID del usuario desde el middleware
-    const { fullName, agencyName, role, website } = req.body;
-
-    if (!fullName || !agencyName) {
-      return res.status(400).json({ success: false, message: 'El nombre completo y el nombre de la agencia son requeridos.' });
-    }
+    // Use validated data from middleware - guaranteed to be clean and secure
+    const { fullName, agencyName, role, website } = req.validatedBody;
 
     const result = await completeUserProfile({ userId, fullName, agencyName, role, website });
 
@@ -49,27 +45,12 @@ export const handleCompleteProfile = async (req, res, next) => {
 
 /**
  * Maneja la petición HTTP para verificar si un email existe en el sistema.
+ * Uses validated data from Zod middleware for enhanced security.
  */
 export const handleCheckEmail = async (req, res, next) => {
   try {
-    const { email } = req.body;
-
-    // Validar que el email esté presente
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'El email es requerido.' 
-      });
-    }
-
-    // Validar formato de email básico
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'El formato del email no es válido.' 
-      });
-    }
+    // Use validated data from middleware - email is guaranteed to be valid format
+    const { email } = req.validatedBody;
 
     // Verificar si el usuario existe
     const exists = await checkUserExistsByEmail(email);

@@ -15,7 +15,7 @@ const API_URL =
  * Type-safe API client with automatic token management and error handling
  */
 class ApiClient {
-  private baseUrl: string
+  private readonly baseUrl: string
 
   constructor(baseUrl: string = API_URL) {
     this.baseUrl = baseUrl

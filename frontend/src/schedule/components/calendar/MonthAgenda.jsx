@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
+import { StatusBadge } from '@components/ui/Badge'
 
 // Helpers
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
@@ -13,28 +14,27 @@ const formatDateTime = date =>
     minute: '2-digit',
   })
 
-const statusStyles = statusRaw => {
+const getStatusConfig = statusRaw => {
   const s = (statusRaw || '').toLowerCase()
-  const base = 'px-2 py-0.5 text-[10px] font-medium rounded border'
   switch (s) {
+    case 'approved':
     case 'aprobado':
-      return `${base} bg-green-500/10 border-green-400/20 text-green-300`
+    case 'published':
     case 'publicado':
-      return `${base} bg-emerald-500/10 border-emerald-400/20 text-emerald-300`
+      return { status: 'completed', label: String(statusRaw || '').replace('-', ' ') }
+    case 'pending':
     case 'pendiente':
-      return `${base} bg-orange-500/10 border-orange-400/20 text-orange-300`
+      return { status: 'pending', label: String(statusRaw || '').replace('-', ' ') }
     case 'en-diseño':
     case 'en-diseno':
-      return `${base} bg-gray-500/10 border-gray-400/20 text-gray-300`
     case 'en-progreso':
-      return `${base} bg-blue-500/10 border-blue-400/20 text-blue-300`
     case 'en-revision':
     case 'en-revisión':
-      return `${base} bg-indigo-500/10 border-indigo-400/20 text-indigo-300`
+      return { status: 'active', label: String(statusRaw || '').replace('-', ' ') }
     case 'cancelado':
-      return `${base} bg-red-500/10 border-red-400/20 text-red-300`
+      return { status: 'failed', label: String(statusRaw || '').replace('-', ' ') }
     default:
-      return `${base} bg-accent-500/10 border-accent-400/20 text-accent-300`
+      return { status: 'draft', label: String(statusRaw || '').replace('-', ' ') }
   }
 }
 
@@ -158,9 +158,19 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                       )}
                     </td>
                     <td className='px-3 py-3 align-top'>
-                      <span className={statusStyles(row.estado)}>
-                        {String(row.estado || '').replace('-', ' ')}
-                      </span>
+                      {(() => {
+                        const statusConfig = getStatusConfig(row.estado)
+                        return (
+                          <StatusBadge
+                            status={statusConfig.status}
+                            size='xs'
+                            cyber={true}
+                            className='text-[10px]'
+                          >
+                            {statusConfig.label}
+                          </StatusBadge>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}

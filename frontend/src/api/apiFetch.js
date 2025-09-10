@@ -51,7 +51,9 @@ export const apiFetch = async (endpoint, options = {}) => {
       try {
         const text = await response.text()
         if (text) errorMessage = text
-      } catch {}
+      } catch {
+        // Ignore text parsing errors
+      }
     }
 
     // If unauthorized and we used a live Supabase token, try one silent refresh + retry
@@ -69,7 +71,9 @@ export const apiFetch = async (endpoint, options = {}) => {
             return response.json()
           }
         }
-      } catch {}
+      } catch {
+        // Ignore refresh errors
+      }
     }
 
     // Use provided HTTP method from options for clearer logs

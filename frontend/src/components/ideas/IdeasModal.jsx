@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Lightbulb } from 'lucide-react'
 import { Modal } from '@components/ui/Modal'
-import { generateIdeas, sendIdeaFeedback } from '@api/ai'
+import { Button } from '@components/ui/Button'
+import { generateIdeas, sendIdeaFeedback } from '@api/ai.api'
 import { createScheduleItem } from '@schedule'
 
 // Extracted components for better maintainability
@@ -11,6 +12,11 @@ import IdeasMinimizedBar from './IdeasMinimizedBar.jsx'
 import IdeaCardDisplay from './IdeaCardDisplay.jsx'
 import IdeaCardEditor from './IdeaCardEditor.jsx'
 import IdeaCardLikes from './IdeaCardLikes.jsx'
+
+// Constants for form options
+const TONE_PRESETS = ['Profesional', 'Simpático', 'Inspirador', 'Informativo', 'Humor ligero']
+
+const COUNT_PRESETS = [3, 5, 10]
 
 export const IdeasModal = ({
   isOpen,
@@ -145,12 +151,9 @@ export const IdeasModal = ({
               <div className='h-full w-1/3 bg-gradient-to-r from-blue-500 to-blue-300 animate-[progress_1.2s_linear_infinite]' />
             </div>
           )}
-          <button
-            onClick={() => setMinimized(false)}
-            className='px-2 py-1 text-xs rounded-md border border-white/10 text-text-primary hover:bg-white/10'
-          >
+          <Button size='sm' variant='ghost' onClick={() => setMinimized(false)} className='text-xs'>
             Restaurar
-          </button>
+          </Button>
           <style>{`@keyframes progress { 0%{transform:translateX(-100%)} 100%{transform:translateX(300%)} }`}</style>
         </div>
       )}
@@ -178,13 +181,15 @@ export const IdeasModal = ({
             <label className='block text-sm text-text-muted mb-2'>Tono</label>
             <div className='flex flex-wrap gap-2'>
               {TONE_PRESETS.map(t => (
-                <button
+                <Button
                   key={t}
+                  variant={tone === t ? 'primary' : 'ghost'}
+                  size='sm'
                   onClick={() => setTone(t)}
-                  className={`px-3 py-1.5 rounded-md border text-sm transition-colors ${tone === t ? 'border-blue-500 text-text-primary bg-blue-500/10' : 'border-white/10 text-text-muted hover:text-text-primary hover:border-white/20'}`}
+                  className={tone === t ? 'bg-blue-500/10 border-blue-500 text-text-primary' : ''}
                 >
                   {t}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -206,16 +211,22 @@ export const IdeasModal = ({
             <label className='block text-sm text-text-muted mb-2'>Cantidad de ideas</label>
             <div className='flex items-center gap-2'>
               {COUNT_PRESETS.map(n => (
-                <button
+                <Button
                   key={n}
+                  variant={effectiveCount === n && !customCount ? 'primary' : 'ghost'}
+                  size='sm'
                   onClick={() => {
                     setCount(n)
                     setCustomCount('')
                   }}
-                  className={`px-3 py-1.5 rounded-md border text-sm transition-colors ${effectiveCount === n && !customCount ? 'border-blue-500 text-text-primary bg-blue-500/10' : 'border-white/10 text-text-muted hover:text-text-primary hover:border-white/20'}`}
+                  className={
+                    effectiveCount === n && !customCount
+                      ? 'bg-blue-500/10 border-blue-500 text-text-primary'
+                      : ''
+                  }
                 >
                   {n}
-                </button>
+                </Button>
               ))}
               <input
                 type='number'
@@ -294,24 +305,36 @@ const IdeaCard = ({ idea, clientId, onAddToCalendar }) => {
           )}
         </div>
         <div className='flex items-center gap-2'>
-          <button
+          <Button
+            size='sm'
+            variant={liked === true ? 'primary' : 'ghost'}
             onClick={() => handleLikeToggle(true)}
-            className={`p-2 rounded-md border ${liked === true ? 'border-blue-500 text-blue-400' : 'border-white/10 text-text-muted'} hover:text-blue-300`}
-            title='Me gusta'
-          >
-            <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
-              <path d='M2 21h4V9H2v12zm20-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32a1.5 1.5 0 00-.44-1.06L13 1 7.59 6.41A2 2 0 007 7.83V19a2 2 0 002 2h7c.82 0 1.54-.5 1.84-1.25l3.02-7.05c.09-.23.14-.47.14-.72v-2z' />
-            </svg>
-          </button>
-          <button
+            className={
+              liked === true
+                ? 'border-blue-500 text-blue-400'
+                : 'text-text-muted hover:text-blue-300'
+            }
+            icon={
+              <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
+                <path d='M2 21h4V9H2v12zm20-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32a1.5 1.5 0 00-.44-1.06L13 1 7.59 6.41A2 2 0 007 7.83V19a2 2 0 002 2h7c.82 0 1.54-.5 1.84-1.25l3.02-7.05c.09-.23.14-.47.14-.72v-2z' />
+              </svg>
+            }
+            aria-label='Me gusta'
+          />
+          <Button
+            size='sm'
+            variant={liked === false ? 'danger' : 'ghost'}
             onClick={() => handleLikeToggle(false)}
-            className={`p-2 rounded-md border ${liked === false ? 'border-red-500 text-red-400' : 'border-white/10 text-text-muted'} hover:text-red-300`}
-            title='No me gusta'
-          >
-            <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
-              <path d='M22 3h-4v12h4V3zM2 10c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .39.16.77.44 1.06L11 23l5.41-5.41c.38-.38.59-.9.59-1.42V5a2 2 0 00-2-2H7C6.18 3 5.46 3.5 5.16 4.25L2.14 11.3c-.09.23-.14.47-.14.7V10z' />
-            </svg>
-          </button>
+            className={
+              liked === false ? 'border-red-500 text-red-400' : 'text-text-muted hover:text-red-300'
+            }
+            icon={
+              <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
+                <path d='M22 3h-4v12h4V3zM2 10c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .39.16.77.44 1.06L11 23l5.41-5.41c.38-.38.59-.9.59-1.42V5a2 2 0 00-2-2H7C6.18 3 5.46 3.5 5.16 4.25L2.14 11.3c-.09.23-.14.47-.14.7V10z' />
+              </svg>
+            }
+            aria-label='No me gusta'
+          />
         </div>
       </div>
 
@@ -392,13 +415,12 @@ const IdeaCard = ({ idea, clientId, onAddToCalendar }) => {
           />
         </div>
         <div className='flex items-center gap-2'>
-          <button
-            onClick={() => setEditing(e => !e)}
-            className='px-3 py-1.5 rounded-md text-sm border border-white/10 text-text-primary hover:bg-white/10'
-          >
+          <Button variant='ghost' size='sm' onClick={() => setEditing(e => !e)}>
             {editing ? 'Listo' : 'Editar'}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant='primary'
+            size='sm'
             onClick={() => {
               const updated = editing
                 ? {
@@ -419,10 +441,9 @@ const IdeaCard = ({ idea, clientId, onAddToCalendar }) => {
                 : idea
               onAddToCalendar({ ...updated, scheduled_at: date })
             }}
-            className='px-3 py-1.5 rounded-md text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-text-primary'
           >
             Agregar al calendario
-          </button>
+          </Button>
         </div>
       </div>
     </div>

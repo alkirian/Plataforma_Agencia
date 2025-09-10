@@ -12,6 +12,7 @@ import {
   getContextSourceStats
 } from '../services/contextSources.service.js';
 import { getUserAgencyId } from '../helpers/userHelpers.js';
+import { logger } from '../utils/logger.js';
 
 // --- Controladores de Procesamiento ---
 
@@ -42,7 +43,7 @@ export const handleProcessDocumentSource = async (req, res, next) => {
       ...metadata
     };
     
-    console.log('[CONTEXT SOURCES] Procesando documento:', { clientId, agencyId, file_name });
+    logger.info('Procesando documento', { clientId, agencyId, file_name });
     
     const createdSource = await processDocumentSource(fileObj, clientId, agencyId, token, fileMetadata, req.user.id);
     
@@ -53,7 +54,7 @@ export const handleProcessDocumentSource = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleProcessDocumentSource:', error.message);
+    logger.error('Error in handleProcessDocumentSource', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -90,7 +91,7 @@ export const handleProcessUrlSource = async (req, res, next) => {
       processing_method: 'puppeteer_scraping'
     };
     
-    console.log('[CONTEXT SOURCES] Procesando URL:', { clientId, agencyId, url });
+    logger.info('Procesando URL', { clientId, agencyId, url });
     
     const createdSource = await processUrlSource(url, clientId, agencyId, token, metadata, req.user.id);
     
@@ -101,7 +102,7 @@ export const handleProcessUrlSource = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleProcessUrlSource:', error.message);
+    logger.error('Error in handleProcessUrlSource', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -136,7 +137,7 @@ export const handleProcessManualSource = async (req, res, next) => {
       input_method: 'manual_text'
     };
     
-    console.log('[CONTEXT SOURCES] Procesando información manual:', { clientId, agencyId, title });
+    logger.info('Procesando información manual', { clientId, agencyId, title });
     
     const createdSource = await processManualSource(content, title, clientId, agencyId, token, metadata, req.user.id);
     
@@ -147,7 +148,7 @@ export const handleProcessManualSource = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleProcessManualSource:', error.message);
+    logger.error('Error in handleProcessManualSource', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -181,7 +182,7 @@ export const handleProcessNoteSource = async (req, res, next) => {
       created_by_user: req.user.id
     };
     
-    console.log('[CONTEXT SOURCES] Procesando nota:', { clientId, agencyId, title, note_type });
+    logger.info('Procesando nota', { clientId, agencyId, title, note_type });
     
     const createdSource = await processNoteSource(note, title, clientId, agencyId, token, metadata, req.user.id);
     
@@ -192,7 +193,7 @@ export const handleProcessNoteSource = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleProcessNoteSource:', error.message);
+    logger.error('Error in handleProcessNoteSource', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -230,7 +231,7 @@ export const handleGetContextSources = async (req, res, next) => {
       sources = sources.slice(0, parseInt(limit));
     }
     
-    console.log('[CONTEXT SOURCES] Obteniendo fuentes:', { 
+    logger.info('Obteniendo fuentes', { 
       clientId, 
       agencyId, 
       total: sources.length,
@@ -244,7 +245,7 @@ export const handleGetContextSources = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleGetContextSources:', error.message);
+    logger.error('Error in handleGetContextSources', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -280,7 +281,7 @@ export const handleUpdateContextSource = async (req, res, next) => {
       });
     }
     
-    console.log('[CONTEXT SOURCES] Actualizando fuente:', { sourceId, clientId, agencyId });
+    logger.info('Actualizando fuente', { sourceId, clientId, agencyId });
     
     const updatedSource = await updateContextSource(sourceId, filteredUpdate, agencyId);
     
@@ -291,7 +292,7 @@ export const handleUpdateContextSource = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleUpdateContextSource:', error.message);
+    logger.error('Error in handleUpdateContextSource', error, { sourceId: req.params?.sourceId, clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -309,14 +310,14 @@ export const handleDeleteContextSource = async (req, res, next) => {
     
     const agencyId = await getUserAgencyId(req.user.id);
     
-    console.log('[CONTEXT SOURCES] Eliminando fuente:', { sourceId, clientId, agencyId });
+    logger.info('Eliminando fuente', { sourceId, clientId, agencyId });
     
     await deleteContextSource(sourceId, agencyId);
     
     res.status(204).send();
     
   } catch (error) {
-    console.error('[ERROR] handleDeleteContextSource:', error.message);
+    logger.error('Error in handleDeleteContextSource', error, { sourceId: req.params?.sourceId, clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -344,7 +345,7 @@ export const handleSearchContextChunks = async (req, res, next) => {
     
     const agencyId = await getUserAgencyId(req.user.id);
     
-    console.log('[CONTEXT SOURCES] Buscando chunks:', { 
+    logger.info('Buscando chunks', { 
       clientId, 
       agencyId, 
       query: query.substring(0, 50) + '...',
@@ -368,7 +369,7 @@ export const handleSearchContextChunks = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleSearchContextChunks:', error.message);
+    logger.error('Error in handleSearchContextChunks', error, { clientId: req.params?.clientId });
     next(error);
   }
 };
@@ -386,7 +387,7 @@ export const handleGetContextSourceStats = async (req, res, next) => {
     
     const agencyId = await getUserAgencyId(req.user.id);
     
-    console.log('[CONTEXT SOURCES] Obteniendo estadísticas:', { clientId, agencyId });
+    logger.info('Obteniendo estadísticas', { clientId, agencyId });
     
     const stats = await getContextSourceStats(clientId, agencyId);
     
@@ -396,7 +397,7 @@ export const handleGetContextSourceStats = async (req, res, next) => {
     });
     
   } catch (error) {
-    console.error('[ERROR] handleGetContextSourceStats:', error.message);
+    logger.error('Error in handleGetContextSourceStats', error, { clientId: req.params?.clientId });
     next(error);
   }
 };

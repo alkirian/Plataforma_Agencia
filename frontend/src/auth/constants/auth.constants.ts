@@ -8,8 +8,8 @@
 export const AUTH_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PASSWORD: /^(?=.*[A-Za-z])(?=.*\d).{6,}$/, // At least one letter, one number, min 6 chars
-  NAME: /^[a-zA-ZÀ-ÿ\s]{2,50}$/, // Letters and spaces, 2-50 chars
-  AGENCY_NAME: /^[a-zA-Z0-9À-ÿ\s\-\.]{2,100}$/, // Letters, numbers, spaces, hyphens, dots
+  NAME: /^[\p{L}\s]{2,50}$/u, // Unicode letters and spaces, 2-50 chars
+  AGENCY_NAME: /^[\p{L}\p{N}\s\-.]{2,100}$/u, // Letters, numbers, spaces, hyphens, dots
 } as const
 
 /**
@@ -72,7 +72,7 @@ export const AUTH_SUCCESS_MESSAGES = {
  */
 export const AUTH_UI_TEXT = {
   // Titles
-  WELCOME_TITLE: '¡Hola! 👋',
+  WELCOME_TITLE: '¡Hola!',
   WELCOME_BACK_TITLE: '¡Bienvenido de vuelta!',
   CREATE_ACCOUNT_TITLE: '¡Vamos a crear tu cuenta!',
 

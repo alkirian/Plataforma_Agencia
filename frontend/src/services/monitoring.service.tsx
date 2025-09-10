@@ -6,39 +6,39 @@
 import React from 'react'
 
 interface ErrorReport {
-  errorId: string
-  message: string
-  stack?: string
-  componentStack?: string
-  level: 'app' | 'page' | 'feature' | 'component'
-  component?: string
-  timestamp: string
-  url: string
-  userAgent: string
-  userId?: string
-  sessionId: string
-  buildVersion?: string
-  additional?: Record<string, unknown>
+  readonly errorId: string
+  readonly message: string
+  readonly stack?: string
+  readonly componentStack?: string
+  readonly level: 'app' | 'page' | 'feature' | 'component'
+  readonly component?: string
+  readonly timestamp: string
+  readonly url: string
+  readonly userAgent: string
+  readonly userId?: string
+  readonly sessionId: string
+  readonly buildVersion?: string
+  readonly additional?: Record<string, string | number | boolean>
 }
 
 interface PerformanceMetric {
-  metricId: string
-  name: string
-  value: number
-  unit: 'ms' | 'bytes' | 'count' | 'percentage'
-  timestamp: string
-  url: string
-  component?: string
-  tags?: Record<string, string>
+  readonly metricId: string
+  readonly name: string
+  readonly value: number
+  readonly unit: 'ms' | 'bytes' | 'count' | 'percentage'
+  readonly timestamp: string
+  readonly url: string
+  readonly component?: string
+  readonly tags?: Record<string, string>
 }
 
 interface ComponentUsageMetric {
-  componentName: string
-  action: 'render' | 'error' | 'unmount' | 'interaction'
-  timestamp: string
-  props?: Record<string, unknown>
-  renderTime?: number
-  errorInfo?: string
+  readonly componentName: string
+  readonly action: 'render' | 'error' | 'unmount' | 'interaction'
+  readonly timestamp: string
+  readonly props?: Record<string, string | number | boolean>
+  readonly renderTime?: number
+  readonly errorInfo?: string
 }
 
 interface CodeQualityMetric {
@@ -67,18 +67,22 @@ interface BuildMetric {
  * Main Monitoring Service Class
  */
 class MonitoringService {
-  private sessionId: string
-  private buildVersion: string
+  private readonly sessionId: string
+  private readonly buildVersion: string
   private userId?: string
-  private isEnabled: boolean
-  private queue: Array<ErrorReport | PerformanceMetric | ComponentUsageMetric | CodeQualityMetric>
-  private flushTimer?: NodeJS.Timeout
+  private readonly isEnabled: boolean
+  private queue: Array<ErrorReport | PerformanceMetric | ComponentUsageMetric | CodeQualityMetric> = []
+  private flushTimer: NodeJS.Timeout | null = null
+  private isDestroyed = false
+  private retryCount = 0
+  private readonly maxRetries = 3
+  private cleanup?: () => void
+  private performanceObserver?: PerformanceObserver
 
   constructor() {
     this.sessionId = this.generateSessionId()
     this.buildVersion = import.meta.env.VITE_APP_VERSION || 'unknown'
     this.isEnabled = this.shouldEnableMonitoring()
-    this.queue = []
 
     if (this.isEnabled) {
       this.initializeMonitoring()
@@ -86,31 +90,49 @@ class MonitoringService {
   }
 
   /**
-   * Initialize monitoring systems
+   * Initialize monitoring systems with proper error handling
    */
   private initializeMonitoring(): void {
-    // Performance monitoring
-    this.initializePerformanceObserver()
+    try {
+      // Performance monitoring
+      this.initializePerformanceObserver()
 
-    // Global error handling
-    this.initializeGlobalErrorHandling()
+      // Global error handling
+      this.initializeGlobalErrorHandling()
 
-    // Component performance tracking
-    this.initializeReactProfiler()
+      // Component performance tracking
+      this.initializeReactProfiler()
 
-    // Network monitoring
-    this.initializeNetworkMonitoring()
+      // Network monitoring
+      this.initializeNetworkMonitoring()
 
-    // Memory usage monitoring
-    this.initializeMemoryMonitoring()
+      // Memory usage monitoring
+      this.initializeMemoryMonitoring()
 
-    // Batch flush events every 30 seconds
-    this.flushTimer = setInterval(() => this.flush(), 30000)
+      // Batch flush events every 30 seconds
+      this.flushTimer = setInterval(() => {
+        if (!this.isDestroyed) {
+          this.flush()
+        }
+      }, 30000)
 
-    // Flush on page unload
-    window.addEventListener('beforeunload', () => this.flush())
+      // Flush on page unload with proper cleanup
+      const handleBeforeUnload = () => {
+        this.flush()
+        this.destroy()
+      }
+      window.addEventListener('beforeunload', handleBeforeUnload)
 
-    console.log(`📊 Monitoring service initialized (Session: ${this.sessionId})`)
+      // Store cleanup function for proper disposal
+      this.cleanup = () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload)
+      }
+
+      console.log(`📊 Monitoring service initialized (Session: ${this.sessionId})`)
+    } catch (error) {
+      console.error('Failed to initialize monitoring service:', error)
+      this.isDestroyed = true
+    }
   }
 
   /**
@@ -121,37 +143,42 @@ class MonitoringService {
     errorInfo?: { componentStack?: string },
     level: ErrorReport['level'] = 'component',
     component?: string,
-    additional?: Record<string, unknown>
+    additional?: Record<string, string | number | boolean>
   ): string {
-    if (!this.isEnabled) return ''
+    if (!this.isEnabled || this.isDestroyed) return ''
 
-    const errorId = this.generateErrorId()
+    try {
+      const errorId = this.generateErrorId()
 
-    const errorReport: ErrorReport = {
-      errorId,
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo?.componentStack,
-      level,
-      component,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      userId: this.userId,
-      sessionId: this.sessionId,
-      buildVersion: this.buildVersion,
-      additional,
+      const errorReport: ErrorReport = {
+        errorId,
+        message: error.message || 'Unknown error',
+        stack: error.stack,
+        componentStack: errorInfo?.componentStack,
+        level,
+        component,
+        timestamp: new Date().toISOString(),
+        url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        userId: this.userId,
+        sessionId: this.sessionId,
+        buildVersion: this.buildVersion,
+        additional,
+      }
+
+      this.queue.push(errorReport)
+
+      // Immediate flush for critical errors
+      if (level === 'app') {
+        this.flush()
+      }
+
+      console.error('Error reported:', errorReport)
+      return errorId
+    } catch (reportError) {
+      console.error('Failed to report error:', reportError)
+      return ''
     }
-
-    this.queue.push(errorReport)
-
-    // Immediate flush for critical errors
-    if (level === 'app') {
-      this.flush()
-    }
-
-    console.error('Error reported:', errorReport)
-    return errorId
   }
 
   /**
@@ -262,42 +289,65 @@ class MonitoringService {
   }
 
   /**
-   * Initialize performance observer
+   * Initialize performance observer with proper cleanup
    */
   private initializePerformanceObserver(): void {
-    if ('PerformanceObserver' in window) {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
+      return
+    }
+
+    try {
       // Core Web Vitals
-      const observer = new PerformanceObserver(list => {
+      this.performanceObserver = new PerformanceObserver(list => {
+        if (this.isDestroyed) return
+        
         list.getEntries().forEach(entry => {
-          if (entry.entryType === 'navigation') {
-            const navEntry = entry as PerformanceNavigationTiming
-            this.reportPerformance(
-              'page_load_time',
-              navEntry.loadEventEnd - navEntry.loadEventStart
-            )
-            this.reportPerformance(
-              'dom_content_loaded',
-              navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart
-            )
-            this.reportPerformance('first_paint', navEntry.responseEnd - navEntry.requestStart)
-          }
+          try {
+            if (entry.entryType === 'navigation') {
+              const navEntry = entry as PerformanceNavigationTiming
+              const loadTime = navEntry.loadEventEnd - navEntry.loadEventStart
+              const domTime = navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart
+              const firstPaint = navEntry.responseEnd - navEntry.requestStart
+              
+              if (loadTime > 0) {
+                this.reportPerformance('page_load_time', loadTime)
+              }
+              if (domTime > 0) {
+                this.reportPerformance('dom_content_loaded', domTime)
+              }
+              if (firstPaint > 0) {
+                this.reportPerformance('first_paint', firstPaint)
+              }
+            }
 
-          if (entry.entryType === 'paint') {
-            this.reportPerformance(entry.name.replace('-', '_'), entry.startTime)
-          }
+            if (entry.entryType === 'paint') {
+              const metricName = entry.name.replace(/-/g, '_')
+              this.reportPerformance(metricName, entry.startTime)
+            }
 
-          if (entry.entryType === 'layout-shift') {
-            const layoutShiftEntry = entry as PerformanceEntry & { value: number }
-            this.reportPerformance('cumulative_layout_shift', layoutShiftEntry.value, 'count')
+            if (entry.entryType === 'layout-shift') {
+              const layoutShiftEntry = entry as PerformanceEntry & { value: number }
+              if ('value' in layoutShiftEntry && typeof layoutShiftEntry.value === 'number') {
+                this.reportPerformance('cumulative_layout_shift', layoutShiftEntry.value, 'count')
+              }
+            }
+          } catch (entryError) {
+            console.warn('Error processing performance entry:', entryError)
           }
         })
       })
 
-      try {
-        observer.observe({ entryTypes: ['navigation', 'paint', 'layout-shift'] })
-      } catch (error) {
-        console.warn('Performance observer initialization failed:', error)
+      // Observe with proper error handling
+      const entryTypes = ['navigation', 'paint']
+      
+      // Check if layout-shift is supported before adding it
+      if ('PerformanceEventTiming' in window) {
+        entryTypes.push('layout-shift')
       }
+      
+      this.performanceObserver.observe({ entryTypes })
+    } catch (error) {
+      console.warn('Performance observer initialization failed:', error)
     }
   }
 
@@ -343,47 +393,110 @@ class MonitoringService {
   }
 
   /**
-   * Initialize network monitoring
+   * Initialize network monitoring with proper cleanup
    */
   private initializeNetworkMonitoring(): void {
-    // Monitor fetch calls
+    if (typeof window === 'undefined' || !window.fetch) {
+      return
+    }
+
+    // Store original fetch to restore on cleanup
     const originalFetch = window.fetch
-    window.fetch = async (...args) => {
+    
+    // Enhanced fetch wrapper with better error handling
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      if (this.isDestroyed) {
+        return originalFetch(...args)
+      }
+
       const start = performance.now()
+      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || 'unknown'
+      const method = args[1]?.method || 'GET'
+      
       try {
         const response = await originalFetch(...args)
         const duration = performance.now() - start
 
-        this.reportPerformance('api_request', duration, 'ms', undefined, {
-          url: typeof args[0] === 'string' ? args[0] : args[0].url,
-          method: typeof args[1]?.method === 'string' ? args[1].method : 'GET',
-          status: String(response.status),
-          ok: String(response.ok),
-        })
+        // Only report if monitoring is still active
+        if (!this.isDestroyed && duration > 0) {
+          this.reportPerformance('api_request', duration, 'ms', undefined, {
+            url: url.split('?')[0], // Remove query params for privacy
+            method,
+            status: String(response.status),
+            ok: String(response.ok),
+          })
+        }
 
         return response
       } catch (error) {
         const duration = performance.now() - start
-        this.reportError(error as Error, undefined, 'app', 'network', {
-          url: typeof args[0] === 'string' ? args[0] : args[0].url,
-          duration,
-        })
+        
+        if (!this.isDestroyed) {
+          this.reportError(error as Error, undefined, 'app', 'network', {
+            url: url.split('?')[0],
+            method,
+            duration: String(duration),
+          })
+        }
+        
         throw error
       }
+    }
+
+    // Store restore function for cleanup
+    const originalCleanup = this.cleanup
+    this.cleanup = () => {
+      window.fetch = originalFetch
+      originalCleanup?.()
     }
   }
 
   /**
-   * Initialize memory monitoring
+   * Initialize memory monitoring with proper cleanup
    */
   private initializeMemoryMonitoring(): void {
-    if ('memory' in performance) {
-      setInterval(() => {
+    if (typeof window === 'undefined' || typeof performance === 'undefined') {
+      return
+    }
+
+    // Check for memory API support
+    const hasMemoryAPI = 'memory' in performance && 
+      typeof (performance as any).memory === 'object'
+    
+    if (!hasMemoryAPI) {
+      return
+    }
+
+    const memoryInterval = setInterval(() => {
+      if (this.isDestroyed) {
+        clearInterval(memoryInterval)
+        return
+      }
+
+      try {
         const memory = (performance as any).memory
-        this.reportPerformance('memory_used', memory.usedJSHeapSize, 'bytes')
-        this.reportPerformance('memory_total', memory.totalJSHeapSize, 'bytes')
-        this.reportPerformance('memory_limit', memory.jsHeapSizeLimit, 'bytes')
-      }, 60000) // Every minute
+        if (memory && typeof memory === 'object') {
+          if (typeof memory.usedJSHeapSize === 'number') {
+            this.reportPerformance('memory_used', memory.usedJSHeapSize, 'bytes')
+          }
+          if (typeof memory.totalJSHeapSize === 'number') {
+            this.reportPerformance('memory_total', memory.totalJSHeapSize, 'bytes')
+          }
+          if (typeof memory.jsHeapSizeLimit === 'number') {
+            this.reportPerformance('memory_limit', memory.jsHeapSizeLimit, 'bytes')
+          }
+        }
+      } catch (error) {
+        console.warn('Memory monitoring error:', error)
+        clearInterval(memoryInterval)
+      }
+    }, 60000) // Every minute
+
+    // Store cleanup function
+    const originalCleanup = this.cleanup
+    this.cleanup = () => {
+      clearInterval(memoryInterval)
+      originalCleanup?.()
     }
   }
 
@@ -391,22 +504,27 @@ class MonitoringService {
    * Flush queued metrics to backend
    */
   private flush(): void {
-    if (this.queue.length === 0) return
+    if (this.queue.length === 0 || this.isDestroyed) return
 
     const metrics = [...this.queue]
     this.queue = []
 
-    this.sendMetrics(metrics)
+    // Use void to explicitly ignore the promise in fire-and-forget scenarios
+    void this.sendMetrics(metrics)
   }
 
   /**
-   * Send metrics to monitoring backend
+   * Send metrics to monitoring backend with retry logic
    */
-  private sendMetrics(
+  private async sendMetrics(
     metrics: Array<
       ErrorReport | PerformanceMetric | ComponentUsageMetric | CodeQualityMetric | BuildMetric
     >
-  ): void {
+  ): Promise<void> {
+    if (this.isDestroyed || metrics.length === 0) {
+      return
+    }
+
     const payload = {
       sessionId: this.sessionId,
       buildVersion: this.buildVersion,
@@ -421,17 +539,44 @@ class MonitoringService {
       console.groupEnd()
     }
 
-    // Send to monitoring endpoint
+    // Send to monitoring endpoint in production
     if (process.env.NODE_ENV === 'production') {
-      fetch('/api/monitoring', {
+      await this.sendWithRetry('/api/monitoring', payload)
+    }
+  }
+
+  /**
+   * Send data with exponential backoff retry
+   */
+  private async sendWithRetry(url: string, data: object, attempt = 1): Promise<void> {
+    try {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
-      }).catch(error => {
-        console.warn('Failed to send monitoring data:', error)
+        body: JSON.stringify(data),
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(10000),
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      // Reset retry count on success
+      this.retryCount = 0
+    } catch (error) {
+      console.warn(`Failed to send monitoring data (attempt ${attempt}):`, error)
+      
+      if (attempt < this.maxRetries && !this.isDestroyed) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000
+        await new Promise(resolve => setTimeout(resolve, delay))
+        await this.sendWithRetry(url, data, attempt + 1)
+      } else {
+        this.retryCount = attempt
+      }
     }
   }
 
@@ -467,13 +612,41 @@ class MonitoringService {
   }
 
   /**
-   * Clean up monitoring service
+   * Clean up monitoring service with proper resource cleanup
    */
   destroy(): void {
+    if (this.isDestroyed) {
+      return
+    }
+
+    this.isDestroyed = true
+
+    // Clear timer
     if (this.flushTimer) {
       clearInterval(this.flushTimer)
+      this.flushTimer = null
     }
+
+    // Disconnect performance observer
+    if (this.performanceObserver) {
+      this.performanceObserver.disconnect()
+      this.performanceObserver = undefined
+    }
+
+    // Run custom cleanup functions
+    if (this.cleanup) {
+      try {
+        this.cleanup()
+      } catch (error) {
+        console.warn('Error during monitoring cleanup:', error)
+      }
+    }
+
+    // Final flush of remaining data
     this.flush()
+
+    // Clear queue
+    this.queue = []
   }
 }
 
@@ -519,21 +692,40 @@ export const withPerformanceMonitoring = <P extends object>(
 }
 
 /**
- * Hook for manual performance tracking
+ * Hook for manual performance tracking with proper cleanup
  */
 export const usePerformanceTracking = (componentName: string) => {
-  const startTime = React.useRef<number>()
+  const startTimeRef = React.useRef<Map<string, number>>(new Map())
+  const isMountedRef = React.useRef(true)
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+      startTimeRef.current.clear()
+    }
+  }, [])
 
   const startTracking = React.useCallback((operationName: string) => {
-    startTime.current = performance.now()
+    if (!isMountedRef.current) return operationName
+    
+    const now = performance.now()
+    startTimeRef.current.set(operationName, now)
     return operationName
   }, [])
 
   const endTracking = React.useCallback(
     (operationName: string) => {
-      if (startTime.current) {
-        const duration = performance.now() - startTime.current
-        monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
+      if (!isMountedRef.current) return
+      
+      const startTime = startTimeRef.current.get(operationName)
+      if (startTime !== undefined) {
+        const duration = performance.now() - startTime
+        startTimeRef.current.delete(operationName)
+        
+        if (duration > 0) {
+          monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
+        }
       }
     },
     [componentName]
@@ -541,18 +733,30 @@ export const usePerformanceTracking = (componentName: string) => {
 
   const trackOperation = React.useCallback(
     async <T,>(operationName: string, operation: () => Promise<T>): Promise<T> => {
+      if (!isMountedRef.current) {
+        return operation() // Just execute without tracking if unmounted
+      }
+
       const start = performance.now()
       try {
         const result = await operation()
-        const duration = performance.now() - start
-        monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
+        
+        if (isMountedRef.current) {
+          const duration = performance.now() - start
+          if (duration > 0) {
+            monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
+          }
+        }
+        
         return result
       } catch (error) {
-        const duration = performance.now() - start
-        monitoringService.reportError(error as Error, undefined, 'component', componentName, {
-          operationName,
-          duration,
-        })
+        if (isMountedRef.current) {
+          const duration = performance.now() - start
+          monitoringService.reportError(error as Error, undefined, 'component', componentName, {
+            operationName,
+            duration: String(duration),
+          })
+        }
         throw error
       }
     },
@@ -563,7 +767,7 @@ export const usePerformanceTracking = (componentName: string) => {
 }
 
 /**
- * Development-only monitoring dashboard
+ * Development-only monitoring dashboard with proper state management
  */
 export const MonitoringDashboard = () => {
   if (process.env.NODE_ENV !== 'development') {
@@ -571,22 +775,50 @@ export const MonitoringDashboard = () => {
   }
 
   const [isOpen, setIsOpen] = React.useState(false)
-  const [metrics, setMetrics] = React.useState([])
+  const [metrics, setMetrics] = React.useState<{
+    sessionId: string
+    queueLength: number
+    buildVersion: string
+    retryCount: number
+  }>({
+    sessionId: '',
+    queueLength: 0,
+    buildVersion: '',
+    retryCount: 0,
+  })
 
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      // In a real implementation, this would fetch metrics from the monitoring service
-      setMetrics([])
-    }, 5000)
+    if (!isOpen) return
+
+    const updateMetrics = () => {
+      try {
+        setMetrics({
+          sessionId: (monitoringService as any).sessionId || 'unknown',
+          queueLength: (monitoringService as any).queue?.length || 0,
+          buildVersion: (monitoringService as any).buildVersion || 'unknown',
+          retryCount: (monitoringService as any).retryCount || 0,
+        })
+      } catch (error) {
+        console.warn('Failed to update monitoring dashboard:', error)
+      }
+    }
+
+    // Update immediately
+    updateMetrics()
+    
+    // Then update periodically
+    const interval = setInterval(updateMetrics, 5000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [isOpen])
 
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className='fixed bottom-4 right-4 bg-accent-blue text-white px-3 py-2 rounded-lg text-sm z-50'
+        className='fixed bottom-4 right-4 bg-accent-blue text-white px-3 py-2 rounded-lg text-sm z-50 hover:bg-accent-blue/90 transition-colors'
+        type='button'
+        aria-label='Open monitoring dashboard'
       >
         📊 Monitoring
       </button>
@@ -594,20 +826,23 @@ export const MonitoringDashboard = () => {
   }
 
   return (
-    <div className='fixed bottom-4 right-4 bg-surface-soft border border-border-subtle rounded-lg p-4 max-w-md w-full max-h-96 overflow-auto z-50'>
+    <div className='fixed bottom-4 right-4 bg-surface-soft border border-border-subtle rounded-lg p-4 max-w-md w-full max-h-96 overflow-auto z-50 shadow-lg'>
       <div className='flex justify-between items-center mb-3'>
         <h3 className='font-semibold text-text-primary'>Monitoring Dashboard</h3>
         <button
           onClick={() => setIsOpen(false)}
-          className='text-text-muted hover:text-text-primary'
+          className='text-text-muted hover:text-text-primary transition-colors p-1'
+          type='button'
+          aria-label='Close monitoring dashboard'
         >
           ✕
         </button>
       </div>
-      <div className='text-sm text-text-muted'>
-        <p>Session: {monitoringService['sessionId']}</p>
-        <p>Queue: {monitoringService['queue'].length} events</p>
-        <p>Build: {monitoringService['buildVersion']}</p>
+      <div className='text-sm text-text-muted space-y-1'>
+        <p><span className='font-medium'>Session:</span> {metrics.sessionId}</p>
+        <p><span className='font-medium'>Queue:</span> {metrics.queueLength} events</p>
+        <p><span className='font-medium'>Build:</span> {metrics.buildVersion}</p>
+        <p><span className='font-medium'>Retries:</span> {metrics.retryCount}</p>
       </div>
     </div>
   )

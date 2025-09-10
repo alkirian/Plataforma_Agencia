@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get('/my-agency', protect, async (req, res) => {
       .single();
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+      logger.error('Error fetching user profile', profileError, { userId });
       return res.status(500).json({
         success: false,
         message: 'Error obteniendo perfil de usuario',
@@ -73,7 +74,7 @@ router.get('/my-agency', protect, async (req, res) => {
     }
 
     if (agencyError) {
-      console.error('Error fetching agency:', agencyError);
+      logger.error('Error fetching agency', agencyError, { agencyId: profile.agency_id, userId });
       return res.status(500).json({
         success: false,
         message: 'Error obteniendo información de agencia',
@@ -104,7 +105,7 @@ router.get('/my-agency', protect, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in /agencies/my-agency:', error);
+    logger.error('Error in /agencies/my-agency', error, { userId: req.user?.id });
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',

@@ -229,3 +229,6 @@ export const ScheduleSidebar = ({
     </>
   )
 }
+
+// Default export for index.ts re-export compatibility
+export default ScheduleSidebar

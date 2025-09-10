@@ -11,4 +11,4 @@ export { default as ContextSourcesList } from './ContextSourcesList'
 export { default as ContextSourceCard } from './ContextSourceCard'
 
 // Re-export commonly used items from API
-export { SOURCE_TYPES, SOURCE_TYPE_CONFIG, PROCESSING_STATUS } from '../../api/contextSources'
+export { SOURCE_TYPES, SOURCE_TYPE_CONFIG, PROCESSING_STATUS } from '../../api/contextSources.api'

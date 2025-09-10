@@ -51,9 +51,6 @@ export {
 
 // Business logic hooks
 export { useNotifications } from './useNotifications'
-export { useDocumentBoard } from './useDocumentBoard'
-export { useDocuments } from './useDocuments'
-export { useDocumentsV2 } from './useDocumentsV2'
 export { useActivityFeed } from './useActivityFeed'
 export { useContextSources } from './useContextSources'
 

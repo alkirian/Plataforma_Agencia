@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
-import { SOURCE_TYPE_CONFIG, PROCESSING_STATUS } from '../../api/contextSources'
+import { SOURCE_TYPE_CONFIG, PROCESSING_STATUS } from '../../api/contextSources.api'
 
 export const ContextSourceCard = ({
   source,

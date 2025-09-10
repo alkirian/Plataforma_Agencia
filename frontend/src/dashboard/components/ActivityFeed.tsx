@@ -2,6 +2,8 @@ import React from 'react'
 import { useActivityFeed } from '../../hooks/useActivityFeed.ts'
 import { Link } from 'react-router-dom'
 import { DocumentArrowUpIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline'
+import { Button } from '@components/ui/Button'
+import { SkeletonLine } from '@components/ui/LoadingSpinner'
 import type {
   ActivityFeedProps,
   ActivityEvent,
@@ -69,7 +71,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ limit = 20 }) => {
         {isLoading && (
           <div className='space-y-3'>
             {[...Array(4)].map((_, i) => (
-              <div key={i} className='h-5 w-full animate-pulse rounded bg-white/10' />
+              <SkeletonLine key={i} height='h-5' className='rounded' />
             ))}
           </div>
         )}
@@ -136,13 +138,15 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ limit = 20 }) => {
         )}
         {hasNextPage && (
           <div className='mt-4 flex justify-center'>
-            <button
+            <Button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className='rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-4 py-2 text-sm text-text-primary hover:border-[color:var(--color-accent-blue)] disabled:opacity-60'
+              loading={isFetchingNextPage}
+              variant='secondary'
+              size='sm'
             >
-              {isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
-            </button>
+              Cargar más
+            </Button>
           </div>
         )}
       </div>

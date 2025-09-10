@@ -14,7 +14,7 @@ export {
   CardContent,
   CardFooter,
   StatCard,
-} from '../../../components/ui/Card'
+} from '../../../components/ui/Card.tsx'
 
 export { Button, CyberButton } from '../../../components/ui/Button'
 
@@ -28,7 +28,7 @@ export { ProgressIndicator, ProgressBadge } from '../../../components/ui/Progres
 
 export { KeyboardShortcutsModal } from '../../../components/ui/KeyboardShortcutsModal'
 
-export { Icon } from '../../../components/ui/Icon'
+export { Icon } from '../../../components/ui/Icon.tsx'
 
 export {
   LoadingSpinner,
@@ -39,15 +39,28 @@ export {
 
 export {
   ErrorBoundary,
-  ErrorFallback,
-  ErrorCard,
-  NetworkError,
-  NotFoundError,
-} from '../../../components/ui/ErrorBoundary'
+  withErrorBoundary,
+  useErrorHandler,
+  catchAsyncErrors,
+  AppErrorBoundary,
+  PageErrorBoundary,
+  FeatureErrorBoundary,
+  ComponentErrorBoundary,
+} from '../../../components/system/ErrorBoundary'
 
-export { Tooltip, HelpTooltip, ShortcutTooltip } from '../../../components/ui/Tooltip'
+export { Tooltip, HelpTooltip, ShortcutTooltip } from '../../../components/ui/Tooltip.tsx'
 
-export { Avatar } from '../../../components/ui/Avatar'
+export { Avatar } from '../../../components/ui/Avatar.tsx'
+
+// Badge Components - Comprehensive status indicator system
+export {
+  Badge,
+  StatusBadge,
+  NotificationBadge,
+  CountBadge,
+  CyberBadge,
+  ModernBadge,
+} from '../../../components/ui/Badge.tsx'
 
 // Utility re-exports
 export { cn } from '../../../lib/utils'

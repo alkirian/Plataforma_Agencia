@@ -1,5 +1,6 @@
 import React from 'react'
 import type { UseFormRegister, FieldError, RegisterOptions } from 'react-hook-form'
+import type { AuthFormData } from '../types/auth-flow.types'
 import { AUTH_STYLES } from '../constants/auth.constants'
 
 /**
@@ -11,7 +12,7 @@ export interface FormFieldProps {
   placeholder?: string
   label?: string
   error?: FieldError
-  register: UseFormRegister<any>
+  register: UseFormRegister<AuthFormData>
   rules?: RegisterOptions
   autoComplete?: string
   autoFocus?: boolean
@@ -42,7 +43,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   showLabel = false,
   required = false,
 }) => {
-  const inputClass = `${inputClassName || AUTH_STYLES.INPUT_BASE} ${
+  const inputClass = `${inputClassName ?? AUTH_STYLES.INPUT_BASE} ${
     error ? AUTH_STYLES.INPUT_ERROR : ''
   } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`
 

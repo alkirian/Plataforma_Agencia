@@ -1,10 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import {
-  getSchedule,
-  createScheduleItem,
-  updateScheduleItem,
-  deleteScheduleItem,
-} from '@schedule'
+import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem } from '@schedule'
 import { TASK_STATES } from '../constants/taskStates'
 import toast from 'react-hot-toast'
 import type {

@@ -1,3 +1,3 @@
 // Auth Pages - Barrel Export
-export { AuthPage } from './AuthPage.jsx'
-export { WelcomePage } from './WelcomePage.jsx'
+export { AuthPage } from './AuthPage'
+export { WelcomePage } from './WelcomePage'

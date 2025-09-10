@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
+import { logger } from '../utils/logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
@@ -190,7 +191,7 @@ const analyzeImage = async (imageUrl) => {
 
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    console.error('[ERROR DE OPENAI VISION]:', JSON.stringify(errorDetails, null, 2));
+    logger.error('Error de OpenAI Vision', new Error(errorDetails.error?.message || 'Unknown vision error'), { errorDetails });
     throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
   }
 

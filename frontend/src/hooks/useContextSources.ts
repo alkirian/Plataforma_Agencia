@@ -12,7 +12,7 @@ import {
   deleteContextSource,
   downloadContextSource,
   SOURCE_TYPES,
-} from '../api/contextSources'
+} from '../api/contextSources.api'
 
 // Types for context sources
 interface ContextSource {

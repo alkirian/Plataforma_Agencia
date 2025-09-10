@@ -8,6 +8,7 @@ import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
+import { logger } from '../utils/logger.js';
 
 // --- Variables de Entorno ---
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -54,13 +55,13 @@ const embedText = async (text) => {
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    console.error('[ERROR DE OPENAI EMBEDDING]:', JSON.stringify(errorDetails, null, 2));
+    logger.error('Error de OpenAI Embedding', new Error(errorDetails.error?.message || 'Unknown OpenAI error'), { errorDetails });
     throw new Error(`Error al generar embeddings: ${errorDetails.error?.message}`);
   }
   const json = await resp.json();
   const embedding = json.data?.[0]?.embedding;
   if (!embedding) {
-    console.error('[ERROR] La respuesta de OpenAI no contenía un embedding para el texto:', text.substring(0, 100));
+    logger.error('La respuesta de OpenAI no contenía un embedding', null, { textPreview: text.substring(0, 100) });
     throw new Error('La respuesta de OpenAI fue exitosa pero no se encontró el embedding.');
   }
   return embedding;
@@ -79,7 +80,7 @@ const analyzeImageWithGPT = async (imageUrl) => {
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    console.error('[ERROR DE OPENAI VISION]:', JSON.stringify(errorDetails, null, 2));
+    logger.error('Error de OpenAI Vision', new Error(errorDetails.error?.message || 'Unknown vision error'), { errorDetails });
     throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
   }
   const json = await resp.json();
@@ -91,7 +92,7 @@ const analyzeImageWithGPT = async (imageUrl) => {
 const scrapeUrlWithPuppeteer = async (url) => {
   let browser;
   try {
-    console.log(`[SCRAPING] Iniciando scraping de URL: ${url}`);
+    logger.info('Iniciando scraping de URL', { url });
     
     browser = await puppeteer.launch({ 
       headless: 'new',
@@ -152,7 +153,7 @@ const scrapeUrlWithPuppeteer = async (url) => {
     };
     
   } catch (error) {
-    console.error('[ERROR SCRAPING]:', error.message);
+    logger.error('Error en scraping', error, { url });
     throw new Error(`Error al procesar URL: ${error.message}`);
   } finally {
     if (browser) {
@@ -164,7 +165,7 @@ const scrapeUrlWithPuppeteer = async (url) => {
 // --- Funciones de Procesamiento Específicas por Tipo ---
 
 export const processDocumentSource = async (file, clientId, agencyId, token, metadata = {}, userId = null) => {
-  console.log('[CONTEXT SOURCES] Procesando documento:', { clientId, agencyId });
+  logger.info('Procesando documento', { clientId, agencyId });
   
   // Obtener user_id del token si no se proporciona
   let actualUserId = userId;
@@ -211,7 +212,7 @@ export const processDocumentSource = async (file, clientId, agencyId, token, met
 };
 
 export const processUrlSource = async (url, clientId, agencyId, token, metadata = {}, userId = null) => {
-  console.log('[CONTEXT SOURCES] Procesando URL:', { url, clientId, agencyId });
+  logger.info('Procesando URL', { url, clientId, agencyId });
   
   try {
     // Validar URL
@@ -272,13 +273,13 @@ export const processUrlSource = async (url, clientId, agencyId, token, metadata 
     return source;
     
   } catch (error) {
-    console.error('[ERROR URL PROCESSING]:', error.message);
+    logger.error('Error procesando URL', error, { url, clientId, agencyId });
     throw new Error(`Error al procesar URL: ${error.message}`);
   }
 };
 
 export const processManualSource = async (content, title, clientId, agencyId, token, metadata = {}, userId = null) => {
-  console.log('[CONTEXT SOURCES] Procesando información manual:', { title, clientId, agencyId });
+  logger.info('Procesando información manual', { title, clientId, agencyId });
   
   if (!content || content.trim().length < 10) {
     throw new Error('El contenido debe tener al menos 10 caracteres');
@@ -342,7 +343,7 @@ export const processManualSource = async (content, title, clientId, agencyId, to
 };
 
 export const processNoteSource = async (note, title, clientId, agencyId, token, metadata = {}, userId = null) => {
-  console.log('[CONTEXT SOURCES] Procesando nota contextual:', { title, clientId, agencyId });
+  logger.info('Procesando nota contextual', { title, clientId, agencyId });
   
   if (!note || note.trim().length < 5) {
     throw new Error('La nota debe tener al menos 5 caracteres');
@@ -511,7 +512,7 @@ const processSourceChunks = async (sourceId, token) => {
       if (isImage) {
         const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(source.source_data.storage_path);
         if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
-        console.log(`Analizando imagen: ${publicUrlData.publicUrl}`);
+        logger.info('Analizando imagen', { imageUrl: publicUrlData.publicUrl });
         textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
       } else {
         const fileData = await fetchFileFromStorage(source.source_data.storage_path);
@@ -545,7 +546,7 @@ const processDocumentChunks = async (documentId, token) => {
     if (isImage) {
       const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(doc.storage_path);
       if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
-      console.log(`Analizando imagen: ${publicUrlData.publicUrl}`);
+      logger.info('Analizando imagen', { imageUrl: publicUrlData.publicUrl });
       textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
     } else {
       const fileData = await fetchFileFromStorage(doc.storage_path);
@@ -600,7 +601,7 @@ export const deleteContextSource = async (sourceId, agencyId) => {
   // Eliminar archivo del storage solo si existe (documentos)
   if (source.source_data?.storage_path && source.source_type === 'document') {
     const { error: storageError } = await supabaseAdmin.storage.from('documents').remove([source.source_data.storage_path]);
-    if (storageError) console.error(`Advertencia: No se pudo eliminar el archivo del storage: ${storageError.message}`);
+    if (storageError) logger.warn('No se pudo eliminar el archivo del storage', { storagePath: source.source_data.storage_path, error: storageError.message });
   }
   
   // Eliminar el registro (los chunks se eliminan automáticamente por cascade)

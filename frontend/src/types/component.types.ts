@@ -214,6 +214,57 @@ export interface SidebarProps extends BaseComponentProps {
   onToggle?: () => void
 }
 
+// Badge Component Types
+export type BadgeVariant =
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'info'
+  | 'neutral'
+  | 'primary'
+  | 'secondary'
+
+export type BadgeSize = 'xs' | 'sm' | 'md' | 'lg'
+
+export type BadgeStyle = 'solid' | 'outline' | 'soft' | 'ghost'
+
+export interface BadgeProps
+  extends Omit<HTMLAttributes<HTMLSpanElement>, 'style'>,
+    BaseComponentProps {
+  variant?: BadgeVariant
+  size?: BadgeSize
+  badgeStyle?: BadgeStyle
+  icon?: ReactNode
+  cyber?: boolean
+  animated?: boolean
+  pulse?: boolean
+  dot?: boolean
+  removable?: boolean
+  onRemove?: () => void
+  count?: number | string
+  style?: React.CSSProperties
+}
+
+// Specialized Badge Props
+export interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
+  status: 'active' | 'inactive' | 'pending' | 'completed' | 'failed' | 'draft'
+  showDot?: boolean
+}
+
+export interface NotificationBadgeProps extends Omit<BadgeProps, 'children' | 'variant'> {
+  count?: number
+  max?: number
+  showZero?: boolean
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+}
+
+export interface CountBadgeProps extends Omit<BadgeProps, 'children'> {
+  count: number
+  max?: number
+  suffix?: string
+  compact?: boolean
+}
+
 // Navigation Types
 export interface NavItem {
   label: string

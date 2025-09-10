@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getClientById } from '@api/clients.api'
 import { ScheduleSection } from '@schedule/components/ScheduleSection'
-import { DocumentsSectionV2 } from '@components/documents/DocumentsSectionV2.jsx'
+import { Documents } from '@documents/Documents.jsx'
 import { ContextSourcesSection } from '@components/contextSources/ContextSourcesSection.jsx'
 import { ClientFooterInfo } from '@components/client/ClientFooterInfo.jsx'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
@@ -92,7 +92,7 @@ export const ClientDetailPage = () => {
           {activeTab === 'schedule' ? (
             <ScheduleSection clientId={clientId} />
           ) : activeTab === 'documents' ? (
-            <DocumentsSectionV2 clientId={clientId} clientName={client.name} />
+            <Documents clientId={clientId} clientName={client.name} />
           ) : (
             <ContextSourcesSection clientId={clientId} clientName={client.name} />
           )}

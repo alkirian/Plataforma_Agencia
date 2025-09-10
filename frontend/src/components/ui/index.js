@@ -6,10 +6,20 @@ export { AnimatedText, useStaggerDelay } from './AnimatedText'
 export { ClientSelector } from './ClientSelector'
 export { ProgressIndicator, ProgressBadge } from './ProgressIndicator'
 export { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
-export { Icon } from './Icon'
+export { Icon } from './Icon.tsx'
+
+// Badge Components - Comprehensive status indicator system
+export {
+  Badge,
+  StatusBadge,
+  NotificationBadge,
+  CountBadge,
+  CyberBadge,
+  ModernBadge,
+} from './Badge.tsx'
 
 // Componentes de estado y feedback
-export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay } from './LoadingSpinner'
+export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay, ErrorCard } from './LoadingSpinner'
 export {
   ErrorBoundary,
   withErrorBoundary,
@@ -21,7 +31,7 @@ export {
   ComponentErrorBoundary,
 } from '../system/ErrorBoundary'
 export { Tooltip, HelpTooltip, ShortcutTooltip } from './Tooltip.tsx'
-export { Avatar } from './Avatar'
+export { Avatar } from './Avatar.tsx'
 
 // Re-exportar utilidades
 export { cn } from '@lib/utils'

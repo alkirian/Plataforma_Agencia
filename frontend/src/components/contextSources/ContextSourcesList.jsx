@@ -9,7 +9,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { ContextSourceCard } from './ContextSourceCard'
-import { SOURCE_TYPE_CONFIG, SOURCE_TYPES, PROCESSING_STATUS } from '../../api/contextSources'
+import { SOURCE_TYPE_CONFIG, SOURCE_TYPES, PROCESSING_STATUS } from '../../api/contextSources.api'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 export const ContextSourcesList = ({

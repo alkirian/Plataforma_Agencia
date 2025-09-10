@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { AIAssistantLauncher } from './AIAssistantLauncher.jsx'
-import { AIAssistantPanel } from './AIAssistantPanel.jsx'
+import { AIAssistantPanel } from './AIAssistantPanel.tsx'
 
 export const AIAssistantDock = () => {
   const [open, setOpen] = useState(false)

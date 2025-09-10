@@ -19,7 +19,3 @@ export type { FormSeparatorProps } from './FormSeparator'
 
 export { AuthFormContainer } from './AuthFormContainer'
 export type { AuthFormContainerProps } from './AuthFormContainer'
-
-// Re-export any existing auth components
-export { default as LoginForm } from './LoginForm'
-export { default as RegisterForm } from './RegisterForm'

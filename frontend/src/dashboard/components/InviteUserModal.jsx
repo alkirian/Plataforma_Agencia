@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { UserPlus } from 'lucide-react'
 import { Modal } from '@components/ui/Modal'
-import { createInvitations } from '@api/invitations'
+import { createInvitations } from '@api/invitations.api'
 import toast from 'react-hot-toast'
 
 export const InviteUserModal = ({ isOpen, onClose }) => {

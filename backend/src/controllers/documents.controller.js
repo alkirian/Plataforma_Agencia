@@ -9,6 +9,7 @@ import { getUserAgencyId } from '../helpers/userHelpers.js';
 import multer from 'multer';
 // Import legacy service functions for compatibility
 import { processDocument, getDocumentsByClient, createDocument } from '../services/documents.service.js';
+import { logger } from '../utils/logger.js';
 
 // Initialize services (Dependency Injection)
 const documentRepository = new SupabaseDocumentRepository(supabaseAdmin);
@@ -402,7 +403,7 @@ export const getVersionHistory = async (req, res, next) => {
 export const getStorageStats = async (req, res, next) => {
   try {
     // Log the request for debugging
-    console.log('getStorageStats: User ID:', req.user?.id);
+    logger.debug('getStorageStats request', { userId: req.user?.id });
 
     if (!req.user || !req.user.id) {
       return res.status(401).json({
@@ -415,9 +416,9 @@ export const getStorageStats = async (req, res, next) => {
     let agencyId;
     try {
       agencyId = await getUserAgencyId(req.user.id);
-      console.log('getStorageStats: Agency ID retrieved:', agencyId);
+      logger.debug('Agency ID retrieved', { agencyId });
     } catch (userError) {
-      console.error('getStorageStats: Error getting user agency ID:', userError.message);
+      logger.error('Error getting user agency ID', userError, { userId: req.user.id });
       return res.status(403).json({
         success: false,
         message: 'Unable to retrieve user agency information'
@@ -426,7 +427,7 @@ export const getStorageStats = async (req, res, next) => {
 
     // Check if user has an agency_id
     if (!agencyId) {
-      console.error('getStorageStats: User has no agency_id:', req.user.id);
+      logger.error('User has no agency_id', null, { userId: req.user.id });
       return res.status(403).json({
         success: false,
         message: 'User is not associated with any agency'
@@ -437,9 +438,9 @@ export const getStorageStats = async (req, res, next) => {
     let stats;
     try {
       stats = await documentService.getStorageStats(agencyId);
-      console.log('getStorageStats: Stats retrieved successfully for agency:', agencyId);
+      logger.info('Stats retrieved successfully', { agencyId });
     } catch (serviceError) {
-      console.error('getStorageStats: Service error:', serviceError.message);
+      logger.error('Service error in getStorageStats', serviceError, { agencyId });
       return res.status(500).json({
         success: false,
         message: 'Failed to retrieve storage statistics',
@@ -453,7 +454,7 @@ export const getStorageStats = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('getStorageStats: Unexpected error:', error);
+    logger.error('Unexpected error in getStorageStats', error, { userId: req.user?.id });
     next(error);
   }
 };
@@ -586,7 +587,7 @@ export const uploadDocumentLegacy = async (req, res, next) => {
       ai_status: 'pending',
     };
     
-    console.log('--- DATOS A INSERTAR EN LA TABLA documents ---', documentData);
+    logger.debug('Datos a insertar en tabla documents', { documentData });
 
     // 1. Create document record
     const createdDocument = await createDocument(documentData);
@@ -595,7 +596,7 @@ export const uploadDocumentLegacy = async (req, res, next) => {
     if (createdDocument) {
       processDocument(createdDocument.id, token)
         .catch(err => {
-          console.error(`[ERROR] Fallo en el procesamiento del documento ${createdDocument.id}:`, err.message);
+          logger.error('Fallo en procesamiento del documento', err, { documentId: createdDocument.id });
         });
     }
     

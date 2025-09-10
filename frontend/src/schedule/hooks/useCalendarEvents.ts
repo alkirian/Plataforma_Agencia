@@ -74,7 +74,7 @@ export const useCalendarEvents = (clientId?: string): UseCalendarEventsReturn =>
         end: startDate, // Eventos de momento específico
         allDay: false,
         extendedProps: {
-          status: fromExternalTaskState(item.status) as TaskState,
+          status: fromExternalTaskState(item.status),
           description: item.description,
           channel: item.channel,
           priority: item.priority,

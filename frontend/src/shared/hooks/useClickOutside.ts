@@ -1,4 +1,4 @@
-import { useEffect, useRef, RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 
 /**
  * Return type for useClickOutside hook

@@ -4,6 +4,7 @@ import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClie
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 import { get_encoding } from 'tiktoken';
+import { logger } from '../utils/logger.js';
 
 // --- Variables de Entorno ---
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -50,13 +51,13 @@ const embedText = async (text) => {
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    console.error('[ERROR DE OPENAI EMBEDDING]:', JSON.stringify(errorDetails, null, 2));
+    logger.error('Error de OpenAI Embedding', new Error(errorDetails.error?.message || 'Unknown OpenAI error'), { errorDetails });
     throw new Error(`Error al generar embeddings: ${errorDetails.error?.message}`);
   }
   const json = await resp.json();
   const embedding = json.data?.[0]?.embedding;
   if (!embedding) {
-    console.error('[ERROR] La respuesta de OpenAI no contenía un embedding para el texto:', text.substring(0, 100));
+    logger.error('La respuesta de OpenAI no contenía un embedding', null, { textPreview: text.substring(0, 100) });
     throw new Error('La respuesta de OpenAI fue exitosa pero no se encontró el embedding.');
   }
   return embedding;
@@ -76,7 +77,7 @@ const analyzeImageWithGPT = async (imageUrl) => {
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    console.error('[ERROR DE OPENAI VISION]:', JSON.stringify(errorDetails, null, 2));
+    logger.error('Error de OpenAI Vision', new Error(errorDetails.error?.message || 'Unknown vision error'), { errorDetails });
     throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
   }
   const json = await resp.json();
@@ -101,7 +102,7 @@ export const processDocument = async (documentId, token) => {
     if (isImage) {
       const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(doc.storage_path);
       if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
-      console.log(`Analizando imagen: ${publicUrlData.publicUrl}`);
+      logger.info('Analizando imagen', { imageUrl: publicUrlData.publicUrl });
       textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
     } else {
       const fileData = await fetchFileFromStorage(doc.storage_path);
@@ -163,7 +164,7 @@ export const deleteDocumentById = async (documentId, agencyId) => {
   if (docError) throw new Error(`No se encontró el documento para eliminar: ${docError.message}`);
   if (doc.storage_path) {
     const { error: storageError } = await supabaseAdmin.storage.from('documents').remove([doc.storage_path]);
-    if (storageError) console.error(`Advertencia: No se pudo eliminar el archivo del storage: ${storageError.message}`);
+    if (storageError) logger.warn('No se pudo eliminar el archivo del storage', { storagePath: doc.storage_path, error: storageError.message });
   }
   const { error } = await supabaseAdmin
     .from('documents')

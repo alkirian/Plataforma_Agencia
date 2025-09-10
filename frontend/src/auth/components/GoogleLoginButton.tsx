@@ -1,5 +1,6 @@
 import React from 'react'
 import { AUTH_STYLES, AUTH_UI_TEXT } from '../constants/auth.constants'
+import { Button } from '@components/ui/Button'
 
 /**
  * Google SVG Icon Component
@@ -56,28 +57,23 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     }
   }
 
-  const buttonClass = className || AUTH_STYLES.GOOGLE_BUTTON
-  const finalClass = `${buttonClass} ${fullWidth ? 'w-full' : ''} ${
-    disabled || loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-  }`
+  const buttonClass = className ?? AUTH_STYLES.GOOGLE_BUTTON
 
   return (
-    <button
+    <Button
       type='button'
       onClick={handleClick}
       disabled={disabled || loading}
-      className={finalClass}
+      loading={loading}
+      variant='ghost'
+      size='md'
+      className={`${buttonClass} ${fullWidth ? 'w-full' : ''}`}
+      icon={!loading && <GoogleIcon />}
       aria-label={label}
+      cyber={false}
     >
-      <div className='flex items-center justify-center space-x-2'>
-        {loading ? (
-          <div className='w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin' />
-        ) : (
-          <GoogleIcon />
-        )}
-        <span>{loading ? 'Conectando...' : label}</span>
-      </div>
-    </button>
+      {loading ? 'Conectando...' : label}
+    </Button>
   )
 }
 

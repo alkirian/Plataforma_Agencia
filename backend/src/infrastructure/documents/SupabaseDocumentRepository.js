@@ -3,6 +3,7 @@
 
 import { DocumentRepository } from '../../domain/documents/DocumentRepository.js';
 import { DocumentEntity } from '../../domain/documents/DocumentEntity.js';
+import { logger } from '../../utils/logger.js';
 
 export class SupabaseDocumentRepository extends DocumentRepository {
   constructor(supabaseClient) {
@@ -222,7 +223,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
 
   async getStorageStats(agencyId) {
     // Log for debugging
-    console.log('SupabaseDocumentRepository.getStorageStats: Called with agency ID:', agencyId);
+    logger.debug('getStorageStats called', { agencyId });
 
     // Validate input
     if (!agencyId) {
@@ -242,7 +243,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
       .eq('agency_id', agencyId);
 
     if (documentsError) {
-      console.error('SupabaseDocumentRepository.getStorageStats: Database error:', documentsError);
+      logger.error('Database error in getStorageStats', documentsError, { agencyId });
       throw new Error(`Failed to get storage stats: ${documentsError.message}`);
     }
 
@@ -308,7 +309,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
       }
     });
 
-    console.log('SupabaseDocumentRepository.getStorageStats: Stats calculated:', stats);
+    logger.info('Storage stats calculated', { agencyId, stats });
     return stats;
   }
 

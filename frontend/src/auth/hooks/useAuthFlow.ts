@@ -1,4 +1,5 @@
-import { useState, useCallback, useReducer } from 'react'
+import { useCallback, useReducer } from 'react'
+import type { UseFormReturn, FieldErrors } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
 import { authService } from '../services/auth.service'
@@ -72,9 +73,9 @@ export interface UseAuthFlowReturn {
   error: string | null
 
   // Form methods
-  register: any
-  handleSubmit: any
-  errors: any
+  register: UseFormReturn<EmailStepData | LoginStepData | RegisterStepData>['register']
+  handleSubmit: UseFormReturn<EmailStepData | LoginStepData | RegisterStepData>['handleSubmit']
+  errors: FieldErrors<EmailStepData | LoginStepData | RegisterStepData>
   isSubmitting: boolean
 
   // Actions

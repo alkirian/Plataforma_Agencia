@@ -1,4 +1,5 @@
 import { createAuthenticatedClient } from '../config/supabaseClient.js';
+import { logger } from '../utils/logger.js';
 
 // Helpers
 const isUndefinedColumnErr = (error, columnName) =>
@@ -27,7 +28,7 @@ const isNotNullColumnErr = (error, columnName) =>
  * @param {object} [params.metadata] - Metadatos opcionales (json)
  */
 export const saveChatMessage = async ({ token, userId, clientId, role, content, message, response, metadata = null }) => {
-  console.log('🔍 saveChatMessage - Entrada:', {
+  logger.debug('saveChatMessage - Entrada', {
     hasToken: !!token,
     userId,
     clientId,
@@ -55,13 +56,13 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
       .single();
 
     if (!insertResult.error) {
-      console.log('✅ Mensaje guardado exitosamente:', insertResult.data);
+      logger.info('Mensaje guardado exitosamente', { messageId: insertResult.data.id, role, userId, clientId });
       return insertResult.data;
     }
 
     // Si la tabla no existe, informar claramente
     if (insertResult.error?.message?.includes('relation "chat_messages" does not exist')) {
-      console.error('❌ Tabla chat_messages no existe.');
+      logger.error('Tabla chat_messages no existe');
       throw new Error(
         'No se pudo guardar el mensaje: la tabla chat_messages no existe. Aplica el esquema en Supabase antes de continuar.'
       );
@@ -112,7 +113,7 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
       }
 
       if (legacyInsert.error) {
-        console.error('❌ Error al guardar mensaje (legacy):', legacyInsert.error);
+        logger.error('Error al guardar mensaje (legacy)', legacyInsert.error, { userId, clientId, role });
         throw new Error(`No se pudo guardar el mensaje (legacy): ${legacyInsert.error.message}`);
       }
 
@@ -127,18 +128,15 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
         metadata: row.metadata ?? metadata ?? null,
         created_at: row.created_at,
       };
-      console.log('✅ Mensaje guardado exitosamente (legacy):', normalized);
+      logger.info('Mensaje guardado exitosamente (legacy)', { messageId: normalized.id, role, userId, clientId });
       return normalized;
     }
 
     // 3) Otros errores
-    console.error('❌ Error al guardar mensaje:', insertResult.error);
+    logger.error('Error al guardar mensaje', insertResult.error, { userId, clientId, role });
     throw new Error(`No se pudo guardar el mensaje: ${insertResult.error.message}`);
   } catch (error) {
-    console.error('❌ Error en saveChatMessage:', {
-      error: error.message,
-      stack: error.stack
-    });
+    logger.error('Error en saveChatMessage', error, { userId, clientId, role });
     throw error;
   }
 };

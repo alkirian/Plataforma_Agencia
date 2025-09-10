@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateIdeas } from '@api/ai'
+import { generateIdeas } from '@api/ai.api'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 

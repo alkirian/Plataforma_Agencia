@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Download, FileText, CalendarDays, Code, BarChart2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Modal } from '@components/ui/Modal'
+import { Badge } from '@components/ui/Badge'
 import {
   exportToCSV,
   exportToICS,
@@ -90,15 +91,7 @@ export const ExportModal = ({
       id: 'export',
       label: isExporting ? 'Exportando...' : 'Exportar',
       variant: 'primary',
-      icon: isExporting ? (
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className='w-4 h-4 border-2 border-white/30 border-t-white rounded-full'
-        />
-      ) : (
-        <Download className='h-4 w-4' />
-      ),
+      icon: !isExporting && <Download className='h-4 w-4' />,
       onClick: handleExport,
       disabled: isExporting || events.length === 0,
       loading: isExporting,
@@ -150,12 +143,9 @@ export const ExportModal = ({
             <span className='text-xs text-text-muted uppercase tracking-wide'>Por estado:</span>
             <div className='flex flex-wrap gap-2 mt-2'>
               {Object.entries(exportSummary.byStatus).map(([status, count]) => (
-                <span
-                  key={status}
-                  className='px-2 py-1 bg-white/10 rounded text-xs text-text-primary'
-                >
+                <Badge key={status} variant='info' size='xs' cyber={true} className='text-xs'>
                   {status}: {count}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -216,3 +206,5 @@ export const ExportModal = ({
     </Modal>
   )
 }
+
+export default ExportModal

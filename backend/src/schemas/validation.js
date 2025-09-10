@@ -1,17 +1,297 @@
 import { z } from 'zod';
 
-// Esquemas para validación de datos
-export const clientSchema = z.object({
+// ========================================
+// AUTHENTICATION & USER VALIDATION SCHEMAS
+// ========================================
+
+// Base email validation with comprehensive regex
+const emailSchema = z.string()
+  .min(1, 'Email es requerido')
+  .email('Formato de email inválido')
+  .max(254, 'Email demasiado largo')
+  .toLowerCase()
+  .trim();
+
+// Strong password validation
+const passwordSchema = z.string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(128, 'La contraseña no puede exceder 128 caracteres')
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
+    'La contraseña debe contener al menos una letra minúscula, una mayúscula y un número');
+
+// User registration schema
+export const userRegistrationSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  fullName: z.string()
+    .min(1, 'Nombre completo es requerido')
+    .max(100, 'Nombre completo no puede exceder 100 caracteres')
+    .trim()
+    .refine(val => val.split(' ').length >= 2, 
+      'Debe incluir nombre y apellido'),
+  agencyName: z.string()
+    .min(1, 'Nombre de la agencia es requerido')
+    .max(100, 'Nombre de la agencia no puede exceder 100 caracteres')
+    .trim()
+});
+
+// User login schema
+export const userLoginSchema = z.object({
+  email: emailSchema,
+  password: z.string()
+    .min(1, 'Contraseña es requerida')
+    .max(128, 'Contraseña demasiado larga')
+});
+
+// Email check schema
+export const emailCheckSchema = z.object({
+  email: emailSchema
+});
+
+// Complete profile schema
+export const completeProfileSchema = z.object({
+  fullName: z.string()
+    .min(1, 'Nombre completo es requerido')
+    .max(100, 'Nombre completo no puede exceder 100 caracteres')
+    .trim(),
+  agencyName: z.string()
+    .min(1, 'Nombre de la agencia es requerido')
+    .max(100, 'Nombre de la agencia no puede exceder 100 caracteres')
+    .trim(),
+  role: z.string()
+    .max(50, 'Rol no puede exceder 50 caracteres')
+    .optional(),
+  website: z.string()
+    .url('Website debe ser una URL válida')
+    .optional()
+    .or(z.literal(''))
+});
+
+// ========================================
+// AI & CHAT VALIDATION SCHEMAS
+// ========================================
+
+// Chat message validation
+export const chatMessageSchema = z.object({
+  message: z.string()
+    .min(1, 'Mensaje es requerido')
+    .max(4000, 'Mensaje no puede exceder 4000 caracteres')
+    .trim(),
+  context: z.array(z.string()).optional(),
+  temperature: z.number()
+    .min(0, 'Temperatura debe ser mayor o igual a 0')
+    .max(2, 'Temperatura debe ser menor o igual a 2')
+    .optional()
+    .default(0.7)
+});
+
+// Generate ideas validation
+export const generateIdeasSchema = z.object({
+  prompt: z.string()
+    .min(1, 'Prompt es requerido')
+    .max(2000, 'Prompt no puede exceder 2000 caracteres')
+    .trim(),
+  count: z.number()
+    .int('Número de ideas debe ser entero')
+    .min(1, 'Debe generar al menos 1 idea')
+    .max(20, 'No se pueden generar más de 20 ideas')
+    .optional()
+    .default(5),
+  category: z.string()
+    .max(50, 'Categoría no puede exceder 50 caracteres')
+    .optional(),
+  tone: z.enum(['professional', 'casual', 'creative', 'formal'])
+    .optional()
+    .default('professional')
+});
+
+// Idea feedback validation
+export const ideaFeedbackSchema = z.object({
+  feedback_type: z.enum(['like', 'dislike', 'save', 'implement']),
+  notes: z.string()
+    .max(500, 'Notas no pueden exceder 500 caracteres')
+    .optional()
+});
+
+// ========================================
+// CONTEXT SOURCES VALIDATION SCHEMAS
+// ========================================
+
+// Base context source schema
+const baseContextSourceSchema = z.object({
+  title: z.string()
+    .max(200, 'Título no puede exceder 200 caracteres')
+    .optional(),
+  description: z.string()
+    .max(1000, 'Descripción no puede exceder 1000 caracteres')
+    .optional(),
+  tags: z.array(z.string().max(30, 'Tag no puede exceder 30 caracteres'))
+    .max(10, 'No se pueden tener más de 10 tags')
+    .optional(),
+  importance: z.enum(['low', 'medium', 'high'])
+    .optional()
+    .default('medium')
+});
+
+// Document source validation
+export const documentSourceSchema = baseContextSourceSchema.extend({
+  file_name: z.string()
+    .min(1, 'Nombre de archivo es requerido')
+    .max(255, 'Nombre de archivo no puede exceder 255 caracteres'),
+  storage_path: z.string()
+    .min(1, 'Ruta de almacenamiento es requerida'),
+  file_type: z.string()
+    .min(1, 'Tipo de archivo es requerido')
+    .refine(val => ['pdf', 'docx', 'txt', 'md', 'doc'].includes(val.toLowerCase()),
+      'Tipo de archivo no soportado'),
+  file_size: z.number()
+    .positive('Tamaño de archivo debe ser positivo')
+    .max(50 * 1024 * 1024, 'Archivo no puede exceder 50MB'),
+  metadata: z.record(z.any()).optional()
+});
+
+// URL source validation
+export const urlSourceSchema = baseContextSourceSchema.extend({
+  url: z.string()
+    .url('URL debe ser válida')
+    .refine(val => {
+      try {
+        const url = new URL(val);
+        return ['http:', 'https:'].includes(url.protocol);
+      } catch {
+        return false;
+      }
+    }, 'URL debe usar protocolo HTTP o HTTPS')
+});
+
+// Manual source validation
+export const manualSourceSchema = baseContextSourceSchema.extend({
+  content: z.string()
+    .min(1, 'Contenido es requerido')
+    .max(10000, 'Contenido no puede exceder 10,000 caracteres'),
+  category: z.string()
+    .max(50, 'Categoría no puede exceder 50 caracteres')
+    .optional()
+});
+
+// Note source validation
+export const noteSourceSchema = baseContextSourceSchema.extend({
+  note: z.string()
+    .min(1, 'Nota es requerida')
+    .max(5000, 'Nota no puede exceder 5,000 caracteres'),
+  note_type: z.enum(['general', 'strategy', 'brand', 'campaign', 'research'])
+    .optional()
+    .default('general')
+});
+
+// Context search validation
+export const contextSearchSchema = z.object({
+  query: z.string()
+    .min(1, 'Query de búsqueda es requerido')
+    .max(500, 'Query no puede exceder 500 caracteres')
+    .trim(),
+  source_types: z.array(z.enum(['document', 'url', 'manual', 'note']))
+    .optional(),
+  limit: z.number()
+    .int('Límite debe ser entero')
+    .min(1, 'Límite debe ser al menos 1')
+    .max(50, 'Límite no puede exceder 50')
+    .optional()
+    .default(10)
+});
+
+// ========================================
+// CLIENT MANAGEMENT VALIDATION SCHEMAS
+// ========================================
+
+// Enhanced client schema with more validation
+export const clientCreateSchema = z.object({
   name: z.string()
-    .min(1, 'El nombre es requerido')
-    .max(100, 'El nombre no puede exceder 100 caracteres')
+    .min(1, 'Nombre del cliente es requerido')
+    .max(100, 'Nombre no puede exceder 100 caracteres')
     .trim(),
   industry: z.string()
-    .max(50, 'La industria no puede exceder 50 caracteres')
+    .max(50, 'Industria no puede exceder 50 caracteres')
+    .optional()
+    .nullable(),
+  website: z.string()
+    .url('Website debe ser una URL válida')
+    .optional()
+    .or(z.literal('')),
+  description: z.string()
+    .max(1000, 'Descripción no puede exceder 1000 caracteres')
+    .optional()
+});
+
+// Client update schema (partial)
+export const clientUpdateSchema = clientCreateSchema.partial();
+
+// Client metadata schema
+export const clientMetaSchema = z.object({
+  website: z.string()
+    .url('Website debe ser una URL válida')
+    .optional()
+    .or(z.literal('')),
+  social_links: z.object({
+    facebook: z.string().url().optional().or(z.literal('')),
+    instagram: z.string().url().optional().or(z.literal('')),
+    twitter: z.string().url().optional().or(z.literal('')),
+    linkedin: z.string().url().optional().or(z.literal('')),
+    youtube: z.string().url().optional().or(z.literal('')),
+    tiktok: z.string().url().optional().or(z.literal(''))
+  }).optional(),
+  name: z.string()
+    .min(1, 'Nombre es requerido')
+    .max(100, 'Nombre no puede exceder 100 caracteres')
+    .optional(),
+  industry: z.string()
+    .max(50, 'Industria no puede exceder 50 caracteres')
     .optional()
     .nullable()
-    .default(null)
 });
+
+// Contact validation
+export const contactSchema = z.object({
+  name: z.string()
+    .min(1, 'Nombre del contacto es requerido')
+    .max(100, 'Nombre no puede exceder 100 caracteres')
+    .trim(),
+  email: emailSchema.optional(),
+  phone: z.string()
+    .regex(/^\+?[\d\s\-\(\)]+$/, 'Formato de teléfono inválido')
+    .max(20, 'Teléfono no puede exceder 20 caracteres')
+    .optional(),
+  position: z.string()
+    .max(100, 'Posición no puede exceder 100 caracteres')
+    .optional(),
+  is_primary: z.boolean().optional().default(false),
+  notes: z.string()
+    .max(500, 'Notas no pueden exceder 500 caracteres')
+    .optional()
+});
+
+// Batch contacts validation
+export const contactsBatchSchema = z.object({
+  contacts: z.array(contactSchema)
+    .min(1, 'Debe incluir al menos un contacto')
+    .max(20, 'No se pueden agregar más de 20 contactos a la vez')
+});
+
+// User preferences validation
+export const userPreferencesSchema = z.object({
+  card_color: z.string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Color debe ser un código hex válido')
+    .optional(),
+  notification_settings: z.object({
+    email_updates: z.boolean().optional(),
+    push_notifications: z.boolean().optional()
+  }).optional(),
+  dashboard_layout: z.enum(['grid', 'list', 'compact'])
+    .optional()
+});
+
+// Legacy schema - use clientCreateSchema for new implementations
+export const clientSchema = clientCreateSchema;
 
 export const scheduleItemSchema = z.object({
   title: z.string()
@@ -99,48 +379,222 @@ export const paginationSchema = z.object({
     .default('10')
 });
 
-// Helper function para validar datos
-export const validateData = (schema, data) => {
+// ========================================
+// DOCUMENT & FILE VALIDATION SCHEMAS  
+// ========================================
+
+// Enhanced document upload validation
+export const documentUploadEnhancedSchema = z.object({
+  filename: z.string()
+    .min(1, 'Nombre de archivo es requerido')
+    .max(255, 'Nombre de archivo no puede exceder 255 caracteres')
+    .refine(val => !val.includes('..'), 'Nombre de archivo no puede contener ".."')
+    .refine(val => !/[<>:"/\\|?*]/.test(val), 'Nombre de archivo contiene caracteres no permitidos'),
+  mimetype: z.string()
+    .min(1, 'Tipo de archivo es requerido')
+    .refine(val => [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain',
+      'text/markdown',
+      'application/rtf'
+    ].includes(val), 'Tipo de archivo no permitido'),
+  size: z.number()
+    .positive('Tamaño de archivo debe ser positivo')
+    .max(50 * 1024 * 1024, 'Archivo no puede exceder 50MB'),
+  checksum: z.string()
+    .regex(/^[a-fA-F0-9]{64}$/, 'Checksum SHA-256 inválido')
+    .optional()
+});
+
+// ========================================
+// SECURITY & SANITIZATION HELPERS
+// ========================================
+
+// Sanitized string schema for user inputs
+const sanitizedStringSchema = (minLength = 0, maxLength = 1000) => 
+  z.string()
+    .min(minLength)
+    .max(maxLength)
+    .transform(val => val.trim())
+    .refine(val => !/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(val), 
+      'Contenido contiene scripts no permitidos')
+    .refine(val => !/javascript:|data:|vbscript:|on\w+\s*=/gi.test(val),
+      'Contenido contiene código potencialmente malicioso');
+
+// Rate limiting validation for sensitive endpoints
+export const rateLimitBypassSchema = z.object({
+  bypass_token: z.string()
+    .uuid('Token de bypass debe ser UUID válido')
+    .optional()
+});
+
+// ========================================
+// ENHANCED MIDDLEWARE VALIDATION
+// ========================================
+
+// Helper function para validar datos with enhanced error reporting
+export const validateData = (schema, data, options = {}) => {
   try {
+    const result = schema.parse(data);
+    
+    // Log successful validation in development
+    if (process.env.NODE_ENV === 'development' && options.logSuccess) {
+      console.log(`✅ Validation passed for ${options.context || 'unknown'}`);
+    }
+    
     return {
       success: true,
-      data: schema.parse(data)
+      data: result
     };
   } catch (error) {
+    // Enhanced error logging
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`❌ Validation failed for ${options.context || 'unknown'}:`, error.errors);
+    }
+    
     return {
       success: false,
       errors: error.errors?.map(err => ({
         path: err.path?.join('.') || 'unknown',
-        message: err.message
-      })) || [{ path: 'unknown', message: error.message || 'Error de validación' }]
+        message: err.message,
+        code: err.code || 'validation_error',
+        ...(process.env.NODE_ENV === 'development' && { received: err.received })
+      })) || [{ path: 'unknown', message: error.message || 'Error de validación', code: 'unknown_error' }]
     };
   }
 };
 
-// Middleware para validación automática
-export const validate = (schema, source = 'body') => {
+// Enhanced middleware para validación automática with security features
+export const validate = (schema, source = 'body', options = {}) => {
   return (req, res, next) => {
     const dataToValidate = source === 'params' ? req.params : 
                           source === 'query' ? req.query : 
                           req.body;
 
-    const result = validateData(schema, dataToValidate);
-    
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Datos de entrada inválidos',
-        errors: result.errors
+    // Log validation attempt for sensitive endpoints
+    if (options.logAttempts) {
+      console.log(`🔍 Validating ${source} for ${req.method} ${req.path}`, {
+        ip: req.ip,
+        userAgent: req.get('User-Agent')?.substring(0, 100)
       });
     }
 
-    // Almacenar los datos validados
+    let validationResult;
+    try {
+      const validatedData = schema.parse(dataToValidate);
+      validationResult = { success: true, data: validatedData };
+    } catch (error) {
+      // Log validation failures for security monitoring
+      if (options.logFailures !== false) {
+        console.warn(`🚨 Validation failed for ${req.method} ${req.path}`, {
+          ip: req.ip,
+          errors: error.errors?.map(e => ({ path: e.path?.join('.'), message: e.message })) || ['Parse error'],
+          data: typeof dataToValidate === 'object' ? Object.keys(dataToValidate) : 'non-object'
+        });
+      }
+
+      const errors = (error.errors && Array.isArray(error.errors)) ? error.errors.map(err => ({
+        path: Array.isArray(err.path) ? err.path.join('.') : (err.path || 'unknown'),
+        message: err.message || 'Error de validación',
+        code: err.code || 'validation_error'
+      })) : [{ path: 'unknown', message: error.message || 'Error de validación', code: 'unknown_error' }];
+
+      return res.status(400).json({
+        success: false,
+        message: 'Datos de entrada inválidos',
+        errors,
+        ...(process.env.NODE_ENV === 'development' && { 
+          debug: {
+            source,
+            receivedKeys: typeof dataToValidate === 'object' ? Object.keys(dataToValidate) : [],
+            zodError: error.message
+          }
+        })
+      });
+    }
+    
+    if (!validationResult.success) {
+      return;
+    }
+
+    // Store validated data with security metadata
+    const validationMeta = {
+      validatedAt: new Date(),
+      schema: schema.constructor?.name || 'ZodSchema',
+      source
+    };
+
     if (source === 'params') {
-      req.validatedParams = result.data;
+      req.validatedParams = validationResult.data;
+      req.validationMeta = { ...req.validationMeta, params: validationMeta };
     } else if (source === 'query') {
-      req.validatedQuery = result.data;
+      req.validatedQuery = validationResult.data;
+      req.validationMeta = { ...req.validationMeta, query: validationMeta };
     } else {
-      req.validatedBody = result.data;
+      req.validatedBody = validationResult.data;
+      req.validationMeta = { ...req.validationMeta, body: validationMeta };
+    }
+
+    next();
+  };
+};
+
+// Multiple validation middleware for endpoints that need body, params, and query validation
+export const validateMultiple = (...validations) => {
+  return (req, res, next) => {
+    req.validationMeta = {};
+    
+    const runValidation = (index) => {
+      if (index >= validations.length) {
+        return next();
+      }
+
+      const { schema, source, options } = validations[index];
+      const middleware = validate(schema, source, options);
+      
+      middleware(req, res, (err) => {
+        if (err) return next(err);
+        runValidation(index + 1);
+      });
+    };
+
+    runValidation(0);
+  };
+};
+
+// Sanitization middleware for critical security
+export const sanitizeInput = (options = {}) => {
+  return (req, res, next) => {
+    const sanitizeObject = (obj) => {
+      if (typeof obj !== 'object' || obj === null) return obj;
+      
+      const sanitized = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'string') {
+          // Remove potential XSS vectors
+          sanitized[key] = value
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/javascript:/gi, '')
+            .replace(/data:/gi, '')
+            .replace(/vbscript:/gi, '')
+            .replace(/on\w+\s*=/gi, '');
+        } else if (typeof value === 'object') {
+          sanitized[key] = sanitizeObject(value);
+        } else {
+          sanitized[key] = value;
+        }
+      }
+      return sanitized;
+    };
+
+    if (options.body !== false) {
+      req.body = sanitizeObject(req.body);
+    }
+    
+    if (options.query !== false) {
+      req.query = sanitizeObject(req.query);
     }
 
     next();

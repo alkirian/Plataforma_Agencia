@@ -13,11 +13,24 @@ import {
   handleSearchContextChunks,
   handleGetContextSourceStats
 } from '../controllers/contextSources.controller.js';
+import { 
+  validate,
+  validateMultiple,
+  sanitizeInput,
+  documentSourceSchema,
+  urlSourceSchema,
+  manualSourceSchema,
+  noteSourceSchema,
+  contextSearchSchema,
+  clientIdParamSchema,
+  uuidParamSchema
+} from '../schemas/validation.js';
 
 const router = Router();
 
-// Aplicar middleware de autenticación a todas las rutas
+// Aplicar middleware de autenticación y sanitización a todas las rutas
 router.use(protect);
+router.use(sanitizeInput());
 
 // --- Rutas de Procesamiento de Fuentes ---
 
@@ -27,7 +40,13 @@ router.use(protect);
  * @access  Private (requiere autenticación)
  * @body    { file_name, storage_path, file_type, file_size, metadata? }
  */
-router.post('/:clientId/document', handleProcessDocumentSource);
+router.post('/:clientId/document', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: documentSourceSchema, source: 'body', options: { logAttempts: true, logSuccess: true } }
+  ),
+  handleProcessDocumentSource
+);
 
 /**
  * @route   POST /api/context-sources/:clientId/url
@@ -35,7 +54,13 @@ router.post('/:clientId/document', handleProcessDocumentSource);
  * @access  Private (requiere autenticación)
  * @body    { url, title?, description?, tags? }
  */
-router.post('/:clientId/url', handleProcessUrlSource);
+router.post('/:clientId/url', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: urlSourceSchema, source: 'body', options: { logAttempts: true, logSuccess: true } }
+  ),
+  handleProcessUrlSource
+);
 
 /**
  * @route   POST /api/context-sources/:clientId/manual
@@ -43,7 +68,13 @@ router.post('/:clientId/url', handleProcessUrlSource);
  * @access  Private (requiere autenticación)
  * @body    { content, title?, category?, tags?, importance? }
  */
-router.post('/:clientId/manual', handleProcessManualSource);
+router.post('/:clientId/manual', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: manualSourceSchema, source: 'body', options: { logSuccess: true } }
+  ),
+  handleProcessManualSource
+);
 
 /**
  * @route   POST /api/context-sources/:clientId/note
@@ -51,7 +82,13 @@ router.post('/:clientId/manual', handleProcessManualSource);
  * @access  Private (requiere autenticación)
  * @body    { note, title?, note_type?, importance?, tags? }
  */
-router.post('/:clientId/note', handleProcessNoteSource);
+router.post('/:clientId/note', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: noteSourceSchema, source: 'body', options: { logSuccess: true } }
+  ),
+  handleProcessNoteSource
+);
 
 // --- Rutas de Gestión de Fuentes ---
 
@@ -61,7 +98,10 @@ router.post('/:clientId/note', handleProcessNoteSource);
  * @access  Private (requiere autenticación)
  * @query   source_type?, ai_status?, limit?
  */
-router.get('/:clientId', handleGetContextSources);
+router.get('/:clientId', 
+  validate(clientIdParamSchema, 'params'),
+  handleGetContextSources
+);
 
 /**
  * @route   PUT /api/context-sources/:clientId/:sourceId
@@ -69,14 +109,26 @@ router.get('/:clientId', handleGetContextSources);
  * @access  Private (requiere autenticación)
  * @body    { file_name?, source_metadata? }
  */
-router.put('/:clientId/:sourceId', handleUpdateContextSource);
+router.put('/:clientId/:sourceId', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }), source: 'params' }
+  ),
+  handleUpdateContextSource
+);
 
 /**
  * @route   DELETE /api/context-sources/:clientId/:sourceId
  * @desc    Eliminar una fuente de contexto específica
  * @access  Private (requiere autenticación)
  */
-router.delete('/:clientId/:sourceId', handleDeleteContextSource);
+router.delete('/:clientId/:sourceId', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }), source: 'params', options: { logAttempts: true } }
+  ),
+  handleDeleteContextSource
+);
 
 // --- Rutas de Búsqueda y Estadísticas ---
 
@@ -86,13 +138,22 @@ router.delete('/:clientId/:sourceId', handleDeleteContextSource);
  * @access  Private (requiere autenticación)
  * @body    { query, source_types?, limit? }
  */
-router.post('/:clientId/search', handleSearchContextChunks);
+router.post('/:clientId/search', 
+  validateMultiple(
+    { schema: clientIdParamSchema, source: 'params' },
+    { schema: contextSearchSchema, source: 'body', options: { logAttempts: true } }
+  ),
+  handleSearchContextChunks
+);
 
 /**
  * @route   GET /api/context-sources/:clientId/stats
  * @desc    Obtener estadísticas de las fuentes de contexto de un cliente
  * @access  Private (requiere autenticación)
  */
-router.get('/:clientId/stats', handleGetContextSourceStats);
+router.get('/:clientId/stats', 
+  validate(clientIdParamSchema, 'params'),
+  handleGetContextSourceStats
+);
 
 export default router;

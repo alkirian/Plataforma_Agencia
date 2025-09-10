@@ -7,85 +7,179 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Design tokens (mapped to CSS variables for fine-grain tuning)
-        // Updated for Deep Orange Modern Dark Theme
+        // ================================
+        // CENTRALIZED THEME COLOR SYSTEM
+        // ================================
+        
+        // Theme-aware colors (dynamically updated via CSS variables)
+        'theme-bg': {
+          primary: 'var(--theme-background-primary)',
+          secondary: 'var(--theme-background-secondary)',
+          tertiary: 'var(--theme-background-tertiary)',
+          inverse: 'var(--theme-background-inverse)',
+        },
+        
+        'theme-surface': {
+          DEFAULT: 'var(--theme-surface-default)',
+          soft: 'var(--theme-surface-soft)',
+          strong: 'var(--theme-surface-strong)',
+          overlay: 'var(--theme-surface-overlay)',
+        },
+        
+        'theme-text': {
+          primary: 'var(--theme-text-primary)',
+          secondary: 'var(--theme-text-secondary)',
+          muted: 'var(--theme-text-muted)',
+          inverse: 'var(--theme-text-inverse)',
+          accent: 'var(--theme-text-accent)',
+        },
+        
+        'theme-border': {
+          DEFAULT: 'var(--theme-border-default)',
+          subtle: 'var(--theme-border-subtle)',
+          strong: 'var(--theme-border-strong)',
+          interactive: 'var(--theme-border-interactive)',
+        },
+        
+        'theme-interactive': {
+          primary: 'var(--theme-interactive-primary)',
+          'primary-hover': 'var(--theme-interactive-primaryHover)',
+          secondary: 'var(--theme-interactive-secondary)',
+          'secondary-hover': 'var(--theme-interactive-secondaryHover)',
+          tertiary: 'var(--theme-interactive-tertiary)',
+          'tertiary-hover': 'var(--theme-interactive-tertiaryHover)',
+        },
+        
+        'theme-status': {
+          success: 'var(--theme-status-success)',
+          warning: 'var(--theme-status-warning)',
+          error: 'var(--theme-status-error)',
+          info: 'var(--theme-status-info)',
+        },
+
+        // ================================
+        // LEGACY COLORS (Backward Compatibility)
+        // ================================
+        
+        // Legacy app colors (mapped to new theme system for compatibility)
         app: {
-          bg: 'var(--color-app-bg)', // #1D1E22 Dark Slate
+          bg: 'var(--theme-background-primary)',
           gradientStart: 'var(--color-app-gradient-start)',
           gradientMid: 'var(--color-app-gradient-mid)', 
           gradientEnd: 'var(--color-app-gradient-end)'
         },
+        
         surface: {
-          DEFAULT: 'var(--color-surface)', // rgba(57,63,77,0.65) Deep Matte Grey
-          soft: 'var(--color-surface-soft)', // rgba(57,63,77,0.5)
-          strong: 'var(--color-surface-strong)' // rgba(57,63,77,0.9)
+          DEFAULT: 'var(--theme-surface-default)',
+          soft: 'var(--theme-surface-soft)',
+          strong: 'var(--theme-surface-strong)'
         },
+        
         border: {
-          subtle: 'var(--color-border-subtle)', // rgba(212,212,220,0.12)
-          strong: 'var(--color-border-strong)'  // rgba(212,212,220,0.24)
+          subtle: 'var(--theme-border-subtle)',
+          strong: 'var(--theme-border-strong)'
         },
+        
         text: {
-          primary: 'var(--color-text-primary)', // #D4D4DC Silver Fox
-          muted: 'var(--color-text-muted)',     // rgba(212,212,220,0.7)
-          secondary: 'var(--color-text-secondary)' // rgba(212,212,220,0.85)
+          primary: 'var(--theme-text-primary)',
+          muted: 'var(--theme-text-muted)',
+          secondary: 'var(--theme-text-secondary)'
         },
-        // New palette-specific colors
+
+        // Legacy palette colors (for existing components)
         palette: {
-          'primary-bg': 'var(--palette-primary-bg)',        // #1D1E22
-          'secondary-bg': 'var(--palette-secondary-bg)',    // #393F4D  
-          'primary-text': 'var(--palette-primary-text)',    // #D4D4DC
-          'primary-accent': 'var(--palette-primary-accent)', // #FF5A09
-          'secondary-accent': 'var(--palette-secondary-accent)', // #BE4F0C
-          'hover-state': 'var(--palette-hover-state)',      // #EC7F37
-          'cold-alt': 'var(--palette-cold-alt)',           // #00303F
-          'soft-alt': 'var(--palette-soft-alt)'            // #7A9D96
+          'primary-bg': 'var(--theme-background-primary)',
+          'secondary-bg': 'var(--theme-background-secondary)',
+          'primary-text': 'var(--theme-text-primary)',
+          'primary-accent': 'var(--theme-interactive-primary)',
+          'secondary-accent': 'var(--theme-interactive-secondary)',
+          'hover-state': 'var(--theme-interactive-primary-hover)',
+          'cold-alt': 'var(--theme-status-info)',
+          'soft-alt': 'var(--theme-status-success)'
         },
-        // Updated accent colors using new palette
+
+        // Legacy accent colors
         accent: {
-          primary: 'var(--color-accent-primary-new)',    // #FF5A09 Deep Orange
-          secondary: 'var(--color-accent-secondary-new)', // #BE4F0C Orange Yellow
-          hover: 'var(--color-accent-hover-new)',         // #EC7F37 Light Orange
-          cold: 'var(--color-accent-cold-new)',           // #00303F Cerulean
-          soft: 'var(--color-accent-soft-new)',           // #7A9D96 Mist
-          // Legacy compatibility
+          primary: 'var(--theme-interactive-primary)',
+          secondary: 'var(--theme-interactive-secondary)',
+          hover: 'var(--theme-interactive-primary-hover)',
+          cold: 'var(--theme-status-info)',
+          soft: 'var(--theme-status-success)',
+          // Keep legacy compatibility
           cyan: 'var(--color-accent-cyan)', 
           blue: 'var(--color-accent-blue)', 
           violet: 'var(--color-accent-violet)'
         },
-        // Orange-themed variants
-        orange: {
-          50: '#FFF7ED',
-          100: '#FFEDD5', 
-          200: '#FED7AA',
-          300: '#FDBA74',
-          400: '#FB923C',
-          500: 'var(--palette-primary-accent)',    // #FF5A09
-          600: 'var(--palette-secondary-accent)',  // #BE4F0C
-          700: '#C2410C',
-          800: '#9A3412',
-          900: '#7C2D12',
-          950: '#431407'
-        },
-        // Updated brand colors to match orange theme
+
+        // Brand colors (mapped to interactive colors)
         brand: {
           50: '#FFF7ED',
           100: '#FFEDD5',
           200: '#FED7AA', 
           300: '#FDBA74',
           400: '#FB923C',
-          500: 'var(--palette-primary-accent)',    // #FF5A09 Primary brand
-          600: 'var(--palette-secondary-accent)',  // #BE4F0C Secondary brand
-          700: 'var(--palette-hover-state)',      // #EC7F37 Hover states
+          500: 'var(--theme-interactive-primary)',
+          600: 'var(--theme-interactive-secondary)',
+          700: 'var(--theme-interactive-primary-hover)',
           800: '#9A3412',
           900: '#7C2D12', 
           950: '#431407'
         },
-        // Status colors integrated with new palette
-        success: 'var(--palette-soft-alt)',     // #7A9D96 Mist for success
-        warning: 'var(--palette-secondary-accent)', // #BE4F0C Orange Yellow for warning  
-        error: '#DC2626',   // Keep red for error
-        info: 'var(--palette-cold-alt)',        // #00303F Cerulean for info
+
+        // Orange scale (for existing orange components)
+        orange: {
+          50: '#FFF7ED',
+          100: '#FFEDD5', 
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: 'var(--theme-interactive-primary)',
+          600: 'var(--theme-interactive-secondary)',
+          700: '#C2410C',
+          800: '#9A3412',
+          900: '#7C2D12',
+          950: '#431407'
+        },
+
+        // Status colors (mapped to theme system)
+        success: 'var(--theme-status-success)',
+        warning: 'var(--theme-status-warning)',
+        error: 'var(--theme-status-error)',
+        info: 'var(--theme-status-info)',
       },
+      
+      // Theme-aware background images and gradients
+      backgroundImage: {
+        'theme-gradient-primary': 'var(--theme-gradients-primary)',
+        'theme-gradient-secondary': 'var(--theme-gradients-secondary)',
+        'theme-gradient-accent': 'var(--theme-gradients-accent)',
+        'theme-gradient-surface': 'var(--theme-gradients-surface)',
+        // Legacy gradients
+        'gradient-cyber': 'var(--gradient-cyber)',
+        'gradient-glow': 'var(--gradient-glow)',
+      },
+      
+      // Theme-aware shadows
+      boxShadow: {
+        'theme-subtle': '0 2px 4px var(--theme-shadows-subtle)',
+        'theme-medium': '0 4px 12px var(--theme-shadows-medium)',
+        'theme-strong': '0 8px 24px var(--theme-shadows-strong)',
+        'theme-glow': '0 0 20px var(--theme-shadows-glow)',
+        // Legacy shadows
+        soft: '0 8px 24px rgba(0,0,0,0.35)',
+        glass: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.35)',
+        halo: '0 0 0 1px var(--color-border-subtle), 0 0 20px rgba(96,165,250,0.15), 0 0 40px rgba(167,139,250,0.15)',
+        'halo-strong': '0 0 0 1px var(--color-border-strong), 0 0 30px rgba(96,165,250,0.25), 0 0 60px rgba(167,139,250,0.25)'
+      },
+      
+      // Theme-aware drop shadows
+      dropShadow: {
+        'theme-subtle': '0 2px 4px var(--theme-shadows-subtle)',
+        'theme-medium': '0 4px 12px var(--theme-shadows-medium)',
+        'theme-strong': '0 8px 24px var(--theme-shadows-strong)',
+        'theme-glow': '0 0 20px var(--theme-shadows-glow)',
+      },
+      
       backdropBlur: {
         xs: '2px',
       },

@@ -130,3 +130,6 @@ export const QuickActions = ({
     </div>
   )
 }
+
+// Default export for index.ts re-export compatibility
+export default QuickActions

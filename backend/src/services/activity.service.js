@@ -1,5 +1,6 @@
 // src/services/activity.service.js
 import { supabaseAdmin } from '../config/supabaseClient.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Registra una nueva acción en el log de actividad.
@@ -9,11 +10,11 @@ export const logActivity = async (logData) => {
   try {
     const { error } = await supabaseAdmin.from('activity_logs').insert(logData);
     if (error) {
-      console.error('Error al registrar la actividad:', error.message);
+      logger.error('Error al registrar la actividad', error, logData);
       // No lanzamos error para no interrumpir el flujo principal
     }
   } catch (error) {
-    console.error('Error inesperado al registrar actividad:', error);
+    logger.error('Error inesperado al registrar actividad', error, logData);
   }
 };
 

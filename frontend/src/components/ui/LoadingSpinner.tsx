@@ -13,6 +13,8 @@ import type {
   LoadingOverlayProps,
 } from '../../types/components'
 import { cn } from '@lib/utils'
+import { AlertCircle } from 'lucide-react'
+import { Button } from './Button'
 
 // ============================================================================
 // LOADING SPINNER CONFIGURATIONS
@@ -211,6 +213,64 @@ export const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
 )
 
 LoadingCard.displayName = 'LoadingCard'
+
+// ============================================================================
+// ERROR CARD
+// ============================================================================
+
+interface ErrorCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  title?: string
+  message?: string
+  onRetry?: () => void
+  'data-testid'?: string
+}
+
+export const ErrorCard = forwardRef<HTMLDivElement, ErrorCardProps>(
+  (
+    { 
+      title = 'Error', 
+      message = 'Ha ocurrido un error inesperado', 
+      onRetry,
+      className, 
+      'data-testid': testId, 
+      ...props 
+    }, 
+    ref
+  ) => (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        'bg-surface-soft border border-red-500/20 rounded-xl p-6 text-center space-y-4',
+        className
+      )}
+      data-testid={testId}
+      {...props}
+    >
+      <div className='flex justify-center'>
+        <AlertCircle className='h-12 w-12 text-red-500' />
+      </div>
+      <div className='space-y-1'>
+        <h3 className='text-lg font-medium text-text-primary'>{title}</h3>
+        {message && <p className='text-sm text-text-muted'>{message}</p>}
+      </div>
+      {onRetry && (
+        <Button
+          onClick={onRetry}
+          variant='primary'
+          size='sm'
+          className='mt-4'
+        >
+          Reintentar
+        </Button>
+      )}
+    </motion.div>
+  )
+)
+
+ErrorCard.displayName = 'ErrorCard'
 
 // ============================================================================
 // LOADING PAGE

@@ -19,7 +19,7 @@ import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
 // Hooks y API
 import { useContextSources } from '../../hooks/useContextSources'
-import { SOURCE_TYPES, SOURCE_TYPE_CONFIG } from '../../api/contextSources'
+import { SOURCE_TYPES, SOURCE_TYPE_CONFIG } from '../../api/contextSources.api'
 
 export const ContextSourcesSection = ({ clientId, clientName = 'Cliente' }) => {
   const [currentStep, setCurrentStep] = useState('list') // 'list' | 'select-type' | 'add-source'

@@ -1,5 +1,6 @@
 import { createAuthenticatedClient } from '../config/supabaseClient.js';
 import { logActivity } from './activity.service.js';
+import { logger } from '../utils/logger.js';
 
 // Helper: normaliza el estado al formato esperado por el ENUM de la BD
 const normalizeStatus = (status) => {
@@ -50,7 +51,7 @@ export const createScheduleItem = async (itemData, token, userId = null) => {
   const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
   const normalizedStatus = normalizeStatus(itemData.status);
   if (normalizedStatus && !allowed.includes(normalizedStatus)) {
-    console.warn('[schedule] Status no permitido, recibido:', itemData.status, '-> normalizado:', normalizedStatus);
+    logger.warn('Status no permitido, normalizado', { received: itemData.status, normalized: normalizedStatus });
   }
   const payload = {
     ...itemData,
@@ -110,7 +111,7 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token, us
     const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
     const normalizedStatus = normalizeStatus(updateData.status);
     if (normalizedStatus && !allowed.includes(normalizedStatus)) {
-      console.warn('[schedule] Update status no permitido, recibido:', updateData.status, '-> normalizado:', normalizedStatus);
+      logger.warn('Update status no permitido, normalizado', { received: updateData.status, normalized: normalizedStatus });
     }
     normalizedUpdate.status = normalizedStatus || updateData.status;
   }
