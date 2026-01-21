@@ -5,22 +5,22 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     // TypeScript path resolution from tsconfig.json
     tsconfigPaths(),
-    // TypeScript type checking during development
-    // TypeScript checking only - ESLint disabled due to vite-plugin-checker incompatibility with ESLint 9.x
-    // Use npm run lint for ESLint checking instead
-    checker({
+    // TypeScript type checking during development only
+    // Disabled in production build to allow deployment
+    ...(mode === 'development' ? [checker({
       typescript: true,
       overlay: {
         initialIsOpen: false,
         position: 'tl'
       }
-    })
+    })] : [])
   ],
+
   server: {
     host: 'localhost',
     port: 5173,
@@ -28,6 +28,13 @@ export default defineConfig({
     // Enable HMR for TypeScript files
     hmr: {
       overlay: true
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false
+      }
     }
   },
   resolve: {
@@ -55,6 +62,7 @@ export default defineConfig({
       '@schedule': path.resolve(__dirname, './src/schedule'),
       '@documents': path.resolve(__dirname, './src/documents'),
       '@constants': path.resolve(__dirname, './src/constants'),
+      '@heroui/react': path.resolve(__dirname, './src/shared/vendor/heroui/react.jsx'),
       // Back-compat for imports without '@' prefix
       'api': path.resolve(__dirname, './src/api'),
       'components': path.resolve(__dirname, './src/components')
@@ -132,4 +140,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))
