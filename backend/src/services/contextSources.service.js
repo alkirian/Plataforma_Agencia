@@ -1,14 +1,17 @@
 // src/services/contextSources.service.js
 
-import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
-import pdf from 'pdf-parse/lib/pdf-parse.js';
-import mammoth from 'mammoth';
-import { get_encoding } from 'tiktoken';
-import puppeteer from 'puppeteer';
-import * as cheerio from 'cheerio';
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
-import { logger } from '../utils/logger.js';
+import {
+  supabaseAdmin,
+  createAuthenticatedClient,
+} from "../config/supabaseClient.js";
+import pdf from "pdf-parse/lib/pdf-parse.js";
+import mammoth from "mammoth";
+import { get_encoding } from "tiktoken";
+import puppeteer from "puppeteer";
+import * as cheerio from "cheerio";
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
+import { logger } from "../utils/logger.js";
 
 // --- Variables de Entorno ---
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -16,25 +19,28 @@ const openaiApiKey = process.env.OPENAI_API_KEY;
 // --- Funciones Auxiliares Reutilizadas ---
 
 const fetchFileFromStorage = async (path) => {
-  const { data, error } = await supabaseAdmin.storage.from('documents').download(path);
-  if (error) throw new Error(`No se pudo descargar el archivo: ${error.message}`);
+  const { data, error } = await supabaseAdmin.storage
+    .from("documents")
+    .download(path);
+  if (error)
+    throw new Error(`No se pudo descargar el archivo: ${error.message}`);
   return data;
 };
 
 const extractText = async (buffer, fileType) => {
-  if (fileType?.includes('pdf')) {
+  if (fileType?.includes("pdf")) {
     const data = await pdf(buffer, { max: 200 });
     return data.text;
   }
-  if (fileType?.includes('docx')) {
+  if (fileType?.includes("docx")) {
     const { value } = await mammoth.extractRawText({ buffer });
     return value;
   }
-  return buffer.toString?.('utf8') || '';
+  return buffer.toString?.("utf8") || "";
 };
 
 const chunkText = (text, tokenLimit = 4000) => {
-  const encoder = get_encoding('cl100k_base');
+  const encoder = get_encoding("cl100k_base");
   const tokens = encoder.encode(text);
   const chunks = [];
   for (let i = 0; i < tokens.length; i += tokenLimit) {
@@ -47,44 +53,75 @@ const chunkText = (text, tokenLimit = 4000) => {
 };
 
 const embedText = async (text) => {
-  if (!openaiApiKey) throw new Error('OPENAI_API_KEY no configurada');
-  const resp = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
-    body: JSON.stringify({ model: 'text-embedding-3-small', input: text }),
+  if (!openaiApiKey) throw new Error("OPENAI_API_KEY no configurada");
+  const resp = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
+    body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    logger.error('Error de OpenAI Embedding', new Error(errorDetails.error?.message || 'Unknown OpenAI error'), { errorDetails });
-    throw new Error(`Error al generar embeddings: ${errorDetails.error?.message}`);
+    logger.error(
+      "Error de OpenAI Embedding",
+      new Error(errorDetails.error?.message || "Unknown OpenAI error"),
+      { errorDetails },
+    );
+    throw new Error(
+      `Error al generar embeddings: ${errorDetails.error?.message}`,
+    );
   }
   const json = await resp.json();
   const embedding = json.data?.[0]?.embedding;
   if (!embedding) {
-    logger.error('La respuesta de OpenAI no contenía un embedding', null, { textPreview: text.substring(0, 100) });
-    throw new Error('La respuesta de OpenAI fue exitosa pero no se encontró el embedding.');
+    logger.error("La respuesta de OpenAI no contenía un embedding", null, {
+      textPreview: text.substring(0, 100),
+    });
+    throw new Error(
+      "La respuesta de OpenAI fue exitosa pero no se encontró el embedding.",
+    );
   }
   return embedding;
 };
 
 const analyzeImageWithGPT = async (imageUrl) => {
-  const prompt = `Analiza esta imagen en detalle. Describe su contenido, los colores predominantes, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.`;
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
+  const prompt =
+    "Analiza esta imagen en detalle. Describe su contenido, los colores predominantes, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.";
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: imageUrl } }] }],
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageUrl } },
+          ],
+        },
+      ],
       max_tokens: 500,
     }),
   });
   if (!resp.ok) {
     const errorDetails = await resp.json();
-    logger.error('Error de OpenAI Vision', new Error(errorDetails.error?.message || 'Unknown vision error'), { errorDetails });
-    throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
+    logger.error(
+      "Error de OpenAI Vision",
+      new Error(errorDetails.error?.message || "Unknown vision error"),
+      { errorDetails },
+    );
+    throw new Error(
+      `Error al analizar la imagen: ${errorDetails.error?.message}`,
+    );
   }
   const json = await resp.json();
-  return json.choices?.[0]?.message?.content || '';
+  return json.choices?.[0]?.message?.content || "";
 };
 
 // --- Nuevas Funciones para Scraping de URLs ---
@@ -92,68 +129,77 @@ const analyzeImageWithGPT = async (imageUrl) => {
 const scrapeUrlWithPuppeteer = async (url) => {
   let browser;
   try {
-    logger.info('Iniciando scraping de URL', { url });
-    
-    browser = await puppeteer.launch({ 
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    logger.info("Iniciando scraping de URL", { url });
+
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
     });
-    
+
     const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    );
+
     // Configurar timeout y esperar a que cargue la página
-    await page.goto(url, { 
-      waitUntil: 'networkidle2',
-      timeout: 30000 
+    await page.goto(url, {
+      waitUntil: "networkidle2",
+      timeout: 30000,
     });
-    
+
     // Extraer contenido HTML
     const content = await page.content();
-    
+
     // Usar Readability para extraer el contenido principal
     const dom = new JSDOM(content, { url });
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
-    
-    let extractedText = '';
-    let title = '';
-    let excerpt = '';
-    
+
+    let extractedText = "";
+    let title = "";
+    let excerpt = "";
+
     if (article) {
-      title = article.title || '';
-      extractedText = article.textContent || '';
-      excerpt = article.excerpt || '';
+      title = article.title || "";
+      extractedText = article.textContent || "";
+      excerpt = article.excerpt || "";
     } else {
       // Fallback con Cheerio si Readability falla
       const $ = cheerio.load(content);
-      title = $('title').text() || $('h1').first().text() || '';
-      
-      $('script, style, nav, header, footer, aside, .advertisement, .ads, .comments').remove();
-      
+      title = $("title").text() || $("h1").first().text() || "";
+
+      $(
+        "script, style, nav, header, footer, aside, .advertisement, .ads, .comments",
+      ).remove();
+
       // Extraer texto principal
-      const mainContent = $('main, article, .content, .post-content, .entry-content, body').first();
-      extractedText = mainContent.text() || $('body').text() || '';
-      
+      const mainContent = $(
+        "main, article, .content, .post-content, .entry-content, body",
+      ).first();
+      extractedText = mainContent.text() || $("body").text() || "";
+
       // Crear excerpt del primer párrafo
-      excerpt = $('p').first().text().substring(0, 200) + '...';
+      excerpt = $("p").first().text().substring(0, 200) + "...";
     }
-    
+
     // Limpiar texto
     extractedText = extractedText
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s*\n/g, '\n')
+      .replace(/\s+/g, " ")
+      .replace(/\n\s*\n/g, "\n")
       .trim();
-    
+
     return {
       title: title.trim(),
       content: extractedText,
       excerpt: excerpt.trim(),
-      url: url
+      url: url,
     };
-    
   } catch (error) {
-    logger.error('Error en scraping', error, { url });
+    logger.error("Error en scraping", error, { url });
     throw new Error(`Error al procesar URL: ${error.message}`);
   } finally {
     if (browser) {
@@ -164,270 +210,330 @@ const scrapeUrlWithPuppeteer = async (url) => {
 
 // --- Funciones de Procesamiento Específicas por Tipo ---
 
-export const processDocumentSource = async (file, clientId, agencyId, token, metadata = {}, userId = null) => {
-  logger.info('Procesando documento', { clientId, agencyId });
-  
+export const processDocumentSource = async (
+  file,
+  clientId,
+  agencyId,
+  token,
+  metadata = {},
+  userId = null,
+) => {
+  logger.info("Procesando documento", { clientId, agencyId });
+
   // Obtener user_id del token si no se proporciona
   let actualUserId = userId;
   if (!actualUserId) {
     const supabaseAuth = createAuthenticatedClient(token);
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr) throw new Error('No se pudo obtener el usuario');
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabaseAuth.auth.getUser();
+    if (userErr) throw new Error("No se pudo obtener el usuario");
     actualUserId = user.id;
   }
-  
+
   // Crear registro en la tabla context_sources
   const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
     user_id: actualUserId,
-    source_type: 'document',
+    source_type: "document",
     title: metadata.title || file.originalname,
-    description: metadata.description || '',
+    description: metadata.description || "",
     source_data: {
       file_name: file.originalname,
       storage_path: metadata.storage_path,
       file_type: file.mimetype,
       file_size: file.size,
       original_filename: file.originalname,
-      upload_method: 'context_source',
-      ...metadata
+      upload_method: "context_source",
+      ...metadata,
     },
-    processing_status: 'pending',
-    tags: metadata.tags || []
+    processing_status: "pending",
+    tags: metadata.tags || [],
   };
-  
+
   const { data: source, error: sourceErr } = await supabaseAdmin
-    .from('context_sources')
+    .from("context_sources")
     .insert(sourceData)
     .select()
     .single();
-    
-  if (sourceErr) throw new Error(`No se pudo crear la fuente de contexto: ${sourceErr.message}`);
-  
+
+  if (sourceErr)
+    throw new Error(
+      `No se pudo crear la fuente de contexto: ${sourceErr.message}`,
+    );
+
   // Procesar el archivo usando la lógica existente
   await processSourceChunks(source.id, token);
-  
+
   return source;
 };
 
-export const processUrlSource = async (url, clientId, agencyId, token, metadata = {}, userId = null) => {
-  logger.info('Procesando URL', { url, clientId, agencyId });
-  
+export const processUrlSource = async (
+  url,
+  clientId,
+  agencyId,
+  token,
+  metadata = {},
+  userId = null,
+) => {
+  logger.info("Procesando URL", { url, clientId, agencyId });
+
   try {
     // Validar URL
     new URL(url);
-    
+
     // Scraping del contenido
     const scrapedContent = await scrapeUrlWithPuppeteer(url);
-    
+
     if (!scrapedContent.content || scrapedContent.content.length < 50) {
-      throw new Error('No se pudo extraer contenido suficiente de la URL');
+      throw new Error("No se pudo extraer contenido suficiente de la URL");
     }
-    
+
     // Obtener user_id del token si no se proporciona
     let actualUserId = userId;
     if (!actualUserId) {
       const supabaseAuth = createAuthenticatedClient(token);
-      const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
-      if (userErr) throw new Error('No se pudo obtener el usuario');
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabaseAuth.auth.getUser();
+      if (userErr) throw new Error("No se pudo obtener el usuario");
       actualUserId = user.id;
     }
-    
+
     // Crear registro en la tabla context_sources
     const sourceData = {
       client_id: clientId,
       agency_id: agencyId,
       user_id: actualUserId,
-      source_type: 'url',
-      title: metadata.user_title || scrapedContent.title || 'Página Web',
-      description: metadata.user_description || scrapedContent.excerpt || '',
+      source_type: "url",
+      title: metadata.user_title || scrapedContent.title || "Página Web",
+      description: metadata.user_description || scrapedContent.excerpt || "",
       source_data: {
         url: url,
         title: scrapedContent.title,
         excerpt: scrapedContent.excerpt,
         content_length: scrapedContent.content.length,
         scraped_at: new Date().toISOString(),
-        ...metadata
+        ...metadata,
       },
-      processing_status: 'processing',
-      tags: metadata.tags || []
+      processing_status: "processing",
+      tags: metadata.tags || [],
     };
-    
+
     const { data: source, error: sourceErr } = await supabaseAdmin
-      .from('context_sources')
+      .from("context_sources")
       .insert(sourceData)
       .select()
       .single();
-      
-    if (sourceErr) throw new Error(`No se pudo crear la fuente de URL: ${sourceErr.message}`);
-    
+
+    if (sourceErr)
+      throw new Error(
+        `No se pudo crear la fuente de URL: ${sourceErr.message}`,
+      );
+
     // Procesar el contenido extraído directamente a chunks
     await processTextToChunksForSource(scrapedContent.content, source);
-    
+
     await supabaseAdmin
-      .from('context_sources')
-      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
-      .eq('id', source.id);
-    
+      .from("context_sources")
+      .update({
+        processing_status: "ready",
+        last_processed_at: new Date().toISOString(),
+      })
+      .eq("id", source.id);
+
     return source;
-    
   } catch (error) {
-    logger.error('Error procesando URL', error, { url, clientId, agencyId });
+    logger.error("Error procesando URL", error, { url, clientId, agencyId });
     throw new Error(`Error al procesar URL: ${error.message}`);
   }
 };
 
-export const processManualSource = async (content, title, clientId, agencyId, token, metadata = {}, userId = null) => {
-  logger.info('Procesando información manual', { title, clientId, agencyId });
-  
+export const processManualSource = async (
+  content,
+  title,
+  clientId,
+  agencyId,
+  token,
+  metadata = {},
+  userId = null,
+) => {
+  logger.info("Procesando información manual", { title, clientId, agencyId });
+
   if (!content || content.trim().length < 10) {
-    throw new Error('El contenido debe tener al menos 10 caracteres');
+    throw new Error("El contenido debe tener al menos 10 caracteres");
   }
-  
+
   // Obtener user_id del token si no se proporciona
   let actualUserId = userId;
   if (!actualUserId) {
     const supabaseAuth = createAuthenticatedClient(token);
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr) throw new Error('No se pudo obtener el usuario');
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabaseAuth.auth.getUser();
+    if (userErr) throw new Error("No se pudo obtener el usuario");
     actualUserId = user.id;
   }
-  
+
   // Crear registro en la tabla context_sources
   const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
     user_id: actualUserId,
-    source_type: 'text', // Usar 'text' del enum en lugar de 'manual'
-    title: title || 'Información Manual',
-    description: metadata.description || '',
+    source_type: "text", // Usar 'text' del enum en lugar de 'manual'
+    title: title || "Información Manual",
+    description: metadata.description || "",
     source_data: {
       content_length: content.length,
-      created_method: 'manual_input',
+      created_method: "manual_input",
       category: metadata.category,
       importance: metadata.importance,
       created_at: new Date().toISOString(),
-      ...metadata
+      ...metadata,
     },
-    processing_status: 'processing',
-    tags: metadata.tags || []
+    processing_status: "processing",
+    tags: metadata.tags || [],
   };
-  
+
   const { data: source, error: sourceErr } = await supabaseAdmin
-    .from('context_sources')
+    .from("context_sources")
     .insert(sourceData)
     .select()
     .single();
-    
-  if (sourceErr) throw new Error(`No se pudo crear la fuente manual: ${sourceErr.message}`);
-  
+
+  if (sourceErr)
+    throw new Error(`No se pudo crear la fuente manual: ${sourceErr.message}`);
+
   try {
     // Procesar el contenido directamente a chunks
     await processTextToChunksForSource(content, source);
-    
+
     await supabaseAdmin
-      .from('context_sources')
-      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
-      .eq('id', source.id);
-    
+      .from("context_sources")
+      .update({
+        processing_status: "ready",
+        last_processed_at: new Date().toISOString(),
+      })
+      .eq("id", source.id);
+
     return source;
-    
   } catch (error) {
     await supabaseAdmin
-      .from('context_sources')
-      .update({ processing_status: 'error' })
-      .eq('id', source.id);
+      .from("context_sources")
+      .update({ processing_status: "error" })
+      .eq("id", source.id);
     throw error;
   }
 };
 
-export const processNoteSource = async (note, title, clientId, agencyId, token, metadata = {}, userId = null) => {
-  logger.info('Procesando nota contextual', { title, clientId, agencyId });
-  
+export const processNoteSource = async (
+  note,
+  title,
+  clientId,
+  agencyId,
+  token,
+  metadata = {},
+  userId = null,
+) => {
+  logger.info("Procesando nota contextual", { title, clientId, agencyId });
+
   if (!note || note.trim().length < 5) {
-    throw new Error('La nota debe tener al menos 5 caracteres');
+    throw new Error("La nota debe tener al menos 5 caracteres");
   }
-  
+
   // Obtener user_id del token si no se proporciona
   let actualUserId = userId;
   if (!actualUserId) {
     const supabaseAuth = createAuthenticatedClient(token);
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr) throw new Error('No se pudo obtener el usuario');
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabaseAuth.auth.getUser();
+    if (userErr) throw new Error("No se pudo obtener el usuario");
     actualUserId = user.id;
   }
-  
+
   // Las notas son contenido contextual adicional - usar 'text' porque no hay enum 'note'
   const sourceData = {
     client_id: clientId,
     agency_id: agencyId,
     user_id: actualUserId,
-    source_type: 'text', // Usar 'text' del enum disponible
-    title: title || 'Nota Contextual',
-    description: metadata.description || '',
+    source_type: "text", // Usar 'text' del enum disponible
+    title: title || "Nota Contextual",
+    description: metadata.description || "",
     source_data: {
+      content: note, // ✅ Guardar el contenido original para que el frontend pueda mostrarlo
       content_length: note.length,
-      note_type: metadata.note_type || 'general',
-      importance: metadata.importance || 'medium',
-      created_method: 'note_input',
+      note_type: metadata.note_type || "general",
+      importance: metadata.importance || "medium",
+      created_method: "note_input",
       created_at: new Date().toISOString(),
-      ...metadata
+      ...metadata,
     },
-    processing_status: 'processing',
-    tags: metadata.tags || []
+    processing_status: "processing",
+    tags: metadata.tags || [],
   };
-  
+
   const { data: source, error: sourceErr } = await supabaseAdmin
-    .from('context_sources')
+    .from("context_sources")
     .insert(sourceData)
     .select()
     .single();
-    
-  if (sourceErr) throw new Error(`No se pudo crear la nota: ${sourceErr.message}`);
-  
+
+  if (sourceErr)
+    throw new Error(`No se pudo crear la nota: ${sourceErr.message}`);
+
   try {
     // Procesar la nota directamente (sin chunks si es muy corta)
     if (note.length < 500) {
       // Para notas cortas, crear un solo chunk
-      const sanitizedNote = note.replace(/\u0000/g, '');
+      const sanitizedNote = note.replace(/\u0000/g, "");
       const vector = await embedText(sanitizedNote);
-      
-      const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
-        client_id: clientId,
-        agency_id: agencyId,
-        user_id: actualUserId,
-        source_id: source.id, // ✅ Usar source_id para context_sources
-        document_id: null, // ✅ null porque usamos source_id
-        chunk_index: 0,
-        content: sanitizedNote,
-        embedding: vector,
-        chunk_type: 'text',
-        metadata: {
-          processing_method: 'note_source',
-          source_type: 'text',
-          note_type: metadata.note_type || 'general'
-        }
-      });
-      
-      if (insErr) throw new Error(`Error guardando chunk de nota: ${insErr.message}`);
+
+      const { error: insErr } = await supabaseAdmin
+        .from("context_chunks")
+        .insert({
+          client_id: clientId,
+          agency_id: agencyId,
+          user_id: actualUserId,
+          source_id: source.id, // ✅ Usar source_id para context_sources
+          document_id: null, // ✅ null porque usamos source_id
+          chunk_index: 0,
+          content: sanitizedNote,
+          embedding: vector,
+          chunk_type: "text",
+          metadata: {
+            processing_method: "note_source",
+            source_type: "text",
+            note_type: metadata.note_type || "general",
+          },
+        });
+
+      if (insErr)
+        throw new Error(`Error guardando chunk de nota: ${insErr.message}`);
     } else {
       // Para notas largas, usar el procesamiento de chunks normal
       await processTextToChunksForSource(note, source);
     }
-    
+
     await supabaseAdmin
-      .from('context_sources')
-      .update({ processing_status: 'ready', last_processed_at: new Date().toISOString() })
-      .eq('id', source.id);
-    
+      .from("context_sources")
+      .update({
+        processing_status: "ready",
+        last_processed_at: new Date().toISOString(),
+      })
+      .eq("id", source.id);
+
     return source;
-    
   } catch (error) {
     await supabaseAdmin
-      .from('context_sources')
-      .update({ processing_status: 'error' })
-      .eq('id', source.id);
+      .from("context_sources")
+      .update({ processing_status: "error" })
+      .eq("id", source.id);
     throw error;
   }
 };
@@ -436,60 +542,64 @@ export const processNoteSource = async (note, title, clientId, agencyId, token, 
 
 const processTextToChunksForSource = async (text, source) => {
   const chunks = chunkText(text);
-  
+
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    if (!chunk || chunk.trim() === '') continue;
-    
-    const sanitizedChunk = chunk.replace(/\u0000/g, '');
+    if (!chunk || chunk.trim() === "") continue;
+
+    const sanitizedChunk = chunk.replace(/\u0000/g, "");
     const vector = await embedText(sanitizedChunk);
-    
-    const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
-      client_id: source.client_id,
-      agency_id: source.agency_id,
-      user_id: source.user_id,
-      source_id: source.id, // ✅ Usar source_id para context_sources
-      document_id: null, // ✅ null porque usamos source_id
-      chunk_index: i,
-      content: sanitizedChunk,
-      chunk_type: 'text',
-      embedding: vector,
-      metadata: {
-        processing_method: 'context_source',
-        source_type: source.source_type
-      }
-    });
-    
+
+    const { error: insErr } = await supabaseAdmin
+      .from("context_chunks")
+      .insert({
+        client_id: source.client_id,
+        agency_id: source.agency_id,
+        user_id: source.user_id,
+        source_id: source.id, // ✅ Usar source_id para context_sources
+        document_id: null, // ✅ null porque usamos source_id
+        chunk_index: i,
+        content: sanitizedChunk,
+        chunk_type: "text",
+        embedding: vector,
+        metadata: {
+          processing_method: "context_source",
+          source_type: source.source_type,
+        },
+      });
+
     if (insErr) throw new Error(`Error guardando chunk: ${insErr.message}`);
   }
 };
 
 const processTextToChunks = async (text, doc) => {
   const chunks = chunkText(text);
-  
+
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    if (!chunk || chunk.trim() === '') continue;
-    
-    const sanitizedChunk = chunk.replace(/\u0000/g, '');
+    if (!chunk || chunk.trim() === "") continue;
+
+    const sanitizedChunk = chunk.replace(/\u0000/g, "");
     const vector = await embedText(sanitizedChunk);
-    
-    const { error: insErr } = await supabaseAdmin.from('context_chunks').insert({
-      client_id: doc.client_id,
-      agency_id: doc.agency_id,
-      user_id: doc.user_id, // ✅ AGREGADO: Campo user_id requerido
-      source_id: null, // ✅ AGREGADO: null porque usamos document_id en lugar de source_id
-      document_id: doc.id, // ✅ Relación con documents
-      chunk_index: i, // ✅ AGREGADO: Índice del chunk requerido
-      content: sanitizedChunk,
-      embedding: vector,
-      chunk_type: 'text', // ✅ AGREGADO: Tipo de chunk (por defecto text)
-      metadata: {
-        processing_method: 'document_source',
-        source_type: doc.source_type || 'document'
-      }
-    });
-    
+
+    const { error: insErr } = await supabaseAdmin
+      .from("context_chunks")
+      .insert({
+        client_id: doc.client_id,
+        agency_id: doc.agency_id,
+        user_id: doc.user_id, // ✅ AGREGADO: Campo user_id requerido
+        source_id: null, // ✅ AGREGADO: null porque usamos document_id en lugar de source_id
+        document_id: doc.id, // ✅ Relación con documents
+        chunk_index: i, // ✅ AGREGADO: Índice del chunk requerido
+        content: sanitizedChunk,
+        embedding: vector,
+        chunk_type: "text", // ✅ AGREGADO: Tipo de chunk (por defecto text)
+        metadata: {
+          processing_method: "document_source",
+          source_type: doc.source_type || "document",
+        },
+      });
+
     if (insErr) throw new Error(`Error guardando chunk: ${insErr.message}`);
   }
 };
@@ -497,35 +607,58 @@ const processTextToChunks = async (text, doc) => {
 const processSourceChunks = async (sourceId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: source, error: sourceErr } = await supabaseAuth
-    .from('context_sources')
-    .select('id, source_data, source_type, client_id, agency_id, user_id')
-    .eq('id', sourceId)
+    .from("context_sources")
+    .select("id, source_data, source_type, client_id, agency_id, user_id")
+    .eq("id", sourceId)
     .single();
-  if (sourceErr) throw new Error(`No se pudo cargar la fuente de contexto: ${sourceErr.message}`);
+  if (sourceErr)
+    throw new Error(
+      `No se pudo cargar la fuente de contexto: ${sourceErr.message}`,
+    );
 
   try {
-    await supabaseAdmin.from('context_sources').update({ processing_status: 'processing' }).eq('id', sourceId);
-    let textToProcess = '';
-    
-    if (source.source_type === 'document') {
-      const isImage = source.source_data.file_type?.startsWith('image/');
+    await supabaseAdmin
+      .from("context_sources")
+      .update({ processing_status: "processing" })
+      .eq("id", sourceId);
+    let textToProcess = "";
+
+    if (source.source_type === "document") {
+      const isImage = source.source_data.file_type?.startsWith("image/");
       if (isImage) {
-        const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(source.source_data.storage_path);
-        if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
-        logger.info('Analizando imagen', { imageUrl: publicUrlData.publicUrl });
+        const { data: publicUrlData } = supabaseAdmin.storage
+          .from("documents")
+          .getPublicUrl(source.source_data.storage_path);
+        if (!publicUrlData)
+          throw new Error("No se pudo obtener la URL pública de la imagen.");
+        logger.info("Analizando imagen", { imageUrl: publicUrlData.publicUrl });
         textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
       } else {
-        const fileData = await fetchFileFromStorage(source.source_data.storage_path);
+        const fileData = await fetchFileFromStorage(
+          source.source_data.storage_path,
+        );
         const arrayBuffer = await fileData.arrayBuffer?.();
         const buffer = arrayBuffer ? Buffer.from(arrayBuffer) : fileData;
-        textToProcess = await extractText(buffer, source.source_data.file_type?.toLowerCase());
+        textToProcess = await extractText(
+          buffer,
+          source.source_data.file_type?.toLowerCase(),
+        );
       }
     }
-    
+
     await processTextToChunksForSource(textToProcess, source);
-    await supabaseAdmin.from('context_sources').update({ processing_status: 'ready', last_processed_at: new Date().toISOString() }).eq('id', sourceId);
+    await supabaseAdmin
+      .from("context_sources")
+      .update({
+        processing_status: "ready",
+        last_processed_at: new Date().toISOString(),
+      })
+      .eq("id", sourceId);
   } catch (error) {
-    await supabaseAdmin.from('context_sources').update({ processing_status: 'error' }).eq('id', sourceId);
+    await supabaseAdmin
+      .from("context_sources")
+      .update({ processing_status: "error" })
+      .eq("id", sourceId);
     throw error;
   }
 };
@@ -533,20 +666,27 @@ const processSourceChunks = async (sourceId, token) => {
 const processDocumentChunks = async (documentId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: doc, error: docErr } = await supabaseAuth
-    .from('documents')
-    .select('id, storage_path, file_type, client_id, agency_id, user_id')
-    .eq('id', documentId)
+    .from("documents")
+    .select("id, storage_path, file_type, client_id, agency_id, user_id")
+    .eq("id", documentId)
     .single();
-  if (docErr) throw new Error(`No se pudo cargar el documento: ${docErr.message}`);
+  if (docErr)
+    throw new Error(`No se pudo cargar el documento: ${docErr.message}`);
 
   try {
-    await supabaseAdmin.from('documents').update({ ai_status: 'processing' }).eq('id', documentId);
-    let textToProcess = '';
-    const isImage = doc.file_type?.startsWith('image/');
+    await supabaseAdmin
+      .from("documents")
+      .update({ ai_status: "processing" })
+      .eq("id", documentId);
+    let textToProcess = "";
+    const isImage = doc.file_type?.startsWith("image/");
     if (isImage) {
-      const { data: publicUrlData } = supabaseAdmin.storage.from('documents').getPublicUrl(doc.storage_path);
-      if (!publicUrlData) throw new Error('No se pudo obtener la URL pública de la imagen.');
-      logger.info('Analizando imagen', { imageUrl: publicUrlData.publicUrl });
+      const { data: publicUrlData } = supabaseAdmin.storage
+        .from("documents")
+        .getPublicUrl(doc.storage_path);
+      if (!publicUrlData)
+        throw new Error("No se pudo obtener la URL pública de la imagen.");
+      logger.info("Analizando imagen", { imageUrl: publicUrlData.publicUrl });
       textToProcess = await analyzeImageWithGPT(publicUrlData.publicUrl);
     } else {
       const fileData = await fetchFileFromStorage(doc.storage_path);
@@ -554,11 +694,17 @@ const processDocumentChunks = async (documentId, token) => {
       const buffer = arrayBuffer ? Buffer.from(arrayBuffer) : fileData;
       textToProcess = await extractText(buffer, doc.file_type?.toLowerCase());
     }
-    
+
     await processTextToChunks(textToProcess, doc);
-    await supabaseAdmin.from('documents').update({ ai_status: 'ready' }).eq('id', documentId);
+    await supabaseAdmin
+      .from("documents")
+      .update({ ai_status: "ready" })
+      .eq("id", documentId);
   } catch (error) {
-    await supabaseAdmin.from('documents').update({ ai_status: 'error' }).eq('id', documentId);
+    await supabaseAdmin
+      .from("documents")
+      .update({ ai_status: "error" })
+      .eq("id", documentId);
     throw error;
   }
 };
@@ -567,114 +713,142 @@ const processDocumentChunks = async (documentId, token) => {
 
 export const getContextSourcesByClient = async (clientId, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('context_sources')
-    .select('*')
-    .eq('client_id', clientId)
-    .eq('agency_id', agencyId)
-    .order('created_at', { ascending: false });
-  if (error) throw new Error(`No se pudieron obtener las fuentes de contexto: ${error.message}`);
+    .from("context_sources")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("agency_id", agencyId)
+    .order("created_at", { ascending: false });
+  if (error)
+    throw new Error(
+      `No se pudieron obtener las fuentes de contexto: ${error.message}`,
+    );
   return data || [];
 };
 
 export const updateContextSource = async (sourceId, updateData, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('context_sources')
+    .from("context_sources")
     .update(updateData)
-    .eq('id', sourceId)
-    .eq('agency_id', agencyId)
+    .eq("id", sourceId)
+    .eq("agency_id", agencyId)
     .select()
     .single();
-  if (error) throw new Error(`No se pudo actualizar la fuente de contexto: ${error.message}`);
+  if (error)
+    throw new Error(
+      `No se pudo actualizar la fuente de contexto: ${error.message}`,
+    );
   return data;
 };
 
 export const deleteContextSource = async (sourceId, agencyId) => {
   // Primero obtener información de la fuente de contexto
   const { data: source, error: sourceError } = await supabaseAdmin
-    .from('context_sources')
-    .select('source_data, source_type')
-    .eq('id', sourceId)
-    .eq('agency_id', agencyId)
+    .from("context_sources")
+    .select("source_data, source_type")
+    .eq("id", sourceId)
+    .eq("agency_id", agencyId)
     .single();
-  if (sourceError) throw new Error(`No se encontró la fuente de contexto para eliminar: ${sourceError.message}`);
-  
+  if (sourceError)
+    throw new Error(
+      `No se encontró la fuente de contexto para eliminar: ${sourceError.message}`,
+    );
+
   // Eliminar archivo del storage solo si existe (documentos)
-  if (source.source_data?.storage_path && source.source_type === 'document') {
-    const { error: storageError } = await supabaseAdmin.storage.from('documents').remove([source.source_data.storage_path]);
-    if (storageError) logger.warn('No se pudo eliminar el archivo del storage', { storagePath: source.source_data.storage_path, error: storageError.message });
+  if (source.source_data?.storage_path && source.source_type === "document") {
+    const { error: storageError } = await supabaseAdmin.storage
+      .from("documents")
+      .remove([source.source_data.storage_path]);
+    if (storageError)
+      logger.warn("No se pudo eliminar el archivo del storage", {
+        storagePath: source.source_data.storage_path,
+        error: storageError.message,
+      });
   }
-  
+
   // Eliminar el registro (los chunks se eliminan automáticamente por cascade)
   const { error } = await supabaseAdmin
-    .from('context_sources')
+    .from("context_sources")
     .delete()
-    .eq('id', sourceId)
-    .eq('agency_id', agencyId);
-  if (error) throw new Error(`No se pudo eliminar la fuente de contexto: ${error.message}`);
+    .eq("id", sourceId)
+    .eq("agency_id", agencyId);
+  if (error)
+    throw new Error(
+      `No se pudo eliminar la fuente de contexto: ${error.message}`,
+    );
 };
 
 // --- Funciones de Búsqueda y Estadísticas ---
 
-export const searchContextChunks = async (query, clientId, agencyId, sourceTypes = null, limit = 10) => {
+export const searchContextChunks = async (
+  query,
+  clientId,
+  agencyId,
+  sourceTypes = null,
+  limit = 10,
+) => {
   if (!openaiApiKey) {
-    throw new Error('OPENAI_API_KEY no configurada para búsqueda semántica');
+    throw new Error("OPENAI_API_KEY no configurada para búsqueda semántica");
   }
-  
+
   // Generar embedding de la consulta
   const queryEmbedding = await embedText(query);
-  
+
   // Construir filtros adicionales
   let rpcParams = {
     query_embedding: queryEmbedding,
     match_client_id: clientId,
     match_count: limit,
   };
-  
+
   // Si se especifican tipos de fuente específicos
   if (sourceTypes && sourceTypes.length > 0) {
     rpcParams.source_types = sourceTypes;
   }
-  
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_context_chunks', rpcParams);
-  if (matchErr) throw new Error(`Error al buscar chunks de contexto: ${matchErr.message}`);
-  
+
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc(
+    "match_context_chunks",
+    rpcParams,
+  );
+  if (matchErr)
+    throw new Error(`Error al buscar chunks de contexto: ${matchErr.message}`);
+
   return matches || [];
 };
 
 export const getContextSourceStats = async (clientId, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('context_sources')
-    .select('source_type, processing_status')
-    .eq('client_id', clientId)
-    .eq('agency_id', agencyId);
-    
+    .from("context_sources")
+    .select("source_type, processing_status")
+    .eq("client_id", clientId)
+    .eq("agency_id", agencyId);
+
   if (error) throw new Error(`Error al obtener estadísticas: ${error.message}`);
-  
+
   const stats = {
     total: data.length,
     by_type: {},
     by_status: {},
-    ready_count: 0
+    ready_count: 0,
   };
-  
-  data.forEach(item => {
+
+  data.forEach((item) => {
     // Por tipo
     if (!stats.by_type[item.source_type]) {
       stats.by_type[item.source_type] = 0;
     }
     stats.by_type[item.source_type]++;
-    
+
     // Por estado
     if (!stats.by_status[item.processing_status]) {
       stats.by_status[item.processing_status] = 0;
     }
     stats.by_status[item.processing_status]++;
-    
+
     // Contar listos para usar
-    if (item.processing_status === 'ready') {
+    if (item.processing_status === "ready") {
       stats.ready_count++;
     }
   });
-  
+
   return stats;
 };

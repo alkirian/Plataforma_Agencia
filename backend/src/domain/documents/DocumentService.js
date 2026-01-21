@@ -1,8 +1,8 @@
 // Domain Service: Business Logic Layer
 // Orchestrates business rules and use cases
 
-import { DocumentEntity } from './DocumentEntity.js';
-import crypto from 'crypto';
+import { DocumentEntity } from "./DocumentEntity.js";
+import crypto from "crypto";
 
 export class DocumentService {
   constructor(documentRepository, storageService) {
@@ -16,13 +16,26 @@ export class DocumentService {
    */
   async uploadDocuments(uploads, clientId, agencyId, uploadedBy) {
     const results = [];
-    
+
     for (const upload of uploads) {
       try {
-        const result = await this.uploadSingleDocument(upload, clientId, agencyId, uploadedBy);
-        results.push({ success: true, document: result, filename: upload.filename });
+        const result = await this.uploadSingleDocument(
+          upload,
+          clientId,
+          agencyId,
+          uploadedBy,
+        );
+        results.push({
+          success: true,
+          document: result,
+          filename: upload.filename,
+        });
       } catch (error) {
-        results.push({ success: false, error: error.message, filename: upload.filename });
+        results.push({
+          success: false,
+          error: error.message,
+          filename: upload.filename,
+        });
       }
     }
 
@@ -35,13 +48,13 @@ export class DocumentService {
       ...upload,
       client_id: clientId,
       agency_id: agencyId,
-      uploaded_by: uploadedBy
+      uploaded_by: uploadedBy,
     });
 
     // 2. Validate
     const validation = document.validate();
     if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
     }
 
     // 3. Calculate checksum for deduplication
@@ -49,34 +62,38 @@ export class DocumentService {
     document.checksum = checksum;
 
     // 4. Check for duplicates
-    const existingDoc = await this.documentRepository.findByChecksum(checksum, clientId, agencyId);
+    const existingDoc = await this.documentRepository.findByChecksum(
+      checksum,
+      clientId,
+      agencyId,
+    );
     if (existingDoc && existingDoc.isActive()) {
       // Create duplicate reference, reuse storage
       document.duplicateOf = existingDoc.id;
       document.storagePath = existingDoc.storagePath;
       document.sizeBytes = existingDoc.sizeBytes;
-      
+
       return await this.documentRepository.save(document);
     }
 
     // 5. Generate storage path
     const storagePath = this.storageService.generateStoragePath(
-      agencyId, 
-      clientId, 
-      document.versionGroup, 
-      document.extension
+      agencyId,
+      clientId,
+      document.versionGroup,
+      document.extension,
     );
     document.storagePath = storagePath;
 
     // 6. Upload to storage
     const storageResult = await this.storageService.upload(
-      upload.buffer, 
+      upload.buffer,
       storagePath,
       {
         contentType: document.mimeType,
         originalName: document.filenameOriginal,
-        uploadedBy
-      }
+        uploadedBy,
+      },
     );
     document.sizeBytes = storageResult.size;
 
@@ -97,19 +114,21 @@ export class DocumentService {
   async getDocumentDetails(id, agencyId) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document) {
-      throw new Error('Document not found');
+      throw new Error("Document not found");
     }
 
     // Get version history
     const versions = await this.documentRepository.findByVersionGroup(
-      document.versionGroup, 
-      document.clientId, 
-      agencyId
+      document.versionGroup,
+      document.clientId,
+      agencyId,
     );
 
     return {
       document,
-      versions: versions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      versions: versions.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      ),
     };
   }
 
@@ -119,10 +138,13 @@ export class DocumentService {
   async getDownloadUrl(id, agencyId, expiresIn = 3600) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document || !document.isActive()) {
-      throw new Error('Document not found or deleted');
+      throw new Error("Document not found or deleted");
     }
 
-    return await this.storageService.getSignedUrl(document.storagePath, expiresIn);
+    return await this.storageService.getSignedUrl(
+      document.storagePath,
+      expiresIn,
+    );
   }
 
   /**
@@ -131,7 +153,7 @@ export class DocumentService {
   async deleteDocument(id, agencyId, deletedBy) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document) {
-      throw new Error('Document not found');
+      throw new Error("Document not found");
     }
 
     document.softDelete(deletedBy);
@@ -144,11 +166,11 @@ export class DocumentService {
   async restoreDocument(id, agencyId) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document) {
-      throw new Error('Document not found');
+      throw new Error("Document not found");
     }
 
     if (document.isActive()) {
-      throw new Error('Document is not deleted');
+      throw new Error("Document is not deleted");
     }
 
     document.restore();
@@ -161,16 +183,21 @@ export class DocumentService {
   async togglePin(id, agencyId, userId) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document || !document.isActive()) {
-      throw new Error('Document not found or deleted');
+      throw new Error("Document not found or deleted");
     }
 
     if (document.isPinned()) {
       document.unpin();
     } else {
       // Check pin limit
-      const pinnedCount = await this.documentRepository.countPinned(document.clientId, agencyId);
+      const pinnedCount = await this.documentRepository.countPinned(
+        document.clientId,
+        agencyId,
+      );
       if (pinnedCount >= this.maxPinnedPerClient) {
-        throw new Error(`Cannot pin more than ${this.maxPinnedPerClient} documents`);
+        throw new Error(
+          `Cannot pin more than ${this.maxPinnedPerClient} documents`,
+        );
       }
       document.pin(userId);
     }
@@ -184,12 +211,16 @@ export class DocumentService {
   async renameDocument(id, agencyId, newFilename) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document || !document.isActive()) {
-      throw new Error('Document not found or deleted');
+      throw new Error("Document not found or deleted");
     }
 
     // Validate new filename
-    if (DocumentEntity.isDangerousExtension(DocumentEntity.extractExtension(newFilename))) {
-      throw new Error('File extension not allowed');
+    if (
+      DocumentEntity.isDangerousExtension(
+        DocumentEntity.extractExtension(newFilename),
+      )
+    ) {
+      throw new Error("File extension not allowed");
     }
 
     document.rename(newFilename);
@@ -200,8 +231,14 @@ export class DocumentService {
    * Get version history for a file group
    */
   async getVersionHistory(versionGroup, clientId, agencyId) {
-    const versions = await this.documentRepository.findByVersionGroup(versionGroup, clientId, agencyId);
-    return versions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const versions = await this.documentRepository.findByVersionGroup(
+      versionGroup,
+      clientId,
+      agencyId,
+    );
+    return versions.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    );
   }
 
   /**
@@ -217,16 +254,16 @@ export class DocumentService {
   async hardDeleteDocument(id, agencyId) {
     const document = await this.documentRepository.findById(id, agencyId);
     if (!document) {
-      throw new Error('Document not found');
+      throw new Error("Document not found");
     }
 
     // Delete from storage if not referenced by duplicates
     if (!document.isDuplicate()) {
       const duplicates = await this.documentRepository.findByCriteria({
         duplicate_of: document.id,
-        agencyId
+        agencyId,
       });
-      
+
       if (duplicates.documents.length === 0) {
         await this.storageService.delete(document.storagePath);
       }
@@ -239,7 +276,7 @@ export class DocumentService {
    * Helper: Calculate SHA256 checksum
    */
   calculateChecksum(buffer) {
-    return crypto.createHash('sha256').update(buffer).digest('hex');
+    return crypto.createHash("sha256").update(buffer).digest("hex");
   }
 
   /**
@@ -250,7 +287,7 @@ export class DocumentService {
       search: query,
       clientId,
       agencyId,
-      ...options
+      ...options,
     });
   }
 }

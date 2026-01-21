@@ -28,23 +28,23 @@ export class DocumentEntity {
   static sanitizeFilename(filename) {
     return filename
       .toLowerCase()
-      .replace(/[^a-z0-9._-]/g, '_')
-      .replace(/_+/g, '_');
+      .replace(/[^a-z0-9._-]/g, "_")
+      .replace(/_+/g, "_");
   }
 
   static extractExtension(filename) {
     const match = filename.match(/\.([^.]+)$/);
-    return match ? match[1].toLowerCase() : 'unknown';
+    return match ? match[1].toLowerCase() : "unknown";
   }
 
   static generateVersionGroup(filename) {
     const extension = this.extractExtension(filename);
-    const basename = filename.replace(/\.[^.]+$/, '');
+    const basename = filename.replace(/\.[^.]+$/, "");
     return `${basename.toLowerCase()}.${extension}`;
   }
 
   static isDangerousExtension(extension) {
-    const dangerous = ['exe', 'msi', 'dll', 'bat', 'cmd', 'sh', 'scr', 'js'];
+    const dangerous = ["exe", "msi", "dll", "bat", "cmd", "sh", "scr", "js"];
     return dangerous.includes(extension.toLowerCase());
   }
 
@@ -62,33 +62,35 @@ export class DocumentEntity {
   }
 
   isImage() {
-    return this.mimeType?.startsWith('image/') || false;
+    return this.mimeType?.startsWith("image/") || false;
   }
 
   isVideo() {
-    return this.mimeType?.startsWith('video/') || false;
+    return this.mimeType?.startsWith("video/") || false;
   }
 
   isPdf() {
-    return this.mimeType === 'application/pdf';
+    return this.mimeType === "application/pdf";
   }
 
   isText() {
-    return this.mimeType?.startsWith('text/') || false;
+    return this.mimeType?.startsWith("text/") || false;
   }
 
   getPreviewType() {
-    if (this.isImage()) return 'image';
-    if (this.isVideo()) return 'video';
-    if (this.isPdf()) return 'pdf';
-    if (this.isText()) return 'text';
-    return 'download';
+    if (this.isImage()) return "image";
+    if (this.isVideo()) return "video";
+    if (this.isPdf()) return "pdf";
+    if (this.isText()) return "text";
+    return "download";
   }
 
   getDisplaySize() {
     if (this.sizeBytes < 1024) return `${this.sizeBytes} B`;
-    if (this.sizeBytes < 1024 * 1024) return `${(this.sizeBytes / 1024).toFixed(1)} KB`;
-    if (this.sizeBytes < 1024 * 1024 * 1024) return `${(this.sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (this.sizeBytes < 1024 * 1024)
+      return `${(this.sizeBytes / 1024).toFixed(1)} KB`;
+    if (this.sizeBytes < 1024 * 1024 * 1024)
+      return `${(this.sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
     return `${(this.sizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
@@ -97,28 +99,29 @@ export class DocumentEntity {
     const errors = [];
 
     if (!this.filenameOriginal) {
-      errors.push('Filename is required');
+      errors.push("Filename is required");
     }
 
     if (!this.clientId) {
-      errors.push('Client ID is required');
+      errors.push("Client ID is required");
     }
 
     if (!this.uploadedBy) {
-      errors.push('Uploaded by is required');
+      errors.push("Uploaded by is required");
     }
 
     if (this.extension && DocumentEntity.isDangerousExtension(this.extension)) {
       errors.push(`Extension ${this.extension} is not allowed`);
     }
 
-    if (this.sizeBytes && this.sizeBytes > 100 * 1024 * 1024) { // 100MB limit
-      errors.push('File size exceeds 100MB limit');
+    if (this.sizeBytes && this.sizeBytes > 100 * 1024 * 1024) {
+      // 100MB limit
+      errors.push("File size exceeds 100MB limit");
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -136,7 +139,7 @@ export class DocumentEntity {
       extension,
       version_group: versionGroup,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     });
   }
 

@@ -1,6 +1,7 @@
 // src/api/contextSources.routes.js
 
 import { Router } from 'express';
+import multer from 'multer';
 import { protect } from '../middleware/auth.middleware.js';
 import {
   handleProcessDocumentSource,
@@ -11,9 +12,10 @@ import {
   handleUpdateContextSource,
   handleDeleteContextSource,
   handleSearchContextChunks,
-  handleGetContextSourceStats
+  handleGetContextSourceStats,
+  handleUploadDocumentSource,
 } from '../controllers/contextSources.controller.js';
-import { 
+import {
   validate,
   validateMultiple,
   sanitizeInput,
@@ -23,14 +25,36 @@ import {
   noteSourceSchema,
   contextSearchSchema,
   clientIdParamSchema,
-  uuidParamSchema
+  uuidParamSchema,
 } from '../schemas/validation.js';
 
 const router = Router();
 
+// Configurar multer para archivos
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max
+  },
+});
+
 // Aplicar middleware de autenticación y sanitización a todas las rutas
 router.use(protect);
 router.use(sanitizeInput());
+
+// --- Ruta de Subida Directa de Archivos ---
+
+/**
+ * @route   POST /api/context-sources/:clientId/upload
+ * @desc    Subir un archivo y registrarlo como fuente de contexto
+ * @access  Private (requiere autenticación)
+ * @body    multipart/form-data con campo 'file'
+ */
+router.post(
+  '/:clientId/upload',
+  upload.single('file'),
+  handleUploadDocumentSource,
+);
 
 // --- Rutas de Procesamiento de Fuentes ---
 
@@ -40,12 +64,17 @@ router.use(sanitizeInput());
  * @access  Private (requiere autenticación)
  * @body    { file_name, storage_path, file_type, file_size, metadata? }
  */
-router.post('/:clientId/document', 
+router.post(
+  "/:clientId/document",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: documentSourceSchema, source: 'body', options: { logAttempts: true, logSuccess: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: documentSourceSchema,
+      source: "body",
+      options: { logAttempts: true, logSuccess: true },
+    },
   ),
-  handleProcessDocumentSource
+  handleProcessDocumentSource,
 );
 
 /**
@@ -54,12 +83,17 @@ router.post('/:clientId/document',
  * @access  Private (requiere autenticación)
  * @body    { url, title?, description?, tags? }
  */
-router.post('/:clientId/url', 
+router.post(
+  "/:clientId/url",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: urlSourceSchema, source: 'body', options: { logAttempts: true, logSuccess: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: urlSourceSchema,
+      source: "body",
+      options: { logAttempts: true, logSuccess: true },
+    },
   ),
-  handleProcessUrlSource
+  handleProcessUrlSource,
 );
 
 /**
@@ -68,12 +102,17 @@ router.post('/:clientId/url',
  * @access  Private (requiere autenticación)
  * @body    { content, title?, category?, tags?, importance? }
  */
-router.post('/:clientId/manual', 
+router.post(
+  "/:clientId/manual",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: manualSourceSchema, source: 'body', options: { logSuccess: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: manualSourceSchema,
+      source: "body",
+      options: { logSuccess: true },
+    },
   ),
-  handleProcessManualSource
+  handleProcessManualSource,
 );
 
 /**
@@ -82,12 +121,13 @@ router.post('/:clientId/manual',
  * @access  Private (requiere autenticación)
  * @body    { note, title?, note_type?, importance?, tags? }
  */
-router.post('/:clientId/note', 
+router.post(
+  "/:clientId/note",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: noteSourceSchema, source: 'body', options: { logSuccess: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    { schema: noteSourceSchema, source: "body", options: { logSuccess: true } },
   ),
-  handleProcessNoteSource
+  handleProcessNoteSource,
 );
 
 // --- Rutas de Gestión de Fuentes ---
@@ -98,9 +138,10 @@ router.post('/:clientId/note',
  * @access  Private (requiere autenticación)
  * @query   source_type?, ai_status?, limit?
  */
-router.get('/:clientId', 
-  validate(clientIdParamSchema, 'params'),
-  handleGetContextSources
+router.get(
+  "/:clientId",
+  validate(clientIdParamSchema, "params"),
+  handleGetContextSources,
 );
 
 /**
@@ -109,12 +150,16 @@ router.get('/:clientId',
  * @access  Private (requiere autenticación)
  * @body    { file_name?, source_metadata? }
  */
-router.put('/:clientId/:sourceId', 
+router.put(
+  "/:clientId/:sourceId",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }), source: 'params' }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }),
+      source: "params",
+    },
   ),
-  handleUpdateContextSource
+  handleUpdateContextSource,
 );
 
 /**
@@ -122,12 +167,17 @@ router.put('/:clientId/:sourceId',
  * @desc    Eliminar una fuente de contexto específica
  * @access  Private (requiere autenticación)
  */
-router.delete('/:clientId/:sourceId', 
+router.delete(
+  "/:clientId/:sourceId",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }), source: 'params', options: { logAttempts: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: uuidParamSchema.extend({ sourceId: uuidParamSchema.shape.id }),
+      source: "params",
+      options: { logAttempts: true },
+    },
   ),
-  handleDeleteContextSource
+  handleDeleteContextSource,
 );
 
 // --- Rutas de Búsqueda y Estadísticas ---
@@ -138,12 +188,17 @@ router.delete('/:clientId/:sourceId',
  * @access  Private (requiere autenticación)
  * @body    { query, source_types?, limit? }
  */
-router.post('/:clientId/search', 
+router.post(
+  "/:clientId/search",
   validateMultiple(
-    { schema: clientIdParamSchema, source: 'params' },
-    { schema: contextSearchSchema, source: 'body', options: { logAttempts: true } }
+    { schema: clientIdParamSchema, source: "params" },
+    {
+      schema: contextSearchSchema,
+      source: "body",
+      options: { logAttempts: true },
+    },
   ),
-  handleSearchContextChunks
+  handleSearchContextChunks,
 );
 
 /**
@@ -151,9 +206,10 @@ router.post('/:clientId/search',
  * @desc    Obtener estadísticas de las fuentes de contexto de un cliente
  * @access  Private (requiere autenticación)
  */
-router.get('/:clientId/stats', 
-  validate(clientIdParamSchema, 'params'),
-  handleGetContextSourceStats
+router.get(
+  "/:clientId/stats",
+  validate(clientIdParamSchema, "params"),
+  handleGetContextSourceStats,
 );
 
 export default router;

@@ -6,7 +6,7 @@ export class DocumentRepository {
    * Find documents with pagination and filters
    * @param {Object} criteria
    * @param {string} criteria.clientId
-   * @param {string} criteria.agencyId  
+   * @param {string} criteria.agencyId
    * @param {string} [criteria.search]
    * @param {string} [criteria.type] - 'image', 'video', 'document', etc.
    * @param {boolean} [criteria.pinned]
@@ -17,7 +17,7 @@ export class DocumentRepository {
    * @returns {Promise<{documents: DocumentEntity[], nextCursor: string|null, total: number}>}
    */
   async findByCriteria(criteria) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -27,7 +27,7 @@ export class DocumentRepository {
    * @returns {Promise<DocumentEntity|null>}
    */
   async findById(id, agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -38,7 +38,7 @@ export class DocumentRepository {
    * @returns {Promise<DocumentEntity[]>}
    */
   async findByVersionGroup(versionGroup, clientId, agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -49,7 +49,7 @@ export class DocumentRepository {
    * @returns {Promise<DocumentEntity|null>}
    */
   async findByChecksum(checksum, clientId, agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -59,7 +59,7 @@ export class DocumentRepository {
    * @returns {Promise<number>}
    */
   async countPinned(clientId, agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -68,7 +68,7 @@ export class DocumentRepository {
    * @returns {Promise<DocumentEntity>}
    */
   async save(document) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -78,7 +78,7 @@ export class DocumentRepository {
    * @returns {Promise<void>}
    */
   async delete(id, agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -87,6 +87,6 @@ export class DocumentRepository {
    * @returns {Promise<{totalSize: number, totalCount: number, activeCount: number, deletedCount: number}>}
    */
   async getStorageStats(agencyId) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 }

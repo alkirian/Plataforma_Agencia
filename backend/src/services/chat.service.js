@@ -1,21 +1,24 @@
-import { createAuthenticatedClient } from '../config/supabaseClient.js';
-import { logger } from '../utils/logger.js';
+import { createAuthenticatedClient } from "../config/supabaseClient.js";
+import { logger } from "../utils/logger.js";
 
 // Helpers
 const isUndefinedColumnErr = (error, columnName) =>
-  !!error && (
-    error.code === '42703' ||
-    (typeof error.message === 'string' && error.message.toLowerCase().includes('column') &&
+  !!error &&
+  (error.code === "42703" ||
+    (typeof error.message === "string" &&
+      error.message.toLowerCase().includes("column") &&
       error.message.toLowerCase().includes(columnName.toLowerCase()) &&
-      error.message.toLowerCase().includes('does not exist'))
-  );
+      error.message.toLowerCase().includes("does not exist")));
 
 // Detecta violación de NOT NULL para una columna específica
 const isNotNullColumnErr = (error, columnName) =>
-  !!error && error.code === '23502' &&
-  typeof error.message === 'string' &&
-  error.message.toLowerCase().includes(`column "${columnName.toLowerCase()}"`) &&
-  error.message.toLowerCase().includes('not-null');
+  !!error &&
+  error.code === "23502" &&
+  typeof error.message === "string" &&
+  error.message
+    .toLowerCase()
+    .includes(`column "${columnName.toLowerCase()}"`) &&
+  error.message.toLowerCase().includes("not-null");
 
 /**
  * Inserta un mensaje de chat en la tabla chat_messages respetando RLS
@@ -27,50 +30,79 @@ const isNotNullColumnErr = (error, columnName) =>
  * @param {string} params.content - Contenido del mensaje
  * @param {object} [params.metadata] - Metadatos opcionales (json)
  */
-export const saveChatMessage = async ({ token, userId, clientId, role, content, message, response, metadata = null }) => {
-  logger.debug('saveChatMessage - Entrada', {
+export const saveChatMessage = async ({
+  token,
+  userId,
+  clientId,
+  role,
+  content,
+  message,
+  response,
+  metadata = null,
+}) => {
+  logger.debug("saveChatMessage - Entrada", {
     hasToken: !!token,
     userId,
     clientId,
     role,
     contentLength: content?.length || 0,
-    hasMetadata: !!metadata
+    hasMetadata: !!metadata,
   });
 
   try {
     const supabaseAuth = createAuthenticatedClient(token);
     // Permitir que el controlador pase 'content' o 'message'/'response'
     let realContent = content;
-    if (!realContent && typeof message === 'string') realContent = message;
-    if (!realContent && typeof response === 'string') realContent = response;
+    if (!realContent && typeof message === "string") realContent = message;
+    if (!realContent && typeof response === "string") realContent = response;
 
     if (!realContent) {
-      throw new Error('No hay contenido para guardar');
+      throw new Error("No hay contenido para guardar");
     }
 
     // 1) Intentar insertar usando la columna moderna 'content'
     let insertResult = await supabaseAuth
-      .from('chat_messages')
-      .insert([{ user_id: userId, client_id: clientId, role, content: realContent, metadata }])
-      .select('id, user_id, client_id, role, content, metadata, created_at')
+      .from("chat_messages")
+      .insert([
+        {
+          user_id: userId,
+          client_id: clientId,
+          role,
+          content: realContent,
+          metadata,
+        },
+      ])
+      .select("id, user_id, client_id, role, content, metadata, created_at")
       .single();
 
     if (!insertResult.error) {
-      logger.info('Mensaje guardado exitosamente', { messageId: insertResult.data.id, role, userId, clientId });
+      logger.info("Mensaje guardado exitosamente", {
+        messageId: insertResult.data.id,
+        role,
+        userId,
+        clientId,
+      });
       return insertResult.data;
     }
 
     // Si la tabla no existe, informar claramente
-    if (insertResult.error?.message?.includes('relation "chat_messages" does not exist')) {
-      logger.error('Tabla chat_messages no existe');
+    if (
+      insertResult.error?.message?.includes(
+        'relation "chat_messages" does not exist',
+      )
+    ) {
+      logger.error("Tabla chat_messages no existe");
       throw new Error(
-        'No se pudo guardar el mensaje: la tabla chat_messages no existe. Aplica el esquema en Supabase antes de continuar.'
+        "No se pudo guardar el mensaje: la tabla chat_messages no existe. Aplica el esquema en Supabase antes de continuar.",
       );
     }
 
     // 2) Fallbacks de compatibilidad con esquemas antiguos
     // 2a) Si no existe 'content' O si 'message' tiene NOT NULL, intentar con todas las columnas relevantes
-    if (isUndefinedColumnErr(insertResult.error, 'content') || isNotNullColumnErr(insertResult.error, 'message')) {
+    if (
+      isUndefinedColumnErr(insertResult.error, "content") ||
+      isNotNullColumnErr(insertResult.error, "message")
+    ) {
       // Primer intento: incluir content + message + response para satisfacer constraints mixtos
       let legacyPayloadAll = {
         user_id: userId,
@@ -79,42 +111,54 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
         content: realContent,
         message: realContent,
         response: realContent,
-        metadata
+        metadata,
       };
 
       // Mantener payload actual y reintentar quitando columnas no soportadas
       let currentPayload = { ...legacyPayloadAll };
       let legacyInsert = await supabaseAuth
-        .from('chat_messages')
+        .from("chat_messages")
         .insert([currentPayload])
-        .select('*')
+        .select("*")
         .single();
 
       // Si falla porque 'content' no existe, eliminar y reintentar
-      if (legacyInsert.error && isUndefinedColumnErr(legacyInsert.error, 'content')) {
+      if (
+        legacyInsert.error &&
+        isUndefinedColumnErr(legacyInsert.error, "content")
+      ) {
         const { content: _omitContent, ...rest } = currentPayload;
         currentPayload = rest;
         legacyInsert = await supabaseAuth
-          .from('chat_messages')
+          .from("chat_messages")
           .insert([currentPayload])
-          .select('*')
+          .select("*")
           .single();
       }
 
       // Si falla por 'metadata' inexistente, eliminar y reintentar
-      if (legacyInsert.error && isUndefinedColumnErr(legacyInsert.error, 'metadata')) {
+      if (
+        legacyInsert.error &&
+        isUndefinedColumnErr(legacyInsert.error, "metadata")
+      ) {
         const { metadata: _omitMeta, ...rest } = currentPayload;
         currentPayload = rest;
         legacyInsert = await supabaseAuth
-          .from('chat_messages')
+          .from("chat_messages")
           .insert([currentPayload])
-          .select('*')
+          .select("*")
           .single();
       }
 
       if (legacyInsert.error) {
-        logger.error('Error al guardar mensaje (legacy)', legacyInsert.error, { userId, clientId, role });
-        throw new Error(`No se pudo guardar el mensaje (legacy): ${legacyInsert.error.message}`);
+        logger.error("Error al guardar mensaje (legacy)", legacyInsert.error, {
+          userId,
+          clientId,
+          role,
+        });
+        throw new Error(
+          `No se pudo guardar el mensaje (legacy): ${legacyInsert.error.message}`,
+        );
       }
 
       // Normalizar salida para que siempre tenga 'content'
@@ -124,19 +168,32 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
         user_id: row.user_id,
         client_id: row.client_id,
         role: row.role,
-        content: row.content ?? (row.role === 'assistant' ? row.response : row.message),
+        content:
+          row.content ??
+          (row.role === "assistant" ? row.response : row.message),
         metadata: row.metadata ?? metadata ?? null,
         created_at: row.created_at,
       };
-      logger.info('Mensaje guardado exitosamente (legacy)', { messageId: normalized.id, role, userId, clientId });
+      logger.info("Mensaje guardado exitosamente (legacy)", {
+        messageId: normalized.id,
+        role,
+        userId,
+        clientId,
+      });
       return normalized;
     }
 
     // 3) Otros errores
-    logger.error('Error al guardar mensaje', insertResult.error, { userId, clientId, role });
-    throw new Error(`No se pudo guardar el mensaje: ${insertResult.error.message}`);
+    logger.error("Error al guardar mensaje", insertResult.error, {
+      userId,
+      clientId,
+      role,
+    });
+    throw new Error(
+      `No se pudo guardar el mensaje: ${insertResult.error.message}`,
+    );
   } catch (error) {
-    logger.error('Error en saveChatMessage', error, { userId, clientId, role });
+    logger.error("Error en saveChatMessage", error, { userId, clientId, role });
     throw error;
   }
 };
@@ -149,27 +206,32 @@ export const saveChatMessage = async ({ token, userId, clientId, role, content, 
  * @param {number} [params.limit=20] - Límite de mensajes a recuperar
  * @param {string} [params.before] - Cursor: ISO string de created_at para paginar hacia atrás
  */
-export const listChatMessages = async ({ token, clientId, limit = 20, before }) => {
+export const listChatMessages = async ({
+  token,
+  clientId,
+  limit = 20,
+  before,
+}) => {
   const supabaseAuth = createAuthenticatedClient(token);
 
   // 1) Intento principal: seleccionar usando la columna moderna 'content' (y 'metadata' si existe)
   try {
     let query = supabaseAuth
-      .from('chat_messages')
-      .select('id, user_id, client_id, role, content, metadata, created_at')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
+      .from("chat_messages")
+      .select("id, user_id, client_id, role, content, metadata, created_at")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(limit);
 
     if (before) {
-      query = query.lt('created_at', before);
+      query = query.lt("created_at", before);
     }
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const messages = (data || []).map(r => ({
+    const messages = (data || []).map((r) => ({
       id: r.id,
       user_id: r.user_id,
       client_id: r.client_id,
@@ -179,39 +241,48 @@ export const listChatMessages = async ({ token, clientId, limit = 20, before }) 
       created_at: r.created_at,
     }));
     const hasMore = messages.length === limit;
-    const nextCursor = messages.length ? messages[messages.length - 1].created_at : null;
+    const nextCursor = messages.length
+      ? messages[messages.length - 1].created_at
+      : null;
     return { messages, hasMore, nextCursor };
   } catch (err) {
     // 2) Fallback: si falla por columna 'content' o 'metadata' inexistente, usar esquema heredado
-    if (isUndefinedColumnErr(err, 'content') || isUndefinedColumnErr(err, 'metadata')) {
+    if (
+      isUndefinedColumnErr(err, "content") ||
+      isUndefinedColumnErr(err, "metadata")
+    ) {
       let query = supabaseAuth
-        .from('chat_messages')
-        .select('id, user_id, client_id, role, message, response, created_at')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
+        .from("chat_messages")
+        .select("id, user_id, client_id, role, message, response, created_at")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(limit);
 
       if (before) {
-        query = query.lt('created_at', before);
+        query = query.lt("created_at", before);
       }
 
       const { data, error } = await query;
       if (error) {
-        throw new Error(`No se pudo obtener el historial (legacy): ${error.message}`);
+        throw new Error(
+          `No se pudo obtener el historial (legacy): ${error.message}`,
+        );
       }
 
-      const messages = (data || []).map(r => ({
+      const messages = (data || []).map((r) => ({
         id: r.id,
         user_id: r.user_id,
         client_id: r.client_id,
         role: r.role,
-        content: r.role === 'assistant' ? r.response : r.message,
+        content: r.role === "assistant" ? r.response : r.message,
         metadata: null,
         created_at: r.created_at,
       }));
       const hasMore = messages.length === limit;
-      const nextCursor = messages.length ? messages[messages.length - 1].created_at : null;
+      const nextCursor = messages.length
+        ? messages[messages.length - 1].created_at
+        : null;
       return { messages, hasMore, nextCursor };
     }
     throw new Error(`No se pudo obtener el historial: ${err.message}`);

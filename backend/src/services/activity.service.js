@@ -1,6 +1,6 @@
 // src/services/activity.service.js
-import { supabaseAdmin } from '../config/supabaseClient.js';
-import { logger } from '../utils/logger.js';
+import { supabaseAdmin } from "../config/supabaseClient.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * Registra una nueva acción en el log de actividad.
@@ -8,13 +8,13 @@ import { logger } from '../utils/logger.js';
  */
 export const logActivity = async (logData) => {
   try {
-    const { error } = await supabaseAdmin.from('activity_logs').insert(logData);
+    const { error } = await supabaseAdmin.from("activity_logs").insert(logData);
     if (error) {
-      logger.error('Error al registrar la actividad', error, logData);
+      logger.error("Error al registrar la actividad", error, logData);
       // No lanzamos error para no interrumpir el flujo principal
     }
   } catch (error) {
-    logger.error('Error inesperado al registrar actividad', error, logData);
+    logger.error("Error inesperado al registrar actividad", error, logData);
   }
 };
 
@@ -26,20 +26,23 @@ export const logActivity = async (logData) => {
  */
 export const getActivityFeedByClient = async (clientId, agencyId) => {
   const { data, error } = await supabaseAdmin
-    .from('activity_logs')
-    .select(`
+    .from("activity_logs")
+    .select(
+      `
       id,
       created_at,
       action_type,
       details,
       author:profiles ( id, full_name )
-    `)
-    .eq('client_id', clientId)
-    .eq('agency_id', agencyId)
-    .order('created_at', { ascending: false })
+    `,
+    )
+    .eq("client_id", clientId)
+    .eq("agency_id", agencyId)
+    .order("created_at", { ascending: false })
     .limit(20);
 
-  if (error) throw new Error(`Error al obtener el feed de actividad: ${error.message}`);
+  if (error)
+    throw new Error(`Error al obtener el feed de actividad: ${error.message}`);
   return data || [];
 };
 
@@ -49,31 +52,38 @@ export const getActivityFeedByClient = async (clientId, agencyId) => {
  * @param {string} agencyId
  * @param {{ limit?: number, cursor?: string }} options
  */
-export const getAgencyActivityFeed = async (agencyId, { limit = 20, cursor } = {}) => {
+export const getAgencyActivityFeed = async (
+  agencyId,
+  { limit = 20, cursor } = {},
+) => {
   let query = supabaseAdmin
-    .from('activity_logs')
-    .select(`
+    .from("activity_logs")
+    .select(
+      `
       id,
       created_at,
       action_type,
       client_id,
       details,
       author:profiles ( id, full_name )
-    `)
-    .eq('agency_id', agencyId)
-    .order('created_at', { ascending: false })
+    `,
+    )
+    .eq("agency_id", agencyId)
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (cursor) {
     // Traer items más antiguos que el cursor
-    query = query.lt('created_at', cursor);
+    query = query.lt("created_at", cursor);
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(`Error al obtener actividad global: ${error.message}`);
+  if (error)
+    throw new Error(`Error al obtener actividad global: ${error.message}`);
 
   const items = data || [];
-  const nextCursor = items.length === limit ? items[items.length - 1].created_at : null;
+  const nextCursor =
+    items.length === limit ? items[items.length - 1].created_at : null;
 
   return { items, nextCursor };
 };

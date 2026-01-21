@@ -1,59 +1,70 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../config/supabaseClient.js';
-import { logger } from '../utils/logger.js';
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "../config/supabaseClient.js";
+import { logger } from "../utils/logger.js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
 
 const createAuthenticatedClient = (token) => {
-  if (!token) throw new Error('Token requerido');
+  if (!token) throw new Error("Token requerido");
   return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 };
 
 const embedText = async (text) => {
-  const resp = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
-    body: JSON.stringify({ model: 'text-embedding-3-small', input: text })
+  const resp = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
+    body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
   });
-  if (!resp.ok) throw new Error('Error al generar embeddings');
+  if (!resp.ok) throw new Error("Error al generar embeddings");
   const json = await resp.json();
   return json.data?.[0]?.embedding || [];
 };
 
 const callLLM = async (prompt) => {
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     }),
   });
-  if (!resp.ok) throw new Error('Error al llamar al LLM');
+  if (!resp.ok) throw new Error("Error al llamar al LLM");
   const json = await resp.json();
-  const content = json.choices?.[0]?.message?.content || '';
+  const content = json.choices?.[0]?.message?.content || "";
   return content;
 };
 
-export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext, token }) => {
+export const generateScheduleIdeas = async ({
+  clientId,
+  userPrompt,
+  monthContext,
+  token,
+}) => {
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: client, error: clientErr } = await supabaseAuth
-    .from('clients')
-    .select('id, name, agency_id')
-    .eq('id', clientId)
+    .from("clients")
+    .select("id, name, agency_id")
+    .eq("id", clientId)
     .single();
   if (clientErr) throw new Error(clientErr.message);
 
   // Fallback de desarrollo si no hay OpenAI
   if (!openaiApiKey) {
     const baseDate = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
+    const pad = (n) => String(n).padStart(2, "0");
     const nextDate = (offset) => {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + offset * 7); // Una por semana
@@ -67,9 +78,9 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
 
 💡 ¿Qué opinas? ¡Déjanos tu comentario!
 
-#Marketing #RedesSociales #${client.name.replace(/\s+/g, '')}`,
+#Marketing #RedesSociales #${client.name.replace(/\s+/g, "")}`,
       scheduled_at: nextDate(i + 1),
-      status: 'Pendiente',
+      status: "Pendiente",
     }));
     return ideas;
   }
@@ -78,45 +89,70 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
   const queryEmbedding = await embedText(userPrompt);
 
   // Buscar chunks relevantes usando la función search_context_chunks
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('search_context_chunks', {
-    query_embedding: queryEmbedding,
-    match_client_id: clientId,
-    match_count: 8,
-    match_threshold: 0.78
-  });
-  if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
-  
-  // Crear contexto enriquecido con información de las fuentes
-  const topContext = (matches || []).map(match => {
-    const sourceType = match.document_source_type;
-    let sourceLabel = '';
-    
-    switch(sourceType) {
-      case 'document': sourceLabel = '📄 [DOCUMENTO]'; break;
-      case 'url': sourceLabel = '🌐 [WEB]'; break;
-      case 'manual': sourceLabel = '✍️ [INFORMACIÓN MANUAL]'; break;
-      case 'note': sourceLabel = '📝 [NOTA]'; break;
-      default: sourceLabel = '📋 [CONTEXTO]'; break;
-    }
-    
-    return `${sourceLabel} ${match.document_name}: ${match.content}`;
-  }).join('\n---\n');
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc(
+    "search_context_chunks",
+    {
+      query_embedding: queryEmbedding,
+      match_client_id: clientId,
+      match_count: 8,
+      match_threshold: 0.78,
+    },
+  );
+  if (matchErr)
+    throw new Error(`Error al buscar contexto: ${matchErr.message}`);
 
-  const calendarCtx = Array.isArray(monthContext) ? monthContext.join(', ') : '';
+  // Crear contexto enriquecido con información de las fuentes
+  const topContext = (matches || [])
+    .map((match) => {
+      const sourceType = match.document_source_type;
+      let sourceLabel = "";
+
+      switch (sourceType) {
+        case "document":
+          sourceLabel = "📄 [DOCUMENTO]";
+          break;
+        case "url":
+          sourceLabel = "🌐 [WEB]";
+          break;
+        case "manual":
+          sourceLabel = "✍️ [INFORMACIÓN MANUAL]";
+          break;
+        case "note":
+          sourceLabel = "📝 [NOTA]";
+          break;
+        default:
+          sourceLabel = "📋 [CONTEXTO]";
+          break;
+      }
+
+      return `${sourceLabel} ${match.document_name}: ${match.content}`;
+    })
+    .join("\n---\n");
+
+  const calendarCtx = Array.isArray(monthContext)
+    ? monthContext.join(", ")
+    : "";
 
   // Obtener fechas actuales para contexto
   const now = new Date();
-  const currentMonth = now.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  const currentMonth = now.toLocaleString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+  const nextMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1,
+  ).toLocaleString("es-ES", { month: "long", year: "numeric" });
   const currentYear = now.getFullYear();
   const currentMonthNum = now.getMonth() + 1; // 1-12
-  const nextMonthNum = (now.getMonth() + 2) > 12 ? 1 : (now.getMonth() + 2);
-  const nextMonthYear = (now.getMonth() + 2) > 12 ? currentYear + 1 : currentYear;
+  const nextMonthNum = now.getMonth() + 2 > 12 ? 1 : now.getMonth() + 2;
+  const nextMonthYear = now.getMonth() + 2 > 12 ? currentYear + 1 : currentYear;
 
   const megaPrompt = `Eres un estratega de redes sociales experto especializado en crear contenido atractivo y efectivo.
 
 CONTEXTO TEMPORAL:
-- Fecha actual: ${now.toLocaleDateString('es-ES')}
+- Fecha actual: ${now.toLocaleDateString("es-ES")}
 - Mes actual: ${currentMonth}
 - Próximo mes: ${nextMonth}
 - Las ideas deben programarse para ${currentMonth} y ${nextMonth}
@@ -138,7 +174,7 @@ INSTRUCCIONES ESPECÍFICAS:
 FORMATO DE RESPUESTA: Tu respuesta debe ser únicamente un objeto JSON válido, sin texto introductorio ni explicaciones. Debe ser un array donde cada objeto contenga:
 - title (string): Título descriptivo de la idea
 - copy (string): Texto completo del post listo para publicar en redes sociales
-- scheduled_at (string): Fecha en formato 'YYYY-MM-DD' (usar ${currentYear}-${String(currentMonthNum).padStart(2, '0')} para este mes o ${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')} para el próximo)
+- scheduled_at (string): Fecha en formato 'YYYY-MM-DD' (usar ${currentYear}-${String(currentMonthNum).padStart(2, "0")} para este mes o ${nextMonthYear}-${String(nextMonthNum).padStart(2, "0")} para el próximo)
 - status (string): Siempre 'Pendiente'
 
 Ejemplo de estructura:
@@ -146,79 +182,85 @@ Ejemplo de estructura:
   {
     "title": "Título descriptivo",
     "copy": "🌟 Texto completo del post con emojis y call-to-action #hashtags",
-    "scheduled_at": "${currentYear}-${String(currentMonthNum).padStart(2, '0')}-15",
+    "scheduled_at": "${currentYear}-${String(currentMonthNum).padStart(2, "0")}-15",
     "status": "Pendiente"
   }
 ]`;
 
-
   const llmResponse = await callLLM(megaPrompt);
-// src/services/ai.service.js
+  // src/services/ai.service.js
 
-// ... (El resto de tus importaciones y funciones como embedText, callLLM, etc., se mantienen igual)
+  // ... (El resto de tus importaciones y funciones como embedText, callLLM, etc., se mantienen igual)
 
-/**
- * Envía una imagen a GPT-4o para que la analice y describa.
- * @param {string} imageUrl - La URL pública de la imagen en Supabase Storage.
- * @returns {Promise<string>} Una descripción detallada de la imagen.
- */
-const analyzeImage = async (imageUrl) => {
-  const prompt = `Analiza esta imagen en detalle. Describe su contenido, los colores predominantes y proporciona codigo de color exacto que se usa, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.`;
+  /**
+   * Envía una imagen a GPT-4o para que la analice y describa.
+   * @param {string} imageUrl - La URL pública de la imagen en Supabase Storage.
+   * @returns {Promise<string>} Una descripción detallada de la imagen.
+   */
+  const analyzeImage = async (imageUrl) => {
+    const prompt =
+      "Analiza esta imagen en detalle. Describe su contenido, los colores predominantes y proporciona codigo de color exacto que se usa, cualquier texto visible (transcríbelo si es legible) y el sentimiento o mensaje general que transmite. La descripción debe ser completa para que sirva como contexto para un asistente de IA.";
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini', // Usamos un modelo con capacidad de visión
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            {
-              type: 'image_url',
-              image_url: { url: imageUrl },
-            },
-          ],
-        },
-      ],
-      max_tokens: 500, // Limitamos la longitud de la descripción
-    }),
-  });
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini", // Usamos un modelo con capacidad de visión
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: { url: imageUrl },
+              },
+            ],
+          },
+        ],
+        max_tokens: 500, // Limitamos la longitud de la descripción
+      }),
+    });
 
-  if (!resp.ok) {
-    const errorDetails = await resp.json();
-    logger.error('Error de OpenAI Vision', new Error(errorDetails.error?.message || 'Unknown vision error'), { errorDetails });
-    throw new Error(`Error al analizar la imagen: ${errorDetails.error?.message}`);
-  }
+    if (!resp.ok) {
+      const errorDetails = await resp.json();
+      logger.error(
+        "Error de OpenAI Vision",
+        new Error(errorDetails.error?.message || "Unknown vision error"),
+        { errorDetails },
+      );
+      throw new Error(
+        `Error al analizar la imagen: ${errorDetails.error?.message}`,
+      );
+    }
 
-  const json = await resp.json();
-  return json.choices?.[0]?.message?.content || '';
-};
+    const json = await resp.json();
+    return json.choices?.[0]?.message?.content || "";
+  };
 
-// Asegúrate de exportar la nueva función junto a las demás
-// Esta exportación probablemente está en ai.service.js o en un archivo index de servicios.
-// Si no estás seguro, busca dónde se exporta generateScheduleIdeas y añádela ahí.
-// Por ahora, asumiremos que está en el mismo archivo y la exportamos aquí (ejemplo):
-// export { generateScheduleIdeas, analyzeImage }; 
-// NOTA: La exportación real depende de la estructura de tu proyecto.
-// La clave es que `processDocument` pueda importarla.
-// Para simplificar, vamos a importarla directamente en el otro archivo.
+  // Asegúrate de exportar la nueva función junto a las demás
+  // Esta exportación probablemente está en ai.service.js o en un archivo index de servicios.
+  // Si no estás seguro, busca dónde se exporta generateScheduleIdeas y añádela ahí.
+  // Por ahora, asumiremos que está en el mismo archivo y la exportamos aquí (ejemplo):
+  // export { generateScheduleIdeas, analyzeImage };
+  // NOTA: La exportación real depende de la estructura de tu proyecto.
+  // La clave es que `processDocument` pueda importarla.
+  // Para simplificar, vamos a importarla directamente en el otro archivo.
   // Intentar parsear JSON
   let ideas;
   try {
     ideas = JSON.parse(llmResponse);
   } catch (_e) {
     // Intento de sanitización básica si el modelo añade texto extra
-    const jsonStart = llmResponse.indexOf('[');
-    const jsonEnd = llmResponse.lastIndexOf(']');
+    const jsonStart = llmResponse.indexOf("[");
+    const jsonEnd = llmResponse.lastIndexOf("]");
     if (jsonStart >= 0 && jsonEnd >= 0) {
       ideas = JSON.parse(llmResponse.slice(jsonStart, jsonEnd + 1));
     } else {
-      throw new Error('La respuesta del modelo no es JSON válido');
+      throw new Error("La respuesta del modelo no es JSON válido");
     }
   }
 
@@ -228,13 +270,18 @@ const analyzeImage = async (imageUrl) => {
 /**
  * Maneja conversaciones de chat con el cliente usando RAG
  */
-export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token }) => {
+export const handleChatConversation = async ({
+  clientId,
+  userPrompt,
+  chatHistory,
+  token,
+}) => {
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: client, error: clientErr } = await supabaseAuth
-    .from('clients')
-    .select('id, name, agency_id')
-    .eq('id', clientId)
+    .from("clients")
+    .select("id, name, agency_id")
+    .eq("id", clientId)
     .single();
   if (clientErr) throw new Error(clientErr.message);
 
@@ -252,33 +299,49 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
   const queryEmbedding = await embedText(userPrompt);
 
   // Buscar chunks relevantes usando la función search_context_chunks
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('search_context_chunks', {
-    query_embedding: queryEmbedding,
-    match_client_id: clientId,
-    match_count: 5,
-    match_threshold: 0.78
-  });
-  if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
-  
+  const { data: matches, error: matchErr } = await supabaseAdmin.rpc(
+    "search_context_chunks",
+    {
+      query_embedding: queryEmbedding,
+      match_client_id: clientId,
+      match_count: 5,
+      match_threshold: 0.78,
+    },
+  );
+  if (matchErr)
+    throw new Error(`Error al buscar contexto: ${matchErr.message}`);
+
   // Crear contexto enriquecido con información de las fuentes
-  const topContext = (matches || []).map(match => {
-    const sourceType = match.document_source_type;
-    let sourceLabel = '';
-    
-    switch(sourceType) {
-      case 'document': sourceLabel = '📄 [DOCUMENTO]'; break;
-      case 'url': sourceLabel = '🌐 [WEB]'; break;
-      case 'manual': sourceLabel = '✍️ [INFO MANUAL]'; break;
-      case 'note': sourceLabel = '📝 [NOTA]'; break;
-      default: sourceLabel = '📋 [CONTEXTO]'; break;
-    }
-    
-    return `${sourceLabel} ${match.document_name}: ${match.content}`;
-  }).join('\n---\n');
+  const topContext = (matches || [])
+    .map((match) => {
+      const sourceType = match.document_source_type;
+      let sourceLabel = "";
+
+      switch (sourceType) {
+        case "document":
+          sourceLabel = "📄 [DOCUMENTO]";
+          break;
+        case "url":
+          sourceLabel = "🌐 [WEB]";
+          break;
+        case "manual":
+          sourceLabel = "✍️ [INFO MANUAL]";
+          break;
+        case "note":
+          sourceLabel = "📝 [NOTA]";
+          break;
+        default:
+          sourceLabel = "📋 [CONTEXTO]";
+          break;
+      }
+
+      return `${sourceLabel} ${match.document_name}: ${match.content}`;
+    })
+    .join("\n---\n");
 
   // Construir historial de conversación
-  const conversationHistory = Array.isArray(chatHistory) 
-    ? chatHistory.map(msg => ({ role: msg.role, content: msg.content }))
+  const conversationHistory = Array.isArray(chatHistory)
+    ? chatHistory.map((msg) => ({ role: msg.role, content: msg.content }))
     : [];
 
   const systemPrompt = `Eres un asistente de marketing digital experto especializado en contenido para redes sociales.
@@ -342,25 +405,29 @@ Trabaja sobre: posicionamiento, propuesta de valor, segmentación y pains/gains,
 Por defecto brinda marcos, criterios, briefings y checklists; solo genera ideas completas si el usuario lo pide explícitamente.`;
 
   const messages = [
-    { role: 'system', content: systemPrompt },
+    { role: "system", content: systemPrompt },
     ...conversationHistory,
-    { role: 'user', content: userPrompt }
+    { role: "user", content: userPrompt },
   ];
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages,
       temperature: 0.7,
       max_tokens: 500,
     }),
   });
 
-  if (!resp.ok) throw new Error('Error al generar respuesta del chat');
+  if (!resp.ok) throw new Error("Error al generar respuesta del chat");
   const json = await resp.json();
-  const response = json.choices?.[0]?.message?.content || 'No pude generar una respuesta.';
+  const response =
+    json.choices?.[0]?.message?.content || "No pude generar una respuesta.";
 
   return { response };
 };

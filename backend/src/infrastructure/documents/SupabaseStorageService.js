@@ -1,11 +1,11 @@
 // Infrastructure Adapter: Supabase Storage Implementation
 // Implements StorageService interface
 
-import { StorageService } from '../../domain/documents/StorageService.js';
-import crypto from 'crypto';
+import { StorageService } from "../../domain/documents/StorageService.js";
+import crypto from "crypto";
 
 export class SupabaseStorageService extends StorageService {
-  constructor(supabaseClient, bucketName = 'documents') {
+  constructor(supabaseClient, bucketName = "documents") {
     super();
     this.supabase = supabaseClient;
     this.bucketName = bucketName;
@@ -19,9 +19,9 @@ export class SupabaseStorageService extends StorageService {
         metadata: {
           originalName: metadata.originalName,
           uploadedBy: metadata.uploadedBy,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
         },
-        upsert: false // Never overwrite - always create new
+        upsert: false, // Never overwrite - always create new
       });
 
     if (error) {
@@ -33,7 +33,7 @@ export class SupabaseStorageService extends StorageService {
 
     return {
       path: data.path,
-      size: fileMetadata.size
+      size: fileMetadata.size,
     };
   }
 
@@ -51,7 +51,7 @@ export class SupabaseStorageService extends StorageService {
     const { data, error } = await this.supabase.storage
       .from(this.bucketName)
       .createSignedUrl(storagePath, expiresIn, {
-        download: true
+        download: true,
       });
 
     if (error) {
@@ -67,7 +67,7 @@ export class SupabaseStorageService extends StorageService {
         .from(this.bucketName)
         .list(this.getDirectoryPath(storagePath), {
           limit: 1,
-          search: this.getFileName(storagePath)
+          search: this.getFileName(storagePath),
         });
 
       if (error) return false;
@@ -87,7 +87,7 @@ export class SupabaseStorageService extends StorageService {
         .from(this.bucketName)
         .list(directory, {
           limit: 1,
-          search: filename
+          search: filename,
         });
 
       if (error || !data || data.length === 0) {
@@ -98,7 +98,7 @@ export class SupabaseStorageService extends StorageService {
       return {
         size: fileInfo.metadata?.size || 0,
         lastModified: new Date(fileInfo.updated_at),
-        contentType: fileInfo.metadata?.mimetype || 'application/octet-stream'
+        contentType: fileInfo.metadata?.mimetype || "application/octet-stream",
       };
     } catch (error) {
       throw new Error(`Failed to get file metadata: ${error.message}`);
@@ -108,7 +108,7 @@ export class SupabaseStorageService extends StorageService {
   generateStoragePath(agencyId, clientId, versionGroup, extension) {
     const uuid = crypto.randomUUID();
     // Clean version group for safe path
-    const safeVersionGroup = versionGroup.replace(/[^a-z0-9.-]/g, '_');
+    const safeVersionGroup = versionGroup.replace(/[^a-z0-9.-]/g, "_");
     return `${agencyId}/${clientId}/${safeVersionGroup}/${uuid}.${extension}`;
   }
 
@@ -178,7 +178,7 @@ export class SupabaseStorageService extends StorageService {
         limit: options.limit || 100,
         offset: options.offset || 0,
         search: options.search,
-        sortBy: options.sortBy || { column: 'name', order: 'asc' }
+        sortBy: options.sortBy || { column: "name", order: "asc" },
       });
 
     if (error) {
@@ -190,12 +190,12 @@ export class SupabaseStorageService extends StorageService {
 
   // Helper methods
   getDirectoryPath(storagePath) {
-    const parts = storagePath.split('/');
-    return parts.slice(0, -1).join('/');
+    const parts = storagePath.split("/");
+    return parts.slice(0, -1).join("/");
   }
 
   getFileName(storagePath) {
-    const parts = storagePath.split('/');
+    const parts = storagePath.split("/");
     return parts[parts.length - 1];
   }
 
@@ -206,6 +206,6 @@ export class SupabaseStorageService extends StorageService {
   async cleanupOrphanedFiles(agencyId, dryRun = true) {
     // This would require custom logic to compare storage files with database records
     // Implementation depends on specific maintenance requirements
-    throw new Error('Cleanup orphaned files not implemented yet');
+    throw new Error("Cleanup orphaned files not implemented yet");
   }
 }

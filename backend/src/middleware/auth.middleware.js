@@ -1,25 +1,24 @@
-import { supabase } from '../config/supabaseClient.js';
+import { supabase } from "../config/supabaseClient.js";
+import { asyncHandler, HttpError } from "../utils/http.js";
+import { extractBearerToken } from "../utils/auth.js";
 
-export const protect = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
+export const protect = asyncHandler(async (req, _res, next) => {
+  const token = extractBearerToken(req.headers);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, message: 'No autorizado. Token no proporcionado.' });
-    }
+  if (!token) {
+    throw new HttpError(401, "No autorizado. Token no proporcionado.");
+  }
 
-  const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
 
-    if (error) {
-      // Este es el error que te estaba apareciendo
-      return res.status(401).json({ success: false, message: 'No autorizado. Token inválido.' });
-    }
+  if (error || !user) {
+    throw new HttpError(401, "No autorizado. Token invalido.");
+  }
 
   req.user = user;
-  req.token = token; // Guardamos el JWT para uso posterior en controladores/servicios
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
+  req.token = token;
+  next();
+});

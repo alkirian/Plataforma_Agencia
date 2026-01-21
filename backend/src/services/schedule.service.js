@@ -1,31 +1,39 @@
-import { createAuthenticatedClient } from '../config/supabaseClient.js';
-import { logActivity } from './activity.service.js';
-import { logger } from '../utils/logger.js';
+import { createAuthenticatedClient } from "../config/supabaseClient.js";
+import { logActivity } from "./activity.service.js";
+import { logger } from "../utils/logger.js";
 
 // Helper: normaliza el estado al formato esperado por el ENUM de la BD
+// El enum de Supabase usa español con primera letra mayúscula: Pendiente, En diseño, etc.
 const normalizeStatus = (status) => {
   if (!status) return status;
   const raw = String(status).trim();
   const lc = raw.toLowerCase();
   const map = {
-    // Español (minúsculas) -> Español con mayúsculas
-    'pendiente': 'Pendiente',
-    'en diseño': 'En Diseño',
-    'en diseno': 'En Diseño',
-    'en-diseño': 'En Diseño',
-    'aprobado': 'Aprobado',
-    'publicado': 'Publicado',
-    'cancelado': 'Cancelado',
-    // Inglés comunes -> Español
-    'pending': 'Pendiente',
-    'in_design': 'En Diseño',
-    'in design': 'En Diseño',
-    'approved': 'Aprobado',
-    'published': 'Publicado',
-    'cancelled': 'Cancelado',
-    'canceled': 'Cancelado',
+    // Inglés (minúsculas) -> Español (mayúscula inicial) [formato del enum DB]
+    pending: "Pendiente",
+    "in-design": "En diseño",
+    in_design: "En diseño",
+    "in design": "En diseño",
+    approved: "Aprobado",
+    published: "Publicado",
+    cancelled: "Cancelado",
+    canceled: "Cancelado",
+    // Español (minúsculas) -> Español (mayúscula inicial)
+    pendiente: "Pendiente",
+    "en diseño": "En diseño",
+    "en diseno": "En diseño",
+    "en-diseño": "En diseño",
+    aprobado: "Aprobado",
+    publicado: "Publicado",
+    cancelado: "Cancelado",
+    // Ya en formato correcto
+    Pendiente: "Pendiente",
+    "En diseño": "En diseño",
+    Aprobado: "Aprobado",
+    Publicado: "Publicado",
+    Cancelado: "Cancelado",
   };
-  return map[lc] || raw; // si no hay mapeo, devolver como vino
+  return map[lc] || map[raw] || "Pendiente"; // default a Pendiente si no hay mapeo
 };
 
 /**
@@ -34,9 +42,9 @@ const normalizeStatus = (status) => {
 export const getScheduleItemsByClient = async (clientId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data, error } = await supabaseAuth
-    .from('schedule_items')
-    .select('*')
-    .eq('client_id', clientId);
+    .from("schedule_items")
+    .select("*")
+    .eq("client_id", clientId);
 
   if (error) throw new Error(error.message);
   return data;
@@ -48,17 +56,51 @@ export const getScheduleItemsByClient = async (clientId, token) => {
 export const createScheduleItem = async (itemData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
   // Normalizar y validar status antes de insertar
-  const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+  // Los valores permitidos son en español con mayúscula inicial (formato del enum de Supabase)
+  const allowed = [
+    "Pendiente",
+    "En diseño",
+    "Aprobado",
+    "Publicado",
+    "Cancelado",
+  ];
   const normalizedStatus = normalizeStatus(itemData.status);
   if (normalizedStatus && !allowed.includes(normalizedStatus)) {
-    logger.warn('Status no permitido, normalizado', { received: itemData.status, normalized: normalizedStatus });
+    logger.warn("Status no permitido, normalizado", {
+      received: itemData.status,
+      normalized: normalizedStatus,
+    });
   }
+  // Ensure agency_id is present
+  let agencyId = itemData.agency_id;
+  if (!agencyId && itemData.client_id) {
+    const { data: clientData, error: clientError } = await supabaseAuth
+        .from("clients")
+        .select("agency_id")
+        .eq("id", itemData.client_id)
+        .single();
+    
+    if (!clientError && clientData) {
+        agencyId = clientData.agency_id;
+    }
+  }
+
+  // Only include fields that exist in the schedule_items table
   const payload = {
-    ...itemData,
-    status: normalizedStatus || itemData.status,
+    client_id: itemData.client_id,
+    title: itemData.title,
+    description: itemData.description || itemData.copy || null,
+    scheduled_at: itemData.scheduled_at,
+    status: normalizedStatus || itemData.status || 'Pendiente',
+    channel: itemData.channel || null,
+    priority: itemData.priority || null,
+    // platform: itemData.platform || null,
+    // post_type: itemData.post_type || null,
+    // hashtags: itemData.hashtags || [], 
+    agency_id: agencyId,
   };
   const { data, error } = await supabaseAuth
-    .from('schedule_items')
+    .from("schedule_items")
     .insert(payload)
     .select()
     .single();
@@ -71,13 +113,14 @@ export const createScheduleItem = async (itemData, token, userId = null) => {
       agency_id: data.agency_id, // La tabla 'schedule_items' necesita esta columna
       client_id: data.client_id,
       user_id: userId,
-      action_type: 'SCHEDULE_ITEM_CREATED',
-      details: { 
-        item_title: data.title, 
+      action_type: "SCHEDULE_ITEM_CREATED",
+      details: {
+        item_title: data.title,
         item_id: data.id,
-        start_date: data.start,
-        end_date: data.end 
-      }
+        scheduled_at: data.scheduled_at, // Fix: Usar columna real de BD
+        // start_date: data.start, // No existe en BD
+        // end_date: data.end, // No existe en BD
+      },
     });
   }
 
@@ -90,10 +133,10 @@ export const createScheduleItem = async (itemData, token, userId = null) => {
 export const getScheduleItemById = async (itemId, clientId, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
   const { data, error } = await supabaseAuth
-    .from('schedule_items')
-    .select('*')
-    .eq('id', itemId)
-    .eq('client_id', clientId)
+    .from("schedule_items")
+    .select("*")
+    .eq("id", itemId)
+    .eq("client_id", clientId)
     .single();
 
   if (error) throw new Error(error.message);
@@ -103,35 +146,50 @@ export const getScheduleItemById = async (itemId, clientId, token) => {
 /**
  * Actualiza un ítem del cronograma.
  */
-export const updateScheduleItem = async (itemId, clientId, updateData, token, userId = null) => {
+export const updateScheduleItem = async (
+  itemId,
+  clientId,
+  updateData,
+  token,
+  userId = null,
+) => {
   const supabaseAuth = createAuthenticatedClient(token);
   // Normalizar status si viene en el update
   let normalizedUpdate = { ...updateData };
-  if (Object.prototype.hasOwnProperty.call(updateData, 'status')) {
-    const allowed = ['Pendiente', 'En Diseño', 'Aprobado', 'Publicado', 'Cancelado'];
+  if (Object.prototype.hasOwnProperty.call(updateData, "status")) {
+    const allowed = [
+      "pending",
+      "in-design",
+      "approved",
+      "published",
+      "cancelled",
+    ];
     const normalizedStatus = normalizeStatus(updateData.status);
     if (normalizedStatus && !allowed.includes(normalizedStatus)) {
-      logger.warn('Update status no permitido, normalizado', { received: updateData.status, normalized: normalizedStatus });
+      logger.warn("Update status no permitido, normalizado", {
+        received: updateData.status,
+        normalized: normalizedStatus,
+      });
     }
     normalizedUpdate.status = normalizedStatus || updateData.status;
   }
-  
+
   // Primero verificar que el item existe y pertenece al cliente
   const { data: existingItem, error: fetchError } = await supabaseAuth
-    .from('schedule_items')
-    .select('*')
-    .eq('id', itemId)
-    .eq('client_id', clientId)
+    .from("schedule_items")
+    .select("*")
+    .eq("id", itemId)
+    .eq("client_id", clientId)
     .single();
 
-  if (fetchError) throw new Error('Evento no encontrado');
+  if (fetchError) throw new Error("Evento no encontrado");
 
   // Actualizar el item
   const { data, error } = await supabaseAuth
-    .from('schedule_items')
+    .from("schedule_items")
     .update(normalizedUpdate)
-    .eq('id', itemId)
-    .eq('client_id', clientId)
+    .eq("id", itemId)
+    .eq("client_id", clientId)
     .select()
     .single();
 
@@ -143,13 +201,13 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token, us
       agency_id: data.agency_id,
       client_id: data.client_id,
       user_id: userId,
-      action_type: 'SCHEDULE_ITEM_UPDATED',
-      details: { 
-        item_title: data.title, 
+      action_type: "SCHEDULE_ITEM_UPDATED",
+      details: {
+        item_title: data.title,
         item_id: data.id,
         previous_status: existingItem.status,
-        new_status: data.status
-      }
+        new_status: data.status,
+      },
     });
   }
 
@@ -159,25 +217,30 @@ export const updateScheduleItem = async (itemId, clientId, updateData, token, us
 /**
  * Elimina un ítem del cronograma.
  */
-export const deleteScheduleItem = async (itemId, clientId, token, userId = null) => {
+export const deleteScheduleItem = async (
+  itemId,
+  clientId,
+  token,
+  userId = null,
+) => {
   const supabaseAuth = createAuthenticatedClient(token);
-  
+
   // Primero obtener el item para logging
   const { data: item, error: fetchError } = await supabaseAuth
-    .from('schedule_items')
-    .select('*')
-    .eq('id', itemId)
-    .eq('client_id', clientId)
+    .from("schedule_items")
+    .select("*")
+    .eq("id", itemId)
+    .eq("client_id", clientId)
     .single();
 
-  if (fetchError) throw new Error('Evento no encontrado');
+  if (fetchError) throw new Error("Evento no encontrado");
 
   // Eliminar el item
   const { error } = await supabaseAuth
-    .from('schedule_items')
+    .from("schedule_items")
     .delete()
-    .eq('id', itemId)
-    .eq('client_id', clientId);
+    .eq("id", itemId)
+    .eq("client_id", clientId);
 
   if (error) throw new Error(error.message);
 
@@ -187,11 +250,11 @@ export const deleteScheduleItem = async (itemId, clientId, token, userId = null)
       agency_id: item.agency_id,
       client_id: item.client_id,
       user_id: userId,
-      action_type: 'SCHEDULE_ITEM_DELETED',
-      details: { 
-        item_title: item.title, 
-        item_id: item.id
-      }
+      action_type: "SCHEDULE_ITEM_DELETED",
+      details: {
+        item_title: item.title,
+        item_id: item.id,
+      },
     });
   }
 

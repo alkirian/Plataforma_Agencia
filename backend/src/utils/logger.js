@@ -3,25 +3,25 @@
  * Evita console.log en producción y proporciona logging estructurado
  */
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
+const isDevelopment = process.env.NODE_ENV !== "production";
 
-/**
- * Formatea un timestamp para logs
- */
-const formatTimestamp = () => {
-  return new Date().toISOString();
+const formatTimestamp = () => new Date().toISOString();
+
+const formatMessage = (level, message, context = {}) => {
+  const contextStr =
+    Object.keys(context).length > 0
+      ? ` | context=${JSON.stringify(context)}`
+      : "";
+
+  return `[${formatTimestamp()}] [${level.toUpperCase()}] ${message}${contextStr}`;
 };
 
-/**
- * Formatea el mensaje de log con contexto
- */
-const formatMessage = (level, message, context = {}) => {
-  const timestamp = formatTimestamp();
-  const contextStr = Object.keys(context).length > 0 
-    ? ` | Context: ${JSON.stringify(context)}` 
-    : '';
-  
-  return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`;
+const log = (level, consoleMethod, message, context = {}, options = {}) => {
+  const { devOnly = false } = options;
+  if (devOnly && !isDevelopment) return;
+
+  const method = console[consoleMethod] || console.log;
+  method(formatMessage(level, message, context));
 };
 
 /**
@@ -31,18 +31,13 @@ export const logger = {
   /**
    * Log de información (solo en desarrollo)
    */
-  info: (message, context = {}) => {
-    if (isDevelopment) {
-      console.log(formatMessage('info', message, context));
-    }
-  },
+  info: (message, context = {}) =>
+    log("info", "log", message, context, { devOnly: true }),
 
   /**
    * Log de warnings (siempre se muestra)
    */
-  warn: (message, context = {}) => {
-    console.warn(formatMessage('warn', message, context));
-  },
+  warn: (message, context = {}) => log("warn", "warn", message, context),
 
   /**
    * Log de errores (siempre se muestra)
@@ -52,37 +47,32 @@ export const logger = {
       ...context,
       ...(error && {
         error: error.message,
-        stack: error.stack
-      })
+        stack: error.stack,
+      }),
     };
-    console.error(formatMessage('error', message, errorContext));
+    log("error", "error", message, errorContext);
   },
 
   /**
    * Log de debug (solo en desarrollo)
    */
-  debug: (message, context = {}) => {
-    if (isDevelopment) {
-      console.debug(formatMessage('debug', message, context));
-    }
-  },
+  debug: (message, context = {}) =>
+    log("debug", "debug", message, context, { devOnly: true }),
 
   /**
    * Log de requests HTTP (solo en desarrollo)
    */
   request: (method, url, userId = null) => {
-    if (isDevelopment) {
-      const context = userId ? { userId } : {};
-      logger.info(`${method} ${url}`, context);
-    }
+    const context = userId ? { userId } : {};
+    log("request", "log", `${method} ${url}`, context, { devOnly: true });
   },
 
   /**
    * Log de inicio del servidor
    */
   server: (message, context = {}) => {
-    console.log(formatMessage('server', message, context));
-  }
+    log("server", "log", message, context);
+  },
 };
 
 /**

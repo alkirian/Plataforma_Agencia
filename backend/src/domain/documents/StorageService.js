@@ -10,7 +10,7 @@ export class StorageService {
    * @returns {Promise<{path: string, size: number}>}
    */
   async upload(fileData, storagePath, metadata = {}) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -19,7 +19,7 @@ export class StorageService {
    * @returns {Promise<void>}
    */
   async delete(storagePath) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -29,7 +29,7 @@ export class StorageService {
    * @returns {Promise<string>}
    */
   async getSignedUrl(storagePath, expiresIn = 3600) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -38,7 +38,7 @@ export class StorageService {
    * @returns {Promise<boolean>}
    */
   async exists(storagePath) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**
@@ -47,7 +47,7 @@ export class StorageService {
    * @returns {Promise<{size: number, lastModified: Date, contentType: string}>}
    */
   async getMetadata(storagePath) {
-    throw new Error('Method must be implemented');
+    throw new Error("Method must be implemented");
   }
 
   /**

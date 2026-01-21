@@ -1,610 +1,403 @@
 // API Controllers - Documents V2
 // Handles HTTP requests and responses
 
-import { DocumentService } from '../domain/documents/DocumentService.js';
-import { SupabaseDocumentRepository } from '../infrastructure/documents/SupabaseDocumentRepository.js';
-import { SupabaseStorageService } from '../infrastructure/documents/SupabaseStorageService.js';
-import { supabaseAdmin } from '../config/supabaseClient.js';
-import { getUserAgencyId } from '../helpers/userHelpers.js';
-import multer from 'multer';
-// Import legacy service functions for compatibility
-import { processDocument, getDocumentsByClient, createDocument } from '../services/documents.service.js';
-import { logger } from '../utils/logger.js';
-
-// Initialize services (Dependency Injection)
-const documentRepository = new SupabaseDocumentRepository(supabaseAdmin);
-const storageService = new SupabaseStorageService(supabaseAdmin);
-const documentService = new DocumentService(documentRepository, storageService);
-
-// Multer configuration for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB
-    files: 10 // Max 10 files per request
-  },
-  fileFilter: (req, file, cb) => {
-    // Block dangerous extensions
-    const dangerousExts = ['exe', 'msi', 'dll', 'bat', 'cmd', 'sh', 'scr'];
-    const ext = file.originalname.split('.').pop()?.toLowerCase();
-    
-    if (dangerousExts.includes(ext)) {
-      return cb(new Error(`File extension .${ext} is not allowed`));
-    }
-    
-    cb(null, true);
-  }
-});
+import { getUserAgencyId } from "../helpers/userHelpers.js";
+import {
+  processDocument,
+  getDocumentsByClient,
+  createDocument,
+} from "../services/documents.service.js";
+import { documentService, documentsUpload } from "./documents.dependencies.js";
+import { logger } from "../utils/logger.js";
+import {
+  asyncHandler,
+  ensureFields,
+  sendCreated,
+  sendSuccess,
+  sendNoContent,
+  HttpError,
+} from "../utils/http.js";
 
 /**
  * POST /api/v2/documents
  * Upload multiple documents
  */
 export const uploadDocuments = [
-  upload.array('files', 10),
-  async (req, res, next) => {
-    try {
-      const { clientId } = req.body;
-      const files = req.files;
+  documentsUpload.array("files", 10),
+  asyncHandler(async (req, res) => {
+    ensureFields(req.body, ["clientId"]);
 
-      if (!clientId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Client ID is required'
-        });
-      }
-
-      if (!files || files.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No files provided'
-        });
-      }
-
-      const agencyId = await getUserAgencyId(req.user.id);
-      const uploadedBy = req.user.id;
-
-      // Convert multer files to upload format
-      const uploads = files.map(file => ({
-        filename: file.originalname,
-        buffer: file.buffer,
-        mime_type: file.mimetype,
-        size_bytes: file.size
-      }));
-
-      const results = await documentService.uploadDocuments(
-        uploads,
-        clientId,
-        agencyId,
-        uploadedBy
-      );
-
-      // Separate successful and failed uploads
-      const successful = results.filter(r => r.success);
-      const failed = results.filter(r => !r.success);
-
-      res.status(201).json({
-        success: true,
-        data: {
-          successful: successful.map(r => r.document),
-          failed: failed.map(r => ({ filename: r.filename, error: r.error })),
-          summary: {
-            total: results.length,
-            successful: successful.length,
-            failed: failed.length
-          }
-        }
-      });
-
-    } catch (error) {
-      next(error);
+    const files = req.files || [];
+    if (files.length === 0) {
+      throw new HttpError(400, "No se proporcionaron archivos.");
     }
-  }
+
+    const agencyId = await getUserAgencyId(req.user.id);
+    const uploadedBy = req.user.id;
+
+    const uploads = files.map((file) => ({
+      filename: file.originalname,
+      buffer: file.buffer,
+      mime_type: file.mimetype,
+      size_bytes: file.size,
+    }));
+
+    const results = await documentService.uploadDocuments(
+      uploads,
+      req.body.clientId,
+      agencyId,
+      uploadedBy,
+    );
+
+    const successful = results.filter((result) => result.success);
+    const failed = results.filter((result) => !result.success);
+
+    return sendCreated(res, {
+      successful: successful.map((result) => result.document),
+      failed: failed.map((result) => ({
+        filename: result.filename,
+        error: result.error,
+      })),
+      summary: {
+        total: results.length,
+        successful: successful.length,
+        failed: failed.length,
+      },
+    });
+  }),
 ];
 
 /**
  * GET /api/v2/documents
  * List documents with filters and pagination
  */
-export const listDocuments = async (req, res, next) => {
-  try {
-    const {
-      clientId,
-      search,
-      type,
-      pinned,
-      deleted,
-      versionGroup,
-      cursor,
-      limit = 50
-    } = req.query;
+export const listDocuments = asyncHandler(async (req, res) => {
+  const {
+    clientId,
+    search,
+    type,
+    pinned,
+    deleted,
+    versionGroup,
+    cursor,
+    limit = 50,
+  } = req.query;
 
-    if (!clientId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Client ID is required'
-      });
-    }
+  ensureFields({ clientId }, ["clientId"], "Client ID requerido");
 
-    const agencyId = await getUserAgencyId(req.user.id);
+  const agencyId = await getUserAgencyId(req.user.id);
 
-    const result = await documentService.listDocuments({
-      clientId,
-      agencyId,
-      search,
-      type,
-      pinned: pinned === 'true' ? true : pinned === 'false' ? false : undefined,
-      deleted: deleted === 'true',
-      versionGroup,
-      cursor,
-      limit: parseInt(limit)
-    });
+  const result = await documentService.listDocuments({
+    clientId,
+    agencyId,
+    search,
+    type,
+    pinned: pinned === "true" ? true : pinned === "false" ? false : undefined,
+    deleted: deleted === "true",
+    versionGroup,
+    cursor,
+    limit: parseInt(limit, 10),
+  });
 
-    res.json({
-      success: true,
-      data: result.documents,
-      pagination: {
-        nextCursor: result.nextCursor,
-        total: result.total
-      }
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
+  return sendSuccess(res, result.documents, 200, {
+    pagination: {
+      nextCursor: result.nextCursor,
+      total: result.total,
+    },
+  });
+});
 
 /**
  * GET /api/v2/documents/:id
  * Get document details with version history
  */
-export const getDocumentDetails = async (req, res, next) => {
+export const getDocumentDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
+
   try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
-
     const result = await documentService.getDocumentDetails(id, agencyId);
-
-    res.json({
-      success: true,
-      data: result
-    });
-
+    return sendSuccess(res, result);
   } catch (error) {
-    if (error.message === 'Document not found') {
-      return res.status(404).json({
-        success: false,
-        message: error.message
-      });
+    if (error.message === "Document not found") {
+      throw new HttpError(404, error.message);
     }
-    next(error);
+    throw error;
   }
-};
+});
 
 /**
  * GET /api/v2/documents/:id/download
  * Generate signed URL for download
  */
-export const getDownloadUrl = async (req, res, next) => {
+export const getDownloadUrl = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { expires } = req.query;
+
+  const agencyId = await getUserAgencyId(req.user.id);
+  const expiresIn = expires ? parseInt(expires, 10) : 3600;
+
   try {
-    const { id } = req.params;
-    const { expires } = req.query;
-    
-    const agencyId = await getUserAgencyId(req.user.id);
-    const expiresIn = expires ? parseInt(expires) : 3600; // 1 hour default
-
-    const signedUrl = await documentService.getDownloadUrl(id, agencyId, expiresIn);
-
-    res.json({
-      success: true,
-      data: { url: signedUrl, expiresIn }
-    });
-
+    const signedUrl = await documentService.getDownloadUrl(
+      id,
+      agencyId,
+      expiresIn,
+    );
+    return sendSuccess(res, { url: signedUrl, expiresIn });
   } catch (error) {
-    if (error.message.includes('not found')) {
-      return res.status(404).json({
-        success: false,
-        message: error.message
-      });
+    if (error.message.includes("not found")) {
+      throw new HttpError(404, error.message);
     }
-    next(error);
+    throw error;
   }
-};
+});
 
 /**
  * GET /api/v2/documents/:id/preview
  * Generate signed URL for preview (shorter expiration)
  */
-export const getPreviewUrl = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
+export const getPreviewUrl = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
 
-    const signedUrl = await documentService.getDownloadUrl(id, agencyId, 300); // 5 minutes
-
-    res.json({
-      success: true,
-      data: { url: signedUrl, expiresIn: 300 }
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
+  const signedUrl = await documentService.getDownloadUrl(id, agencyId, 300);
+  return sendSuccess(res, { url: signedUrl, expiresIn: 300 });
+});
 
 /**
  * POST /api/v2/documents/:id/pin
  * Pin document
  */
-export const pinDocument = async (req, res, next) => {
+export const pinDocument = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
+  const userId = req.user.id;
+
   try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
-    const userId = req.user.id;
-
     const document = await documentService.togglePin(id, agencyId, userId);
-
-    res.json({
-      success: true,
-      data: document,
-      message: document.isPinned() ? 'Document pinned' : 'Document unpinned'
+    return sendSuccess(res, document, 200, {
+      message: document.isPinned() ? "Document pinned" : "Document unpinned",
     });
-
   } catch (error) {
-    if (error.message.includes('Cannot pin more than')) {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
+    if (error.message.includes("Cannot pin more than")) {
+      throw new HttpError(400, error.message);
     }
-    next(error);
+    throw error;
   }
-};
+});
 
 /**
  * DELETE /api/v2/documents/:id/pin
  * Unpin document
  */
-export const unpinDocument = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
-    const userId = req.user.id;
+export const unpinDocument = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
+  const userId = req.user.id;
 
-    const document = await documentService.togglePin(id, agencyId, userId);
+  const document = await documentService.togglePin(id, agencyId, userId);
 
-    res.json({
-      success: true,
-      data: document,
-      message: 'Document unpinned'
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
+  return sendSuccess(res, document, 200, { message: "Document unpinned" });
+});
 
 /**
  * PATCH /api/v2/documents/:id
  * Rename document
  */
-export const renameDocument = async (req, res, next) => {
+export const renameDocument = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { filename } = req.body;
+
+  ensureFields({ filename }, ["filename"]);
+
+  const agencyId = await getUserAgencyId(req.user.id);
+
   try {
-    const { id } = req.params;
-    const { filename } = req.body;
-
-    if (!filename) {
-      return res.status(400).json({
-        success: false,
-        message: 'Filename is required'
-      });
-    }
-
-    const agencyId = await getUserAgencyId(req.user.id);
-
-    const document = await documentService.renameDocument(id, agencyId, filename);
-
-    res.json({
-      success: true,
-      data: document,
-      message: 'Document renamed successfully'
+    const document = await documentService.renameDocument(
+      id,
+      agencyId,
+      filename,
+    );
+    return sendSuccess(res, document, 200, {
+      message: "Document renamed successfully",
     });
-
   } catch (error) {
-    if (error.message === 'File extension not allowed') {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
+    if (error.message === "File extension not allowed") {
+      throw new HttpError(400, error.message);
     }
-    next(error);
+    throw error;
   }
-};
+});
 
 /**
  * DELETE /api/v2/documents/:id
  * Soft delete document
  */
-export const deleteDocument = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
-    const deletedBy = req.user.id;
+export const deleteDocument = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
+  const deletedBy = req.user.id;
 
-    await documentService.deleteDocument(id, agencyId, deletedBy);
+  await documentService.deleteDocument(id, agencyId, deletedBy);
 
-    res.status(204).send();
-
-  } catch (error) {
-    next(error);
-  }
-};
+  return sendNoContent(res);
+});
 
 /**
  * POST /api/v2/documents/:id/restore
  * Restore deleted document
  */
-export const restoreDocument = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const agencyId = await getUserAgencyId(req.user.id);
+export const restoreDocument = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const agencyId = await getUserAgencyId(req.user.id);
 
-    const document = await documentService.restoreDocument(id, agencyId);
+  const document = await documentService.restoreDocument(id, agencyId);
 
-    res.json({
-      success: true,
-      data: document,
-      message: 'Document restored successfully'
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
+  return sendSuccess(res, document, 200, {
+    message: "Document restored successfully",
+  });
+});
 
 /**
  * GET /api/v2/documents/version-group/:group
  * Get version history for a file group
  */
-export const getVersionHistory = async (req, res, next) => {
-  try {
-    const { group } = req.params;
-    const { clientId } = req.query;
+export const getVersionHistory = asyncHandler(async (req, res) => {
+  const { group } = req.params;
+  const { clientId } = req.query;
 
-    if (!clientId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Client ID is required'
-      });
-    }
+  ensureFields({ clientId }, ["clientId"], "Client ID requerido");
 
-    const agencyId = await getUserAgencyId(req.user.id);
+  const agencyId = await getUserAgencyId(req.user.id);
 
-    const versions = await documentService.getVersionHistory(
-      decodeURIComponent(group),
-      clientId,
-      agencyId
-    );
+  const versions = await documentService.getVersionHistory(
+    decodeURIComponent(group),
+    clientId,
+    agencyId,
+  );
 
-    res.json({
-      success: true,
-      data: versions
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
+  return sendSuccess(res, versions);
+});
 
 /**
  * GET /api/v2/documents/stats
  * Get storage statistics
  */
-export const getStorageStats = async (req, res, next) => {
-  try {
-    // Log the request for debugging
-    logger.debug('getStorageStats request', { userId: req.user?.id });
+export const getStorageStats = asyncHandler(async (req, res) => {
+  logger.debug("getStorageStats request", { userId: req.user?.id });
 
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
-    }
-
-    // Get the user's agency ID with proper error handling
-    let agencyId;
-    try {
-      agencyId = await getUserAgencyId(req.user.id);
-      logger.debug('Agency ID retrieved', { agencyId });
-    } catch (userError) {
-      logger.error('Error getting user agency ID', userError, { userId: req.user.id });
-      return res.status(403).json({
-        success: false,
-        message: 'Unable to retrieve user agency information'
-      });
-    }
-
-    // Check if user has an agency_id
-    if (!agencyId) {
-      logger.error('User has no agency_id', null, { userId: req.user.id });
-      return res.status(403).json({
-        success: false,
-        message: 'User is not associated with any agency'
-      });
-    }
-
-    // Call the service with proper error handling
-    let stats;
-    try {
-      stats = await documentService.getStorageStats(agencyId);
-      logger.info('Stats retrieved successfully', { agencyId });
-    } catch (serviceError) {
-      logger.error('Service error in getStorageStats', serviceError, { agencyId });
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve storage statistics',
-        error: serviceError.message
-      });
-    }
-
-    res.json({
-      success: true,
-      data: stats
-    });
-
-  } catch (error) {
-    logger.error('Unexpected error in getStorageStats', error, { userId: req.user?.id });
-    next(error);
+  if (!req.user?.id) {
+    throw new HttpError(401, "User not authenticated");
   }
-};
+
+  const agencyId = await getUserAgencyId(req.user.id);
+
+  if (!agencyId) {
+    logger.error("User has no agency_id", null, { userId: req.user.id });
+    throw new HttpError(403, "User is not associated with any agency");
+  }
+
+  try {
+    const stats = await documentService.getStorageStats(agencyId);
+    logger.info("Storage stats retrieved successfully", { agencyId });
+    return sendSuccess(res, stats);
+  } catch (error) {
+    logger.error("Service error in getStorageStats", error, { agencyId });
+    throw error;
+  }
+});
 
 /**
  * GET /api/v2/documents/search
  * Search documents
  */
-export const searchDocuments = async (req, res, next) => {
-  try {
-    const { q: query, clientId, limit = 20 } = req.query;
+export const searchDocuments = asyncHandler(async (req, res) => {
+  const { q: query, clientId, limit = 20 } = req.query;
 
-    if (!query || query.length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: 'Query must be at least 2 characters'
-      });
-    }
-
-    if (!clientId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Client ID is required'
-      });
-    }
-
-    const agencyId = await getUserAgencyId(req.user.id);
-
-    const result = await documentService.searchDocuments(
-      query,
-      clientId,
-      agencyId,
-      { limit: parseInt(limit) }
-    );
-
-    res.json({
-      success: true,
-      data: result.documents,
-      pagination: {
-        total: result.total
-      }
-    });
-
-  } catch (error) {
-    next(error);
+  if (!query || query.length < 2) {
+    throw new HttpError(400, "Query must be at least 2 characters");
   }
-};
+
+  ensureFields({ clientId }, ["clientId"], "Client ID requerido");
+
+  const agencyId = await getUserAgencyId(req.user.id);
+
+  const result = await documentService.searchDocuments(
+    query,
+    clientId,
+    agencyId,
+    { limit: parseInt(limit, 10) },
+  );
+
+  return sendSuccess(res, result.documents, 200, {
+    pagination: {
+      total: result.total,
+    },
+  });
+});
 
 /**
  * POST /api/v2/documents/:documentId/process
  * Process document for AI extraction (Legacy compatibility)
  */
-export const processDocumentLegacy = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const { documentId } = req.params;
-    
-    if (!documentId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'documentId requerido' 
-      });
-    }
-    
-    await processDocument(documentId, token);
-    res.status(202).json({ 
-      success: true, 
-      data: { status: 'processing' } 
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+export const processDocumentLegacy = asyncHandler(async (req, res) => {
+  const { documentId } = req.params;
+  ensureFields({ documentId }, ["documentId"]);
+
+  await processDocument(documentId, req.token);
+  return sendSuccess(res, { status: "processing" }, 202);
+});
 
 /**
  * GET /api/v2/documents/client/:clientId
  * Get documents for client (Legacy compatibility)
  */
-export const getDocumentsForClient = async (req, res, next) => {
-  try {
-    const { clientId } = req.params;
-    
-    if (!clientId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'clientId requerido' 
+export const getDocumentsForClient = asyncHandler(async (req, res) => {
+  const { clientId } = req.params;
+  ensureFields({ clientId }, ["clientId"]);
+
+  const agencyId = await getUserAgencyId(req.user.id);
+  const documents = await getDocumentsByClient(clientId, agencyId);
+
+  return sendSuccess(res, documents);
+});
+
+export const uploadDocumentLegacy = asyncHandler(async (req, res) => {
+  const { clientId } = req.params;
+  const { file_name, storage_path, file_type, file_size } = req.body || {};
+
+  ensureFields({ clientId }, ["clientId"]);
+  ensureFields({ file_name, storage_path }, ["file_name", "storage_path"]);
+
+  const agencyId = await getUserAgencyId(req.user.id);
+
+  const documentData = {
+    client_id: clientId,
+    agency_id: agencyId,
+    user_id: req.user.id,
+    file_name,
+    storage_path,
+    file_type,
+    file_size,
+    ai_status: "pending",
+  };
+
+  logger.debug("Datos a insertar en tabla documents", { documentData });
+
+  const createdDocument = await createDocument(documentData);
+
+  if (createdDocument) {
+    processDocument(createdDocument.id, req.token).catch((error) => {
+      logger.error("Fallo en procesamiento del documento", error, {
+        documentId: createdDocument.id,
       });
-    }
-    
-    const agencyId = await getUserAgencyId(req.user.id);
-    const documents = await getDocumentsByClient(clientId, agencyId);
-    
-    res.status(200).json({ 
-      success: true, 
-      data: documents 
     });
-  } catch (error) {
-    next(error);
   }
-};
+
+  return sendCreated(res, createdDocument);
+});
 
 /**
  * POST /api/v2/documents/client/:clientId/upload
  * Upload document for client (Legacy compatibility - single file)
  */
-export const uploadDocumentLegacy = async (req, res, next) => {
-  try {
-    const { clientId } = req.params;
-    const token = req.token;
-    const { file_name, storage_path, file_type, file_size } = req.body || {};
-    
-    if (!clientId || !storage_path || !file_name) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Faltan campos requeridos.' 
-      });
-    }
-    
-    const agencyId = await getUserAgencyId(req.user.id);
-
-    // Create the object we are going to insert
-    const documentData = {
-      client_id: clientId,
-      agency_id: agencyId,
-      user_id: req.user.id,
-      file_name,
-      storage_path,
-      file_type,
-      file_size,
-      ai_status: 'pending',
-    };
-    
-    logger.debug('Datos a insertar en tabla documents', { documentData });
-
-    // 1. Create document record
-    const createdDocument = await createDocument(documentData);
-
-    // Trigger AI processing in background
-    if (createdDocument) {
-      processDocument(createdDocument.id, token)
-        .catch(err => {
-          logger.error('Fallo en procesamiento del documento', err, { documentId: createdDocument.id });
-        });
-    }
-    
-    res.status(201).json({ 
-      success: true, 
-      data: createdDocument 
-    });
-  } catch (error) {
-    next(error);
-  }
-};

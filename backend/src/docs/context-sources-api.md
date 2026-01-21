@@ -8,7 +8,7 @@ El módulo de **Fuentes de Contexto** permite agregar, gestionar y buscar difere
 
 - **📄 Documentos** (`document`): PDFs, imágenes, DOCX, archivos de texto
 - **🌐 URLs** (`url`): Páginas web que se procesan mediante scraping
-- **✍️ Información Manual** (`manual`): Texto directo ingresado por el usuario  
+- **✍️ Información Manual** (`manual`): Texto directo ingresado por el usuario
 - **📝 Notas** (`note`): Información contextual adicional y observaciones
 
 ## Autenticación
@@ -22,6 +22,7 @@ Authorization: Bearer <your_jwt_token>
 ## Endpoints
 
 ### Base URL
+
 ```
 /api/v1/context-sources
 ```
@@ -35,13 +36,15 @@ Authorization: Bearer <your_jwt_token>
 Procesa un documento subido previamente al storage como fuente de contexto.
 
 ### Parámetros de URL
+
 - `clientId` (uuid, requerido): ID del cliente
 
 ### Body
+
 ```json
 {
   "file_name": "manual-marca.pdf",
-  "storage_path": "documents/client-123/manual-marca.pdf", 
+  "storage_path": "documents/client-123/manual-marca.pdf",
   "file_type": "application/pdf",
   "file_size": 2048576,
   "metadata": {
@@ -52,6 +55,7 @@ Procesa un documento subido previamente al storage como fuente de contexto.
 ```
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -83,16 +87,18 @@ Procesa un documento subido previamente al storage como fuente de contexto.
 Procesa una URL mediante scraping web para extraer su contenido.
 
 ### Body
+
 ```json
 {
   "url": "https://ejemplo.com/about",
   "title": "Página Sobre Nosotros",
-  "description": "Información institucional del cliente", 
+  "description": "Información institucional del cliente",
   "tags": ["institucional", "valores", "historia"]
 }
 ```
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -103,7 +109,7 @@ Procesa una URL mediante scraping web para extraer su contenido.
     "ai_status": "processing",
     "source_metadata": {
       "url": "https://ejemplo.com/about",
-      "title": "Página Sobre Nosotros", 
+      "title": "Página Sobre Nosotros",
       "excerpt": "Somos una empresa líder en...",
       "scraped_at": "2024-01-15T10:30:00Z",
       "user_title": "Página Sobre Nosotros",
@@ -124,10 +130,11 @@ Procesa una URL mediante scraping web para extraer su contenido.
 Agrega información de texto ingresada manualmente.
 
 ### Body
+
 ```json
 {
   "content": "El cliente maneja un tono informal y jovial en redes sociales. Su audiencia principal son millennials interesados en tecnología. Evitar temas políticos o controversiales.",
-  "title": "Guías de Tono y Voz", 
+  "title": "Guías de Tono y Voz",
   "category": "brand_voice",
   "tags": ["tono", "audiencia", "guidelines"],
   "importance": "high"
@@ -135,6 +142,7 @@ Agrega información de texto ingresada manualmente.
 ```
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -164,11 +172,12 @@ Agrega información de texto ingresada manualmente.
 Agrega una nota contextual breve.
 
 ### Body
+
 ```json
 {
   "note": "Cliente prefiere publicar contenido los martes y jueves a las 18:00 hrs",
   "title": "Horarios de Publicación",
-  "note_type": "scheduling", 
+  "note_type": "scheduling",
   "importance": "medium",
   "tags": ["horarios", "preferencias"]
 }
@@ -185,11 +194,13 @@ Agrega una nota contextual breve.
 Obtiene todas las fuentes de contexto de un cliente.
 
 ### Query Parameters
+
 - `source_type` (opcional): Filtrar por tipo (`document`, `url`, `manual`, `note`)
 - `ai_status` (opcional): Filtrar por estado (`pending`, `processing`, `ready`, `error`)
 - `limit` (opcional): Límite de resultados (default: 50)
 
 ### Ejemplos
+
 ```
 GET /api/v1/context-sources/client-123
 GET /api/v1/context-sources/client-123?source_type=url&ai_status=ready
@@ -197,6 +208,7 @@ GET /api/v1/context-sources/client-123?limit=20
 ```
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -204,16 +216,16 @@ GET /api/v1/context-sources/client-123?limit=20
     {
       "id": "doc-uuid-1",
       "file_name": "Manual de Marca",
-      "source_type": "document", 
+      "source_type": "document",
       "ai_status": "ready",
       "source_metadata": {...},
       "created_at": "2024-01-15T10:30:00Z"
     },
     {
-      "id": "doc-uuid-2", 
+      "id": "doc-uuid-2",
       "file_name": "Página Web Principal",
       "source_type": "url",
-      "ai_status": "ready", 
+      "ai_status": "ready",
       "source_metadata": {...},
       "created_at": "2024-01-15T11:00:00Z"
     }
@@ -231,6 +243,7 @@ GET /api/v1/context-sources/client-123?limit=20
 Actualiza metadatos de una fuente de contexto.
 
 ### Campos Permitidos
+
 ```json
 {
   "file_name": "Nuevo nombre",
@@ -250,6 +263,7 @@ Actualiza metadatos de una fuente de contexto.
 Elimina una fuente de contexto y sus chunks asociados.
 
 ### Respuesta
+
 ```
 Status: 204 No Content
 ```
@@ -263,6 +277,7 @@ Status: 204 No Content
 Realiza búsqueda semántica en las fuentes de contexto.
 
 ### Body
+
 ```json
 {
   "query": "información sobre el logo y colores de la marca",
@@ -272,6 +287,7 @@ Realiza búsqueda semántica en las fuentes de contexto.
 ```
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -300,6 +316,7 @@ Realiza búsqueda semántica en las fuentes de contexto.
 Obtiene estadísticas resumidas de las fuentes de contexto.
 
 ### Respuesta
+
 ```json
 {
   "success": true,
@@ -307,7 +324,7 @@ Obtiene estadísticas resumidas de las fuentes de contexto.
     "total": 15,
     "by_type": {
       "document": 5,
-      "url": 3, 
+      "url": 3,
       "manual": 4,
       "note": 3
     },
@@ -327,7 +344,7 @@ Obtiene estadísticas resumidas de las fuentes de contexto.
 
 - **`pending`**: Fuente creada pero no procesada aún
 - **`processing`**: Procesamiento en curso (extracción de texto, generación de embeddings)
-- **`ready`**: Fuente procesada y disponible para búsquedas 
+- **`ready`**: Fuente procesada y disponible para búsquedas
 - **`error`**: Error durante el procesamiento
 
 ---
@@ -347,62 +364,67 @@ Obtiene estadísticas resumidas de las fuentes de contexto.
 ### Flujo Típico de Uso
 
 1. **Crear fuentes de contexto**:
+
    ```javascript
    // Documento
-   await fetch('/api/v1/context-sources/client-123/document', {
-     method: 'POST',
-     headers: { 
-       'Authorization': 'Bearer ' + token,
-       'Content-Type': 'application/json' 
-     },
-     body: JSON.stringify({
-       file_name: 'brand-guide.pdf',
-       storage_path: 'documents/client-123/brand-guide.pdf',
-       file_type: 'application/pdf',
-       file_size: 1024000
-     })
-   });
-   
-   // URL
-   await fetch('/api/v1/context-sources/client-123/url', {
-     method: 'POST', 
+   await fetch("/api/v1/context-sources/client-123/document", {
+     method: "POST",
      headers: {
-       'Authorization': 'Bearer ' + token,
-       'Content-Type': 'application/json'
+       Authorization: "Bearer " + token,
+       "Content-Type": "application/json",
      },
      body: JSON.stringify({
-       url: 'https://cliente.com/about',
-       title: 'Sobre Nosotros'
-     })
+       file_name: "brand-guide.pdf",
+       storage_path: "documents/client-123/brand-guide.pdf",
+       file_type: "application/pdf",
+       file_size: 1024000,
+     }),
+   });
+
+   // URL
+   await fetch("/api/v1/context-sources/client-123/url", {
+     method: "POST",
+     headers: {
+       Authorization: "Bearer " + token,
+       "Content-Type": "application/json",
+     },
+     body: JSON.stringify({
+       url: "https://cliente.com/about",
+       title: "Sobre Nosotros",
+     }),
    });
    ```
 
 2. **Monitorear procesamiento**:
+
    ```javascript
    const checkStatus = async () => {
-     const response = await fetch('/api/v1/context-sources/client-123?ai_status=processing');
+     const response = await fetch(
+       "/api/v1/context-sources/client-123?ai_status=processing",
+     );
      const { data } = await response.json();
-     
+
      if (data.length === 0) {
-       console.log('Todas las fuentes están listas');
+       console.log("Todas las fuentes están listas");
      }
    };
    ```
 
 3. **Buscar información**:
+
    ```javascript
-   const search = await fetch('/api/v1/context-sources/client-123/search', {
-     method: 'POST',
+   const search = await fetch("/api/v1/context-sources/client-123/search", {
+     method: "POST",
      headers: {
-       'Authorization': 'Bearer ' + token,
-       'Content-Type': 'application/json'  
+       Authorization: "Bearer " + token,
+       "Content-Type": "application/json",
      },
      body: JSON.stringify({
-       query: 'colores de la marca',
-       limit: 5
-     })
+       query: "colores de la marca",
+       limit: 5,
+     }),
    });
-   
+
    const { data: results } = await search.json();
    ```
 

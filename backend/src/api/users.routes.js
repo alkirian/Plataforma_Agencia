@@ -1,13 +1,17 @@
-import { Router } from 'express';
-import { registerUser, handleCompleteProfile, handleCheckEmail } from '../controllers/users.controller.js';
-import { protect } from '../middleware/auth.middleware.js';
-import { 
-  validate, 
+import { Router } from "express";
+import {
+  registerUser,
+  handleCompleteProfile,
+  handleCheckEmail,
+} from "../controllers/users.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
+import {
+  validate,
   sanitizeInput,
-  userRegistrationSchema, 
-  emailCheckSchema, 
-  completeProfileSchema 
-} from '../schemas/validation.js';
+  userRegistrationSchema,
+  emailCheckSchema,
+  completeProfileSchema,
+} from "../schemas/validation.js";
 
 const router = Router();
 
@@ -15,29 +19,32 @@ const router = Router();
 router.use(sanitizeInput());
 
 // User registration with comprehensive validation
-router.post('/register', 
-  validate(userRegistrationSchema, 'body', { 
-    logAttempts: true, 
-    logSuccess: true 
+router.post(
+  "/register",
+  validate(userRegistrationSchema, "body", {
+    logAttempts: true,
+    logSuccess: true,
   }),
-  registerUser
+  registerUser,
 );
 
 // Email check with validation - public route but needs security
-router.post('/check-email', 
-  validate(emailCheckSchema, 'body', { 
-    logFailures: true 
+router.post(
+  "/check-email",
+  validate(emailCheckSchema, "body", {
+    logFailures: true,
   }),
-  handleCheckEmail
+  handleCheckEmail,
 );
 
 // Complete profile - protected route with validation
-router.post('/complete-profile', 
+router.post(
+  "/complete-profile",
   protect,
-  validate(completeProfileSchema, 'body', { 
-    logSuccess: true 
+  validate(completeProfileSchema, "body", {
+    logSuccess: true,
   }),
-  handleCompleteProfile
+  handleCompleteProfile,
 );
 
 export default router;
