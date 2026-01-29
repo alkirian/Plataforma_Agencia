@@ -4,9 +4,10 @@ import { usePopoverPosition } from '@hooks/usePopoverPosition'
 import { useClickOutside } from '@shared/hooks/useClickOutside'
 import { useDeviceType } from '@hooks/useDeviceType'
 import { useTaskDrafts } from '../../hooks/useTaskDrafts'
+import './ContentModal.css'
 import { useAutoSave } from '@hooks/useAutoSave'
 import TaskForm from '../forms/TaskForm'
-import TaskIdeasAI from '../ai/TaskIdeasAI'
+// import TaskIdeasAI from '../ai/TaskIdeasAI'
 import taskPopoverStyles from './TaskPopover.styles'
 
 /**
@@ -49,9 +50,11 @@ const TaskPopover = ({
   const getInitialFormData = useCallback(() => {
     const defaultData = {
       title: '',
+      media: '',
       copy: '',
       status: 'pendiente',
       channel: 'IG',
+      links: [],
     }
 
     switch (mode) {
@@ -59,9 +62,11 @@ const TaskPopover = ({
         return existingTask
           ? {
               title: existingTask.title || '',
+              media: existingTask.media || '',
               copy: existingTask.copy || '',
               status: existingTask.status || 'pendiente',
               channel: existingTask.channel || 'IG',
+              links: existingTask.links || [],
             }
           : defaultData
 
@@ -136,6 +141,17 @@ const TaskPopover = ({
     { width: 384, height: 420 },
     deviceType === 'desktop' && !isDocked ? cellBounds : null
   )
+
+  console.log('[TaskPopover] Render state:', {
+    isOpen,
+    deviceType,
+    isDocked,
+    clickCoords,
+    cellBounds,
+    position,
+    isVisible,
+    usingPosition: deviceType === 'desktop' && !isDocked,
+  })
 
   // Calculate pointer position for visual connection to click point (not shown when docked)
   const getPointerPosition = useCallback(() => {
@@ -547,7 +563,7 @@ const TaskPopover = ({
           />
 
           {/* AI Component for suggestions (only for create and ai-generate modes) */}
-          {(mode === 'create' || mode === 'ai-generate') && (
+          {/* {(mode === 'create' || mode === 'ai-generate') && (
             <TaskIdeasAI
               clientId={clientId}
               selectedDate={selectedDate}
@@ -555,7 +571,7 @@ const TaskPopover = ({
               currentFormData={formData}
               aiPrompt={aiPrompt}
             />
-          )}
+          )} */}
         </motion.div>
       </AnimatePresence>
     </>

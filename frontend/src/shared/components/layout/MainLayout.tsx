@@ -2,8 +2,8 @@
 import { Header } from './Header'
 import { Toaster } from 'react-hot-toast'
 import { useAppKeyboardShortcuts } from '@shared/hooks/useKeyboardShortcuts'
-import { AIAssistantDock } from '@components/ai/AIAssistantDock.jsx'
-import { ScheduleSidebar } from './ScheduleSidebar'
+// import { ScheduleSidebar } from './ScheduleSidebar' // Sidebar comentado
+
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -15,6 +15,7 @@ interface MainLayoutProps {
     avatar_url?: string
     [key: string]: any
   }
+  fullHeight?: boolean
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -22,6 +23,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   userEmail,
   onLogout,
   profile,
+  fullHeight = false,
 }) => {
   // Activar atajos de teclado globales
   useAppKeyboardShortcuts()
@@ -36,7 +38,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <a href='#navigation' className='skip-link'>
         Saltar a la navegaciÃ³n
       </a>
-
       <Header userEmail={userEmail} onLogout={onLogout} profile={profile} />
       <Toaster
         position='bottom-right'
@@ -50,14 +51,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       />
       {/* Global content area: keep .app-content for AI dock margin adjustments, but move horizontal padding into an inner responsive container.
         This lets us increase side margins (centering) without affecting header/footer full width. */}
-      <main id='main-content' className='app-content w-full py-8 px-0'>
-        <div className='w-full mx-auto max-w-[1900px] px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-8'>
+      <main
+        id='main-content'
+        className={`app-content w-full ${fullHeight ? 'py-0 px-0 h-[calc(100vh-48px)]' : 'py-8 px-0'}`}
+      >
+        <div
+          className={`w-full mx-auto max-w-[1900px] ${fullHeight ? 'px-0 h-full' : 'px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-8'}`}
+        >
           {children}
         </div>
       </main>
-
-      <AIAssistantDock />
-      <ScheduleSidebar />
     </div>
   )
 }

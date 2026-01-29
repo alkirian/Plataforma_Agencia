@@ -20,8 +20,7 @@ export const QuickActions = ({
   const collapsedButtonClasses = `
     ${buttonBaseClasses}
     w-12 h-12 rounded-xl
-    bg-gradient-to-br from-slate-700/80 to-slate-800/80
-    hover:from-slate-600/80 hover:to-slate-700/80
+    bg-slate-700/80 hover:bg-slate-600/80
     border border-slate-600/30 hover:border-slate-500/40
   `
 
@@ -33,15 +32,13 @@ export const QuickActions = ({
   `
 
   const primaryButton = `
-    bg-gradient-to-r from-blue-600/90 to-blue-700/90
-    hover:from-blue-500/90 hover:to-blue-600/90
+    bg-blue-600/90 hover:bg-blue-500/90
     text-white font-semibold
     shadow-lg shadow-blue-600/20 hover:shadow-blue-500/30
   `
 
   const secondaryButton = `
-    bg-gradient-to-br from-purple-600/20 to-purple-700/20
-    hover:from-purple-500/25 hover:to-purple-600/25
+    bg-purple-600/20 hover:bg-purple-500/25
     border-purple-500/30 hover:border-purple-400/40
     text-purple-300 hover:text-purple-200
   `

@@ -328,32 +328,20 @@ export class SupabaseDocumentRepository extends DocumentRepository {
       id: entity.id,
       agency_id: entity.agencyId,
       client_id: entity.clientId,
-      // Usar file_name en lugar de filename_original (nombre real de la columna)
       file_name: entity.filenameOriginal || entity.filenameSanitized,
-      // filename_sanitized puede no existir, omitirlo
-      // filename_sanitized: entity.filenameSanitized,
-      // extension puede no existir, omitirlo
-      // extension: entity.extension,
+      filename_sanitized: entity.filenameSanitized,
+      extension: entity.extension || '',
       file_type: entity.mimeType,
+      mime_type: entity.mimeType, // Ensure new column is populated
       file_size: entity.sizeBytes,
+      size_bytes: entity.sizeBytes, // Ensure new column is populated
       storage_path: entity.storagePath,
-      // checksum puede no existir
-      // checksum: entity.checksum,
-      // duplicate_of puede no existir  
-      // duplicate_of: entity.duplicateOf,
-      // version_group puede no existir
-      // version_group: entity.versionGroup,
-      user_id: entity.uploadedBy,
+      checksum: entity.checksum || null,
+      duplicate_of: entity.duplicateOf || null,
+      version_group: entity.versionGroup || null,
+      uploaded_by: entity.uploadedBy,
       created_at: entity.createdAt,
       updated_at: entity.updatedAt,
-      // deleted_at puede no existir
-      // deleted_at: entity.deletedAt,
-      // deleted_by puede no existir
-      // deleted_by: entity.deletedBy,
-      // pinned_at puede no existir
-      // pinned_at: entity.pinnedAt,
-      // pinned_by puede no existir
-      // pinned_by: entity.pinnedBy,
     };
   }
 

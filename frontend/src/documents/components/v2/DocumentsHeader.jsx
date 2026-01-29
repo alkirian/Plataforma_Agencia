@@ -44,7 +44,7 @@ const DocumentsHeader = ({
             placeholder='Search documents...'
             value={searchQuery}
             onChange={onSearchChange}
-            className='w-full pl-10 pr-4 py-2 bg-surface-soft border border-gray-200/15 rounded-lg focus:outline-none focus:border-primary-500 text-text-primary'
+            className='w-full pl-10 pr-4 py-2 bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-lg focus:outline-none focus:border-[color:var(--color-border-strong)] text-text-primary'
           />
           {searchQuery && (
             <button
@@ -79,7 +79,7 @@ const DocumentsHeader = ({
           onClick={onToggleStats}
           className={`p-2 rounded-lg transition-colors ${
             showStats
-              ? 'bg-primary-500/20 text-primary-400'
+              ? 'bg-surface-strong text-text-primary'
               : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
           }`}
           title='Storage stats'
@@ -93,7 +93,7 @@ const DocumentsHeader = ({
           onClick={onToggleFilters}
           className={`p-2 rounded-lg transition-colors ${
             showFilters
-              ? 'bg-primary-500/20 text-primary-400'
+              ? 'bg-surface-strong text-text-primary'
               : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
           }`}
           title='Filters'
@@ -107,8 +107,8 @@ const DocumentsHeader = ({
           onClick={onToggleUpload}
           className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
             hasActiveUploads
-              ? 'bg-orange-600 hover:bg-orange-700'
-              : 'bg-primary-600 hover:bg-primary-700'
+              ? 'bg-[color:var(--palette-secondary-accent)] hover:bg-[color:var(--palette-primary-accent)]'
+              : 'bg-[color:var(--palette-primary-accent)] hover:bg-[color:var(--palette-hover-state)]'
           } text-white`}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -121,7 +121,7 @@ const DocumentsHeader = ({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className='absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold'
+              className='absolute -top-2 -right-2 bg-[color:var(--palette-primary-accent)] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold'
             >
               {activeUploads + completedUploads + failedUploads}
             </motion.div>
@@ -142,8 +142,8 @@ const ViewModeToggle = ({ viewMode, onViewModeChange }) => {
         onClick={() => onViewModeChange('folders')}
         className={`p-2 rounded-md transition-colors ${
           viewMode === 'folders'
-            ? 'bg-primary-500/20 text-primary-400'
-            : 'text-text-muted hover:text-text-primary hover:bg-surface-strong'
+            ? 'bg-surface-strong text-text-primary'
+            : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
         }`}
         title='Folders view'
         aria-label='Vista de carpetas'
@@ -155,8 +155,8 @@ const ViewModeToggle = ({ viewMode, onViewModeChange }) => {
         onClick={() => onViewModeChange('grid')}
         className={`p-2 rounded-md transition-colors ${
           viewMode === 'grid'
-            ? 'bg-primary-500/20 text-primary-400'
-            : 'text-text-muted hover:text-text-primary hover:bg-surface-strong'
+            ? 'bg-surface-strong text-text-primary'
+            : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
         }`}
         title='Grid view'
         aria-label='Vista de cuadrícula'
@@ -168,8 +168,8 @@ const ViewModeToggle = ({ viewMode, onViewModeChange }) => {
         onClick={() => onViewModeChange('list')}
         className={`p-2 rounded-md transition-colors ${
           viewMode === 'list'
-            ? 'bg-primary-500/20 text-primary-400'
-            : 'text-text-muted hover:text-text-primary hover:bg-surface-strong'
+            ? 'bg-surface-strong text-text-primary'
+            : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
         }`}
         title='List view'
         aria-label='Vista de lista'

@@ -274,7 +274,7 @@ export function useDocumentsV2(
 
   // Pin toggle mutation
   const pinMutation = useMutation({
-    mutationFn: (documentId: string | number) => documentsV2Service.togglePin!(documentId),
+    mutationFn: (documentId: string | number) => documentsV2Service.togglePin(documentId),
     onMutate: async documentId => {
       await queryClient.cancelQueries({
         queryKey: documentQueryKeys.list(clientId, coreHook.queryParams),

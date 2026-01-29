@@ -4,39 +4,53 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { getCurrentDate } from '@shared/utils/dateHelpers'
 import TaskPopover from './modals/TaskPopover'
+import { ContentModal } from './modals/ContentModal'
+// import { BulkAIGeneratorModal } from './modals/BulkAIGeneratorModal'
+// import AIReviewModal from './modals/AIReviewModal'
+
+import { useAIGenerationStore } from '@stores/useAIGenerationStore'
 
 // Importaciones de FullCalendar
 import FullCalendarWrapper from './calendar/FullCalendarWrapper'
+import { CalendarSidebar } from './calendar/CalendarSidebar'
 import { useCalendarEvents } from '../hooks/useCalendarEvents'
-
-// Chat embebido antiguo removido: usamos el nuevo dock global
-import { IdeasModal } from '@components/ideas/IdeasModal'
 
 // Estilos del módulo schedule
 import '../styles'
 import { getClientById } from '@api/clients.api'
+import { useCalendarView } from '@shared/contexts/CalendarViewContext'
 
 /**
  * Componente de calendario renovado con FullCalendar
  * Implementa todas las mejores prácticas y funcionalidades optimizadas
  */
 export const ScheduleSection = ({ clientId }) => {
+  // Hook de vista de calendario (sincronizado con el header)
+  const { currentView, changeView, currentDate, setCurrentDate, setDateLabel } = useCalendarView()
+
   // Estados del componente
   const [client, setClient] = useState(null)
-  const [currentDate, setCurrentDate] = useState(() => getCurrentDate())
-  const [currentView, setCurrentView] = useState('dayGridMonth')
   const [selectedEvent, setSelectedEvent] = useState(null)
   // State for TaskPopover edit mode
   const [isTaskPopoverEditOpen, setIsTaskPopoverEditOpen] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState(null)
   const [isIdeasOpen, setIsIdeasOpen] = useState(false)
-  // Estados para el nuevo popover
+  // Estados para el modal de creación/edición de contenido
+  const [isContentModalOpen, setIsContentModalOpen] = useState(false)
+  const [contentModalMode, setContentModalMode] = useState('create')
+  const [contentModalDate, setContentModalDate] = useState(new Date())
+  const [contentModalTask, setContentModalTask] = useState(null)
+  // Estados para el popover de edición rápida
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false)
   const [quickTaskDate, setQuickTaskDate] = useState(null)
   const [clickCoords, setClickCoords] = useState(null)
   const [cellBounds, setCellBounds] = useState(null)
   // Docking system state
   const [isDocked, setIsDocked] = useState(false)
+
+  // Estados para el modo de selección (IA)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedDates, setSelectedDates] = useState([])
 
   // Hook personalizado para eventos
   const {
@@ -50,6 +64,73 @@ export const ScheduleSection = ({ clientId }) => {
     moveEvent,
     eventStats,
   } = useCalendarEvents(clientId)
+
+  // Use the AI generation store
+  const { startJob, pendingIdeas, updateIdea, clearPendingIdeas } = useAIGenerationStore()
+
+  // Local state for the review modal
+  const [isAIReviewOpen, setIsAIReviewOpen] = useState(false)
+
+  // Effect to automatically open the modal when we have pending ideas for this client
+  const clientPendingIdeas = useMemo(() => {
+    return pendingIdeas[clientId] || []
+  }, [pendingIdeas, clientId])
+
+  useEffect(() => {
+    if (clientPendingIdeas.length > 0) {
+      setIsAIReviewOpen(true)
+    }
+  }, [clientPendingIdeas.length])
+
+  // Handler for saving selected ideas from the modal
+  const handleSaveAIContent = useCallback(
+    async selectedIdeas => {
+      try {
+        // Create tasks for each selected idea
+        const createPromises = selectedIdeas.map(idea => {
+          // Map idea to task format
+          const taskData = {
+            title: idea.title,
+            status: 'pendiente', // Default status
+            copy: idea.copy,
+            channel: idea.channel,
+            scheduled_at: new Date(idea.date).toISOString(), // Ensure date is ISO
+          }
+          return createEvent(taskData)
+        })
+
+        await Promise.all(createPromises)
+
+        toast.success(`${selectedIdeas.length} tareas creadas exitosamente`)
+
+        // Clear pending ideas for this client
+        clearPendingIdeas(clientId)
+        setIsAIReviewOpen(false)
+      } catch (error) {
+        console.error('Error saving AI content:', error)
+        toast.error('Error al guardar las tareas')
+      }
+    },
+    [createEvent, clientId, clearPendingIdeas]
+  )
+
+  const handleUpdateIdeaStatus = useCallback(
+    (ideaId, newStatus) => {
+      updateIdea(clientId, ideaId, { status: newStatus })
+    },
+    [clientId, updateIdea]
+  )
+
+  const handleCloseAIReview = useCallback(() => {
+    if (
+      window.confirm(
+        'Si cierras ahora, se perderán las ideas generadas no guardadas. ¿Estás seguro?'
+      )
+    ) {
+      clearPendingIdeas(clientId)
+      setIsAIReviewOpen(false)
+    }
+  }, [clientId, clearPendingIdeas])
 
   // Calcular estadísticas basadas en eventos visibles del calendario
   const calculateVisibleStats = () => {
@@ -87,12 +168,58 @@ export const ScheduleSection = ({ clientId }) => {
   }, [loadInitialData])
 
   // Handlers del calendario - memoizados para evitar re-renders
-  const handleDateClick = useCallback((date, clickInfo) => {
-    // Usar el nuevo popover para crear tareas rápidamente
-    setQuickTaskDate(date)
-    setClickCoords(clickInfo?.clickCoords || null)
-    setCellBounds(clickInfo?.elementRect || null)
-    setIsQuickTaskOpen(true)
+  const handleDateClick = useCallback(
+    (date, clickInfo) => {
+      console.log('[ScheduleSection] handleDateClick received', {
+        date,
+        clickInfo,
+        isSelectionMode,
+      })
+
+      if (isSelectionMode) {
+        // Logic for selecting/deselecting dates
+        const dateStr = date.toISOString().split('T')[0]
+        setSelectedDates(prev => {
+          const newDates = prev.includes(dateStr)
+            ? prev.filter(d => d !== dateStr)
+            : [...prev, dateStr]
+          return newDates.sort()
+        })
+        return
+      }
+
+      // Normal behavior (create content)
+      setContentModalDate(date)
+      setContentModalMode('create')
+      setContentModalTask(null)
+      setIsContentModalOpen(true)
+    },
+    [isSelectionMode]
+  )
+
+  // Handler for AI generation triggered from toolbar
+  const handleGenerateSelected = useCallback(() => {
+    if (selectedDates.length === 0) return
+
+    // Start background job directly
+    startJob(clientId, selectedDates)
+
+    // Reset selection mode
+    setIsSelectionMode(false)
+    setSelectedDates([])
+
+    // Open review modal (BulkAIGeneratorModal will handle 'review-ideas' step if job is done or pending ideas exist)
+    // For now, we just rely on the store/toast notification as user requested "remove date selection modal"
+    // We can show the BulkAIGeneratorModal in "review" mode later if needed, but for now we just start the job.
+  }, [clientId, selectedDates, startJob])
+
+  const toggleSelectionMode = useCallback(() => {
+    setIsSelectionMode(prev => {
+      if (prev) {
+        setSelectedDates([]) // Clear selection when exiting
+      }
+      return !prev
+    })
   }, [])
 
   const handleEventClick = useCallback(event => {
@@ -141,9 +268,12 @@ export const ScheduleSection = ({ clientId }) => {
     [moveEvent]
   )
 
-  const handleViewChange = useCallback(viewType => {
-    setCurrentView(viewType)
-  }, [])
+  const handleViewChange = useCallback(
+    viewType => {
+      changeView(viewType)
+    },
+    [changeView]
+  )
 
   const handleDateChange = useCallback(
     (start /*, end, view */) => {
@@ -247,7 +377,7 @@ export const ScheduleSection = ({ clientId }) => {
       const newDocked = !prev
       // When docking, switch to day view for better layout
       if (newDocked && currentView !== 'timeGridDay') {
-        setCurrentView('timeGridDay')
+        changeView('timeGridDay')
       }
       return newDocked
     })
@@ -274,44 +404,98 @@ export const ScheduleSection = ({ clientId }) => {
   }
 
   return (
-    <div className='calendar-container flex h-screen'>
+    <div className='calendar-container flex h-full gap-4 p-0'>
+      {/* Sidebar izquierdo con mini-calendario */}
+      <CalendarSidebar
+        currentDate={new Date(currentDate)}
+        onDateSelect={date => handleDateChange(date)}
+        className="w-52 flex-shrink-0 h-full"
+        events={events}
+        onEventClick={handleEventClick}
+      />
+
       {/* Main content area */}
-      <div className='flex-1 flex flex-col min-w-0 overflow-hidden'>
+      <div className='flex-1 flex flex-col min-w-0 h-full'>
         {/* Calendar container */}
-        <div className='flex-1 overflow-hidden'>
-          <div
-            className='h-full bg-gradient-to-br from-slate-800/95 via-slate-700/90 to-slate-800/95 
-                       border border-slate-600/30 rounded-xl shadow-2xl backdrop-blur-sm 
-                       ring-1 ring-white/5 overflow-hidden'
-          >
-            <FullCalendarWrapper
-              events={events}
-              currentDate={currentDate}
-              currentView={currentView}
-              loading={loading}
-              onDateChange={handleDateChange}
-              onViewChange={handleViewChange}
-              onEventClick={handleEventClick}
-              onDateClick={handleDateClick}
-              onEventDrop={handleEventDrop}
-              height='calc(100vh - 200px)'
-              clientName={client?.name || ''}
-              isDocked={isDocked}
-            />
-          </div>
+        <div className='flex-1 min-h-0'>
+          <FullCalendarWrapper
+            events={events}
+            currentDate={currentDate}
+            currentView={currentView}
+            loading={loading}
+            onDateChange={handleDateChange}
+            onViewChange={handleViewChange}
+            onEventClick={handleEventClick}
+            onDateClick={handleDateClick}
+            onEventDrop={handleEventDrop}
+            onLabelChange={setDateLabel}
+            height='100%'
+            clientName={client?.name || ''}
+            isDocked={isDocked}
+            onAddTask={() => {
+              setContentModalDate(new Date())
+              setContentModalMode('create')
+              setContentModalTask(null)
+              setIsContentModalOpen(true)
+            }}
+            // Toggle selection mode instead of opening modal immediately
+            onGenerateAI={toggleSelectionMode}
+            selectedDates={selectedDates}
+            onToggleDate={date => {
+              // Reuse the logic from handleDateClick for the checkbox specific event
+              const dateStr = date.toISOString().split('T')[0]
+              setSelectedDates(prev => {
+                const newDates = prev.includes(dateStr)
+                  ? prev.filter(d => d !== dateStr)
+                  : [...prev, dateStr]
+                return newDates.sort()
+              })
+            }}
+            isSelectionMode={isSelectionMode}
+            onGenerateSelected={range => {
+              if (range.start) {
+                setContentModalDate(range.start)
+                setContentModalMode('create')
+                setContentModalTask(null)
+                setIsContentModalOpen(true)
+              }
+            }}
+          />
         </div>
       </div>
 
-      {/* Modal de ideas IA */}
-      <IdeasModal
+      {/* Modal de generación masiva con IA */}
+      {/* <BulkAIGeneratorModal
         isOpen={isIdeasOpen}
         onClose={() => setIsIdeasOpen(false)}
         clientId={clientId}
-        onCreateEvent={async payload => {
-          // Use store's createEvent for optimistic UI
-          await createEvent(payload)
+        initialSelectedDates={selectedDates}
+        onSuccess={() => {
+          // Refrescar eventos del calendario
+          loadEvents()
+          setSelectedDates([]) // Limpiar selección tras éxito
+        }}
+      /> */}
+
+      {/* Modal de creación/edición de contenido */}
+      <ContentModal
+        isOpen={isContentModalOpen}
+        onClose={() => {
+          setIsContentModalOpen(false)
+          setContentModalTask(null)
+        }}
+        mode={contentModalMode}
+        clientId={clientId}
+        initialDate={contentModalDate}
+        existingTask={contentModalTask}
+        onSuccess={async eventData => {
+          await loadEvents()
+          setIsContentModalOpen(false)
+          setContentModalTask(null)
         }}
       />
+
+      {/* Modal de Generación Masiva (Guía / Status) */}
 
       {/* TaskPopover - Sistema unificado de creación y edición de tareas */}
       <TaskPopover
@@ -340,6 +524,14 @@ export const ScheduleSection = ({ clientId }) => {
         isDocked={isDocked}
         onDockToggle={handleDockToggle}
       />
+      {/* Modal de Revisión de IA */}
+      {/* <AIReviewModal
+        isOpen={isAIReviewOpen}
+        onClose={handleCloseAIReview}
+        ideas={clientPendingIdeas}
+        onUpdateIdeaStatus={handleUpdateIdeaStatus}
+        onSaveSelected={handleSaveAIContent}
+      /> */}
     </div>
   )
 }

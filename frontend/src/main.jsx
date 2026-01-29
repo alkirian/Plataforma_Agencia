@@ -11,11 +11,7 @@ const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider 
-      defaultPalette="orangeProfessional" 
-      defaultMode="dark"
-      persistPreferences={true}
-    >
+    <ThemeProvider defaultPalette='orangeProfessional' defaultMode='dark' persistPreferences={true}>
       <QueryClientProvider client={queryClient}>
         <App />
       </QueryClientProvider>

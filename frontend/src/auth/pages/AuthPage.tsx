@@ -212,7 +212,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, redirectTo }) => 
                         },
                         pattern: {
                           value: AUTH_PATTERNS.AGENCY_NAME,
-                          message: 'Formato de nombre inválido',
+                          message: 'Formato de nombre invï¿½lido',
                         },
                       }}
                       autoComplete='organization'
@@ -266,4 +266,3 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, redirectTo }) => 
 }
 
 export default AuthPage
-

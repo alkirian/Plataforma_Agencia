@@ -33,7 +33,7 @@ const DocumentListCard = ({
       return <VideoCameraIcon className='h-8 w-8' />
     }
     if (document?.isPdf && document.isPdf()) {
-      return <DocumentIcon className='h-8 w-8 text-red-500' />
+      return <DocumentIcon className='h-8 w-8 text-[color:var(--palette-primary-accent)]' />
     }
     const extension = document?.getExtension
       ? document.getExtension()
@@ -71,7 +71,7 @@ const DocumentListCard = ({
             ? 'border-primary-500 bg-primary-500/5'
             : 'border-border-muted hover:border-border-primary'
         }
-        ${document?.isPinned && document.isPinned() ? 'ring-2 ring-yellow-400/30' : ''}
+        ${document?.isPinned && document.isPinned() ? 'ring-2 ring-[color:var(--palette-secondary-accent)]/30' : ''}
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -109,49 +109,90 @@ const DocumentListCardContent = ({
   getFileIcon,
   formatDate,
   formatFileSize,
-}) => (
-  <>
-    {/* Selection checkbox */}
-    <input type='checkbox' checked={isSelected} onChange={onSelect} className='mr-4' />
+}) => {
+  const [imgError, setImgError] = React.useState(false)
 
-    {/* Icon */}
-    <div className='flex-shrink-0 mr-4'>{getFileIcon()}</div>
+  const getThumbnailUrl = () => {
+    if (!document) return null
+    if (document.storagePath) {
+      return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/documents/${document.storagePath}`
+    }
+    return `/api/documents/${document?.id || 'unknown'}/preview`
+  }
 
-    {/* File info */}
-    <div className='flex-1 min-w-0'>
-      <div className='flex items-center space-x-2'>
-        <h4 className='text-sm font-medium text-text-primary truncate'>
-          {document?.filenameOriginal || 'Unknown file'}
-        </h4>
+  const isImageFile = document?.isImage
+    ? document.isImage()
+    : document?.mimeType?.startsWith('image/') || document?.fileType?.startsWith('image/')
 
-        {document?.isPinned && document.isPinned() && (
-          <StarIconSolid className='h-4 w-4 text-yellow-400' />
-        )}
+  return (
+    <>
+      {/* Selection checkbox */}
+      <input type='checkbox' checked={isSelected} onChange={onSelect} className='mr-4' />
 
-        {hasVersions && (
-          <span className='inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800'>
-            v{versionCount}
-          </span>
-        )}
-
-        {document?.isDuplicate && document.isDuplicate() && (
-          <span className='inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800'>
-            Duplicate
-          </span>
+      {/* Thumbnail */}
+      <div className='flex-shrink-0 mr-4 w-12 h-12 rounded-lg overflow-hidden bg-surface-muted border border-border-muted'>
+        {isImageFile && !imgError ? (
+          <img
+            src={getThumbnailUrl()}
+            alt={document?.filenameOriginal || 'preview'}
+            className='w-full h-full object-cover'
+            loading='lazy'
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className='w-full h-full flex items-center justify-center text-text-muted'>
+            {getFileIcon()}
+          </div>
         )}
       </div>
 
-      <div className='flex items-center space-x-4 mt-1 text-xs text-text-muted'>
-        <span>{formatFileSize(document?.sizeBytes)}</span>
-        <span>{formatDate(document?.createdAt)}</span>
-        <span className='flex items-center'>
-          <UserIcon className='h-3 w-3 mr-1' />
-          {document?.uploadedBy || 'Unknown'}
-        </span>
+      {/* File info */}
+      <div className='flex-1 min-w-0'>
+        <div className='flex items-center space-x-2'>
+          <h4
+            className='text-sm font-medium text-text-primary truncate'
+            title={document?.filenameOriginal}
+          >
+            {document?.filenameOriginal || 'Unknown file'}
+          </h4>
+
+          {document?.isPinned && document.isPinned() && (
+            <StarIconSolid className='h-4 w-4 text-[color:var(--palette-secondary-accent)]' />
+          )}
+
+          {hasVersions && (
+            <span className='inline-flex items-center px-2 py-0.5 rounded text-xs bg-[color:var(--palette-cold-alt)]/20 text-text-primary'>
+              v{versionCount}
+            </span>
+          )}
+
+          {document?.isDuplicate && document.isDuplicate() && (
+            <span className='inline-flex items-center px-2 py-0.5 rounded text-xs bg-[color:var(--palette-secondary-accent)]/20 text-text-primary'>
+              Duplicate
+            </span>
+          )}
+        </div>
+
+        <div className='flex items-center space-x-3 mt-1.5 text-xs text-text-muted'>
+          <span className='font-mono bg-surface-muted px-1.5 py-0.5 rounded text-[10px] uppercase'>
+            {document?.extension || document?.mimeType?.split('/')[1] || 'FILE'}
+          </span>
+          <span>{formatFileSize(document?.sizeBytes)}</span>
+          <span className='text-text-muted/60'>•</span>
+          <span>{formatDate(document?.createdAt)}</span>
+          <span className='text-text-muted/60'>•</span>
+          <span
+            className='flex items-center'
+            title={document?.uploadedByName || document?.uploadedBy}
+          >
+            <UserIcon className='h-3 w-3 mr-1' />
+            {document?.uploadedByName || 'Usuario'}
+          </span>
+        </div>
       </div>
-    </div>
-  </>
-)
+    </>
+  )
+}
 
 const DocumentListCardActions = ({ isHovered, onPreview, onAction, onContextMenu, document }) => (
   <div className='flex-shrink-0 flex items-center space-x-1'>
@@ -159,7 +200,7 @@ const DocumentListCardActions = ({ isHovered, onPreview, onAction, onContextMenu
       <>
         <button
           onClick={onPreview}
-          className='p-2 text-text-muted hover:text-primary-400 transition-colors'
+          className='p-2 text-text-muted hover:text-[color:var(--palette-primary-accent)] transition-colors'
           title='Preview'
         >
           <EyeIcon className='h-4 w-4' />
@@ -167,7 +208,7 @@ const DocumentListCardActions = ({ isHovered, onPreview, onAction, onContextMenu
 
         <button
           onClick={() => onAction('download', document)}
-          className='p-2 text-text-muted hover:text-primary-400 transition-colors'
+          className='p-2 text-text-muted hover:text-[color:var(--palette-primary-accent)] transition-colors'
           title='Download'
         >
           <ArrowDownTrayIcon className='h-4 w-4' />
@@ -177,7 +218,7 @@ const DocumentListCardActions = ({ isHovered, onPreview, onAction, onContextMenu
 
     <button
       onClick={onContextMenu}
-      className='p-2 text-text-muted hover:text-primary-400 transition-colors'
+      className='p-2 text-text-muted hover:text-[color:var(--palette-primary-accent)] transition-colors'
     >
       <EllipsisVerticalIcon className='h-4 w-4' />
     </button>

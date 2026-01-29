@@ -1,11 +1,11 @@
 /**
  * TAILWIND CSS INTEGRATION UTILITIES
- * 
+ *
  * This module provides utilities for seamlessly integrating the centralized
  * color system with Tailwind CSS classes and the existing design system.
  */
 
-import { ColorPalette, ColorPaletteName } from './colorPalettes'
+import { type ColorPalette, ColorPaletteName } from './colorPalettes'
 import { getCSSVar } from './cssVariableGenerator'
 
 /**
@@ -30,7 +30,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
       tertiary: getCSSVar('background.tertiary'),
       inverse: getCSSVar('background.inverse'),
     },
-    
+
     // Surface colors
     'theme-surface': {
       DEFAULT: getCSSVar('surface.default'),
@@ -38,7 +38,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
       strong: getCSSVar('surface.strong'),
       overlay: getCSSVar('surface.overlay'),
     },
-    
+
     // Text colors
     'theme-text': {
       primary: getCSSVar('text.primary'),
@@ -47,7 +47,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
       inverse: getCSSVar('text.inverse'),
       accent: getCSSVar('text.accent'),
     },
-    
+
     // Border colors
     'theme-border': {
       DEFAULT: getCSSVar('border.default'),
@@ -55,7 +55,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
       strong: getCSSVar('border.strong'),
       interactive: getCSSVar('border.interactive'),
     },
-    
+
     // Interactive colors
     'theme-interactive': {
       primary: getCSSVar('interactive.primary'),
@@ -65,7 +65,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
       tertiary: getCSSVar('interactive.tertiary'),
       'tertiary-hover': getCSSVar('interactive.tertiaryHover'),
     },
-    
+
     // Status colors
     'theme-status': {
       success: getCSSVar('status.success'),
@@ -83,7 +83,7 @@ export function generateTailwindColors(palette: ColorPalette): TailwindColorConf
  */
 export function generateTailwindExtension(palette: ColorPalette) {
   const colors = generateTailwindColors(palette)
-  
+
   return {
     colors,
     backgroundImage: {
@@ -111,7 +111,7 @@ export function generateTailwindExtension(palette: ColorPalette) {
  * Utility class generator for common theme patterns
  */
 export class ThemeUtilities {
-  private palette: ColorPalette
+  private readonly palette: ColorPalette
 
   constructor(palette: ColorPalette) {
     this.palette = palette
@@ -164,7 +164,7 @@ export class ThemeUtilities {
       primary: `bg-[${getCSSVar('interactive.primary')}] hover:bg-[${getCSSVar('interactive.primaryHover')}]`,
       secondary: `bg-[${getCSSVar('interactive.secondary')}] hover:bg-[${getCSSVar('interactive.secondaryHover')}]`,
       tertiary: `bg-[${getCSSVar('interactive.tertiary')}] hover:bg-[${getCSSVar('interactive.tertiaryHover')}]`,
-      
+
       // Button variants
       primaryButton: `bg-[${getCSSVar('interactive.primary')}] text-[${getCSSVar('text.inverse')}] border-[${getCSSVar('border.interactive')}] hover:bg-[${getCSSVar('interactive.primaryHover')}]`,
       secondaryButton: `bg-[${getCSSVar('interactive.secondary')}] text-[${getCSSVar('text.primary')}] border-[${getCSSVar('border.default')}] hover:bg-[${getCSSVar('interactive.secondaryHover')}]`,
@@ -309,10 +309,13 @@ export const colorHelpers = {
    */
   createOpacityVariants: (path: string, opacities: number[]) => {
     const baseVar = getCSSVar(path)
-    return opacities.reduce((acc, opacity) => {
-      acc[opacity] = `${baseVar}/${Math.round(opacity * 100)}`
-      return acc
-    }, {} as Record<number, string>)
+    return opacities.reduce(
+      (acc, opacity) => {
+        acc[opacity] = `${baseVar}/${Math.round(opacity * 100)}`
+        return acc
+      },
+      {} as Record<number, string>
+    )
   },
 
   /**
@@ -329,9 +332,7 @@ export const colorHelpers = {
 /**
  * Export types for TypeScript support
  */
-export type {
-  TailwindColorConfig,
-}
+export type { TailwindColorConfig }
 
 /**
  * Migration helper for existing color usage
@@ -350,7 +351,7 @@ export const migrationHelper = {
     'text-gray-400': getCSSVar('text.muted'),
     'border-gray-600': getCSSVar('border.default'),
     'border-gray-500': getCSSVar('border.strong'),
-    
+
     // Brand colors
     'bg-blue-600': getCSSVar('interactive.primary'),
     'bg-blue-500': getCSSVar('interactive.primaryHover'),

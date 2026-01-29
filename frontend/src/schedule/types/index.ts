@@ -25,7 +25,7 @@ export type SocialChannel =
   | 'LinkedIn'
   | 'WhatsApp'
 
-export type Priority = 'low' | 'medium' | 'high' | 'urgent'
+export type Priority = 'baja' | 'media' | 'alta' | 'urgente'
 
 export type CalendarView =
   | 'dayGridMonth'
@@ -117,7 +117,7 @@ export const SOCIAL_CHANNELS_KEYS = [
   'WhatsApp',
 ] as const
 
-export const PRIORITY_KEYS = ['low', 'medium', 'high', 'urgent'] as const
+export const PRIORITY_KEYS = ['baja', 'media', 'alta', 'urgente'] as const
 
 export const CALENDAR_VIEW_KEYS = [
   'dayGridMonth',
@@ -135,7 +135,7 @@ export const DEFAULT_SCHEDULE_FORM_DATA: ScheduleFormData = {
   copy: '',
   channel: 'IG',
   status: 'pending',
-  priority: 'medium',
+  priority: 'media',
 }
 
 export const DEFAULT_QUICK_TASK_DATA: QuickTaskFormData = {

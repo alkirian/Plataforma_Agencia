@@ -77,7 +77,12 @@ export function Dropdown({
 
   return (
     <DropdownContext.Provider value={contextValue}>
-      <div ref={containerRef} className={clsx('relative inline-flex', className)} data-placement={placement} {...rest}>
+      <div
+        ref={containerRef}
+        className={clsx('relative inline-flex', className)}
+        data-placement={placement}
+        {...rest}
+      >
         {children}
       </div>
     </DropdownContext.Provider>

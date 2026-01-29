@@ -48,6 +48,15 @@ export const handleCreateClient = asyncHandler(async (req, res) => {
 
 export const handleGetClients = asyncHandler(async (req, res) => {
   const userProfile = await getUserProfile(req.user.id);
+  
+  // Validar que el usuario tenga una agencia asignada
+  if (!userProfile || !userProfile.agency_id) {
+    throw new HttpError(400, 'Usuario no tiene agencia asignada. Por favor complete el registro creando o uniéndose a una agencia.', {
+      code: 'NO_AGENCY',
+      requiresOnboarding: true
+    });
+  }
+  
   const clients = await getClientsByAgency(userProfile.agency_id, req.token);
   return sendSuccess(res, clients);
 });

@@ -9,7 +9,7 @@ export class DocumentEntity {
     this.filenameOriginal = data.filename_original || data.file_name;
     this.filenameSanitized = data.filename_sanitized;
     this.extension = data.extension;
-    this.mimeType = data.mime_type;
+    this.mimeType = data.mime_type || data.file_type;
     this.sizeBytes = data.size_bytes || data.file_size;
     this.storagePath = data.storage_path;
     this.checksum = data.checksum;

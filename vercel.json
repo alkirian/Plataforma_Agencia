@@ -1,31 +1,18 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm ci && npm run build",
+  "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
-  "installCommand": "cd frontend && npm ci",
-  "devCommand": "cd frontend && npm run dev",
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    }
-  },
-  "functions": {
-    "backend/src/**/*.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "routes": [
+  "installCommand": "export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && cd backend && npm install --no-audit --no-fund --legacy-peer-deps && cd ../frontend && npm install --no-audit --no-fund --legacy-peer-deps",
+  "devCommand": "npm run dev --prefix frontend",
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backend/src/index.js"
+      "source": "/api/(.*)",
+      "destination": "/backend/src/index.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [

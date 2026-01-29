@@ -15,12 +15,12 @@ export { useDocumentBoard } from './hooks/useDocumentBoard'
 export { useDocumentsV2 } from './hooks/useDocumentsV2'
 
 // Re-export shared document types and services for convenience
-export type { 
-  DocumentV2 as Document, 
-  DocumentBase, 
+export type {
+  DocumentV2 as Document,
+  DocumentBase,
   DocumentUploadPayload,
   DocumentUpdatePayload,
-  UploadProgress 
+  UploadProgress,
 } from '@shared/types/document.types'
 
 export { documentsV2Service } from '@shared/services/documentsService'

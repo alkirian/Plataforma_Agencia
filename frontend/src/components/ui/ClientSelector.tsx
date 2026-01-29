@@ -41,7 +41,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ currentClientId 
   // Obtener información del cliente actual
   const { data: currentClientResponse } = useQuery<ClientResponse>({
     queryKey: ['client', currentClientId],
-    queryFn: () => getClientById(currentClientId!),
+    queryFn: () => getClientById(currentClientId),
     enabled: !!currentClientId,
   })
 

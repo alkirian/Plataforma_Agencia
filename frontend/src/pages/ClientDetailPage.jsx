@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { getClientById } from '@api/clients.api'
 import { ScheduleSection } from '@schedule/components/ScheduleSection'
-import { Documents } from '@documents/Documents.jsx'
-import { ContextSourcesSection } from '@components/contextSources/ContextSourcesSection.jsx'
+import { ProductiveDashboard } from '@documents/components/ProductiveDashboard.jsx'
 import { ClientFooterInfo } from '@components/client/ClientFooterInfo.jsx'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
 
@@ -42,7 +41,8 @@ export const ClientDetailPage = () => {
 
   return (
     <>
-      <div className='mb-6'>
+      {/* Header del cliente comentado para ahorrar espacio vertical */}
+      {/* <div className='mb-6'>
         <Link
           to='/dashboard'
           className='text-sm text-text-muted hover:text-text-primary hover:underline transition-colors duration-200'
@@ -54,12 +54,12 @@ export const ClientDetailPage = () => {
         </div>
         <p className='text-text-muted'>{client.industry || 'No especificada'}</p>
       </div>
-      <hr className='border-[color:var(--color-border-subtle)]' />
-      <div className='mt-4'>
-        <div className='mb-4 flex gap-2'>
+      <hr className='border-[color:var(--color-border-subtle)]' /> */}
+      <div className='mt-0 flex flex-col h-[calc(100vh-140px)] min-h-[500px] w-full'>
+        <div className='mb-2 flex gap-2 flex-shrink-0'>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
               activeTab === 'schedule'
                 ? 'bg-surface-strong text-text-primary shadow-halo'
                 : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
@@ -69,7 +69,7 @@ export const ClientDetailPage = () => {
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
               activeTab === 'documents'
                 ? 'bg-surface-strong text-text-primary shadow-halo'
                 : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
@@ -77,24 +77,16 @@ export const ClientDetailPage = () => {
           >
             Documentos
           </button>
-          <button
-            onClick={() => setActiveTab('context-sources')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              activeTab === 'context-sources'
-                ? 'bg-surface-strong text-text-primary shadow-halo'
-                : 'border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:border-[color:var(--color-border-strong)] hover:text-text-primary'
-            }`}
-          >
-            Fuentes de Contexto
-          </button>
         </div>
-        <div className='card rounded-xl p-4'>
+
+        {/* Contenedor principal de contenido - Flex grow */}
+        <div className='flex-1 min-h-0 relative'>
           {activeTab === 'schedule' ? (
+            /* ScheduleSection maneja su propio contenedor/card */
             <ScheduleSection clientId={clientId} />
-          ) : activeTab === 'documents' ? (
-            <Documents clientId={clientId} clientName={client.name} />
           ) : (
-            <ContextSourcesSection clientId={clientId} clientName={client.name} />
+            /* Otros tabs fuera de schedule */
+            <ProductiveDashboard clientId={clientId} clientName={client.name} />
           )}
         </div>
       </div>

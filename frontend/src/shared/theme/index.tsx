@@ -1,6 +1,6 @@
 /**
  * CENTRALIZED THEME SYSTEM - MAIN EXPORTS
- * 
+ *
  * This file provides a single entry point for all theme-related
  * functionality, making imports clean and organized.
  */
@@ -60,10 +60,7 @@ export {
 } from '../contexts/ThemeContext'
 
 // Theme Components
-export {
-  ThemeSwitcher,
-  QuickThemeSwitcher,
-} from '../components/theme/ThemeSwitcher'
+export { ThemeSwitcher, QuickThemeSwitcher } from '../components/theme/ThemeSwitcher'
 
 /**
  * Quick start utilities for common use cases
@@ -77,7 +74,7 @@ export const themeUtils = {
      * Basic setup with default palette
      * @example
      * import { themeUtils } from '@/shared/theme'
-     * 
+     *
      * function App() {
      *   return (
      *     <themeUtils.setup.Provider>
@@ -86,15 +83,18 @@ export const themeUtils = {
      *   )
      * }
      */
-    Provider: ({ children, defaultPalette = 'orangeProfessional' }: { 
+    Provider: ({
+      children,
+      defaultPalette = 'orangeProfessional',
+    }: {
       children: React.ReactNode
-      defaultPalette?: ColorPaletteName 
+      defaultPalette?: ColorPaletteName
     }) => {
       const { ThemeProvider } = require('../contexts/ThemeContext')
       return <ThemeProvider defaultPalette={defaultPalette}>{children}</ThemeProvider>
     },
   },
-  
+
   /**
    * Common Tailwind class patterns
    */
@@ -102,23 +102,30 @@ export const themeUtils = {
     // Card patterns
     card: {
       default: 'bg-theme-surface-default border border-theme-border-default rounded-xl p-6',
-      elevated: 'bg-theme-surface-strong border border-theme-border-strong rounded-xl p-6 shadow-theme-medium',
-      interactive: 'bg-theme-surface-default border border-theme-border-default hover:border-theme-border-interactive rounded-xl p-6 transition-all duration-300',
+      elevated:
+        'bg-theme-surface-strong border border-theme-border-strong rounded-xl p-6 shadow-theme-medium',
+      interactive:
+        'bg-theme-surface-default border border-theme-border-default hover:border-theme-border-interactive rounded-xl p-6 transition-all duration-300',
     },
-    
-    // Button patterns  
+
+    // Button patterns
     button: {
-      primary: 'bg-theme-interactive-primary hover:bg-theme-interactive-primary-hover text-theme-text-inverse px-6 py-3 rounded-lg font-medium transition-all duration-300',
-      secondary: 'bg-theme-interactive-secondary hover:bg-theme-interactive-secondary-hover text-theme-text-primary px-6 py-3 rounded-lg font-medium transition-all duration-300',
-      ghost: 'bg-transparent hover:bg-theme-surface-soft text-theme-text-primary border border-theme-border-subtle hover:border-theme-border-default px-6 py-3 rounded-lg font-medium transition-all duration-300',
+      primary:
+        'bg-theme-interactive-primary hover:bg-theme-interactive-primary-hover text-theme-text-inverse px-6 py-3 rounded-lg font-medium transition-all duration-300',
+      secondary:
+        'bg-theme-interactive-secondary hover:bg-theme-interactive-secondary-hover text-theme-text-primary px-6 py-3 rounded-lg font-medium transition-all duration-300',
+      ghost:
+        'bg-transparent hover:bg-theme-surface-soft text-theme-text-primary border border-theme-border-subtle hover:border-theme-border-default px-6 py-3 rounded-lg font-medium transition-all duration-300',
     },
-    
+
     // Input patterns
     input: {
-      default: 'bg-theme-surface-soft text-theme-text-primary border border-theme-border-default focus:border-theme-border-interactive rounded-lg px-4 py-3 placeholder:text-theme-text-muted transition-all duration-300',
-      error: 'bg-theme-surface-soft text-theme-text-primary border border-theme-status-error focus:border-theme-status-error rounded-lg px-4 py-3 placeholder:text-theme-text-muted transition-all duration-300',
+      default:
+        'bg-theme-surface-soft text-theme-text-primary border border-theme-border-default focus:border-theme-border-interactive rounded-lg px-4 py-3 placeholder:text-theme-text-muted transition-all duration-300',
+      error:
+        'bg-theme-surface-soft text-theme-text-primary border border-theme-status-error focus:border-theme-status-error rounded-lg px-4 py-3 placeholder:text-theme-text-muted transition-all duration-300',
     },
-    
+
     // Text patterns
     text: {
       heading: 'text-theme-text-primary font-semibold',
@@ -126,7 +133,7 @@ export const themeUtils = {
       muted: 'text-theme-text-muted',
       accent: 'text-theme-text-accent font-medium',
     },
-    
+
     // Background patterns
     bg: {
       page: 'bg-theme-bg-primary',
@@ -135,7 +142,7 @@ export const themeUtils = {
       overlay: 'bg-theme-surface-overlay',
     },
   },
-  
+
   /**
    * Animation utilities
    */
@@ -153,13 +160,34 @@ export const themeUtils = {
 /**
  * Type-safe color access helpers
  */
-export type ThemeColorPath = 
-  | 'background.primary' | 'background.secondary' | 'background.tertiary' | 'background.inverse'
-  | 'surface.default' | 'surface.soft' | 'surface.strong' | 'surface.overlay'  
-  | 'text.primary' | 'text.secondary' | 'text.muted' | 'text.inverse' | 'text.accent'
-  | 'border.default' | 'border.subtle' | 'border.strong' | 'border.interactive'
-  | 'interactive.primary' | 'interactive.primaryHover' | 'interactive.secondary' | 'interactive.secondaryHover' | 'interactive.tertiary' | 'interactive.tertiaryHover'
-  | 'status.success' | 'status.warning' | 'status.error' | 'status.info'
+export type ThemeColorPath =
+  | 'background.primary'
+  | 'background.secondary'
+  | 'background.tertiary'
+  | 'background.inverse'
+  | 'surface.default'
+  | 'surface.soft'
+  | 'surface.strong'
+  | 'surface.overlay'
+  | 'text.primary'
+  | 'text.secondary'
+  | 'text.muted'
+  | 'text.inverse'
+  | 'text.accent'
+  | 'border.default'
+  | 'border.subtle'
+  | 'border.strong'
+  | 'border.interactive'
+  | 'interactive.primary'
+  | 'interactive.primaryHover'
+  | 'interactive.secondary'
+  | 'interactive.secondaryHover'
+  | 'interactive.tertiary'
+  | 'interactive.tertiaryHover'
+  | 'status.success'
+  | 'status.warning'
+  | 'status.error'
+  | 'status.info'
 
 /**
  * Utility for getting theme colors with TypeScript safety

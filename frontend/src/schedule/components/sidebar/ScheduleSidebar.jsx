@@ -107,7 +107,7 @@ export const ScheduleSidebar = ({
       >
         <div
           className={`
-            h-full bg-gradient-to-b from-slate-900/95 via-slate-800/95 to-slate-900/95
+            h-full bg-slate-900/95
             border-r border-slate-700/50 backdrop-blur-sm shadow-2xl
             ${isCollapsed ? 'overflow-hidden' : ''}
           `}
@@ -176,26 +176,26 @@ export const ScheduleSidebar = ({
                 </div>
 
                 <div className='grid grid-cols-2 gap-3'>
-                  <div className='bg-gradient-to-br from-slate-800/60 to-slate-700/60 p-4 rounded-lg border border-slate-600/30'>
+                  <div className='bg-slate-800/60 p-4 rounded-lg border border-slate-600/30'>
                     <div className='text-2xl font-bold text-blue-300'>{stats.total}</div>
                     <div className='text-xs text-slate-400'>Total</div>
                   </div>
 
-                  <div className='bg-gradient-to-br from-amber-900/20 to-amber-800/20 p-4 rounded-lg border border-amber-600/30'>
+                  <div className='bg-amber-900/20 p-4 rounded-lg border border-amber-600/30'>
                     <div className='text-2xl font-bold text-amber-300'>
                       {stats.byStatus.pendiente || 0}
                     </div>
                     <div className='text-xs text-slate-400'>Pendientes</div>
                   </div>
 
-                  <div className='bg-gradient-to-br from-emerald-900/20 to-emerald-800/20 p-4 rounded-lg border border-emerald-600/30'>
+                  <div className='bg-emerald-900/20 p-4 rounded-lg border border-emerald-600/30'>
                     <div className='text-2xl font-bold text-emerald-300'>
                       {stats.byStatus.aprobado || 0}
                     </div>
                     <div className='text-xs text-slate-400'>Aprobados</div>
                   </div>
 
-                  <div className='bg-gradient-to-br from-green-900/20 to-green-800/20 p-4 rounded-lg border border-green-600/30'>
+                  <div className='bg-green-900/20 p-4 rounded-lg border border-green-600/30'>
                     <div className='text-2xl font-bold text-green-300'>
                       {stats.byStatus.publicado || 0}
                     </div>

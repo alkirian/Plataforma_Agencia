@@ -10,7 +10,7 @@ const DocumentsStatsPanel = ({ showStats, stats, isLoadingStats }) => {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className='bg-surface-soft border border-gray-200/10 rounded-xl p-4'
+          className='bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-xl p-4'
         >
           <h3 className='text-lg font-semibold text-text-primary mb-3'>Storage Statistics</h3>
           {isLoadingStats ? <StatsLoadingSkeleton /> : <StatsGrid stats={stats} />}

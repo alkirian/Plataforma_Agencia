@@ -1,6 +1,10 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { LoadingSpinner } from '@components/ui/LoadingSpinner'
+import StatusPills from '../ui/StatusPills'
+import AIGenerateButton from '../ui/AIGenerateButton'
+import LinksAccordion from '../ui/LinksAccordion'
+import useAIGenerationStore from '@stores/useAIGenerationStore'
 
 const TaskForm = ({
   mode = 'create',
@@ -12,6 +16,7 @@ const TaskForm = ({
   modeConfig,
 }) => {
   const titleRef = useRef(null)
+  const { openBulkGenerator } = useAIGenerationStore()
 
   // Auto-focus en el título cuando se abre, sin scroll
   useEffect(() => {
@@ -40,6 +45,11 @@ const TaskForm = ({
     }
   }
 
+  const handleAIGenerate = () => {
+    // Abrir modal de generación IA
+    openBulkGenerator()
+  }
+
   const formatDate = date => {
     return date.toLocaleDateString('es-ES', {
       weekday: 'long',
@@ -49,85 +59,84 @@ const TaskForm = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-3'>
-      {/* Header con fecha - más compacto */}
-      <div className='flex items-center gap-2 pb-2 border-b border-gray-700'>
-        <div className='w-1.5 h-1.5 bg-blue-500 rounded-full' />
+    <form onSubmit={handleSubmit} className='space-y-4 p-1'>
+      {/* Header con fecha */}
+      <div className='flex items-center gap-2 pb-3 border-b border-gray-700'>
+        <div className='w-1.5 h-1.5 bg-purple-500 rounded-full' />
         <h3 className='text-xs font-medium text-gray-200'>
-          {modeConfig?.title || 'Nueva tarea'} - {formatDate(selectedDate)}
+          {modeConfig?.title || 'Nuevo contenido'} - {formatDate(selectedDate)}
         </h3>
       </div>
 
       {/* Campo Título */}
       <div>
-        <label className='block text-xs font-medium text-gray-400 mb-1.5'>Título</label>
         <input
           ref={titleRef}
           type='text'
           value={formData.title || ''}
           onChange={e => handleInputChange('title', e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder='Ej: Post sobre fitness matutino'
-          className='w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all'
+          placeholder='Título del contenido...'
+          className='purple-glow-focus w-full px-4 py-3 bg-gray-800/60 border-2 border-transparent rounded-xl text-white text-base placeholder-gray-400 focus:outline-none transition-all'
           required
+        />
+      </div>
+
+      {/* Campo Media (Idea visual/audiovisual) */}
+      <div>
+        <label className='block text-xs font-medium text-gray-400 mb-2'>
+          Idea visual/audiovisual
+        </label>
+        <textarea
+          value={formData.media || ''}
+          onChange={e => handleInputChange('media', e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder='Describe la idea visual...'
+          rows={2}
+          className='purple-glow-focus w-full px-4 py-2.5 bg-gray-800/60 border-2 border-transparent rounded-xl text-white text-sm placeholder-gray-400 focus:outline-none transition-all resize-none'
         />
       </div>
 
       {/* Campo Copy */}
       <div>
-        <label className='block text-xs font-medium text-gray-400 mb-1.5'>Copy del post</label>
+        <label className='block text-xs font-medium text-gray-400 mb-2'>Copy</label>
         <textarea
           value={formData.copy || ''}
           onChange={e => handleInputChange('copy', e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder='Texto del post, hashtags, emojis...'
-          rows={2}
+          placeholder='Texto para la red social...'
+          rows={3}
           maxLength={2000}
-          className='w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all resize-none'
+          className='purple-glow-focus w-full px-4 py-2.5 bg-gray-800/60 border-2 border-transparent rounded-xl text-white text-sm placeholder-gray-400 focus:outline-none transition-all resize-none'
         />
-        <div className='text-xs text-gray-500 mt-0.5'>{(formData.copy || '').length}/2000</div>
+        <div className='text-xs text-gray-500 mt-1'>{(formData.copy || '').length}/2000</div>
       </div>
 
-      {/* Estados y Canal en fila */}
-      <div className='grid grid-cols-2 gap-2'>
-        <div>
-          <label className='block text-xs font-medium text-gray-400 mb-1.5'>Estado</label>
-          <select
-            value={formData.status || 'pendiente'}
-            onChange={e => handleInputChange('status', e.target.value)}
-            className='w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all'
-          >
-            <option value='pendiente'>Pendiente</option>
-            <option value='en-diseño'>En Diseño</option>
-            <option value='aprobado'>Aprobado</option>
-            <option value='publicado'>Publicado</option>
-            <option value='cancelado'>Cancelado</option>
-          </select>
-        </div>
-
-        <div>
-          <label className='block text-xs font-medium text-gray-400 mb-1.5'>Canal</label>
-          <select
-            value={formData.channel || 'IG'}
-            onChange={e => handleInputChange('channel', e.target.value)}
-            className='w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all'
-          >
-            <option value='IG'>Instagram</option>
-            <option value='FB'>Facebook</option>
-            <option value='TikTok'>TikTok</option>
-            <option value='LinkedIn'>LinkedIn</option>
-            <option value='WhatsApp'>WhatsApp</option>
-          </select>
-        </div>
+      {/* Estado Pills */}
+      <div>
+        <label className='block text-xs font-medium text-gray-400 mb-2'>Estado</label>
+        <StatusPills
+          value={formData.status || 'pendiente'}
+          onChange={value => handleInputChange('status', value)}
+        />
       </div>
+
+      {/* Botón IA Prominente */}
+      <AIGenerateButton onClick={handleAIGenerate} disabled={isLoading} />
+
+      {/* Links & Recursos */}
+      <LinksAccordion
+        links={formData.links || []}
+        onChange={links => handleInputChange('links', links)}
+      />
 
       {/* Botón de envío */}
       <motion.button
         type='submit'
         disabled={!formData.title?.trim() || isLoading}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className='w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2'
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        className='w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 flex items-center justify-center gap-2'
       >
         {isLoading ? (
           <>
@@ -146,15 +155,15 @@ const TaskForm = ({
                 />
               </svg>
             )}
-            {modeConfig?.buttonText || 'Crear Tarea'}
+            {modeConfig?.buttonText || 'Crear Contenido'}
           </>
         )}
       </motion.button>
 
       {/* Shortcut hint */}
       <p className='text-xs text-gray-500 text-center'>
-        <kbd className='px-1 py-0.5 bg-gray-700 rounded text-xs'>Ctrl</kbd> +
-        <kbd className='px-1 py-0.5 bg-gray-700 rounded text-xs ml-1'>Enter</kbd> para{' '}
+        <kbd className='px-1.5 py-0.5 bg-gray-700 rounded text-xs'>Ctrl</kbd> +
+        <kbd className='px-1.5 py-0.5 bg-gray-700 rounded text-xs ml-1'>Enter</kbd> para{' '}
         {mode === 'edit' ? 'actualizar' : 'crear'}
       </p>
     </form>

@@ -22,6 +22,9 @@ import toast from 'react-hot-toast'
 import { WelcomeEmptyState } from './components/WelcomeEmptyState.tsx'
 import { ActivityFeed } from './components/ActivityFeed.tsx'
 import { InviteUserModal } from './components/InviteUserModal.jsx'
+import { CreateClientModal } from './components/CreateClientModal.jsx'
+import { RenameClientModal } from './components/RenameClientModal.jsx'
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal.jsx'
 import { useMultipleClientStats } from './hooks/useClientStats'
 import { ProgressBadge } from '@components/ui/ProgressIndicator.jsx'
 import { LoadingCard, ErrorCard, HelpTooltip } from '@components/ui/index.js'
@@ -35,6 +38,7 @@ import {
 import { getMyAgency } from '@api/agencies.api'
 import { apiClient } from '@api/api-client'
 import { Button } from '@components/ui'
+import { OnboardingTour } from '../components/onboarding/OnboardingTour.jsx'
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient()
@@ -45,6 +49,10 @@ export const DashboardPage = () => {
   const [sortBy, setSortBy] = React.useState('name') // 'name', 'date', 'industry'
   const [isSortOpen, setIsSortOpen] = React.useState(false)
   const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
+  const [isRenameModalOpen, setIsRenameModalOpen] = React.useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
+  const [selectedClient, setSelectedClient] = React.useState(null)
   const sortRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -252,6 +260,7 @@ export const DashboardPage = () => {
 
   return (
     <div className='space-y-6 sm:space-y-8 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8'>
+      <OnboardingTour />
       {/* Hero */}
       <section className='flex flex-col items-center text-center gap-4 py-4 px-4 sm:px-0'>
         <div className='h-16 w-16 rounded-full border border-[color:var(--color-border-subtle)] bg-surface-soft flex items-center justify-center text-2xl font-bold text-text-primary'>
@@ -260,11 +269,11 @@ export const DashboardPage = () => {
         <div className='flex justify-center gap-3'>
           <Button
             id='add-client-button'
-            onClick={() => navigate('/clients/new')}
+            onClick={() => setIsCreateModalOpen(true)}
             variant='primary'
             size='md'
             icon={<Plus size={18} />}
-            aria-label='Ir a la página de crear nuevo cliente'
+            aria-label='Crear nuevo cliente'
             title='Crear un nuevo cliente (Ctrl+N)'
             className='glow-gold'
           >
@@ -372,7 +381,7 @@ export const DashboardPage = () => {
 
       {/* Grid de tarjetas */}
       {allClients.length === 0 ? (
-        <WelcomeEmptyState onActionClick={() => navigate('/clients/new')} />
+        <WelcomeEmptyState onCreateClient={() => setIsCreateModalOpen(true)} />
       ) : filteredAndSortedClients.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className='text-center py-12'>
           <Search className='mx-auto h-12 w-12 text-text-muted mb-4' />
@@ -431,7 +440,8 @@ export const DashboardPage = () => {
                             e.preventDefault()
                             e.stopPropagation()
                             onClose()
-                            toast.info('Función de renombrado temporalmente deshabilitada')
+                            setSelectedClient(client)
+                            setIsRenameModalOpen(true)
                           }}
                           icon={<Pencil size={16} />}
                         >
@@ -549,13 +559,8 @@ export const DashboardPage = () => {
                                 e.preventDefault()
                                 e.stopPropagation()
                                 onClose()
-                                if (
-                                  confirm(
-                                    `¿Eliminar el cliente "${client.name}"? Esta acción no se puede deshacer.`
-                                  )
-                                ) {
-                                  deleteClientMutation.mutate(client.id)
-                                }
+                                setSelectedClient(client)
+                                setIsDeleteModalOpen(true)
                               }}
                             >
                               <Trash2 size={16} /> Eliminar
@@ -635,7 +640,37 @@ export const DashboardPage = () => {
       {/* Invite User Modal */}
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
 
-      {/* TODO: Replace these modals with inline editing or proper forms */}
+      {/* Create Client Modal */}
+      <CreateClientModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+
+      {/* Rename Client Modal */}
+      <RenameClientModal
+        isOpen={isRenameModalOpen}
+        onClose={() => {
+          setIsRenameModalOpen(false)
+          setSelectedClient(null)
+        }}
+        client={selectedClient}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setSelectedClient(null)
+        }}
+        client={selectedClient}
+        onConfirm={clientId => {
+          deleteClientMutation.mutate(clientId, {
+            onSuccess: () => {
+              setIsDeleteModalOpen(false)
+              setSelectedClient(null)
+            },
+          })
+        }}
+        isDeleting={deleteClientMutation.isPending}
+      />
     </div>
   )
 }

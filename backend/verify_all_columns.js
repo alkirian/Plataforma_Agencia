@@ -15,7 +15,8 @@ async function verifyAllColumns() {
     { table: 'clients', column: 'avatar_url' },
     { table: 'schedule_items', column: 'scheduled_at' },
     { table: 'schedule_items', column: 'start' }, // Checking if this exists (backend logic uses it in logs?)
-    { table: 'schedule_items', column: 'end' }    // Checking if this exists
+    { table: 'schedule_items', column: 'end' },   // Checking if this exists
+    { table: 'schedule_items', column: 'links' }  // CHECKING FOR LINKS
   ];
 
   for (const check of checks) {

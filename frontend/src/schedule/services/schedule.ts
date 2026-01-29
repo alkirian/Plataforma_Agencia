@@ -11,6 +11,8 @@ interface RawSchedulePayload {
   status?: string
   priority?: string
   channel?: string
+  media?: string
+  links?: Array<{ id: number; url: string; description: string }>
   [key: string]: any
 }
 
@@ -21,6 +23,8 @@ interface NormalizedSchedulePayload {
   status?: string
   priority?: string
   channel?: string
+  media?: string | null
+  links?: Array<{ id: number; url: string; description: string }>
 }
 
 interface ScheduleItem {
@@ -70,31 +74,25 @@ const normalizeSchedulePayload = (raw: RawSchedulePayload = {}): NormalizedSched
     out.scheduled_at = isNaN(dt.getTime()) ? raw.scheduled_at : dt.toISOString()
   }
 
-  // Estado: aceptar valores conocidos (en español, también variantes en minúsculas)
+  // Estado: el backend acepta valores en inglés
   if (typeof raw.status === 'string') {
-    const s = raw.status.trim()
-    // Mantener en español/minúsculas si viene así; el backend normaliza a mayúsculas donde aplica
-    const allowed = new Set([
-      'planificacion',
-      'pendiente',
-      'en-diseño',
-      'en-revision',
-      'esperando-aprobacion',
-      'aprobado',
-      'requiere-cambios',
-      'listo-publicar',
-      'publicado',
-      'completado',
-      'pausado',
-      'cancelado',
-    ])
-    out.status = (allowed.has(s) ? s : 'pendiente') as TaskState
-  }
-
-  // Asegurar estado en formato externo (ES ASCII)
-  if (typeof raw.status === 'string') {
-    const external = toExternalTaskState(raw.status.trim())
-    if (external) out.status = external
+    const s = raw.status.trim().toLowerCase()
+    // Valores que acepta el backend directamente
+    const backendAllowed = new Set(['pending', 'in-design', 'approved', 'cancelled', 'published'])
+    if (backendAllowed.has(s)) {
+      out.status = s as TaskState
+    } else {
+      // Mapear valores en español a inglés si es necesario
+      const spanishToEnglish: Record<string, string> = {
+        pendiente: 'pending',
+        'en-diseño': 'in-design',
+        'en-diseno': 'in-design',
+        aprobado: 'approved',
+        cancelado: 'cancelled',
+        publicado: 'published',
+      }
+      out.status = (spanishToEnglish[s] || 'pending') as TaskState
+    }
   }
 
   // Prioridad: mapear a valores permitidos por el schema
@@ -148,7 +146,34 @@ const normalizeSchedulePayload = (raw: RawSchedulePayload = {}): NormalizedSched
     out.channel = raw.channel.slice(0, 50)
   }
 
-  // Ignorar otras claves no soportadas por el schema
+  // Campos de redes sociales (pasar a través al backend)
+  const socialFields = [
+    'platform',
+    'post_type',
+    'caption',
+    'media_urls',
+    'hashtags',
+    'collaborators',
+    'is_published',
+  ] as const
+  for (const field of socialFields) {
+    if (raw[field] !== undefined && raw[field] !== null && raw[field] !== '') {
+      ;(out as any)[field] = raw[field]
+    }
+  }
+
+  // Media (idea visual/audiovisual)
+  if (typeof raw.media === 'string') {
+    const m = raw.media.trim()
+    if (m) out.media = m
+    else out.media = null
+  }
+
+  // Links (recursos, scripts, etc.)
+  if (Array.isArray(raw.links)) {
+    out.links = raw.links
+  }
+
   return out
 }
 

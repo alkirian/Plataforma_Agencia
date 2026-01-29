@@ -41,4 +41,3 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onAuthSuccess, redirec
 }
 
 export default WelcomePage
-

@@ -1,6 +1,6 @@
 /**
  * ENHANCED THEME CONTEXT
- * 
+ *
  * Provides comprehensive theme management including:
  * - Dynamic color palette switching
  * - Theme mode (light/dark) management
@@ -8,27 +8,27 @@
  * - Real-time CSS variable updates
  */
 
-import React, { 
-  createContext, 
-  useContext, 
-  useEffect, 
-  useState, 
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
   useCallback,
-  ReactNode,
-  useMemo
+  type ReactNode,
+  useMemo,
 } from 'react'
-import { 
-  ColorPalette, 
-  ColorPaletteName, 
-  colorPalettes, 
+import {
+  type ColorPalette,
+  type ColorPaletteName,
+  colorPalettes,
   DEFAULT_PALETTE,
-  getPalette 
+  getPalette,
 } from '../theme/colorPalettes'
-import { 
-  applyColorPalette, 
+import {
+  applyColorPalette,
   setActiveColorPalette,
   clearThemeVariables,
-  isColorPaletteActive 
+  isColorPaletteActive,
 } from '../theme/cssVariableGenerator'
 
 /**
@@ -55,21 +55,21 @@ interface ThemeContextType {
   currentPaletteName: ColorPaletteName
   mode: ThemeMode
   preferences: ThemePreferences
-  
+
   // Theme switching functions
   setColorPalette: (palette: ColorPaletteName) => void
   setMode: (mode: ThemeMode) => void
   toggleMode: () => void
-  
+
   // Preference management
   updatePreferences: (preferences: Partial<ThemePreferences>) => void
   resetToDefaults: () => void
-  
+
   // Utility functions
   isDarkMode: boolean
   isSystemMode: boolean
   availablePalettes: ColorPaletteName[]
-  
+
   // CSS helpers
   getCSSVariable: (path: string) => string
   applyCustomPalette: (palette: ColorPalette) => void
@@ -186,19 +186,19 @@ export function ThemeProvider({
     // Apply color palette
     applyColorPalette(currentPalette)
     setActiveColorPalette(preferences.colorPalette)
-    
+
     // Apply theme mode
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
-    
+
     // Apply reduced motion preference
     document.documentElement.setAttribute(
-      'data-reduced-motion', 
+      'data-reduced-motion',
       preferences.reducedMotion ? 'reduce' : 'no-preference'
     )
-    
+
     // Apply animations preference
     document.documentElement.setAttribute(
-      'data-animations', 
+      'data-animations',
       preferences.animations ? 'enabled' : 'disabled'
     )
   }, [currentPalette, preferences, isDarkMode])
@@ -226,7 +226,7 @@ export function ThemeProvider({
   const toggleMode = useCallback(() => {
     setPreferences(prev => ({
       ...prev,
-      mode: prev.mode === 'dark' ? 'light' : prev.mode === 'light' ? 'system' : 'dark'
+      mode: prev.mode === 'dark' ? 'light' : prev.mode === 'light' ? 'system' : 'dark',
     }))
   }, [])
 
@@ -249,43 +249,42 @@ export function ThemeProvider({
   }, [])
 
   // Context value
-  const contextValue: ThemeContextType = useMemo(() => ({
-    currentPalette,
-    currentPaletteName: preferences.colorPalette,
-    mode: preferences.mode,
-    preferences,
-    
-    setColorPalette,
-    setMode,
-    toggleMode,
-    
-    updatePreferences,
-    resetToDefaults,
-    
-    isDarkMode,
-    isSystemMode: preferences.mode === 'system',
-    availablePalettes: Object.keys(colorPalettes) as ColorPaletteName[],
-    
-    getCSSVariable,
-    applyCustomPalette,
-  }), [
-    currentPalette,
-    preferences,
-    setColorPalette,
-    setMode,
-    toggleMode,
-    updatePreferences,
-    resetToDefaults,
-    isDarkMode,
-    getCSSVariable,
-    applyCustomPalette,
-  ])
+  const contextValue: ThemeContextType = useMemo(
+    () => ({
+      currentPalette,
+      currentPaletteName: preferences.colorPalette,
+      mode: preferences.mode,
+      preferences,
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
+      setColorPalette,
+      setMode,
+      toggleMode,
+
+      updatePreferences,
+      resetToDefaults,
+
+      isDarkMode,
+      isSystemMode: preferences.mode === 'system',
+      availablePalettes: Object.keys(colorPalettes) as ColorPaletteName[],
+
+      getCSSVariable,
+      applyCustomPalette,
+    }),
+    [
+      currentPalette,
+      preferences,
+      setColorPalette,
+      setMode,
+      toggleMode,
+      updatePreferences,
+      resetToDefaults,
+      isDarkMode,
+      getCSSVariable,
+      applyCustomPalette,
+    ]
   )
+
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>
 }
 
 /**
@@ -293,11 +292,11 @@ export function ThemeProvider({
  */
 export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext)
-  
+
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider')
   }
-  
+
   return context
 }
 
@@ -306,7 +305,7 @@ export function useTheme(): ThemeContextType {
  */
 export function useThemeColors() {
   const { currentPalette, getCSSVariable } = useTheme()
-  
+
   return {
     colors: currentPalette,
     css: {
@@ -314,35 +313,35 @@ export function useThemeColors() {
       bgPrimary: getCSSVariable('background.primary'),
       bgSecondary: getCSSVariable('background.secondary'),
       bgTertiary: getCSSVariable('background.tertiary'),
-      
+
       // Surface colors
       surfaceDefault: getCSSVariable('surface.default'),
       surfaceSoft: getCSSVariable('surface.soft'),
       surfaceStrong: getCSSVariable('surface.strong'),
-      
+
       // Text colors
       textPrimary: getCSSVariable('text.primary'),
       textSecondary: getCSSVariable('text.secondary'),
       textMuted: getCSSVariable('text.muted'),
       textAccent: getCSSVariable('text.accent'),
-      
+
       // Interactive colors
       interactivePrimary: getCSSVariable('interactive.primary'),
       interactivePrimaryHover: getCSSVariable('interactive.primaryHover'),
       interactiveSecondary: getCSSVariable('interactive.secondary'),
-      
+
       // Border colors
       borderDefault: getCSSVariable('border.default'),
       borderSubtle: getCSSVariable('border.subtle'),
       borderStrong: getCSSVariable('border.strong'),
       borderInteractive: getCSSVariable('border.interactive'),
-      
+
       // Status colors
       statusSuccess: getCSSVariable('status.success'),
       statusWarning: getCSSVariable('status.warning'),
       statusError: getCSSVariable('status.error'),
       statusInfo: getCSSVariable('status.info'),
-    }
+    },
   }
 }
 
@@ -351,14 +350,17 @@ export function useThemeColors() {
  */
 export function useThemeAnimation() {
   const { preferences } = useTheme()
-  
-  const getAnimationProps = useCallback((defaultAnimation: any) => {
-    if (!preferences.animations || preferences.reducedMotion) {
-      return { animate: false, transition: { duration: 0 } }
-    }
-    return defaultAnimation
-  }, [preferences.animations, preferences.reducedMotion])
-  
+
+  const getAnimationProps = useCallback(
+    (defaultAnimation: any) => {
+      if (!preferences.animations || preferences.reducedMotion) {
+        return { animate: false, transition: { duration: 0 } }
+      }
+      return defaultAnimation
+    },
+    [preferences.animations, preferences.reducedMotion]
+  )
+
   return {
     animationsEnabled: preferences.animations && !preferences.reducedMotion,
     getAnimationProps,

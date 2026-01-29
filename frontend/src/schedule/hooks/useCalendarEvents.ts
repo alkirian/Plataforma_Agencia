@@ -135,7 +135,7 @@ export const useCalendarEvents = (clientId?: string): UseCalendarEventsReturn =>
         setEvents(prev => [...prev, tempEvent])
 
         // Crear en backend
-        const newEvent = await createScheduleItem(clientId!, eventData)
+        const newEvent = await createScheduleItem(clientId, eventData)
 
         // Reemplazar evento temporal con el real
         setEvents(prev =>
@@ -163,7 +163,7 @@ export const useCalendarEvents = (clientId?: string): UseCalendarEventsReturn =>
   const updateEvent = useCallback(
     async (eventId: string, updateData: Partial<ScheduleItem>): Promise<ScheduleItem> => {
       try {
-        const updatedEvent = await updateScheduleItem(clientId!, eventId, updateData)
+        const updatedEvent = await updateScheduleItem(clientId, eventId, updateData)
 
         // Actualizar estado local
         setEvents(prev =>
@@ -192,7 +192,7 @@ export const useCalendarEvents = (clientId?: string): UseCalendarEventsReturn =>
   const deleteEvent = useCallback(
     async (eventId: string): Promise<void> => {
       try {
-        await deleteScheduleItem(clientId!, eventId)
+        await deleteScheduleItem(clientId, eventId)
 
         // Actualizar estado local
         setEvents(prev => prev.filter(event => event.id !== eventId))

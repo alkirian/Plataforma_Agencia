@@ -1,34 +1,100 @@
 /* FullCalendar Custom Styles - Dark Grayscale Theme */
 
 :root {
-  /* Enhanced color palette for better visual hierarchy */
-  --fc-primary-color: #60a5fa;
-  --fc-primary-light: rgba(96, 165, 250, 0.15);
-  --fc-surface: rgba(15, 23, 42, 0.95);
-  --fc-surface-soft: rgba(30, 41, 59, 0.9);
-  --fc-surface-strong: rgba(51, 65, 85, 0.85);
-  --fc-border: rgba(148, 163, 184, 0.12);
-  --fc-border-strong: rgba(148, 163, 184, 0.25);
-  --fc-text: #f8fafc;
-  --fc-text-secondary: #cbd5e1;
-  --fc-text-muted: #94a3b8;
-  --fc-hover: rgba(59, 130, 246, 0.08);
-  --fc-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
-  --fc-bg-soft: rgba(30, 41, 59, 0.6);
+  /* ===========================================
+     MODERN DARK THEME (Linked to Global Tokens)
+     =========================================== */
 
-  /* Modern accent colors */
-  --fc-accent-blue: #3b82f6;
-  --fc-accent-emerald: #10b981;
-  --fc-accent-purple: #8b5cf6;
-  --fc-accent-amber: #f59e0b;
-  --fc-accent-rose: #f43f5e;
+  /* Main backgrounds - using global app tokens */
+  --fc-bg-main: var(--color-app-bg);
+  --fc-bg-cell: var(--color-surface-strong); /* Calendar grid cells */
+  --fc-bg-sidebar: var(--color-surface); /* Sidebar background */
+  --fc-surface: var(--color-surface);
+  --fc-surface-soft: var(--color-surface-soft);
+  --fc-surface-strong: var(--color-surface-strong);
 
-  /* Status colors - more vibrant */
+  /* Borders & dividers */
+  --fc-border: var(--color-border-subtle);
+  --fc-border-strong: var(--color-border-strong);
+
+  /* Text colors */
+  --fc-text: var(--color-text-primary);
+  --fc-text-secondary: var(--color-text-secondary);
+  --fc-text-muted: var(--color-text-muted);
+
+  /* Interactive states */
+  --fc-hover: rgba(255, 90, 9, 0.05); /* Orange hint */
+  --fc-today-ring: var(--palette-primary-accent);
+  --fc-primary-color: var(--palette-primary-accent);
+  --fc-primary-light: rgba(255, 90, 9, 0.1);
+
+  /* Background gradients */
+  --fc-bg: transparent; /* Let app background show through */
+  --fc-bg-soft: var(--color-surface-soft);
+
+  /* ===========================================
+     COLORFUL EVENT CARDS (Platform Colors)
+     =========================================== */
+
+  /* Instagram - Pink/Magenta */
+  --color-instagram-start: #e1306c;
+  --color-instagram-end: #c13584;
+  --color-instagram: linear-gradient(135deg, #e1306c, #c13584);
+  --shadow-instagram: rgba(225, 48, 108, 0.3);
+
+  /* Facebook - Blue */
+  --color-facebook: #1877f2;
+  --shadow-facebook: rgba(24, 119, 242, 0.3);
+
+  /* LinkedIn - Corporate Blue */
+  --color-linkedin: #0077b5;
+  --shadow-linkedin: rgba(0, 119, 181, 0.3);
+
+  /* Twitter/X - Sky Blue */
+  --color-twitter: #1da1f2;
+  --shadow-twitter: rgba(29, 161, 242, 0.3);
+
+  /* TikTok - Black to Pink */
+  --color-tiktok-start: #000000;
+  --color-tiktok-end: #ee1d52;
+  --color-tiktok: linear-gradient(135deg, #000000, #ee1d52);
+  --shadow-tiktok: rgba(238, 29, 82, 0.3);
+
+  /* YouTube - Red */
+  --color-youtube: #ff0000;
+  --shadow-youtube: rgba(255, 0, 0, 0.3);
+
+  /* WhatsApp - Green */
+  --color-whatsapp: #25d366;
+  --shadow-whatsapp: rgba(37, 211, 102, 0.3);
+
+  /* Threads - Black */
+  --color-threads: #000000;
+  --shadow-threads: rgba(0, 0, 0, 0.4);
+
+  /* ===========================================
+     STATUS BADGES (On colored cards)
+     =========================================== */
+
+  --status-draft: #f59e0b; /* Amber/Orange */
+  --status-scheduled: #3b82f6; /* Blue */
+  --status-published: #10b981; /* Green */
+  --status-failed: #ef4444; /* Red */
+  --status-pending: #f59e0b;
+
+  /* Legacy status colors */
   --fc-status-pending: #f59e0b;
   --fc-status-design: #3b82f6;
   --fc-status-approved: #10b981;
-  --fc-status-published: #059669;
+  --fc-status-published: #10b981;
   --fc-status-cancelled: #ef4444;
+
+  /* Modern accent colors */
+  --fc-accent-blue: var(--color-accent-blue);
+  --fc-accent-emerald: #10b981;
+  --fc-accent-purple: var(--color-accent-purple);
+  --fc-accent-amber: #f59e0b;
+  --fc-accent-rose: #f43f5e;
 }
 
 /* Container */
@@ -133,15 +199,15 @@
 /* Headers mejorados */
 .fc .fc-col-header {
   background: var(--fc-surface-soft);
-  border-bottom: 1px solid var(--fc-border);
+  border-bottom: none; /* Eliminado borde gris */
   backdrop-filter: blur(8px);
 }
 .fc .fc-col-header-cell {
-  padding: 14px 10px;
-  font-weight: 600;
-  font-size: 0.75rem; /* ~12px */
+  padding: 6px 8px; /* Reducido de 14px a 6px */
+  font-weight: 500; /* Reducido de 600 a 500 */
+  font-size: 0.625rem; /* Reducido de 0.75rem (~12px) a 0.625rem (~10px) */
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em; /* Reducido de 0.08em a 0.04em */
   color: var(--fc-text-secondary);
   transition:
     background 0.2s ease,
@@ -150,6 +216,15 @@
 }
 .fc .fc-col-header-cell:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Eliminar bordes del header row */
+.fc .fc-col-header-cell {
+  border: none !important;
+}
+
+.fc-theme-standard th {
+  border: none !important;
 }
 
 /* Enhanced day cells with modern hover effects and fixed height */
@@ -212,26 +287,38 @@
   background: rgba(148, 163, 184, 0.05);
 }
 
-/* Make month day frame allocate space for a single event to fill the tile */
+/* Make month day frame allocate space for events to fill the tile */
 .fc .fc-daygrid-day-frame {
   display: flex;
   flex-direction: column;
   height: 100%; /* Fill the entire day cell */
   min-height: 120px; /* Match the day cell height */
+  padding: 4px;
 }
 .fc .fc-daygrid-day-top {
-  padding-bottom: 4px;
+  padding-bottom: 2px;
+  flex-shrink: 0;
 }
 .fc .fc-daygrid-day-events {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0; /* Allow shrinking */
+  gap: 3px;
 }
+/* Single event fills entire available space */
 .fc .fc-daygrid-day-events > .fc-daygrid-event-harness:only-child {
   flex: 1 1 auto;
 }
 .fc .fc-daygrid-day-events > .fc-daygrid-event-harness:only-child .fc-daygrid-event {
+  height: 100%;
+  min-height: 90px;
+}
+/* Multiple events share space equally */
+.fc .fc-daygrid-day-events > .fc-daygrid-event-harness {
+  flex: 1 1 auto;
+}
+.fc .fc-daygrid-day-events > .fc-daygrid-event-harness .fc-daygrid-event {
   height: 100%;
 }
 
@@ -341,18 +428,21 @@
   animation: eventPulse 1.2s ease-in-out 0s 2;
 }
 
-/* Month view event adjustments */
+/* Month view event adjustments - FULL HEIGHT */
 .fc .fc-daygrid-event {
-  margin: 1px 2px;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  min-height: 42px;
+  margin: 2px 3px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  min-height: 85px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
 }
 .fc .fc-daygrid-event-harness {
-  margin: 1px 0;
+  margin: 2px 0;
+  flex: 1 1 auto;
 }
 
 /* More link */
@@ -892,4 +982,309 @@
 .fc .fc-daygrid-day-number,
 .fc .fc-timegrid-axis {
   font-variant-numeric: tabular-nums;
+}
+
+/* ===========================================
+   PLATFORM-SPECIFIC EVENT CARD STYLES
+   =========================================== */
+
+/* Instagram Cards - Pink/Magenta Gradient */
+.fc-event--instagram,
+.fc-event[data-platform='instagram'] {
+  background: var(--color-instagram) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-instagram),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--instagram:hover,
+.fc-event[data-platform='instagram']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-instagram),
+    0 0 0 2px rgba(225, 48, 108, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Facebook Cards - Blue */
+.fc-event--facebook,
+.fc-event[data-platform='facebook'] {
+  background: var(--color-facebook) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-facebook),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--facebook:hover,
+.fc-event[data-platform='facebook']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-facebook),
+    0 0 0 2px rgba(24, 119, 242, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* LinkedIn Cards - Professional Blue */
+.fc-event--linkedin,
+.fc-event[data-platform='linkedin'] {
+  background: var(--color-linkedin) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-linkedin),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--linkedin:hover,
+.fc-event[data-platform='linkedin']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-linkedin),
+    0 0 0 2px rgba(0, 119, 181, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Twitter/X Cards - Sky Blue */
+.fc-event--twitter,
+.fc-event--x,
+.fc-event[data-platform='twitter'],
+.fc-event[data-platform='x'] {
+  background: var(--color-twitter) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-twitter),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--twitter:hover,
+.fc-event--x:hover,
+.fc-event[data-platform='twitter']:hover,
+.fc-event[data-platform='x']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-twitter),
+    0 0 0 2px rgba(29, 161, 242, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* TikTok Cards - Black to Pink Gradient */
+.fc-event--tiktok,
+.fc-event[data-platform='tiktok'] {
+  background: var(--color-tiktok) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-tiktok),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--tiktok:hover,
+.fc-event[data-platform='tiktok']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-tiktok),
+    0 0 0 2px rgba(238, 29, 82, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* YouTube Cards - Red */
+.fc-event--youtube,
+.fc-event[data-platform='youtube'] {
+  background: var(--color-youtube) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-youtube),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--youtube:hover,
+.fc-event[data-platform='youtube']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-youtube),
+    0 0 0 2px rgba(255, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* WhatsApp Cards - Green */
+.fc-event--whatsapp,
+.fc-event[data-platform='whatsapp'] {
+  background: var(--color-whatsapp) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-whatsapp),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--whatsapp:hover,
+.fc-event[data-platform='whatsapp']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-whatsapp),
+    0 0 0 2px rgba(37, 211, 102, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Threads Cards - Black */
+.fc-event--threads,
+.fc-event[data-platform='threads'] {
+  background: var(--color-threads) !important;
+  border: 1px solid #333333 !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 12px var(--shadow-threads),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fc-event--threads:hover,
+.fc-event[data-platform='threads']:hover {
+  box-shadow:
+    0 8px 20px var(--shadow-threads),
+    0 0 0 2px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ===========================================
+   ENHANCED EVENT CARD CONTENT LAYOUT
+   =========================================== */
+
+/* Event card internal structure for detailed information */
+.fc-event-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px;
+}
+
+.fc-event-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.fc-event-title {
+  flex: 1;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.fc-event-platform-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.fc-event-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  opacity: 0.95;
+}
+
+.fc-event-time {
+  font-weight: 500 !important;
+  font-size: 11px !important;
+}
+
+.fc-event-status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Status badge color variations on colored backgrounds */
+.fc-event-status-badge--draft {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.fc-event-status-badge--scheduled {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.fc-event-status-badge--published {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.fc-event-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  margin-left: auto;
+}
+
+/* 
+   Style for selected days in AI selection mode.
+   We color the whole cell background to make it very distinct.
+*/
+.fc-day-selected {
+  background-color: rgba(147, 51, 234, 0.15) !important; /* purple-600 with opacity */
+  transition: background-color 0.2s ease;
+}
+
+.fc-day-selected:hover {
+  background-color: rgba(147, 51, 234, 0.25) !important;
+}
+
+/* ===========================================
+   DRAG AND DROP FIXES
+   =========================================== */
+
+/* Reset transforms when dragging to fix positioning */
+.fc .fc-event.fc-event-dragging,
+.fc .fc-event.fc-event-resizing {
+  transform: none !important;
+  opacity: 0.85;
+  z-index: 9999 !important;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 2px var(--fc-primary-color);
+}
+
+/* Mirror element (the ghost that follows cursor) */
+.fc .fc-event.fc-event-mirror {
+  transform: none !important;
+  opacity: 0.9;
+  z-index: 9999 !important;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Disable hover effects during drag */
+.fc .fc-event.fc-event-dragging:hover,
+.fc .fc-event.fc-event-resizing:hover {
+  transform: none !important;
+}
+
+.fc .fc-event.fc-event-dragging::before,
+.fc .fc-event.fc-event-resizing::before {
+  opacity: 0 !important;
+}
+
+/* Highlight drop target */
+.fc .fc-daygrid-day.fc-highlight {
+  background: rgba(255, 90, 9, 0.15) !important;
+  border: 1px dashed var(--fc-primary-color) !important;
+}
+
+/* Ensure day cells don't interfere with drag positioning */
+.fc .fc-daygrid-day:hover {
+  transform: none;
 }

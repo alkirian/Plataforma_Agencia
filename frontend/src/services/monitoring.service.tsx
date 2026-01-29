@@ -71,7 +71,8 @@ class MonitoringService {
   private readonly buildVersion: string
   private userId?: string
   private readonly isEnabled: boolean
-  private queue: Array<ErrorReport | PerformanceMetric | ComponentUsageMetric | CodeQualityMetric> = []
+  private queue: Array<ErrorReport | PerformanceMetric | ComponentUsageMetric | CodeQualityMetric> =
+    []
   private flushTimer: NodeJS.Timeout | null = null
   private isDestroyed = false
   private retryCount = 0
@@ -300,15 +301,16 @@ class MonitoringService {
       // Core Web Vitals
       this.performanceObserver = new PerformanceObserver(list => {
         if (this.isDestroyed) return
-        
+
         list.getEntries().forEach(entry => {
           try {
             if (entry.entryType === 'navigation') {
               const navEntry = entry as PerformanceNavigationTiming
               const loadTime = navEntry.loadEventEnd - navEntry.loadEventStart
-              const domTime = navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart
+              const domTime =
+                navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart
               const firstPaint = navEntry.responseEnd - navEntry.requestStart
-              
+
               if (loadTime > 0) {
                 this.reportPerformance('page_load_time', loadTime)
               }
@@ -339,12 +341,12 @@ class MonitoringService {
 
       // Observe with proper error handling
       const entryTypes = ['navigation', 'paint']
-      
+
       // Check if layout-shift is supported before adding it
       if ('PerformanceEventTiming' in window) {
         entryTypes.push('layout-shift')
       }
-      
+
       this.performanceObserver.observe({ entryTypes })
     } catch (error) {
       console.warn('Performance observer initialization failed:', error)
@@ -402,7 +404,7 @@ class MonitoringService {
 
     // Store original fetch to restore on cleanup
     const originalFetch = window.fetch
-    
+
     // Enhanced fetch wrapper with better error handling
     window.fetch = async (...args: Parameters<typeof fetch>) => {
       if (this.isDestroyed) {
@@ -412,7 +414,7 @@ class MonitoringService {
       const start = performance.now()
       const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || 'unknown'
       const method = args[1]?.method || 'GET'
-      
+
       try {
         const response = await originalFetch(...args)
         const duration = performance.now() - start
@@ -430,7 +432,7 @@ class MonitoringService {
         return response
       } catch (error) {
         const duration = performance.now() - start
-        
+
         if (!this.isDestroyed) {
           this.reportError(error as Error, undefined, 'app', 'network', {
             url: url.split('?')[0],
@@ -438,7 +440,7 @@ class MonitoringService {
             duration: String(duration),
           })
         }
-        
+
         throw error
       }
     }
@@ -460,9 +462,8 @@ class MonitoringService {
     }
 
     // Check for memory API support
-    const hasMemoryAPI = 'memory' in performance && 
-      typeof (performance as any).memory === 'object'
-    
+    const hasMemoryAPI = 'memory' in performance && typeof (performance as any).memory === 'object'
+
     if (!hasMemoryAPI) {
       return
     }
@@ -563,12 +564,12 @@ class MonitoringService {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       // Reset retry count on success
       this.retryCount = 0
     } catch (error) {
       console.warn(`Failed to send monitoring data (attempt ${attempt}):`, error)
-      
+
       if (attempt < this.maxRetries && !this.isDestroyed) {
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.pow(2, attempt - 1) * 1000
@@ -708,7 +709,7 @@ export const usePerformanceTracking = (componentName: string) => {
 
   const startTracking = React.useCallback((operationName: string) => {
     if (!isMountedRef.current) return operationName
-    
+
     const now = performance.now()
     startTimeRef.current.set(operationName, now)
     return operationName
@@ -717,12 +718,12 @@ export const usePerformanceTracking = (componentName: string) => {
   const endTracking = React.useCallback(
     (operationName: string) => {
       if (!isMountedRef.current) return
-      
+
       const startTime = startTimeRef.current.get(operationName)
       if (startTime !== undefined) {
         const duration = performance.now() - startTime
         startTimeRef.current.delete(operationName)
-        
+
         if (duration > 0) {
           monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
         }
@@ -740,14 +741,14 @@ export const usePerformanceTracking = (componentName: string) => {
       const start = performance.now()
       try {
         const result = await operation()
-        
+
         if (isMountedRef.current) {
           const duration = performance.now() - start
           if (duration > 0) {
             monitoringService.reportPerformance(operationName, duration, 'ms', componentName)
           }
         }
-        
+
         return result
       } catch (error) {
         if (isMountedRef.current) {
@@ -805,7 +806,7 @@ export const MonitoringDashboard = () => {
 
     // Update immediately
     updateMetrics()
-    
+
     // Then update periodically
     const interval = setInterval(updateMetrics, 5000)
 
@@ -839,10 +840,18 @@ export const MonitoringDashboard = () => {
         </button>
       </div>
       <div className='text-sm text-text-muted space-y-1'>
-        <p><span className='font-medium'>Session:</span> {metrics.sessionId}</p>
-        <p><span className='font-medium'>Queue:</span> {metrics.queueLength} events</p>
-        <p><span className='font-medium'>Build:</span> {metrics.buildVersion}</p>
-        <p><span className='font-medium'>Retries:</span> {metrics.retryCount}</p>
+        <p>
+          <span className='font-medium'>Session:</span> {metrics.sessionId}
+        </p>
+        <p>
+          <span className='font-medium'>Queue:</span> {metrics.queueLength} events
+        </p>
+        <p>
+          <span className='font-medium'>Build:</span> {metrics.buildVersion}
+        </p>
+        <p>
+          <span className='font-medium'>Retries:</span> {metrics.retryCount}
+        </p>
       </div>
     </div>
   )

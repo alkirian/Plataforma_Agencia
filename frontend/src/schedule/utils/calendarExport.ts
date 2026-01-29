@@ -101,7 +101,7 @@ export const exportToICS = (
   ]
 
   events.forEach(event => {
-    const startDate = new Date(event.start!)
+    const startDate = new Date(event.start)
     const endDate = event.end ? new Date(event.end) : new Date(startDate.getTime() + 60 * 60 * 1000) // 1 hora por defecto
 
     const formatICSDate = (date: Date): string => {

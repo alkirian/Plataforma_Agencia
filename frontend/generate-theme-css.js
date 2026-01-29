@@ -1,6 +1,6 @@
 /**
  * THEME CSS GENERATOR SCRIPT
- * 
+ *
  * This script generates CSS custom properties from our color palette system
  * and appends them to the globals.css file for seamless integration.
  */
@@ -19,57 +19,57 @@ const globalsPath = path.join(__dirname, 'src', 'styles', 'globals.css')
  */
 const orangeProfessionalPalette = {
   background: {
-    primary: '#1D1E22',    // Dark Slate
-    secondary: '#393F4D',   // Deep Matte Grey
-    tertiary: '#2A2B30',    // Elevated surface
-    inverse: '#F8F9FA',     // Light inverse
+    primary: '#1D1E22', // Dark Slate
+    secondary: '#393F4D', // Deep Matte Grey
+    tertiary: '#2A2B30', // Elevated surface
+    inverse: '#F8F9FA', // Light inverse
   },
-  
+
   surface: {
     default: 'rgba(57, 63, 77, 0.65)',
     soft: 'rgba(57, 63, 77, 0.5)',
     strong: 'rgba(57, 63, 77, 0.9)',
     overlay: 'rgba(29, 30, 34, 0.95)',
   },
-  
+
   text: {
-    primary: '#D4D4DC',     // Silver Fox
+    primary: '#D4D4DC', // Silver Fox
     secondary: 'rgba(212, 212, 220, 0.85)',
     muted: 'rgba(212, 212, 220, 0.7)',
     inverse: '#2D3748',
-    accent: '#FF5A09',      // Deep Orange
+    accent: '#FF5A09', // Deep Orange
   },
-  
+
   border: {
     default: 'rgba(212, 212, 220, 0.16)',
     subtle: 'rgba(212, 212, 220, 0.12)',
     strong: 'rgba(212, 212, 220, 0.24)',
     interactive: 'rgba(255, 90, 9, 0.4)',
   },
-  
+
   interactive: {
-    primary: '#FF5A09',     // Deep Orange
+    primary: '#FF5A09', // Deep Orange
     primaryHover: '#EC7F37', // Light Orange
-    secondary: '#BE4F0C',   // Orange Yellow
+    secondary: '#BE4F0C', // Orange Yellow
     secondaryHover: '#D4641A',
-    tertiary: '#7A9D96',    // Mist
+    tertiary: '#7A9D96', // Mist
     tertiaryHover: '#8AB0A8',
   },
-  
+
   status: {
-    success: '#7A9D96',     // Mist
-    warning: '#BE4F0C',     // Orange Yellow
-    error: '#DC2626',       // Red
-    info: '#00303F',        // Cerulean
+    success: '#7A9D96', // Mist
+    warning: '#BE4F0C', // Orange Yellow
+    error: '#DC2626', // Red
+    info: '#00303F', // Cerulean
   },
-  
+
   gradients: {
     primary: 'linear-gradient(135deg, #FF5A09 0%, #BE4F0C 100%)',
     secondary: 'linear-gradient(135deg, #393F4D 0%, #1D1E22 100%)',
     accent: 'linear-gradient(90deg, #FF5A09 0%, #EC7F37 100%)',
     surface: 'linear-gradient(135deg, rgba(57, 63, 77, 0.9) 0%, rgba(57, 63, 77, 0.6) 100%)',
   },
-  
+
   shadows: {
     subtle: 'rgba(255, 90, 9, 0.08)',
     medium: 'rgba(255, 90, 9, 0.14)',
@@ -83,7 +83,7 @@ const orangeProfessionalPalette = {
  */
 function flattenPalette(obj, prefix = '--theme') {
   const result = {}
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'object' && value !== null) {
       Object.assign(result, flattenPalette(value, `${prefix}-${key}`))
@@ -91,7 +91,7 @@ function flattenPalette(obj, prefix = '--theme') {
       result[`${prefix}-${key}`] = value
     }
   }
-  
+
   return result
 }
 
@@ -100,18 +100,18 @@ function flattenPalette(obj, prefix = '--theme') {
  */
 function generateThemeCSS() {
   const cssVars = flattenPalette(orangeProfessionalPalette)
-  
+
   const cssProperties = Object.entries(cssVars)
     .map(([property, value]) => `  ${property}: ${value};`)
     .join('\n')
-  
+
   const cssContent = `
 :root[data-color-palette="orangeProfessional"],
 :root {
 ${cssProperties}
 }
 `
-  
+
   return `
 /* ================================================================= 
    GENERATED THEME CSS VARIABLES - AUTO-GENERATED
@@ -241,13 +241,13 @@ function updateGlobalsCSS() {
   try {
     // Read current globals.css
     const currentCSS = fs.readFileSync(globalsPath, 'utf8')
-    
+
     // Check if auto-generated section already exists
     const autoGenStart = '/* ================================================================='
     const autoGenEnd = '/* Component migration helpers */'
-    
+
     let updatedCSS = currentCSS
-    
+
     // Remove existing auto-generated section if it exists
     const startIndex = currentCSS.indexOf(autoGenStart)
     if (startIndex !== -1) {
@@ -255,18 +255,17 @@ function updateGlobalsCSS() {
       const afterEnd = currentCSS.indexOf('}', endIndex) + 1
       updatedCSS = currentCSS.substring(0, startIndex) + currentCSS.substring(afterEnd)
     }
-    
+
     // Append new theme CSS
     const themeCSS = generateThemeCSS()
     updatedCSS = updatedCSS + '\n' + themeCSS
-    
+
     // Write updated CSS back to file
     fs.writeFileSync(globalsPath, updatedCSS)
-    
+
     console.log('✅ Theme CSS generated and added to globals.css')
     console.log(`📍 Location: ${globalsPath}`)
     console.log(`📊 Generated variables for ${Object.keys(colorPalettes).length} color palettes`)
-    
   } catch (error) {
     console.error('❌ Error updating globals.css:', error)
     process.exit(1)

@@ -94,6 +94,8 @@ export const createScheduleItem = async (itemData, token, userId = null) => {
     status: normalizedStatus || itemData.status || 'Pendiente',
     channel: itemData.channel || null,
     priority: itemData.priority || null,
+    media: itemData.media || null,
+    links: itemData.links || [],
     // platform: itemData.platform || null,
     // post_type: itemData.post_type || null,
     // hashtags: itemData.hashtags || [], 

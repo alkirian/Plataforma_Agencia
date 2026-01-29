@@ -7,7 +7,7 @@ import { AnimatePresence } from 'framer-motion'
 import { DocumentIcon } from '@heroicons/react/24/outline'
 
 // Extracted components for better maintainability
-import DocumentErrorBoundary from './ErrorBoundary'
+import DocumentErrorBoundary from '../ErrorBoundary'
 import DocumentListCard from './DocumentListCard.jsx'
 import DocumentGridCard from './DocumentGridCard.jsx'
 import DocumentContextMenu from './DocumentContextMenu.jsx'

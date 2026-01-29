@@ -116,7 +116,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
       className='relative'
     >
       <div
-        className='bg-gradient-to-br from-slate-800/95 via-slate-700/90 to-slate-800/95 
+        className='bg-slate-800/95 
                    border border-slate-600/30 rounded-xl p-6 shadow-xl backdrop-blur-sm
                    ring-1 ring-white/5'
       >
@@ -189,7 +189,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                   }
                   ${
                     dayData.isToday
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold hover:from-blue-400 hover:to-blue-500 shadow-lg shadow-blue-500/25'
+                      ? 'bg-blue-500 text-white font-bold hover:bg-blue-400 shadow-lg shadow-blue-500/25'
                       : ''
                   }
                   ${
@@ -238,7 +238,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
         </div>
 
         {/* Enhanced status legend */}
-        <div className='mt-4 p-4 bg-gradient-to-br from-slate-700/40 to-slate-800/40 rounded-lg border border-slate-600/30 backdrop-blur-sm'>
+        <div className='mt-4 p-4 bg-slate-700/40 rounded-lg border border-slate-600/30 backdrop-blur-sm'>
           <div className='text-sm text-slate-300 mb-3 font-semibold'>Estados:</div>
           <div className='grid grid-cols-2 gap-2 text-xs'>
             <div className='flex items-center space-x-2'>
@@ -265,8 +265,8 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={goToToday}
-          className='w-full mt-4 py-3 bg-gradient-to-r from-blue-600/80 to-blue-700/80 
-                     hover:from-blue-500/80 hover:to-blue-600/80 text-white text-sm font-semibold 
+          className='w-full mt-4 py-3 bg-blue-600/80 hover:bg-blue-500/80 
+                     text-white text-sm font-semibold 
                      rounded-lg border border-blue-500/30 hover:border-blue-400/50 
                      transition-all duration-200 backdrop-blur-sm shadow-lg shadow-blue-600/20
                      flex items-center justify-center gap-2'

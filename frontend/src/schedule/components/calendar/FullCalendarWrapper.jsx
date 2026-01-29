@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -32,10 +32,80 @@ const FullCalendarWrapper = ({
   clientName = '',
   isChatOpen = false,
   isDocked = false,
+  onAddTask,
+  onGenerateAI,
+  selectedDates = [],
+  onToggleDate,
+  isSelectionMode = false,
+  onGenerateSelected,
+  onLabelChange, // New callback for label changes
 }) => {
   const calendarRef = useRef(null)
   const [calendarLabel, setCalendarLabel] = useState('')
   const [highlightId, setHighlightId] = useState(null)
+
+  // Renderizado personalizado de celda para incluir checkbox
+  const renderDayCellContent = useCallback(
+    arg => {
+      // Solo renderizar en vistas de grid de días
+      if (arg.view.type !== 'dayGridMonth' && arg.view.type !== 'multiMonthYear') {
+        return arg.dayNumberText
+      }
+
+      const d = arg.date
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const dateStr = `${year}-${month}-${day}`
+
+      // Check if in selection mode and if selected
+      const isModeActive = isSelectionMode && !!onToggleDate
+      const isSelected = selectedDates.includes(dateStr)
+
+      // Si no estamos en modo selección, devolvemos solo el texto
+      if (!isModeActive) return arg.dayNumberText
+
+      return (
+        <div className='flex items-center justify-center relative min-w-[24px] min-h-[24px]'>
+          {/* Fake Checkbox (div/span) to avoid Invalid HTML (interactive inside anchor) */}
+          <div
+            className={`absolute -left-1 -top-1 z-10 flex items-center justify-center w-4 h-4 rounded border transition-all duration-200 
+            ${
+              isSelected
+                ? 'bg-purple-600 border-purple-600 opacity-100 shadow-sm'
+                : 'bg-surface-soft border-gray-500 opacity-0 group-hover:opacity-100'
+            }
+          `}
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => {
+              e.stopPropagation()
+              e.preventDefault() // Prevent anchor click
+              onToggleDate(d)
+            }}
+          >
+            {isSelected && (
+              <svg
+                className='w-2.5 h-2.5 text-white'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={3}
+                  d='M5 13l4 4L19 7'
+                />
+              </svg>
+            )}
+          </div>
+          <span className='relative z-0'>{arg.dayNumberText}</span>
+        </div>
+      )
+    },
+    [isSelectionMode, onToggleDate, selectedDates]
+  )
+
   const isAgendaView =
     currentView === 'listMonth' ||
     currentView === 'agenda' ||
@@ -45,33 +115,21 @@ const FullCalendarWrapper = ({
     const d = currentDate || getCurrentDate()
     return { y: d.getFullYear(), m: d.getMonth() }
   })
+
   const prevViewRef = useRef(null)
 
   // Navegar programáticamente cuando cambia currentDate
   useEffect(() => {
     if (calendarRef.current && currentDate) {
       const calendarApi = calendarRef.current.getApi()
-      // Forzar navegación a la fecha correcta
       calendarApi.gotoDate(currentDate)
-      // Actualizar ancla al mes del currentDate
       try {
         anchorYMRef.current = { y: currentDate.getFullYear(), m: currentDate.getMonth() }
-        // Actualizar label también
         setCalendarLabel(calendarApi.view.title)
       } catch {}
     }
   }, [currentDate])
 
-  // Asegurar fecha correcta en el primer mount
-  useEffect(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi()
-      const targetDate = currentDate || getCurrentDate()
-      calendarApi.gotoDate(targetDate)
-    }
-  }, [])
-
-  // Cambiar vista programáticamente
   useEffect(() => {
     if (calendarRef.current && currentView) {
       const calendarApi = calendarRef.current.getApi()
@@ -79,11 +137,9 @@ const FullCalendarWrapper = ({
     }
   }, [currentView])
 
-  // Forzar re-render cuando cambie el estado del chat o docked
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi()
-      // Actualiza inmediatamente en el próximo frame para evitar retrasos
       requestAnimationFrame(() => {
         calendarApi.updateSize()
         calendarApi.render()
@@ -91,16 +147,11 @@ const FullCalendarWrapper = ({
     }
   }, [isChatOpen, isDocked])
 
-  // Handlers optimizados
   const handleDateClick = arg => {
     const clickedDate = new Date(arg.date)
-
-    // Enhanced coordinate capture for better positioning
     const jsEvent = arg.jsEvent
     let clientX = jsEvent.clientX
     let clientY = jsEvent.clientY
-
-    // Handle touch events (for mobile/tablet support)
     if (jsEvent.touches && jsEvent.touches.length > 0) {
       clientX = jsEvent.touches[0].clientX
       clientY = jsEvent.touches[0].clientY
@@ -108,76 +159,51 @@ const FullCalendarWrapper = ({
       clientX = jsEvent.changedTouches[0].clientX
       clientY = jsEvent.changedTouches[0].clientY
     }
-
-    // Get more accurate positioning relative to the clicked element
     const elementRect = arg.dayEl ? arg.dayEl.getBoundingClientRect() : null
     const relativeX = elementRect ? clientX - elementRect.left : 0
     const relativeY = elementRect ? clientY - elementRect.top : 0
-
     const clickInfo = {
       clickCoords: {
         x: clientX,
         y: clientY,
-        // Additional positioning context
         relative: { x: relativeX, y: relativeY },
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
+        viewport: { width: window.innerWidth, height: window.innerHeight },
       },
       elementRect,
       originalEvent: arg,
     }
-
-    // Add a small delay for smoother UX on mobile
-    const isMobile = window.innerWidth < 768
-    if (isMobile) {
-      setTimeout(() => {
-        onDateClick?.(clickedDate, clickInfo)
-      }, 50)
-    } else {
-      onDateClick?.(clickedDate, clickInfo)
-    }
+    onDateClick?.(clickedDate, clickInfo)
   }
 
   const handleEventClick = arg => {
-    arg.jsEvent.preventDefault() // Prevenir navegación default
+    arg.jsEvent.preventDefault()
     onEventClick?.(arg.event, arg)
   }
 
   const handleDatesSet = arg => {
-    // Actualizar label cuando cambia la fecha
-    setCalendarLabel(arg.view.title)
+    const label = arg.view.title
+    setCalendarLabel(label)
 
-    // Usar el inicio "real" del periodo de la vista (p.ej., 1er día del mes) en lugar del rango visible
+    // Notificar al padre si existe el callback
+    if (onLabelChange) {
+      onLabelChange(label)
+    }
+
     const computedStart = arg.view?.currentStart ?? arg.start
     const computedEnd = arg.view?.currentEnd ?? arg.end
-    // Debug mínimo para detectar saltos inesperados
     try {
-      const api = calendarRef.current?.getApi()
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[FullCalendar] datesSet', {
-          view: arg.view?.type,
-          start: arg.start,
-          end: arg.end,
-          currentStart: arg.view?.currentStart,
-          apiDate: api?.getDate?.(),
-        })
-      }
-      // Lógica de anclaje por mes/año
       const viewType = arg.view?.type
       const cs = computedStart
       const anchor = anchorYMRef.current
       const isMonthView =
         viewType === 'dayGridMonth' || viewType === 'multiMonthYear' || viewType === 'listMonth'
+
       if (isMonthView && cs) {
-        // Actualizar ancla cuando estamos en vista de mes
         anchorYMRef.current = { y: cs.getFullYear(), m: cs.getMonth() }
       } else if (cs && anchor && (cs.getFullYear() !== anchor.y || cs.getMonth() !== anchor.m)) {
-        // En vistas no-mes, mantenernos dentro del mes ancla
         const mid = new Date(anchor.y, anchor.m, 15)
         if (cs.getFullYear() !== mid.getFullYear() || cs.getMonth() !== mid.getMonth()) {
-          api?.gotoDate(mid)
+          calendarRef.current?.getApi()?.gotoDate(mid)
         }
       }
       prevViewRef.current = viewType
@@ -187,27 +213,55 @@ const FullCalendarWrapper = ({
     }
   }
 
-  const handleViewChange = arg => {
-    // Solo propagar el cambio
-    if (onViewChange && arg.view?.type) {
-      onViewChange(arg.view.type, arg.view)
-    }
-  }
-
-  const handleViewDidMount = arg => {
-    // No modificar nada, dejar que FullCalendar funcione normalmente
-  }
+  const handleViewDidMount = arg => {}
 
   const handleEventDrop = arg => {
-    if (onEventDrop) {
-      onEventDrop(arg.event, arg.oldEvent, arg)
-    }
+    if (onEventDrop) onEventDrop(arg.event, arg.oldEvent, arg)
   }
 
   const handleEventResize = arg => {
-    if (onEventResize) {
-      onEventResize(arg.event, arg.oldEvent, arg)
+    if (onEventResize) onEventResize(arg.event, arg.oldEvent, arg)
+  }
+
+  const handleToolbarNavigate = action => {
+    if (!calendarRef.current) return
+    const calendarApi = calendarRef.current.getApi()
+    switch (action) {
+      case 'PREV':
+        calendarApi.prev()
+        break
+      case 'NEXT':
+        calendarApi.next()
+        break
+      case 'TODAY':
+        calendarApi.today()
+        break
     }
+  }
+
+  const handleToolbarView = viewType => {
+    if (!calendarRef.current) return
+    const viewMap = {
+      month: 'dayGridMonth',
+      week: 'timeGridWeek',
+      day: 'timeGridDay',
+      agenda: 'listMonth',
+    }
+    const fullCalendarView = viewMap[viewType] || viewType
+    const calendarApi = calendarRef.current.getApi()
+    calendarApi.changeView(fullCalendarView)
+    onViewChange?.(fullCalendarView)
+  }
+
+  const jumpToEvent = eventId => {
+    const api = calendarRef.current?.getApi()
+    if (!api) return
+    const ev = api.getEventById(eventId)
+    if (!ev) return
+    const start = ev.start || getCurrentDate()
+    api.gotoDate(start)
+    setHighlightId(eventId)
+    requestAnimationFrame(() => api.updateSize())
   }
 
   // Render personalizado para vista Agenda (list*)
@@ -282,20 +336,55 @@ const FullCalendarWrapper = ({
     // Plugins requeridos
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
 
+    // Renderizado custom de celdas (Checkboxes)
+    dayCellContent: renderDayCellContent,
+    dayCellClassNames: arg => {
+      const d = arg.date
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const dateStr = `${year}-${month}-${day}`
+      const isSelected = selectedDates.includes(dateStr)
+
+      const baseClasses = 'group relative hover:bg-surface-soft/10 transition-colors'
+      return isSelected ? `${baseClasses} fc-day-selected` : baseClasses
+    },
+
     // Configuración de localización estándar
     locale: esLocale,
 
     // Vista inicial y navegación
     initialView: currentView,
-    initialDate: currentDate || getCurrentDate(), // CRUCIAL: Establecer fecha inicial
+    initialDate: currentDate || getCurrentDate(),
 
     // Datos
     events,
 
-    // Variantes de evento por estado + resaltado
+    // Interacción
+    selectable: true,
+    selectMirror: true,
+    select: arg => {
+      // If in custom selection mode (checkboxes), ignore standard selection
+      if (isSelectionMode) {
+        arg.view.calendar.unselect()
+        return
+      }
+
+      if (onGenerateSelected) {
+        onGenerateSelected({
+          start: arg.start,
+          end: arg.end,
+          allDay: arg.allDay,
+        })
+      }
+    },
+
+    // Variantes de evento por estado + plataforma + resaltado
     eventClassNames: arg => {
       const status = arg.event.extendedProps?.status
+      const channel = arg.event.extendedProps?.channel
       const classes = []
+
       // Map internal EN status to legacy CSS (ES ASCII) for styling
       let classKey = null
       if (status && TASK_STATE_MAP[status]) {
@@ -306,14 +395,33 @@ const FullCalendarWrapper = ({
       } else if (status) {
         classes.push(`fc-event--${status}`)
       }
+
+      // Add platform-specific class for colorful cards
+      if (channel) {
+        const platformClass = (() => {
+          const ch = channel.toString().toLowerCase()
+          if (ch === 'ig' || ch.toLowerCase().includes('instagram')) return 'instagram'
+          if (ch === 'fb' || ch.toLowerCase().includes('facebook')) return 'facebook'
+          if (ch === 'li' || ch === 'linkedin') return 'linkedin'
+          if (ch === 'tw' || ch.toLowerCase().includes('twitter') || ch === 'x') return 'twitter'
+          if (ch === 'tk' || ch === 'tiktok') return 'tiktok'
+          if (ch === 'yt' || ch.toLowerCase().includes('youtube')) return 'youtube'
+          if (ch.toLowerCase().includes('whatsapp')) return 'whatsapp'
+          if (ch.toLowerCase().includes('threads')) return 'threads'
+          return null
+        })()
+
+        if (platformClass) {
+          classes.push(`fc-event--${platformClass}`)
+        }
+      }
+
       classes.push('fc-event-base')
       if (highlightId && arg.event.id === highlightId) classes.push('fc-event--highlight')
       return classes
     },
 
     // Interactividad
-    selectable: true,
-    selectMirror: true,
     dayMaxEvents: true,
     weekends: true,
     editable: true,
@@ -325,6 +433,7 @@ const FullCalendarWrapper = ({
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
     slotDuration: '00:30:00',
+
     eventDidMount: info => {
       // marcar elemento con id para poder desplazar y resaltar
       try {
@@ -338,7 +447,6 @@ const FullCalendarWrapper = ({
             info.el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
           } catch {}
         }, 50)
-        // limpiar highlight automáticamente
         setTimeout(() => setHighlightId(null), 5000)
       }
     },
@@ -346,7 +454,8 @@ const FullCalendarWrapper = ({
     // Header y navegación
     headerToolbar,
 
-    // Eliminar titleFormat personalizado para evitar conflictos
+    // Distribución de filas
+    fixedWeekCount: false,
 
     // Altura
     height,
@@ -355,35 +464,12 @@ const FullCalendarWrapper = ({
     eventDisplay: 'block',
     eventStartEditable: true,
     eventDurationEditable: true,
-    eventClassNamesLegacy: arg => {
-      const s = (arg.event.extendedProps?.status || '').toLowerCase()
-      const classes = ['fc-event-base']
-      // map to kebab variants used in CSS
-      const map = {
-        planificacion: 'planificacion',
-        pendiente: 'pendiente',
-        'en-diseño': 'en-diseño',
-        'en-diseno': 'en-diseno',
-        'en-progreso': 'en-progreso',
-        'en-revision': 'en-revision',
-        'esperando-aprobacion': 'esperando-aprobacion',
-        aprobado: 'aprobado',
-        'listo-publicar': 'listo-publicar',
-        publicado: 'publicado',
-        completado: 'completado',
-        pausado: 'pausado',
-        cancelado: 'cancelado',
-      }
-      const key = map[s] || null
-      if (key) classes.push(`fc-event--${key}`)
-      return classes
-    },
 
     // Handlers
     dateClick: handleDateClick,
     eventClick: handleEventClick,
     datesSet: handleDatesSet,
-    viewDidMount: handleViewDidMount, // Forzar título correcto
+    viewDidMount: handleViewDidMount,
     eventDrop: handleEventDrop,
     eventResize: handleEventResize,
 
@@ -422,7 +508,7 @@ const FullCalendarWrapper = ({
       },
     },
 
-    // Configuración de eventos
+    // Configuración de tiempo eventos
     eventTimeFormat: {
       hour: '2-digit',
       minute: '2-digit',
@@ -438,169 +524,21 @@ const FullCalendarWrapper = ({
       listMonth: 'Lista',
     },
 
-    // Configuración de más enlaces
     moreLinkClick: 'popover',
-
-    // Configuración de días
     dayHeaderFormat: { weekday: 'short' },
-
-    // Configuración responsive
     aspectRatio: window.innerWidth < 768 ? 0.8 : 1.35,
-
-    // Optimizaciones de rendimiento
     lazyFetching: true,
     rerenderDelay: 10,
 
-    // Loading state
     loading: isLoading => {
       if (loading !== isLoading) {
-        // Aquí podrías emitir un evento de loading si lo necesitas
       }
     },
   }
 
-  // Aplicar renderer solo en vistas list* y mensaje sin eventos en ES
-  useEffect(() => {
-    const api = calendarRef.current?.getApi()
-    if (!api) return
-    try {
-      api.setOption('noEventsText', 'No hay tareas programadas para este mes')
-      const type = api.view?.type || ''
-      if (typeof type === 'string' && type.startsWith('list')) {
-        api.setOption('eventContent', renderEventContent)
-      } else {
-        api.setOption('eventContent', undefined)
-      }
-    } catch {}
-  }, [currentView])
-
-  // Keyboard shortcuts para navegación rápida
-  useEffect(() => {
-    const handleKeyPress = event => {
-      // Solo activar si no estamos escribiendo en un input
-      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return
-
-      const calendarApi = calendarRef.current?.getApi()
-      if (!calendarApi) return
-
-      switch (event.key) {
-        case 'ArrowLeft':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            calendarApi.prev()
-          }
-          break
-        case 'ArrowRight':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            calendarApi.next()
-          }
-          break
-        case 't':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            calendarApi.today()
-          }
-          break
-        case '1':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            onViewChange?.('dayGridMonth')
-            calendarApi.changeView('dayGridMonth')
-          }
-          break
-        case '2':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            onViewChange?.('timeGridWeek')
-            calendarApi.changeView('timeGridWeek')
-          }
-          break
-        case '3':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            onViewChange?.('timeGridDay')
-            calendarApi.changeView('timeGridDay')
-          }
-          break
-        case '4':
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            onViewChange?.('listMonth')
-            calendarApi.changeView('listMonth')
-          }
-          break
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyPress)
-    return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [onViewChange])
-
-  // Handler para navegación desde toolbar
-  const handleToolbarNavigate = action => {
-    if (!calendarRef.current) return
-    const calendarApi = calendarRef.current.getApi()
-
-    switch (action) {
-      case 'PREV':
-        calendarApi.prev()
-        break
-      case 'NEXT':
-        calendarApi.next()
-        break
-      case 'TODAY':
-        calendarApi.today()
-        break
-    }
-  }
-
-  // Handler para cambio de vista desde toolbar
-  const handleToolbarView = viewType => {
-    if (!calendarRef.current) return
-
-    // Mapear nombres de vista simples a nombres de FullCalendar
-    const viewMap = {
-      month: 'dayGridMonth',
-      week: 'timeGridWeek',
-      day: 'timeGridDay',
-      agenda: 'listMonth',
-    }
-
-    const fullCalendarView = viewMap[viewType] || viewType
-    const calendarApi = calendarRef.current.getApi()
-    calendarApi.changeView(fullCalendarView)
-    onViewChange?.(fullCalendarView)
-  }
-
-  // Búsqueda: saltar a un evento y resaltarlo
-  const jumpToEvent = eventId => {
-    const api = calendarRef.current?.getApi()
-    if (!api) return
-    const ev = api.getEventById(eventId)
-    if (!ev) return
-    const start = ev.start || getCurrentDate()
-    api.gotoDate(start)
-    // activar highlight; eventDidMount hará scroll
-    setHighlightId(eventId)
-    // en month view el render puede tardar un frame
-    requestAnimationFrame(() => api.updateSize())
-  }
-
   return (
-    <div className={`fullcalendar-wrapper ${className}`}>
-      {/* Custom Toolbar */}
-      <CalendarToolbar
-        label={calendarLabel}
-        onNavigate={handleToolbarNavigate}
-        onView={handleToolbarView}
-        view={currentView}
-        events={events}
-        clientName={clientName}
-        isChatOpen={isChatOpen}
-        isDocked={isDocked}
-        onJumpToEvent={jumpToEvent}
-      />
+    <div className={`fullcalendar-wrapper flex flex-col h-full ${className}`}>
+      {/* Toolbar eliminado por petición del usuario para maximizar espacio */}
 
       {loading && (
         <div className='absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg'>

@@ -86,10 +86,16 @@ app.get("/", (_req, res) => {
 // Middleware de manejo de errores (siempre al final)
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  logger.server(`Servidor escuchando en http://localhost:${PORT}`, {
-    port: PORT,
+// Exportar la app para entornos serverless (Vercel)
+export default app;
+
+// Solo escuchar en puerto local si no estamos en Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    logger.server(`Servidor escuchando en http://localhost:${PORT}`, {
+      port: PORT,
+    });
   });
-});
+}
 
 

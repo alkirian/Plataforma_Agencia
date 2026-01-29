@@ -4,6 +4,7 @@
 // Dropdown components
 export { SimpleDropdown } from './SimpleDropdown'
 export { AnchorPopover } from './AnchorPopover'
+export { CalendarViewDropdown } from './CalendarViewDropdown'
 
 // Re-export base UI components from the main ui directory for backward compatibility
 // This ensures gradual migration without breaking existing imports

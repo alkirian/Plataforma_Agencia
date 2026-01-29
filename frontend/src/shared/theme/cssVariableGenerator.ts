@@ -1,11 +1,11 @@
 /**
  * CSS CUSTOM PROPERTIES GENERATOR
- * 
+ *
  * This module generates CSS custom properties from color palettes,
  * enabling dynamic theme switching through CSS variable updates.
  */
 
-import { ColorPalette, ColorPaletteName } from './colorPalettes'
+import type { ColorPalette, ColorPaletteName } from './colorPalettes'
 
 /**
  * CSS variable prefix for theme-related properties
@@ -28,7 +28,7 @@ function flattenObject(
 
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}${separator}${key}` : key
-    
+
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       // Recursively flatten nested objects
       Object.assign(flattened, flattenObject(value, newKey, separator))
@@ -127,9 +127,7 @@ ${cssProperties}
  * @param palettes - All available palettes
  * @returns Complete CSS content
  */
-export function generateCompleteCSSFile(
-  palettes: Record<ColorPaletteName, ColorPalette>
-): string {
+export function generateCompleteCSSFile(palettes: Record<ColorPaletteName, ColorPalette>): string {
   const stylesheets = Object.entries(palettes)
     .map(([name, palette]) => generateCSSStylesheet(palette, name as ColorPaletteName))
     .join('\n\n')
@@ -166,7 +164,7 @@ ${stylesheets}
  */
 export function batchApplyCSSProperties(properties: Record<string, string>): void {
   const root = document.documentElement
-  
+
   // Use requestAnimationFrame to batch DOM updates
   requestAnimationFrame(() => {
     Object.entries(properties).forEach(([property, value]) => {
@@ -180,12 +178,12 @@ export function batchApplyCSSProperties(properties: Record<string, string>): voi
  */
 export function clearThemeVariables(): void {
   const root = document.documentElement
-  
+
   // Get all style properties and filter theme variables
-  const themeProperties = Array.from(root.style).filter(prop => 
+  const themeProperties = Array.from(root.style).filter(prop =>
     prop.startsWith(`--${CSS_VAR_PREFIX}-`)
   )
-  
+
   // Remove theme variables
   themeProperties.forEach(prop => {
     root.style.removeProperty(prop)

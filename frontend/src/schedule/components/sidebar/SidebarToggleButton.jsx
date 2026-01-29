@@ -70,8 +70,7 @@ export const SidebarToggleButton = ({ isCollapsed, onToggle, variant = 'hamburge
       className={`
         group relative p-3 rounded-xl transition-all duration-300 
         border border-slate-600/30 hover:border-blue-400/40
-        bg-gradient-to-br from-slate-800/90 to-slate-700/90
-        hover:bg-gradient-to-br hover:from-slate-700/90 hover:to-slate-600/90
+        bg-slate-800/90 hover:bg-slate-700/90
         backdrop-blur-sm shadow-lg
         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 focus:ring-offset-slate-800
         ${isCollapsed ? 'text-slate-400' : 'text-slate-300'}

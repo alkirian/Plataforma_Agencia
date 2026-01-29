@@ -1,23 +1,25 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Avatar } from './ui/Avatar'
 import { Button } from './ui/Button'
 
-export const Onboarding = ({ session, onProfileComplete }) => {
-  const [step, setStep] = useState(1) // 1: Perfil, 2: Agencia
+export const Onboarding = ({ session, onProfileComplete, existingProfile }) => {
+  // Si ya tiene nombre en el profile, saltar directamente al paso de agencia
+  const initialStep = existingProfile?.full_name ? 2 : 1
+  const [step, setStep] = useState(initialStep)
   const [loading, setLoading] = useState(false)
 
-  // Perfil
-  const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('') // opcional (no se envía aún)
-  const [avatarUrl, setAvatarUrl] = useState('')
+  // Perfil - pre-cargar datos si existen
+  const [fullName, setFullName] = useState(existingProfile?.full_name || '')
+  const [role, setRole] = useState(existingProfile?.role || '')
+  const [avatarUrl, setAvatarUrl] = useState(existingProfile?.avatar_url || '')
   const [avatarFile, setAvatarFile] = useState(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef(null)
 
   // Agencia
   const [agencyName, setAgencyName] = useState('')
-  const [website, setWebsite] = useState('') // opcional (no se envía aún)
+  const [website, setWebsite] = useState('')
 
   // API base
   const API_URL = import.meta.env.VITE_API_BASE_URL

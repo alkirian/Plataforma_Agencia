@@ -27,8 +27,8 @@ import {
 } from "../controllers/documents.controller.js";
 import {
   handleGenerateIdeas,
-  handleChat,
-  handleGetChatHistory,
+  // handleChat,
+  // handleGetChatHistory,
   handleIdeaFeedback,
   handleListIdeas,
 } from "../controllers/ai.controller.js";
@@ -134,6 +134,8 @@ router.post(
   handleGenerateIdeas,
 );
 
+// Chat routes disabled - chat.service removed
+/*
 router.post(
   "/:clientId/chat",
   validateMultiple(
@@ -146,12 +148,15 @@ router.post(
   ),
   handleChat,
 );
+*/
 
+/*
 router.get(
   "/:clientId/chat/history",
   validate(clientIdParamSchema, "params"),
   handleGetChatHistory,
 );
+*/
 
 router.get(
   "/:clientId/ideas",

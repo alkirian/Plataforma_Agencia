@@ -112,7 +112,7 @@ export const useTaskDrafts = (clientId?: string, selectedDate?: Date): UseTaskDr
 
       draftKeys.forEach(key => {
         try {
-          const draft = JSON.parse(localStorage.getItem(key)!)
+          const draft = JSON.parse(localStorage.getItem(key))
           if (draft && Date.now() - draft.timestamp > maxAge) {
             localStorage.removeItem(key)
             cleaned++

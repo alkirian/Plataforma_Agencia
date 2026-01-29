@@ -19,7 +19,13 @@ export {
 } from './Badge.tsx'
 
 // Componentes de estado y feedback
-export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay, ErrorCard } from './LoadingSpinner'
+export {
+  LoadingSpinner,
+  LoadingCard,
+  LoadingPage,
+  LoadingOverlay,
+  ErrorCard,
+} from './LoadingSpinner'
 export {
   ErrorBoundary,
   withErrorBoundary,

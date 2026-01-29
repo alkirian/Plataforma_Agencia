@@ -235,18 +235,30 @@ export const documentsV2Service: DocumentsService = {
         })
 
         xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
+          console.log('[Upload Debug] Status:', xhr.status)
+          console.log('[Upload Debug] Response:', xhr.responseText)
+
+          if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const response = JSON.parse(xhr.responseText)
+              console.log('[Upload Debug] Parsed response:', response)
+
               if (response.success) {
-                resolve(response.data)
+                // Backend returns { successful: [...], failed: [...], summary: {...} }
+                // We return the array of successful documents
+                const uploadedDocs = response.data?.successful || response.data || []
+                console.log('[Upload Debug] Uploaded docs:', uploadedDocs)
+                resolve(uploadedDocs)
               } else {
+                console.error('[Upload Debug] Response not successful:', response)
                 reject(createDocumentError(response, 'uploadDocuments'))
               }
             } catch (e) {
+              console.error('[Upload Debug] Parse error:', e, xhr.responseText)
               reject(createDocumentError({ message: 'Invalid response format' }, 'uploadDocuments'))
             }
           } else {
+            console.error('[Upload Debug] HTTP error:', xhr.status, xhr.responseText)
             reject(
               createDocumentError(
                 { status: xhr.status, message: `Upload failed with status ${xhr.status}` },

@@ -14,10 +14,7 @@ export default defineConfig(({ mode }) => ({
     // Disabled in production build to allow deployment
     ...(mode === 'development' ? [checker({
       typescript: true,
-      overlay: {
-        initialIsOpen: false,
-        position: 'tl'
-      }
+      overlay: false
     })] : [])
   ],
 

@@ -3,7 +3,7 @@ import React from 'react'
 import { ArrowUpTrayIcon } from '@heroicons/react/24/outline'
 import DocumentGrid from './DocumentGrid.jsx'
 import DocumentFolder from './DocumentFolder.jsx'
-import DocumentErrorBoundary from './ErrorBoundary.jsx'
+import DocumentErrorBoundary from '../ErrorBoundary.jsx'
 
 const DocumentsMainContent = ({
   documents,
@@ -22,14 +22,16 @@ const DocumentsMainContent = ({
 }) => {
   if (error) {
     return (
-      <div className='bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center'>
-        <p className='text-red-400'>Error: {error.message || String(error)}</p>
+      <div className='bg-[color:var(--palette-primary-accent)]/10 border border-[color:var(--palette-primary-accent)]/30 rounded-xl p-6 text-center'>
+        <p className='text-[color:var(--palette-primary-accent)]'>
+          Error: {error.message || String(error)}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className='bg-surface-soft border border-gray-200/10 rounded-xl p-6'>
+    <div className='bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-xl p-6'>
       {isLoading ? (
         <LoadingContent viewMode={viewMode} searchQuery={searchQuery} clientId={clientId} />
       ) : documents.length === 0 ? (
@@ -95,7 +97,7 @@ const EmptyState = ({ searchQuery, onToggleUpload }) => (
     </p>
     <button
       onClick={onToggleUpload}
-      className='inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors'
+      className='inline-flex items-center space-x-2 px-4 py-2 bg-[color:var(--palette-primary-accent)] hover:bg-[color:var(--palette-hover-state)] text-white rounded-lg transition-colors'
     >
       <ArrowUpTrayIcon className='h-4 w-4' />
       <span>Upload Document</span>
@@ -204,7 +206,7 @@ const GridListView = ({
 )
 
 const PaginationControls = ({ pagination, onPageChange }) => (
-  <div className='flex items-center justify-between mt-6 pt-4 border-t border-gray-200/10'>
+  <div className='flex items-center justify-between mt-6 pt-4 border-t border-[color:var(--color-border-subtle)]'>
     <div className='text-sm text-text-muted'>
       Showing {pagination.offset + 1}-
       {Math.min(pagination.offset + pagination.limit, pagination.total)} of {pagination.total}{' '}
@@ -216,7 +218,7 @@ const PaginationControls = ({ pagination, onPageChange }) => (
         <button
           onClick={() => onPageChange(pagination.currentPage - 1)}
           disabled={pagination.currentPage <= 1}
-          className='px-3 py-2 text-sm bg-surface-strong border border-gray-200/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors'
+          className='px-3 py-2 text-sm bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-soft transition-colors text-text-primary'
         >
           Previous
         </button>
@@ -228,7 +230,7 @@ const PaginationControls = ({ pagination, onPageChange }) => (
         <button
           onClick={() => onPageChange(pagination.currentPage + 1)}
           disabled={pagination.currentPage >= pagination.totalPages}
-          className='px-3 py-2 text-sm bg-surface-strong border border-gray-200/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-muted transition-colors'
+          className='px-3 py-2 text-sm bg-surface-strong border border-[color:var(--color-border-subtle)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-soft transition-colors text-text-primary'
         >
           Next
         </button>

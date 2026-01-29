@@ -227,14 +227,14 @@ interface ErrorCardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const ErrorCard = forwardRef<HTMLDivElement, ErrorCardProps>(
   (
-    { 
-      title = 'Error', 
-      message = 'Ha ocurrido un error inesperado', 
+    {
+      title = 'Error',
+      message = 'Ha ocurrido un error inesperado',
       onRetry,
-      className, 
-      'data-testid': testId, 
-      ...props 
-    }, 
+      className,
+      'data-testid': testId,
+      ...props
+    },
     ref
   ) => (
     <motion.div
@@ -257,12 +257,7 @@ export const ErrorCard = forwardRef<HTMLDivElement, ErrorCardProps>(
         {message && <p className='text-sm text-[var(--theme-text-muted)]'>{message}</p>}
       </div>
       {onRetry && (
-        <Button
-          onClick={onRetry}
-          variant='primary'
-          size='sm'
-          className='mt-4'
-        >
+        <Button onClick={onRetry} variant='primary' size='sm' className='mt-4'>
           Reintentar
         </Button>
       )}

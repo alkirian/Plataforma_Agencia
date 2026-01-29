@@ -215,8 +215,8 @@ const UploadZone = ({
           transition-all duration-200 cursor-pointer
           ${
             isDragActive
-              ? 'border-primary-500 bg-primary-500/5'
-              : 'border-border-muted hover:border-primary-400 hover:bg-surface-soft'
+              ? 'border-[color:var(--palette-primary-accent)] bg-[color:var(--palette-primary-accent)]/5'
+              : 'border-border-muted hover:border-[color:var(--palette-hover-state)] hover:bg-surface-soft'
           }
         `}
         onDragEnter={handleDragEnter}
@@ -296,15 +296,17 @@ const UploadQueueItem = ({ item, onRemove, onRetry }) => {
   const getStatusIcon = () => {
     switch (item.status) {
       case 'queued':
-        return <ArrowPathIcon className='h-4 w-4 text-blue-400' />
+        return <ArrowPathIcon className='h-4 w-4 text-[color:var(--palette-cold-alt)]' />
       case 'uploading':
         return <LoadingSpinner size='sm' variant='primary' />
       case 'done':
-        return <CheckCircleIcon className='h-4 w-4 text-green-400' />
+        return <CheckCircleIcon className='h-4 w-4 text-[color:var(--palette-soft-alt)]' />
       case 'error':
-        return <ExclamationTriangleIcon className='h-4 w-4 text-red-400' />
+        return (
+          <ExclamationTriangleIcon className='h-4 w-4 text-[color:var(--palette-primary-accent)]' />
+        )
       case 'duplicate':
-        return <CheckCircleIcon className='h-4 w-4 text-orange-400' />
+        return <CheckCircleIcon className='h-4 w-4 text-[color:var(--palette-secondary-accent)]' />
       default:
         return <DocumentIcon className='h-4 w-4 text-text-muted' />
     }
@@ -313,15 +315,15 @@ const UploadQueueItem = ({ item, onRemove, onRetry }) => {
   const getStatusColor = () => {
     switch (item.status) {
       case 'uploading':
-        return 'bg-blue-500'
+        return 'bg-[color:var(--palette-cold-alt)]'
       case 'done':
-        return 'bg-green-500'
+        return 'bg-[color:var(--palette-soft-alt)]'
       case 'error':
-        return 'bg-red-500'
+        return 'bg-[color:var(--palette-primary-accent)]'
       case 'duplicate':
-        return 'bg-orange-500'
+        return 'bg-[color:var(--palette-secondary-accent)]'
       default:
-        return 'bg-gray-500'
+        return 'bg-surface-soft'
     }
   }
 
@@ -368,7 +370,7 @@ const UploadQueueItem = ({ item, onRemove, onRetry }) => {
         {item.status === 'error' && (
           <button
             onClick={() => onRetry(item.id)}
-            className='p-1 text-text-muted hover:text-primary-400'
+            className='p-1 text-text-muted hover:text-[color:var(--palette-primary-accent)]'
             title='Retry upload'
           >
             <ArrowPathIcon className='h-4 w-4' />
@@ -378,7 +380,7 @@ const UploadQueueItem = ({ item, onRemove, onRetry }) => {
         {item.status !== 'uploading' && (
           <button
             onClick={() => onRemove(item.id)}
-            className='p-1 text-text-muted hover:text-red-400'
+            className='p-1 text-text-muted hover:text-[color:var(--palette-primary-accent)]'
             title='Remove from queue'
           >
             <XMarkIcon className='h-4 w-4' />

@@ -74,7 +74,7 @@ export const FormModal = forwardRef<HTMLDivElement, FormModalProps>(
         disabled: Object.keys(formErrors).length > 0,
         onClick: () => {
           // Form submission is handled by the form's onSubmit
-          const form = document.querySelector('form') as HTMLFormElement
+          const form = document.querySelector('form')
           if (form) form.requestSubmit()
         },
       },

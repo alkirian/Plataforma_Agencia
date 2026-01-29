@@ -15,9 +15,11 @@ import { ClientSelector } from '@components/ui/ClientSelector'
 import { NotificationDropdown } from '@components/notifications/NotificationDropdown'
 import { ClientSearchDropdown } from '@components/ui/ClientSearchDropdown'
 import { useNotifications } from '@hooks/useNotifications'
-import { MobileMenu } from './MobileMenu'
+// import { MobileMenu } from './MobileMenu' // Sidebar comentado
 import { Logo } from '@shared/components/Logo'
 import { SettingsMenu } from './SettingsMenu'
+import { CalendarViewDropdown } from '@shared/components/ui'
+import { useCalendarView } from '@shared/contexts/CalendarViewContext'
 
 // Types
 export interface HeaderProps {
@@ -45,11 +47,19 @@ interface Agency {
 export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) => {
   const location = useLocation()
   const params = useParams<{ id: string }>()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false) // Sidebar comentado
 
   // Detectar si estamos en una página de cliente
   const isClientPage = location.pathname.startsWith('/clients/')
   const currentClientId = params.id
+
+  // Detectar si estamos en la ruta del cronograma (ahora incluye /clients/:id directa)
+  const isCronogramaPage =
+    location.pathname.includes('/cronograma') ||
+    (isClientPage && !location.pathname.includes('/new'))
+
+  // Hook de vista de calendario (solo se usa en cronograma)
+  const { changeView, getSimplifiedView, navigateCalendar, dateLabel } = useCalendarView()
 
   // Hook de notificaciones
   const {
@@ -80,8 +90,8 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
   })
   const website = agencyResp?.data?.website
 
-  const handleMobileMenuToggle = () => setIsMobileMenuOpen(true)
-  const handleMobileMenuClose = () => setIsMobileMenuOpen(false)
+  // const handleMobileMenuToggle = () => setIsMobileMenuOpen(true) // Sidebar comentado
+  // const handleMobileMenuClose = () => setIsMobileMenuOpen(false) // Sidebar comentado
 
   return (
     <motion.header
@@ -92,9 +102,9 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
       role='banner'
       aria-label='Navegación principal'
     >
-      <div className='flex h-16 w-full items-center justify-between px-4 sm:px-6'>
+      <div className='flex h-12 w-full items-center justify-between px-4 sm:px-6'>
         {/* Mobile: Hamburger Menu */}
-        <div className='flex items-center md:hidden'>
+        {/* <div className='flex items-center md:hidden'>
           <button
             onClick={handleMobileMenuToggle}
             className='p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors'
@@ -103,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
           >
             <Menu className='h-6 w-6' />
           </button>
-        </div>
+        </div> */}
 
         {/* Logo - Centrado en mobile, izquierda en desktop */}
         <motion.div
@@ -116,20 +126,83 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
             className='flex items-center gap-2'
             aria-label='Ir al dashboard - Cadence'
           >
-            <Logo size={40} />
-            <span className='text-xl sm:text-2xl font-bold text-brand-gradient'>Cadence</span>
+            <Logo size={32} />
+            <span className='text-lg sm:text-xl font-bold text-brand-gradient'>Cadence</span>
           </Link>
         </motion.div>
 
-        {/* Centro: Client Selector (solo en páginas de cliente y desktop) */}
+        {/* Centro: Client Selector + Calendar View (solo en páginas de cliente y desktop) */}
         {isClientPage && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className='hidden lg:block'
+            className='hidden lg:flex items-center gap-3'
           >
-            <ClientSelector currentClientId={currentClientId} />
+            {isCronogramaPage && (
+              <>
+                {/* Controles de Navegación del Calendario */}
+                <div className='flex items-center gap-2'>
+                  {/* Navigation Group */}
+                  <div className='flex items-center gap-0.5 bg-surface-soft rounded-lg p-0.5 border border-[color:var(--color-border-subtle)]'>
+                    <button
+                      onClick={() => navigateCalendar('PREV')}
+                      className='h-7 w-7 flex items-center justify-center rounded hover:bg-surface-strong text-text-muted hover:text-text-primary transition-colors'
+                      aria-label='Anterior'
+                    >
+                      <svg
+                        className='w-4 h-4'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M15 19l-7-7 7-7'
+                        />
+                      </svg>
+                    </button>
+
+                    <button
+                      onClick={() => navigateCalendar('TODAY')}
+                      className='h-7 px-2 text-xs font-medium text-text-primary rounded hover:bg-surface-strong transition-colors'
+                    >
+                      Hoy
+                    </button>
+
+                    <button
+                      onClick={() => navigateCalendar('NEXT')}
+                      className='h-7 w-7 flex items-center justify-center rounded hover:bg-surface-strong text-text-muted hover:text-text-primary transition-colors'
+                      aria-label='Siguiente'
+                    >
+                      <svg
+                        className='w-4 h-4'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M9 5l7 7-7 7'
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Fecha Actual - Ancho fijo para evitar reacomodo */}
+                  <div className='min-w-[140px] text-sm font-semibold text-text-primary px-1'>
+                    {dateLabel || '\u00A0'}
+                  </div>
+                </div>
+
+                {/* Calendar View Dropdown */}
+                <CalendarViewDropdown currentView={getSimplifiedView()} onViewChange={changeView} />
+              </>
+            )}
           </motion.div>
         )}
 
@@ -138,7 +211,7 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
           <AnchorPopover
             trigger={
               <button className='icon-btn' aria-label='Buscar clientes' type='button'>
-                <Search className='h-6 w-6' aria-hidden='true' />
+                <Search className='h-5 w-5' aria-hidden='true' />
               </button>
             }
             placement='bottom-end'
@@ -156,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
                 whileTap={{ scale: 0.95 }}
                 type='button'
               >
-                <Bell className='h-6 w-6' aria-hidden='true' />
+                <Bell className='h-5 w-5' aria-hidden='true' />
                 {stats.total > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -296,9 +369,9 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-              <Avatar src={profile?.avatar_url} name={userEmail} size={28} />
+              <Avatar src={profile?.avatar_url} name={userEmail} size={24} />
             </motion.div>
-            <span className='hidden lg:inline text-sm font-medium text-text-primary max-w-[220px] truncate'>
+            <span className='hidden lg:inline text-xs font-medium text-text-primary max-w-[220px] truncate'>
               {userEmail}
             </span>
             <CyberButton
@@ -316,7 +389,7 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
       </div>
 
       {/* Mobile Menu */}
-      <MobileMenu
+      {/* <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={handleMobileMenuClose}
         userEmail={userEmail}
@@ -324,7 +397,7 @@ export const Header: React.FC<HeaderProps> = ({ userEmail, onLogout, profile }) 
         notifications={stats}
         onNotificationsClick={() => {}}
         profile={profile}
-      />
+      /> */}
     </motion.header>
   )
 }

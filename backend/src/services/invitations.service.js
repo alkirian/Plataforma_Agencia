@@ -23,6 +23,19 @@ export const createInvitations = async ({
   const errors = [];
   const invitations = [];
 
+  // Get agency name for email
+  let agencyName = null;
+  try {
+    const { data: agency } = await supabaseAdmin
+      .from("agencies")
+      .select("name")
+      .eq("id", agencyId)
+      .maybeSingle();
+    agencyName = agency?.name || null;
+  } catch (e) {
+    // Continue without agency name
+  }
+
   for (const rawEmail of emails) {
     const email = String(rawEmail || "")
       .trim()
@@ -62,6 +75,7 @@ export const createInvitations = async ({
       await sendInvitationEmail({
         to: email,
         agencyId,
+        agencyName,
         inviterName,
         link,
         role,

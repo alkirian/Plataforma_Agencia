@@ -56,8 +56,8 @@ export const ViewFilters = ({
                 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 focus:ring-offset-slate-800
                 ${
                   isActive
-                    ? 'bg-gradient-to-br from-blue-600/90 to-blue-700/90 text-white shadow-lg shadow-blue-600/20'
-                    : 'bg-gradient-to-br from-slate-700/80 to-slate-800/80 text-slate-300 hover:text-slate-200'
+                    ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-600/20'
+                    : 'bg-slate-700/80 text-slate-300 hover:text-slate-200 hover:bg-slate-600/80'
                 }
               `}
               title={`${option.label} - ${option.description}`}
@@ -97,8 +97,8 @@ export const ViewFilters = ({
               flex items-center gap-3 group
               ${
                 isActive
-                  ? 'bg-gradient-to-r from-blue-600/90 to-blue-700/90 text-white shadow-lg shadow-blue-600/20 border-blue-500/40'
-                  : 'bg-gradient-to-br from-slate-700/60 to-slate-800/60 text-slate-300 hover:text-slate-200 hover:bg-slate-700/80'
+                  ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-600/20 border-blue-500/40'
+                  : 'bg-slate-700/60 text-slate-300 hover:text-slate-200 hover:bg-slate-700/80'
               }
             `}
             aria-pressed={isActive}

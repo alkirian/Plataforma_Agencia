@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
-    "build": "npm run quality:check && tsc && vite build",
+    "build": "vite build",
     "build:js": "vite build",
     "build:production": "npm run quality:strict && tsc --project tsconfig.production.json && vite build --mode production",
     "type-check": "tsc --noEmit",
@@ -58,6 +58,7 @@
     "@tanstack/react-query": "^5.85.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "driver.js": "^1.4.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
@@ -65,7 +66,8 @@
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.26.2",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

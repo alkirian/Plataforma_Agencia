@@ -2,7 +2,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import UploadZone from './UploadZone.jsx'
-import UploadErrorBoundary from './UploadErrorBoundary.jsx'
+import UploadErrorBoundary from '../UploadErrorBoundary.jsx'
 
 const DocumentsUploadSection = ({
   isUploadExpanded,
@@ -17,7 +17,7 @@ const DocumentsUploadSection = ({
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className='bg-surface-soft border border-gray-200/10 rounded-xl p-6'
+          className='bg-surface-soft border border-[color:var(--color-border-subtle)] rounded-xl p-6'
         >
           <UploadErrorBoundary
             componentName='Upload Zone'

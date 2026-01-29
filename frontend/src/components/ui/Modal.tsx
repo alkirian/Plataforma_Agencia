@@ -243,9 +243,13 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
 
               {/* Footer */}
-              {footer && (
-                <div className='p-6 pt-0 border-t border-gray-700 flex justify-end gap-3'>
-                  {footer}
+              {(footer || actions.length > 0 || secondaryActions.length > 0) && (
+                <div className='px-5 py-4 border-t border-gray-700 flex items-center justify-between gap-3 bg-[var(--palette-primary-bg)]/30'>
+                  {/* Secondary actions on the left */}
+                  <div className='flex gap-2'>{secondaryActions.map(renderAction)}</div>
+
+                  {/* Primary actions on the right (or footer override) */}
+                  <div className='flex gap-2'>{footer ? footer : actions.map(renderAction)}</div>
                 </div>
               )}
             </div>

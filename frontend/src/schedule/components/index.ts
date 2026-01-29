@@ -13,7 +13,7 @@ export * from './modals'
 export * from './forms'
 
 // AI components
-export * from './ai'
+// export * from './ai'
 
 // Sidebar components
 export * from './sidebar'
