@@ -36,12 +36,82 @@ export const scheduleItemSchema = z.object({
     .max(50, 'El canal no puede exceder 50 caracteres')
     .optional()
     .nullable(),
+  creative_idea: z.string()
+    .max(1000, 'La idea creativa no puede exceder 1000 caracteres')
+    .optional()
+    .nullable(),
+  goal: z.string()
+    .max(1000, 'El objetivo no puede exceder 1000 caracteres')
+    .optional()
+    .nullable(),
+  format: z.string()
+    .max(100, 'El formato no puede exceder 100 caracteres')
+    .optional()
+    .nullable(),
+  platforms: z.string()
+    .max(200, 'Las plataformas no pueden exceder 200 caracteres')
+    .optional()
+    .nullable(),
   client_id: z.string()
     .uuid('client_id debe ser un UUID válido')
     .optional() // Será añadido por el controller
 });
 
 export const scheduleItemUpdateSchema = scheduleItemSchema.partial().omit({ client_id: true });
+
+export const clientBrandProfileSchema = z.object({
+  business_description: z.string().max(2000).optional().nullable(),
+  target_audience: z.string().max(2000).optional().nullable(),
+  brand_voice: z.string().max(500).optional().nullable(),
+  content_pillars: z.array(z.string().max(120)).max(12).optional(),
+  content_goals: z.array(z.string().max(120)).max(12).optional(),
+  products_services: z.array(z.string().max(120)).max(20).optional(),
+  preferred_platforms: z.array(z.string().max(50)).max(10).optional(),
+  preferred_formats: z.array(z.string().max(50)).max(10).optional(),
+  avoid_topics: z.array(z.string().max(120)).max(20).optional(),
+  reference_style: z.string().max(2000).optional().nullable(),
+  source_links: z.array(
+    z.object({
+      id: z.string().min(1).max(120),
+      type: z.enum(['instagram', 'website', 'tiktok', 'facebook', 'linkedin', 'drive', 'other']),
+      url: z.string().url().max(1000),
+      notes: z.string().max(1000).optional().nullable(),
+    })
+  ).max(30).optional(),
+  source_notes: z.string().max(2000).optional().nullable(),
+  ai_insights: z.object({
+    summary: z.string().max(5000).optional().nullable(),
+    tone_detected: z.string().max(1000).optional().nullable(),
+    visual_style: z.string().max(1000).optional().nullable(),
+    products_detected: z.array(z.string().max(120)).max(50).optional(),
+    content_pillars_suggested: z.array(z.string().max(120)).max(50).optional(),
+    last_analyzed_at: z.string().optional().nullable(),
+  }).optional(),
+}).passthrough();
+
+export const clientCardColorSchema = z.object({
+  card_color: z.string()
+    .regex(/^#([0-9A-Fa-f]{6})$/, 'El color debe ser un valor hexadecimal válido')
+    .nullable(),
+});
+
+export const contentAssetSchema = z.object({
+  file_name: z.string().min(1).max(255),
+  storage_path: z.string().min(1).max(1000),
+  mime_type: z.string().max(100).optional().nullable(),
+  size_bytes: z.number().int().positive().optional().nullable(),
+  asset_role: z.enum(['final', 'draft', 'thumbnail', 'carousel_slide', 'reference']).optional().default('final'),
+  sort_order: z.number().int().min(0).max(1000).optional().default(0),
+});
+
+export const brandAssetSchema = z.object({
+  file_name: z.string().min(1).max(255),
+  storage_path: z.string().min(1).max(1000),
+  mime_type: z.string().max(100).optional().nullable(),
+  size_bytes: z.number().int().positive().optional().nullable(),
+  asset_type: z.enum(['screenshot', 'logo', 'product', 'website', 'reference', 'document']).optional().default('reference'),
+  notes: z.string().max(1000).optional().nullable(),
+});
 
 export const documentUploadSchema = z.object({
   filename: z.string()

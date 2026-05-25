@@ -1,32 +1,63 @@
-import React, { useState } from 'react';
-import { Link, NavLink, useParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, Fragment } from 'react';
+import { Link, NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { 
   HomeIcon, 
   Cog6ToothIcon, 
   UserCircleIcon, 
   BellIcon,
   Bars3Icon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ArrowTrendingUpIcon,
+  EllipsisVerticalIcon,
+  ArrowUpTrayIcon,
+  LinkIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Transition } from '@headlessui/react';
+import { motion } from 'framer-motion';
 import { CyberButton } from '../ui';
-import { ClientSelector } from '../ui/ClientSelector';
 import { NotificationPanel } from '../notifications/NotificationPanel';
 import { useNotifications } from '../../hooks/useNotifications';
 import { Tooltip } from '../ui/Tooltip';
 import { MobileMenu } from './MobileMenu';
 import { ClientSearchModal } from '../ui/ClientSearchModal';
+import { ClientSelector } from '../ui/ClientSelector';
 
-export const Header = ({ userEmail, onLogout }) => {
+export const Header = ({ userEmail, profile, onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const params = useParams();
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState('dayGridMonth');
+  const [avatar, setAvatar] = useState(null);
+
+  useEffect(() => {
+    if (profile) {
+      const localAv = localStorage.getItem('cadence-avatar-' + profile.id);
+      setAvatar(profile.avatar_url || localAv || null);
+    }
+  }, [profile]);
   
   // Detectar si estamos en una página de cliente
   const isClientPage = location.pathname.startsWith('/clients/');
   const currentClientId = params.id;
+  const currentClientTab = isClientPage ? new URLSearchParams(location.search).get('tab') : null;
+  const activeClientTab = ['schedule', 'documents', 'identity', 'trends'].includes(currentClientTab)
+    ? currentClientTab
+    : 'schedule';
+  const isDocumentsTab = isClientPage && activeClientTab === 'documents';
+  const isIdentityTab = isClientPage && activeClientTab === 'identity';
+  const isTrendsTab = isClientPage && activeClientTab === 'trends';
+  const showCalendarViewControls = isClientPage && !isDocumentsTab && !isIdentityTab && !isTrendsTab;
+  const clientTabs = [
+    { id: 'schedule', label: 'Cronograma' },
+    { id: 'documents', label: 'Documentos' },
+    { id: 'identity', label: 'Identidad' },
+    { id: 'trends', label: 'Tendencias' },
+  ];
+
 
   // Hook de notificaciones
   const {
@@ -43,7 +74,6 @@ export const Header = ({ userEmail, onLogout }) => {
   // Handler para abrir el panel de notificaciones
   const handleOpenNotifications = () => {
     setIsNotificationPanelOpen(true);
-    // Marcar todas las notificaciones actuales como vistas
     if (notifications.length > 0) {
       markAllAsViewed();
     }
@@ -52,9 +82,37 @@ export const Header = ({ userEmail, onLogout }) => {
   const navLinkClasses = ({ isActive }) =>
     `icon-btn ${isActive ? 'icon-btn--active' : ''}`;
 
+  const handleNewEventFromHeader = () => {
+    if (!isClientPage) return;
+    if (isDocumentsTab) {
+      navigate(`${location.pathname}?tab=schedule`);
+      setTimeout(() => window.dispatchEvent(new CustomEvent('cadence:new-event')), 50);
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('cadence:new-event'));
+  };
+
+  const handleHeaderCalendarView = (nextView) => {
+    setCalendarView(nextView);
+    window.dispatchEvent(new CustomEvent('cadence:calendar-view', { detail: { view: nextView } }));
+  };
+
+  const handleCalendarAction = (action) => {
+    window.dispatchEvent(new CustomEvent('cadence:calendar-action', { detail: { action } }));
+  };
+
+  useEffect(() => {
+    const syncCalendarView = (event) => {
+      const next = event?.detail?.view;
+      if (next) setCalendarView(next);
+    };
+    window.addEventListener('cadence:calendar-view-changed', syncCalendarView);
+    return () => window.removeEventListener('cadence:calendar-view-changed', syncCalendarView);
+  }, []);
+
   return (
     <motion.header
-      className='header-cyber sticky top-0 z-50'
+      className='sticky top-0 z-50 bg-surface-strong/95 border-b border-border-subtle'
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}
@@ -76,47 +134,156 @@ export const Header = ({ userEmail, onLogout }) => {
         {/* Logo - Centrado en mobile, izquierda en desktop */}
         <motion.div
           className='flex items-center md:flex-none absolute left-1/2 transform -translate-x-1/2 md:relative md:left-auto md:transform-none'
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
           <Tooltip content="Ve al inicio">
             <Link 
               to='/dashboard' 
-              className='text-xl sm:text-2xl font-bold text-cyber-gradient'
+              className='text-xl sm:text-2xl font-bold text-text-primary hover:text-text-primary/95 transition-colors'
               aria-label="Ir al dashboard - Cadence"
             >
               Cadence
             </Link>
           </Tooltip>
           <motion.div
-            className='ml-2 w-2 h-2 bg-[var(--color-accent-blue)] rounded-full'
+            className='ml-2 w-1.5 h-1.5 bg-gray-500 rounded-full'
             animate={{
-              boxShadow: [
-                '0 0 5px rgb(0 246 255 / 0.5)',
-                '0 0 15px rgb(0 246 255 / 0.8)',
-                '0 0 5px rgb(0 246 255 / 0.5)',
-              ],
+              opacity: [0.4, 1, 0.4]
             }}
-            transition={{ duration: 2, repeat: Infinity }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
         </motion.div>
 
-        {/* Centro: Client Selector (solo en páginas de cliente y desktop) */}
+        {/* Centro: cliente y secciones fijas */}
         {isClientPage && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="hidden lg:block"
+            className="hidden md:flex min-w-0 flex-1 items-center justify-center gap-3 px-4"
           >
-            <ClientSelector 
-              currentClientId={currentClientId}
-            />
+            <div className="hidden lg:block min-w-[10rem]">
+              <ClientSelector currentClientId={currentClientId} />
+            </div>
+
+             <nav
+               className="flex items-center rounded-lg border border-border-subtle bg-surface-soft/80 p-1 shadow-sm"
+               aria-label="Secciones del cliente"
+             >
+               {clientTabs.map(tab => {
+                 const isActive = activeClientTab === tab.id;
+                 return (
+                   <Link
+                     key={tab.id}
+                     to={`${location.pathname}?tab=${tab.id}`}
+                     className={`rounded-md px-3 py-1.5 text-xs font-semibold leading-none transition-colors ${
+                       isActive
+                         ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
+                         : 'text-text-muted hover:bg-surface-soft hover:text-text-primary'
+                     }`}
+                     aria-current={isActive ? 'page' : undefined}
+                   >
+                     {tab.label}
+                   </Link>
+                 );
+               })}
+             </nav>
+
+             {showCalendarViewControls && (
+                <div className="flex items-center gap-2">
+                  {/* Selector de vistas */}
+                  <div className='flex gap-0.5 rounded-lg border border-border-subtle bg-surface-soft/80 p-1 shadow-sm'>
+                    {[
+                      ['dayGridMonth', 'Mes'],
+                      ['timeGridWeek', 'Semana'],
+                      ['timeGridDay', 'Día'],
+                      ['listMonth', 'Agenda'],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        onClick={() => handleHeaderCalendarView(value)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-semibold leading-none transition-colors ${
+                          calendarView === value
+                            ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
+                            : 'text-text-muted hover:text-text-primary border border-transparent'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Menú de opciones de tres puntos (...) */}
+                  <Menu as="div" className="relative inline-block text-left">
+                    <div>
+                      <Menu.Button className="inline-flex items-center justify-center p-2 rounded-lg border border-border-subtle bg-surface-soft/80 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-1 focus:ring-border-strong shadow-sm">
+                        <EllipsisVerticalIcon className="h-4 w-4" aria-hidden="true" />
+                      </Menu.Button>
+                    </div>
+
+                    <Transition
+                      as={Fragment}
+                      enter="transition ease-out duration-100"
+                      enterFrom="transform opacity-0 scale-95"
+                      enterTo="transform opacity-100 scale-100"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="transform opacity-100 scale-100"
+                      leaveTo="transform opacity-0 scale-95"
+                    >
+                      <Menu.Items className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl border border-white/10 bg-[#161517] shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-1.5">
+                        <div className="space-y-0.5">
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                onClick={() => handleCalendarAction('import')}
+                                className={`${
+                                  active ? 'bg-white/5 text-white' : 'text-gray-300'
+                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
+                              >
+                                <ArrowUpTrayIcon className="h-4 w-4 text-gray-400 group-hover:text-white" />
+                                <span>Importar archivo</span>
+                              </button>
+                            )}
+                          </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                onClick={() => handleCalendarAction('share')}
+                                className={`${
+                                  active ? 'bg-white/5 text-white' : 'text-gray-300'
+                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
+                              >
+                                <LinkIcon className="h-4 w-4 text-[#8FA89B] group-hover:text-white" />
+                                <span>Compartir calendario</span>
+                              </button>
+                            )}
+                          </Menu.Item>
+                          <div className="my-1 border-t border-white/5" />
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                onClick={() => handleCalendarAction('clear')}
+                                className={`${
+                                  active ? 'bg-red-500/10 text-red-300' : 'text-red-400/80'
+                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors`}
+                              >
+                                <TrashIcon className="h-4 w-4 text-red-500/70 group-hover:text-red-400" />
+                                <span>Limpiar Cronograma</span>
+                              </button>
+                            )}
+                          </Menu.Item>
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </Menu>
+                </div>
+              )}
           </motion.div>
         )}
 
         {/* Mobile: Búsqueda y notificaciones */}
-        <div className="flex items-center md:hidden">
+        <div className="flex items-center md:hidden gap-1">
           <motion.button
             onClick={() => setIsSearchOpen(true)}
             className={`icon-btn`}
@@ -140,7 +307,7 @@ export const Header = ({ userEmail, onLogout }) => {
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className='absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs font-medium text-white flex items-center justify-center'
+                className='absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-600 text-xs font-medium text-white flex items-center justify-center'
                 aria-label={`${stats.total} notificaciones sin leer`}
               >
                 {stats.total > 9 ? '9+' : stats.total}
@@ -171,6 +338,17 @@ export const Header = ({ userEmail, onLogout }) => {
               </NavLink>
             </Tooltip>
 
+            <Tooltip content="Tendencias diarias de mercado">
+              <NavLink 
+                to='/trends' 
+                className={navLinkClasses} 
+                title='Tendencias'
+                aria-label="Ver tendencias"
+              >
+                <ArrowTrendingUpIcon className='h-5 w-5' aria-hidden="true" />
+              </NavLink>
+            </Tooltip>
+
             <Tooltip content="Buscar clientes (/)" >
               <motion.button
                 onClick={() => setIsSearchOpen(true)}
@@ -189,7 +367,7 @@ export const Header = ({ userEmail, onLogout }) => {
               onClick={handleOpenNotifications}
               className={`rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
                 isNotificationPanelOpen
-                  ? 'bg-surface-strong text-text-primary shadow-halo border border-[color:var(--color-border-subtle)]'
+                  ? 'bg-surface-strong text-text-primary border border-[color:var(--color-border-subtle)] shadow-sm'
                   : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'
               }`}
               title='Notificaciones'
@@ -203,7 +381,7 @@ export const Header = ({ userEmail, onLogout }) => {
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs font-medium text-white flex items-center justify-center'
+                  className='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 text-xs font-medium text-white flex items-center justify-center'
                   aria-label={`${stats.total} notificaciones sin leer`}
                 >
                   {stats.total > 9 ? '9+' : stats.total}
@@ -223,9 +401,9 @@ export const Header = ({ userEmail, onLogout }) => {
             </Tooltip>
           </motion.nav>
 
-          {/* Separador Visual con glow */}
+          {/* Separador Visual simple sin glow */}
           <motion.div
-              className='h-6 w-px bg-gradient-to-b from-transparent via-[var(--color-accent-blue)]/50 to-transparent'
+            className='h-6 w-px bg-border-subtle'
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.3, delay: 0.4 }}
@@ -238,10 +416,27 @@ export const Header = ({ userEmail, onLogout }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ duration: 0.2 }}>
-              <UserCircleIcon className='h-7 w-7 text-primary-400' />
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-center flex-shrink-0"
+            >
+              {avatar ? (
+                <img 
+                  src={avatar} 
+                  alt="Profile Avatar" 
+                  className="h-8 w-8 rounded-full object-cover border border-border-strong shadow-sm"
+                  onError={() => setAvatar(null)}
+                />
+              ) : profile?.fullName || profile?.full_name ? (
+                <div className="h-8 w-8 rounded-full bg-surface-strong border border-border-subtle flex items-center justify-center font-bold text-xs text-text-primary uppercase">
+                  {(profile.fullName || profile.full_name).charAt(0)}
+                </div>
+              ) : (
+                <UserCircleIcon className='h-7 w-7 text-text-muted' />
+              )}
             </motion.div>
-            <span className='hidden lg:inline text-sm font-medium text-text-primary'>{userEmail}</span>
+            <span className='hidden lg:inline text-sm font-medium text-text-primary'>{profile?.fullName || profile?.full_name || userEmail}</span>
             <Tooltip content="Cerrar sesión y salir de la aplicación">
               <CyberButton
                 variant='ghost'
@@ -280,8 +475,8 @@ export const Header = ({ userEmail, onLogout }) => {
         onNotificationsClick={handleOpenNotifications}
       />
 
-  {/* Client Search Modal */}
-  <ClientSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* Client Search Modal */}
+      <ClientSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </motion.header>
   );
 };

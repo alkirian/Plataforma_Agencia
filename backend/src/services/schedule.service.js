@@ -48,14 +48,26 @@ export const getScheduleItemsByClient = async (clientId, token) => {
  */
 export const createScheduleItem = async (itemData, token, userId = null) => {
   const supabaseAuth = createAuthenticatedClient(token);
-  // Normalizar y validar status antes de insertar
   const allowed = ['Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'];
   const normalizedStatus = normalizeStatus(itemData.status);
   if (normalizedStatus && !allowed.includes(normalizedStatus)) {
     console.warn('[schedule] Status no permitido, recibido:', itemData.status, '-> normalizado:', normalizedStatus);
   }
+
+  // Obtener agency_id del cliente para satisfacer la restricción NOT NULL de la base de datos
+  const { data: client, error: clientErr } = await supabaseAuth
+    .from('clients')
+    .select('agency_id')
+    .eq('id', itemData.client_id)
+    .single();
+
+  if (clientErr || !client) {
+    throw new Error('No se pudo encontrar el cliente o su agencia asociada.');
+  }
+
   const payload = {
     ...itemData,
+    agency_id: client.agency_id,
     status: normalizedStatus || itemData.status,
   };
   const { data, error } = await supabaseAuth
@@ -197,4 +209,149 @@ export const deleteScheduleItem = async (itemId, clientId, token, userId = null)
   }
 
   return true;
+};
+
+export const getScheduleItemAssets = async (itemId, clientId, token) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data, error } = await supabaseAuth
+    .from('content_assets')
+    .select('*')
+    .eq('schedule_item_id', itemId)
+    .eq('client_id', clientId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const createScheduleItemAsset = async (itemId, clientId, assetData, token, userId = null) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+
+  const { data: item, error: itemErr } = await supabaseAuth
+    .from('schedule_items')
+    .select('id, client_id, agency_id')
+    .eq('id', itemId)
+    .eq('client_id', clientId)
+    .single();
+
+  if (itemErr || !item) {
+    throw new Error('Evento no encontrado');
+  }
+
+  const payload = {
+    ...assetData,
+    schedule_item_id: itemId,
+    client_id: clientId,
+    agency_id: item.agency_id,
+    created_by: userId || null,
+  };
+
+  const { data, error } = await supabaseAuth
+    .from('content_assets')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+/**
+ * Elimina TODOS los ítems del cronograma de un cliente (sin restricción de mes).
+ */
+export const clearAllScheduleItems = async (clientId, token, userId = null) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+
+  // Obtener la lista de items primero para registrar en el log
+  const { data: items, error: fetchError } = await supabaseAuth
+    .from('schedule_items')
+    .select('id, agency_id, client_id, title')
+    .eq('client_id', clientId);
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (!items || items.length === 0) {
+    return { count: 0 };
+  }
+
+  // Eliminar físicamente todos los registros del cliente
+  const { error } = await supabaseAuth
+    .from('schedule_items')
+    .delete()
+    .eq('client_id', clientId);
+
+  if (error) throw new Error(error.message);
+
+  // Registrar actividad
+  if (userId) {
+    const agencyId = items[0].agency_id;
+    await logActivity({
+      agency_id: agencyId,
+      client_id: clientId,
+      user_id: userId,
+      action_type: 'SCHEDULE_ITEMS_CLEARED',
+      details: {
+        deleted_count: items.length,
+        scope: 'all',
+        deleted_titles: items.map(item => item.title)
+      }
+    });
+  }
+
+  return { count: items.length };
+};
+
+/**
+ * Elimina todos los ítems del cronograma de un cliente para un mes y año específicos.
+ */
+export const clearScheduleItemsByMonth = async (clientId, year, month, token, userId = null) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+
+  // Calcular límites de mes en formato UTC para coincidir con la BD
+  const startDate = new Date(Date.UTC(year, month, 1));
+  const endDate = new Date(Date.UTC(year, month + 1, 1));
+
+  // Obtener la lista de items primero para registrar en el log
+  const { data: items, error: fetchError } = await supabaseAuth
+    .from('schedule_items')
+    .select('id, agency_id, client_id, title')
+    .eq('client_id', clientId)
+    .gte('scheduled_at', startDate.toISOString())
+    .lt('scheduled_at', endDate.toISOString());
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  if (!items || items.length === 0) {
+    return { count: 0 };
+  }
+
+  // Eliminar físicamente los registros
+  const { error } = await supabaseAuth
+    .from('schedule_items')
+    .delete()
+    .eq('client_id', clientId)
+    .gte('scheduled_at', startDate.toISOString())
+    .lt('scheduled_at', endDate.toISOString());
+
+  if (error) throw new Error(error.message);
+
+  // Registrar actividad agregada en el log
+  if (userId) {
+    const agencyId = items[0].agency_id;
+    await logActivity({
+      agency_id: agencyId,
+      client_id: clientId,
+      user_id: userId,
+      action_type: 'SCHEDULE_ITEMS_CLEARED',
+      details: {
+        year,
+        month: month + 1, // Visualización amigable 1-indexed
+        deleted_count: items.length,
+        deleted_titles: items.map(item => item.title)
+      }
+    });
+  }
+
+  return { count: items.length };
 };

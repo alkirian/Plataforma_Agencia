@@ -29,3 +29,48 @@ export const createClient = clientData => {
     body: JSON.stringify(clientData),
   });
 };
+
+export const updateClientCardColor = (clientId, cardColor) => {
+  return apiFetch(`/clients/${clientId}/card-color`, {
+    method: 'PUT',
+    body: JSON.stringify({ card_color: cardColor }),
+  });
+};
+
+export const getClientBrandProfile = clientId => {
+  return apiFetch(`/clients/${clientId}/brand-profile`);
+};
+
+export const updateClientBrandProfile = (clientId, brandProfile) => {
+  return apiFetch(`/clients/${clientId}/brand-profile`, {
+    method: 'PUT',
+    body: JSON.stringify(brandProfile),
+  });
+};
+
+export const autoFillBrandProfile = (clientId, payload) => {
+  return apiFetch(`/clients/${clientId}/brand-profile/auto-fill`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+export const searchCompanyBrandProfile = (clientId, companyName) => {
+  return apiFetch(`/clients/${clientId}/brand-profile/search-company`, {
+    method: 'POST',
+    body: JSON.stringify({ companyName }),
+  });
+};
+
+export const updateClient = (clientId, clientData) => {
+  return apiFetch(`/clients/${clientId}`, {
+    method: 'PUT',
+    body: JSON.stringify(clientData),
+  });
+};
+
+export const deleteClient = clientId => {
+  return apiFetch(`/clients/${clientId}`, {
+    method: 'DELETE',
+  });
+};

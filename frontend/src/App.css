@@ -61,30 +61,24 @@ body {
 }
 .rbc-month-view .rbc-date-cell:hover {
   color: var(--color-text-primary) !important;
-  text-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
 }
 .rbc-day-bg,
 .rbc-time-slot {
   background-color: var(--color-surface) !important;
   transition:
-    background-color 0.15s ease,
-    box-shadow 0.15s ease !important;
+    background-color 0.15s ease !important;
 }
 .rbc-day-bg:hover,
 .rbc-time-slot:hover {
-  background-image: linear-gradient(
-    180deg,
-    rgba(96, 165, 250, 0.06),
-    transparent
-  ) !important;
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15);
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 .rbc-today {
-  background-color: rgba(96, 165, 250, 0.08) !important;
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.2);
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10) !important;
 }
 .rbc-selected-cell {
-  background-color: rgba(96, 165, 250, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 .rbc-month-row + .rbc-month-row {
   border-top-color: var(--color-border-subtle) !important;

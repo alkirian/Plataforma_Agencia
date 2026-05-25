@@ -6,7 +6,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { getCurrentDate } from '../../utils/dateHelpers';
-import { CalendarToolbar } from './CalendarToolbar';
 import '../../styles/fullcalendar-custom.css';
 
 /**
@@ -27,8 +26,7 @@ const FullCalendarWrapper = ({
   height = '600px',
   headerToolbar = false, // Disable default toolbar
   className = '',
-  clientName = '',
-  isChatOpen = false
+  clientName = ''
 }) => {
   const calendarRef = useRef(null);
   const [calendarLabel, setCalendarLabel] = useState('');
@@ -71,20 +69,6 @@ const FullCalendarWrapper = ({
       calendarApi.changeView(currentView);
     }
   }, [currentView]);
-
-  // Forzar re-render cuando cambie el estado del chat
-  useEffect(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      // Pequeño delay para permitir que la transición CSS termine
-      const timer = setTimeout(() => {
-        calendarApi.updateSize();
-        calendarApi.render();
-      }, 600); // Mismo duration que la transición del calendario
-      return () => clearTimeout(timer);
-    }
-  }, [isChatOpen]);
-
 
   // Handlers optimizados
   const handleDateClick = (arg) => {
@@ -215,24 +199,18 @@ const FullCalendarWrapper = ({
     eventClassNames: (arg) => {
       const s = (arg.event.extendedProps?.status || '').toLowerCase();
       const classes = ['fc-event-base'];
-      // map to kebab variants used in CSS
-      const map = {
-        'planificacion': 'planificacion',
-        'pendiente': 'pendiente',
-        'en-diseño': 'en-diseño',
-        'en-diseno': 'en-diseno',
-        'en-progreso': 'en-progreso',
-        'en-revision': 'en-revision',
-        'esperando-aprobacion': 'esperando-aprobacion',
-        'aprobado': 'aprobado',
-        'listo-publicar': 'listo-publicar',
-        'publicado': 'publicado',
-        'completado': 'completado',
-        'pausado': 'pausado',
-        'cancelado': 'cancelado',
-      };
-      const key = map[s] || null;
-      if (key) classes.push(`fc-event--${key}`);
+      
+      // Mapeo unificado de todos los estados a las 3 clases principales del calendario
+      let key = 'en-diseño';
+      if (s === 'planificacion' || s === 'pendiente' || s === 'en-diseño' || s === 'en-diseno' || s === 'en diseño' || s === 'requiere-cambios' || s === 'cancelado') {
+        key = 'en-diseño';
+      } else if (s === 'en-progreso' || s === 'en-revision' || s === 'esperando-aprobacion' || s === 'pausado' || s === 'en progreso') {
+        key = 'en-progreso';
+      } else if (s === 'aprobado' || s === 'listo-publicar' || s === 'publicado' || s === 'completado') {
+        key = 'aprobado';
+      }
+      
+      classes.push(`fc-event--${key}`);
       return classes;
     },
     
@@ -379,55 +357,8 @@ const FullCalendarWrapper = ({
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [onViewChange]);
 
-  // Handler para navegación desde toolbar
-  const handleToolbarNavigate = (action) => {
-    if (!calendarRef.current) return;
-    const calendarApi = calendarRef.current.getApi();
-    
-    switch (action) {
-      case 'PREV':
-        calendarApi.prev();
-        break;
-      case 'NEXT':
-        calendarApi.next();
-        break;
-      case 'TODAY':
-        calendarApi.today();
-        break;
-    }
-  };
-
-  // Handler para cambio de vista desde toolbar
-  const handleToolbarView = (viewType) => {
-    if (!calendarRef.current) return;
-    
-    // Mapear nombres de vista simples a nombres de FullCalendar
-    const viewMap = {
-      'month': 'dayGridMonth',
-      'week': 'timeGridWeek', 
-      'day': 'timeGridDay',
-      'agenda': 'listMonth'
-    };
-    
-    const fullCalendarView = viewMap[viewType] || viewType;
-    const calendarApi = calendarRef.current.getApi();
-    calendarApi.changeView(fullCalendarView);
-    onViewChange?.(fullCalendarView);
-  };
-
   return (
     <div className={`fullcalendar-wrapper ${className}`}>
-      {/* Custom Toolbar */}
-      <CalendarToolbar
-        label={calendarLabel}
-        onNavigate={handleToolbarNavigate}
-        onView={handleToolbarView}
-        view={currentView}
-        events={events}
-        clientName={clientName}
-  isChatOpen={isChatOpen}
-      />
-      
       {loading && (
   <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg">
           <div className="flex items-center space-x-2">

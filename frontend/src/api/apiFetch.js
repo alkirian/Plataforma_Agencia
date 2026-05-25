@@ -41,7 +41,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     let errorMessage = `HTTP ${response.status}`;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.message || errorMessage;
+      errorMessage = errorData.message || errorData.error || errorData.details || errorMessage;
     } catch {
       // Si no es JSON, intentar texto
       try {

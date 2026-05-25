@@ -15,6 +15,7 @@ export const AuthPage = () => {
   const [flowState, setFlowState] = useState('enterEmail'); // 'enterEmail', 'login', 'register'
   const [userEmail, setUserEmail] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [pendingInvitation, setPendingInvitation] = useState(null);
 
   const {
     register,
@@ -27,27 +28,50 @@ export const AuthPage = () => {
     watch
   } = useForm();
 
-  // Función para verificar si el email existe
+  // Cargar y resolver enlace de invitación pendiente al montar si existe en localStorage
+  React.useEffect(() => {
+    const resolveLocalStorageInvite = async () => {
+      const code = localStorage.getItem('pending_invite_code');
+      if (!code) return;
+
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+        const response = await fetch(`${apiBaseUrl}/shared/invite/${code}`);
+        const result = await response.json();
+        
+        if (response.ok && result.success && result.data) {
+          setPendingInvitation({
+            agencyName: result.data.agencyName,
+            role: result.data.role
+          });
+          setValue('agencyName', result.data.agencyName); // Pre-rellenar para evitar errores de validación
+          toast.success(`Invitación cargada: uniéndose a ${result.data.agencyName}`, { icon: '✨' });
+        }
+      } catch (err) {
+        console.warn('[AuthPage] Error al precargar código de invitación:', err.message);
+      }
+    };
+    resolveLocalStorageInvite();
+  }, [setValue]);
+
+  // Función para verificar si el email existe y si tiene invitaciones
   const checkEmail = async (email) => {
+    setIsCheckingEmail(true);
     try {
-      setIsCheckingEmail(true);
-      const response = await fetch('/api/v1/users/check-email', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+      const response = await fetch(`${apiBaseUrl}/users/check-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Error al verificar el email');
       }
 
-      return result.data.exists;
-    } catch (error) {
-      console.error('Error checking email:', error);
-      toast.error('Error al verificar el email');
-      return false;
+      return result?.data || { exists: false, invitation: null };
     } finally {
       setIsCheckingEmail(false);
     }
@@ -57,18 +81,31 @@ export const AuthPage = () => {
   const handleEmailSubmit = async (data) => {
     try {
       clearErrors();
-      const exists = await checkEmail(data.email);
+      const checkResult = await checkEmail(data.email);
       setUserEmail(data.email);
       
-      if (exists) {
+      if (checkResult.exists) {
         setFlowState('login');
         setValue('email', data.email);
+        setPendingInvitation(null);
       } else {
         setFlowState('register');
         setValue('email', data.email);
+        if (checkResult.invitation) {
+          setPendingInvitation(checkResult.invitation);
+          setValue('agencyName', checkResult.invitation.agencyName); // rellenamos para evitar errores de validación
+        } else {
+          setPendingInvitation(null);
+          setValue('agencyName', '');
+        }
       }
     } catch (error) {
-      setError('email', { type: 'manual', message: 'Error al verificar el email' });
+      // Fallback seguro: enviar a login para evitar falsos negativos de "crear cuenta"
+      setUserEmail(data.email);
+      setFlowState('login');
+      setValue('email', data.email);
+      setPendingInvitation(null);
+      toast('No pudimos verificar el email, intenta iniciar sesion.', { icon: 'ℹ️' });
     }
   };
 
@@ -91,14 +128,18 @@ export const AuthPage = () => {
   // Handler para registro
   const handleRegister = async (data) => {
     try {
-      const response = await fetch('/api/v1/users/register', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+      const inviteCode = localStorage.getItem('pending_invite_code') || undefined;
+
+      const response = await fetch(`${apiBaseUrl}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: data.email,
           password: data.password,
           fullName: data.fullName,
-          agencyName: data.agencyName
+          agencyName: data.agencyName || 'Agencia Invitada',
+          inviteCode
         })
       });
 
@@ -107,6 +148,9 @@ export const AuthPage = () => {
       if (!response.ok) {
         throw new Error(result.message || 'Error al crear la cuenta');
       }
+
+      // Limpiar el código pendiente del storage local
+      localStorage.removeItem('pending_invite_code');
 
       // Intentar hacer login automático después del registro
       await supabase.auth.signInWithPassword({
@@ -118,7 +162,7 @@ export const AuthPage = () => {
       toast.success('¡Cuenta creada exitosamente!');
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
-      toast.error('Error al crear la cuenta');
+      toast.error(err.message || 'Error al crear la cuenta');
     }
   };
 
@@ -140,13 +184,14 @@ export const AuthPage = () => {
   const handleBackToEmail = () => {
     setFlowState('enterEmail');
     setUserEmail('');
+    setPendingInvitation(null);
     reset();
     clearErrors();
   };
 
   return (
     <div className='flex min-h-screen items-center justify-center p-4'>
-  <div className='w-full max-w-md rounded-xl border border-white/10 bg-surface-strong p-6 shadow-lg'>
+      <div className='w-full max-w-md rounded-xl border border-white/10 bg-surface-strong p-6 shadow-lg'>
         
         {/* Header dinámico */}
         <div className="mb-6 text-center">
@@ -333,6 +378,21 @@ export const AuthPage = () => {
                   <input type="hidden" {...register('email')} value={userEmail} />
                 </div>
 
+                {/* Banner de Invitación Premium si aplica */}
+                {pendingInvitation && (
+                  <div className="rounded-xl border border-primary-500/20 bg-primary-950/20 p-4 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">✨</span>
+                      <div>
+                        <h4 className="font-semibold text-white">¡Invitación Detectada!</h4>
+                        <p className="text-xs text-text-muted mt-0.5">
+                          Te vas a unir automáticamente a la agencia <span className="font-bold text-primary-400">{pendingInvitation.agencyName}</span> como miembro.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <input
                     type='text'
@@ -346,18 +406,21 @@ export const AuthPage = () => {
                   {errors.fullName && <p className={errorClass}>{errors.fullName.message}</p>}
                 </div>
 
-                <div>
-                  <input
-                    type='text'
-                    placeholder='Nombre de tu agencia'
-                    className={inputClass}
-                    {...register('agencyName', { 
-                      required: 'El nombre de la agencia es obligatorio',
-                      minLength: { value: 2, message: 'Debe tener al menos 2 caracteres' }
-                    })}
-                  />
-                  {errors.agencyName && <p className={errorClass}>{errors.agencyName.message}</p>}
-                </div>
+                {/* Solo se pide el nombre de la agencia si el usuario NO tiene una invitación pendiente */}
+                {!pendingInvitation && (
+                  <div>
+                    <input
+                      type='text'
+                      placeholder='Nombre de tu agencia'
+                      className={inputClass}
+                      {...register('agencyName', { 
+                        required: 'El nombre de la agencia es obligatorio',
+                        minLength: { value: 2, message: 'Debe tener al menos 2 caracteres' }
+                      })}
+                    />
+                    {errors.agencyName && <p className={errorClass}>{errors.agencyName.message}</p>}
+                  </div>
+                )}
 
                 <div>
                   <input

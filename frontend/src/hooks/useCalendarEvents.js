@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem } from '../api/schedule';
+import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem, clearSchedule, clearAllSchedule } from '../api/schedule';
 import { TASK_STATES } from '../constants/taskStates';
 import toast from 'react-hot-toast';
 
@@ -12,22 +12,36 @@ export const useCalendarEvents = (clientId) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Transformar datos del backend a formato FullCalendar
+  // Transformar datos del backend a formato FullCalendar con mapeo de color directo
   const transformToFullCalendarEvents = (scheduleData) => {
     return scheduleData.map(item => {
       const startDate = new Date(item.scheduled_at);
+      const statusKey = (item.status || 'en-diseño').toLowerCase();
       
-  return {
+      // Obtener estilo del estado según TASK_STATES (considera los aliases)
+      const stateStyle = TASK_STATES[statusKey] || TASK_STATES['en-diseño'];
+      
+      return {
         id: item.id,
         title: item.title,
         start: startDate,
         end: startDate, // Eventos de momento específico
         allDay: false,
+        backgroundColor: stateStyle.color, // Color de fondo del badge
+        borderColor: stateStyle.color,
+        textColor: '#161517', // Color de tipografía oscura para excelente contraste
+        color: stateStyle.color, // Compatibilidad con componentes móviles/agenda
         extendedProps: {
           status: item.status,
           description: item.description,
+          copy: item.copy,
           channel: item.channel,
           priority: item.priority,
+          client_feedback: item.client_feedback,
+          creative_idea: item.creative_idea,
+          goal: item.goal,
+          format: item.format,
+          platforms: item.platforms,
           originalData: item
         }
       };
@@ -69,12 +83,20 @@ export const useCalendarEvents = (clientId) => {
   // Crear nuevo evento (Optimistic Update)
   const createEvent = useCallback(async (eventData) => {
     try {
-      // Optimistic update: agregar evento inmediatamente
-  const tempEvent = {
+      // Obtener color del estado del evento
+      const statusKey = (eventData.status || 'en-diseño').toLowerCase();
+      const stateStyle = TASK_STATES[statusKey] || TASK_STATES['en-diseño'];
+
+      // Optimistic update: agregar evento inmediatamente con su respectivo color
+      const tempEvent = {
         id: `temp-${Date.now()}`,
         title: eventData.title,
         start: new Date(eventData.scheduled_at),
         end: new Date(eventData.scheduled_at),
+        backgroundColor: stateStyle.color,
+        borderColor: stateStyle.color,
+        textColor: '#161517',
+        color: stateStyle.color,
         extendedProps: {
           status: eventData.status,
           isTemporary: true
@@ -151,6 +173,48 @@ export const useCalendarEvents = (clientId) => {
     }
   }, [clientId]);
 
+  // Eliminar todos los eventos de un mes específico
+  const clearMonthEvents = useCallback(async (year, month) => {
+    try {
+      setLoading(true);
+      await clearSchedule(clientId, year, month);
+      
+      // Actualizar estado local: filtrar y mantener solo los que no coincidan con este mes
+      setEvents(prev => prev.filter(event => {
+        const d = new Date(event.start);
+        return !(d.getFullYear() === year && d.getMonth() === month);
+      }));
+      
+      toast.success('Cronograma del mes limpiado');
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[clearMonthEvents] Error:', err);
+      }
+      toast.error('Error al limpiar el cronograma del mes');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
+
+  // Eliminar TODOS los eventos del cronograma (sin filtro de mes)
+  const clearAllEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      await clearAllSchedule(clientId);
+      setEvents([]);
+      toast.success('Cronograma completo eliminado');
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[clearAllEvents] Error:', err);
+      }
+      toast.error('Error al limpiar el cronograma');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
+
   // Mover evento (drag & drop)
   const moveEvent = useCallback(async (eventId, newStart, newEnd) => {
     try {
@@ -197,6 +261,8 @@ export const useCalendarEvents = (clientId) => {
     createEvent,
     updateEvent,
     deleteEvent,
+    clearMonthEvents,
+    clearAllEvents,
     moveEvent,
     
     // Utilidades

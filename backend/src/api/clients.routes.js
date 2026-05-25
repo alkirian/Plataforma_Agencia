@@ -1,9 +1,23 @@
 // src/api/clients.routes.js
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
-import { handleCreateClient, handleGetClients, handleGetClientById, handleGetActivityFeed } from '../controllers/clients.controller.js';
+import {
+  handleCreateClient,
+  handleGetClients,
+  handleGetClientById,
+  handleGetActivityFeed,
+  handleGetClientBrandProfile,
+  handleUpdateClientCardColor,
+  handleUpdateClientBrandProfile,
+  handleUpdateClient,
+  handleDeleteClient,
+  handleGetClientApprovalLink,
+  handleCreateClientApprovalLink,
+} from '../controllers/clients.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
-import { handleGenerateIdeas, handleChat, handleGetChatHistory } from '../controllers/ai.controller.js';
+import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleGenerateImage } from '../controllers/ai.controller.js';
+import { handleGetBrandAssets, handleCreateBrandAsset, handleDeleteBrandAsset } from '../controllers/brandAssets.controller.js';
+import { handleAutoFillBrandProfile, handleSearchCompanyBrandProfile } from '../controllers/brand.controller.js';
 import scheduleRoutes from './schedule.routes.js';
 
 const router = Router();
@@ -34,15 +48,40 @@ router.delete('/:clientId/documents/:documentId', handleDeleteDocument);
 router.post('/:clientId/generate-ideas', handleGenerateIdeas);
 router.post('/:clientId/chat', handleChat);
 router.get('/:clientId/chat/history', handleGetChatHistory);
+router.post('/:clientId/schedule/:itemId/generate-image', handleGenerateImage);
+
 
 // Ruta para el feed de actividad de un cliente
 router.get('/:clientId/activity-feed', handleGetActivityFeed);
+
+// Ruta para identidad de marca del cliente
+router.route('/:clientId/brand-profile')
+  .get(handleGetClientBrandProfile)
+  .put(handleUpdateClientBrandProfile);
+
+router.post('/:clientId/brand-profile/auto-fill', handleAutoFillBrandProfile);
+router.post('/:clientId/brand-profile/search-company', handleSearchCompanyBrandProfile);
+
+router.put('/:clientId/card-color', handleUpdateClientCardColor);
+
+router.route('/:clientId/brand-assets')
+  .get(handleGetBrandAssets)
+  .post(handleCreateBrandAsset);
+
+router.delete('/:clientId/brand-assets/:assetId', handleDeleteBrandAsset);
+
+// Ruta para el enlace de aprobación externo del cliente
+router.route('/:clientId/approval-link')
+  .get(handleGetClientApprovalLink)
+  .post(handleCreateClientApprovalLink);
 
 // Rutas anidadas para el calendario - ESTA LÍNEA FALTABA
 router.use('/:clientId/schedule', scheduleRoutes);
 
 // Ruta para un cliente específico - DEBE IR AL FINAL
 router.route('/:clientId')
-  .get(handleGetClientById);
+  .get(handleGetClientById)
+  .put(handleUpdateClient)
+  .delete(handleDeleteClient);
 
 export default router;

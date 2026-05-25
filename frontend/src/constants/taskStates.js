@@ -1,155 +1,89 @@
-// Constantes para estados de tareas del cronograma
+// Constantes para estados de tareas del cronograma (Simplificado a 3 estados principales)
 export const TASK_STATES = {
-  // 📋 Planeación
-  planificacion: {
-    color: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.1)',
-    name: 'Planificación',
-    description: 'Tarea en fase de planificación inicial',
-    icon: '📋',
-  },
-  pendiente: {
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.1)',
-    name: 'Pendiente',
-    description: 'Tarea programada, esperando inicio',
-    icon: '⏳',
-  },
-
-  // 🚀 Ejecución
-  'en-progreso': {
-    color: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.1)',
-    name: 'En Progreso',
-    description: 'Tarea actualmente en desarrollo',
-    icon: '🚀',
-  },
+  // 🎨 En Diseño
   'en-diseño': {
     color: '#06b6d4',
     bg: 'rgba(6, 182, 212, 0.1)',
     name: 'En Diseño',
-    description: 'Tarea en fase de diseño creativo',
+    description: 'Tarea en fase de diseño creativo y planificación',
     icon: '🎨',
   },
-  'en-revision': {
-    color: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.1)',
-    name: 'En Revisión',
-    description: 'Tarea completada, esperando revisión',
-    icon: '👀',
+
+  // 🚀 En Producción
+  'en-progreso': {
+    color: '#3b82f6',
+    bg: 'rgba(59, 130, 246, 0.1)',
+    name: 'En Producción',
+    description: 'Tarea actualmente en producción/desarrollo y revisión',
+    icon: '🚀',
   },
 
-  // ✅ Aprobación
-  'esperando-aprobacion': {
-    color: '#f97316',
-    bg: 'rgba(249, 115, 22, 0.1)',
-    name: 'Esperando Aprobación',
-    description: 'Tarea revisada, esperando aprobación del cliente',
-    icon: '⏰',
-  },
+  // ✅ Aprobado
   aprobado: {
     color: '#10b981',
     bg: 'rgba(16, 185, 129, 0.1)',
     name: 'Aprobado',
-    description: 'Tarea aprobada por el cliente',
+    description: 'Tarea aprobada por el cliente y lista para publicar',
     icon: '✅',
-  },
-  'requiere-cambios': {
-    color: '#dc2626',
-    bg: 'rgba(220, 38, 38, 0.1)',
-    name: 'Requiere Cambios',
-    description: 'Tarea necesita modificaciones',
-    icon: '🔄',
-  },
-
-  // 🚀 Finalización
-  'listo-publicar': {
-    color: '#059669',
-    bg: 'rgba(5, 150, 105, 0.1)',
-    name: 'Listo para Publicar',
-    description: 'Tarea lista para publicación',
-    icon: '📤',
-  },
-  publicado: {
-    color: '#047857',
-    bg: 'rgba(4, 120, 87, 0.1)',
-    name: 'Publicado',
-    description: 'Tarea publicada exitosamente',
-    icon: '📢',
-  },
-  completado: {
-    color: '#065f46',
-    bg: 'rgba(6, 95, 70, 0.1)',
-    name: 'Completado',
-    description: 'Tarea completada totalmente',
-    icon: '🎉',
-  },
-
-  // ⚠️ Estados especiales
-  pausado: {
-    color: '#6b7280',
-    bg: 'rgba(107, 114, 128, 0.1)',
-    name: 'Pausado',
-    description: 'Tarea temporalmente pausada',
-    icon: '⏸️',
-  },
-  cancelado: {
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.1)',
-    name: 'Cancelado',
-    description: 'Tarea cancelada',
-    icon: '❌',
   },
 };
 
-// Orden de estados para selectores
+// =========================================================================
+// ALIASES DE COMPATIBILIDAD
+// Mapea de forma transparente estados legacy y variantes de capitalización
+// a uno de los 3 estados principales, evitando crashes y garantizando consistencia
+// =========================================================================
+TASK_STATES['planificacion'] = TASK_STATES['en-diseño'];
+TASK_STATES['pendiente'] = TASK_STATES['en-diseño'];
+TASK_STATES['Pendiente'] = TASK_STATES['en-diseño'];
+TASK_STATES['En Diseño'] = TASK_STATES['en-diseño'];
+TASK_STATES['en-diseno'] = TASK_STATES['en-diseño'];
+TASK_STATES['en-revision'] = TASK_STATES['en-progreso'];
+TASK_STATES['En Progreso'] = TASK_STATES['en-progreso'];
+TASK_STATES['esperando-aprobacion'] = TASK_STATES['en-progreso'];
+TASK_STATES['requiere-cambios'] = TASK_STATES['en-diseño'];
+TASK_STATES['listo-publicar'] = TASK_STATES['aprobado'];
+TASK_STATES['publicado'] = TASK_STATES['aprobado'];
+TASK_STATES['completado'] = TASK_STATES['aprobado'];
+TASK_STATES['Aprobado'] = TASK_STATES['aprobado'];
+TASK_STATES['Publicado'] = TASK_STATES['aprobado'];
+TASK_STATES['pausado'] = TASK_STATES['en-progreso'];
+TASK_STATES['cancelado'] = TASK_STATES['en-diseño'];
+TASK_STATES['Cancelado'] = TASK_STATES['en-diseño'];
+
+// Orden de estados para selectores e interfaz
 export const STATE_ORDER = [
-  'planificacion',
-  'pendiente',
-  'en-progreso',
   'en-diseño',
-  'en-revision',
-  'esperando-aprobacion',
-  'requiere-cambios',
+  'en-progreso',
   'aprobado',
-  'listo-publicar',
-  'publicado',
-  'completado',
-  'pausado',
-  'cancelado',
 ];
 
-// Grupos de estados para organización
+// Grupos de estados para organización simplificada
 export const STATE_GROUPS = {
-  planeacion: ['planificacion', 'pendiente'],
-  ejecucion: ['en-progreso', 'en-diseño', 'en-revision'],
-  aprobacion: ['esperando-aprobacion', 'aprobado', 'requiere-cambios'],
-  finalizacion: ['listo-publicar', 'publicado', 'completado'],
-  especiales: ['pausado', 'cancelado'],
+  diseño: ['en-diseño'],
+  produccion: ['en-progreso'],
+  aprobacion: ['aprobado'],
 };
 
 // Utilidad para obtener estilo de un estado
 export const getStateStyle = state => {
-  return TASK_STATES[state] || TASK_STATES.pendiente;
+  return TASK_STATES[state] || TASK_STATES['en-diseño'];
 };
 
-// Utilidad para obtener siguientes estados posibles
+// Utilidad para obtener siguientes estados posibles de forma fluida
 export const getNextStates = currentState => {
-  const transitions = {
-    planificacion: ['pendiente', 'cancelado'],
-    pendiente: ['en-progreso', 'pausado', 'cancelado'],
-    'en-progreso': ['en-diseño', 'en-revision', 'pausado'],
-    'en-diseño': ['en-revision', 'requiere-cambios'],
-    'en-revision': ['esperando-aprobacion', 'requiere-cambios'],
-    'esperando-aprobacion': ['aprobado', 'requiere-cambios'],
-    'requiere-cambios': ['en-diseño', 'en-progreso'],
-    aprobado: ['listo-publicar'],
-    'listo-publicar': ['publicado'],
-    publicado: ['completado'],
-    pausado: ['en-progreso', 'cancelado'],
-    cancelado: ['planificacion'],
-    completado: [],
-  };
-
-  return transitions[currentState] || [];
+  const normalized = (currentState || 'en-diseño').toLowerCase();
+  
+  if (normalized === 'en-diseño' || normalized === 'en-diseno') {
+    return ['en-progreso', 'aprobado'];
+  }
+  if (normalized === 'en-progreso') {
+    return ['en-diseño', 'aprobado'];
+  }
+  if (normalized === 'aprobado') {
+    return ['en-diseño', 'en-progreso'];
+  }
+  
+  // Por defecto, permitir transición a cualquiera de los otros
+  return ['en-diseño', 'en-progreso', 'aprobado'];
 };

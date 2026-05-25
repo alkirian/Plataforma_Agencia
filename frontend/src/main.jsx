@@ -5,14 +5,26 @@ import './App.css';
 import './styles/globals.css';
 import './styles/calendar-unified.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 
-// Crea una instancia del cliente de consultas
-const queryClient = new QueryClient();
+// Crea una instancia del cliente de consultas con configuraciones óptimas de rendimiento
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Desactiva la tormenta de llamadas al cambiar de ventana/pestaña
+      staleTime: 1000 * 30,        // Los datos se consideran frescos durante 30 segundos
+      gcTime: 1000 * 60 * 5,       // Mantener en memoria caché inactiva por 5 minutos (anteriormente cacheTime)
+      retry: 1,                    // Limita los reintentos a 1 para mejor feedback visual de errores
+    },
+  },
+});
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>
 );

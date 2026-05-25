@@ -101,27 +101,26 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
       transition={{ duration: 0.5 }}
       className="relative"
     >
-  <div className="bg-surface-900/70 border border-white/10 
-                      rounded-xl p-4 shadow-lg">
+  <div className="p-2.5">
         {/* Header */}
-        <div className="mb-4 pb-3 border-b border-white/10">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="mb-2 pb-1">
+          <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
             Navegación Rápida
           </h3>
         </div>
 
         {/* Navegación del mes */}
-        <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center justify-between mb-2 px-0.5">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigateMonth(-1)}
-            className="p-1.5 hover:bg-surface-soft rounded-md transition-all group"
+            className="p-1 hover:bg-surface-soft rounded-md transition-all group"
           >
-            <ChevronLeftIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-200" />
+            <ChevronLeftIcon className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-200" />
           </motion.button>
 
-          <span className="text-sm font-semibold text-gray-200 capitalize">
+          <span className="text-xs font-semibold text-gray-200 capitalize">
             {monthData.monthName}
           </span>
 
@@ -129,23 +128,23 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigateMonth(1)}
-            className="p-1.5 hover:bg-surface-soft rounded-md transition-all group"
+            className="p-1 hover:bg-surface-soft rounded-md transition-all group"
           >
-            <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-200" />
+            <ChevronRightIcon className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-200" />
           </motion.button>
         </div>
 
         {/* Días de la semana */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-0.5 mb-1.5 justify-items-center">
           {dayNames.map(day => (
-            <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
+            <div key={day} className="text-center text-[10px] font-medium text-gray-400 py-0.5">
               {day.charAt(0)}
             </div>
           ))}
         </div>
 
         {/* Grid de días */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 justify-items-center">
           {monthData.days.map((dayData, index) => {
             const dayEvents = getEventsForDate(dayData.date);
             const hasEvents = dayEvents.length > 0;
@@ -157,13 +156,13 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleDayClick(dayData.date)}
                 className={`
-                  relative w-8 h-8 text-xs font-medium rounded-md transition-all
+                  relative w-7 h-7 text-[11px] font-medium rounded-md transition-all
                   ${dayData.isCurrentMonth 
-                    ? 'text-gray-200 hover:bg-surface-soft' 
-                    : 'text-gray-500 hover:bg-surface-soft'
+                    ? 'text-gray-200 hover:bg-white/[0.04]' 
+                    : 'text-gray-500 hover:bg-white/[0.04]'
                   }
                   ${dayData.isToday 
-                    ? 'bg-accent-500 text-white font-bold hover:bg-accent-600' 
+                    ? 'bg-white/[0.08] text-white font-bold hover:bg-white/[0.1]' 
                     : ''
                   }
                   ${hasEvents && !dayData.isToday 
@@ -180,7 +179,7 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                     {dayEvents.slice(0, 3).map((event, idx) => (
                       <span 
                         key={idx}
-                        className={`w-1 h-1 rounded-full ${
+                        className={`w-0.5 h-0.5 rounded-full ${
                           event.extendedProps?.status === 'Pendiente' ? 'bg-orange-500' :
                           event.extendedProps?.status === 'En Diseño' ? 'bg-gray-600' :
                           event.extendedProps?.status === 'Aprobado' ? 'bg-green-500' :
@@ -190,14 +189,14 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
                       />
                     ))}
                     {dayEvents.length > 3 && (
-                      <span className="w-1 h-1 bg-gray-400 rounded-full opacity-60" />
+                      <span className="w-0.5 h-0.5 bg-gray-400 rounded-full opacity-60" />
                     )}
                   </div>
                 )}
                 
                 {/* Contador de eventos para días con muchas tareas */}
                 {dayEvents.length > 3 && (
-                  <span className="absolute top-0.5 right-0.5 text-[8px] text-accent-400 font-bold">
+                  <span className="absolute top-0.5 right-0.5 text-[7px] text-accent-400 font-bold">
                     {dayEvents.length}
                   </span>
                 )}
@@ -207,23 +206,23 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
         </div>
 
         {/* Leyenda de estados */}
-        <div className="mt-3 p-2 bg-surface-800/30 rounded-lg border border-white/5">
-          <div className="text-xs text-gray-400 mb-2">Estados:</div>
-          <div className="grid grid-cols-2 gap-1 text-[10px]">
+        <div className="mt-2 p-1.5">
+          <div className="text-[10px] text-gray-400 mb-1">Estados:</div>
+          <div className="grid grid-cols-2 gap-0.5 text-[9px]">
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-orange-500 rounded-full"></span>
+              <span className="w-0.5 h-0.5 bg-orange-500 rounded-full"></span>
               <span className="text-gray-400">Pendiente</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+              <span className="w-0.5 h-0.5 bg-gray-600 rounded-full"></span>
               <span className="text-gray-400">En Diseño</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+              <span className="w-0.5 h-0.5 bg-green-500 rounded-full"></span>
               <span className="text-gray-400">Aprobado</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span className="w-1 h-1 bg-gray-500 rounded-full"></span>
+              <span className="w-0.5 h-0.5 bg-gray-500 rounded-full"></span>
               <span className="text-gray-400">Publicado</span>
             </div>
           </div>
@@ -234,9 +233,9 @@ export const MiniMonth = ({ currentDate, onNavigate, events = [] }) => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={goToToday}
-          className="w-full mt-3 py-2 bg-surface-800/50 hover:bg-surface-800/70
-                     text-gray-300 text-sm font-medium rounded-lg border border-white/10
-                     hover:border-white/20 transition-all duration-200"
+          className="w-full mt-2 py-1.5 bg-transparent hover:bg-white/[0.04]
+                     text-gray-300 text-xs font-medium rounded-lg border border-transparent
+                     hover:border-white/[0.055] transition-all duration-200"
         >
           Ir a Hoy
         </motion.button>

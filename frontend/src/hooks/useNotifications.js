@@ -4,6 +4,8 @@ import { getClients } from '../api/clients';
 import { getSchedule } from '../api/schedule';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
+import { getLatestTrendReports } from '../api/trends';
+
 
 /**
  * Hook para manejar notificaciones y recordatorios
@@ -137,11 +139,10 @@ export const useNotifications = () => {
     return reminders;
   };
 
-  // Función para obtener todas las tareas de todos los clientes  
+  // Función para obtener todas las tareas de todos los clientes (Optimizado: en memoria, O(1) red)
   const getAllTasks = useCallback(async () => {
     if (!isEnabled || !session) return [];
     
-    // Obtener clientes frescos directamente de la API en lugar de depender del prop
     try {
       const response = await getClients();
       const currentClients = response?.data || [];
@@ -151,23 +152,13 @@ export const useNotifications = () => {
       const allTasks = [];
       
       for (const client of currentClients) {
-        try {
-          const schedule = await getSchedule(client.id);
-          const tasksWithClient = schedule.map(task => ({
-            ...task,
-            clientName: client.name,
-            clientId: client.id,
-          }));
-          allTasks.push(...tasksWithClient);
-        } catch (error) {
-          // Si el error es por token inválido, no loguearlo como error
-          if (error.message?.includes('Token inválido') || error.message?.includes('No autorizado')) {
-            return [];
-          }
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Error loading schedule for client ${client.name}:`, error);
-          }
-        }
+        const schedule = client.schedule_items || [];
+        const tasksWithClient = schedule.map(task => ({
+          ...task,
+          clientName: client.name,
+          clientId: client.id,
+        }));
+        allTasks.push(...tasksWithClient);
       }
       
       return allTasks;
@@ -195,6 +186,33 @@ export const useNotifications = () => {
         const reminders = getTaskReminders(task, task.clientName);
         newNotifications.push(...reminders);
       });
+
+      // 📈 Verificar tendencias hiper-recientes (últimas 24 horas)
+      try {
+        const latestTrends = await getLatestTrendReports();
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        
+        latestTrends.forEach(report => {
+          const reportTime = new Date(report.generated_at).getTime();
+          // Solo notificar si se generó en las últimas 24 horas y tiene nuevos insights
+          if (reportTime > oneDayAgo && report.insights?.length > 0) {
+            newNotifications.push({
+              id: `trend-${report.id}`,
+              type: 'trend',
+              priority: 'medium',
+              title: 'Nueva tendencia detectada',
+              message: `Nuevas tendencias de mercado para ${report.clients?.name || 'tu marca'}`,
+              taskId: null,
+              clientName: report.clients?.name,
+              createdAt: new Date(report.generated_at),
+            });
+          }
+        });
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Error fetching trends for notifications:', err);
+        }
+      }
 
       // Filtrar notificaciones duplicadas y eliminadas
       const uniqueNotifications = newNotifications.filter(

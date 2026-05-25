@@ -6,7 +6,8 @@ import {
   HomeIcon, 
   Cog6ToothIcon,
   UserCircleIcon,
-  BellIcon
+  BellIcon,
+  ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import { CyberButton } from '../ui';
 
@@ -26,6 +27,12 @@ export const MobileMenu = ({
       path: '/dashboard',
       icon: HomeIcon,
       shortcut: 'Alt+D'
+    },
+    {
+      label: 'Tendencias',
+      path: '/trends',
+      icon: ArrowTrendingUpIcon,
+      shortcut: ''
     },
     {
       label: 'Configuración',

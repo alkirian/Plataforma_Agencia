@@ -1,5 +1,6 @@
 // src/api/schedule.js
 import { apiFetch } from './apiFetch.js';
+import { supabase } from '../supabaseClient.js';
 
 // Normaliza/limpia el payload según el esquema del backend
 const normalizeSchedulePayload = (raw = {}) => {
@@ -11,14 +12,34 @@ const normalizeSchedulePayload = (raw = {}) => {
     if (t) out.title = t;
   }
 
-  // Descripción/copy (opcionales)
-  // TEMPORAL: mapear copy a description hasta que se ejecute la migración
+  // Descripción (opcional)
+  if (typeof raw.description === 'string') {
+    out.description = raw.description.trim() || null;
+  }
+
+  // Copy (opcional)
   if (typeof raw.copy === 'string') {
-    const c = raw.copy.trim();
-    if (c) out.description = c; else out.description = null;
-  } else if (typeof raw.description === 'string') {
-    const d = raw.description.trim();
-    if (d) out.description = d; else out.description = null;
+    out.copy = raw.copy.trim() || null;
+  }
+
+  // Idea creativa (opcional)
+  if (typeof raw.creative_idea === 'string') {
+    out.creative_idea = raw.creative_idea.trim() || null;
+  }
+
+  // Objetivo (opcional)
+  if (typeof raw.goal === 'string') {
+    out.goal = raw.goal.trim() || null;
+  }
+
+  // Formato (opcional)
+  if (typeof raw.format === 'string') {
+    out.format = raw.format.trim() || null;
+  }
+
+  // Plataformas (opcional)
+  if (typeof raw.platforms === 'string') {
+    out.platforms = raw.platforms.trim() || null;
   }
 
   // Fecha/hora ISO 8601
@@ -141,4 +162,111 @@ export const deleteScheduleItem = async (clientId, itemId) => {
     method: 'DELETE',
   });
   return resp?.data ?? resp ?? { success: true };
+};
+
+export const getScheduleItemAssets = async (clientId, itemId) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}/assets`);
+  return resp?.data ?? [];
+};
+
+export const getScheduleItemAssetsWithPreview = async (clientId, itemId) => {
+  const assets = await getScheduleItemAssets(clientId, itemId);
+  const enriched = await Promise.all(
+    assets.map(async asset => {
+      const mime = asset.mime_type || '';
+      const isVisual = mime.startsWith('image/') || mime.startsWith('video/');
+      if (!isVisual || !asset.storage_path) {
+        return { ...asset, preview_url: null };
+      }
+
+      const { data, error } = await supabase.storage
+        .from('content-assets')
+        .createSignedUrl(asset.storage_path, 60 * 30);
+
+      if (error || !data?.signedUrl) {
+        return { ...asset, preview_url: null };
+      }
+
+      return { ...asset, preview_url: data.signedUrl };
+    })
+  );
+
+  return enriched;
+};
+
+export const createScheduleItemAsset = async (clientId, itemId, payload) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}/assets`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return resp?.data ?? resp;
+};
+
+export const uploadScheduleAsset = async (clientId, itemId, file, options = {}) => {
+  const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
+  const safeName = file.name.replace(/\s+/g, '-');
+  const storagePath = `${clientId}/${itemId}/${Date.now()}-${safeName}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage.from('content-assets').upload(storagePath, file);
+  if (uploadError) throw uploadError;
+
+  return createScheduleItemAsset(clientId, itemId, {
+    file_name: file.name,
+    storage_path: storagePath,
+    mime_type: file.type || null,
+    size_bytes: file.size || null,
+    asset_role: options.asset_role || 'final',
+    sort_order: options.sort_order || 0,
+  });
+};
+
+/**
+ * Genera una imagen con IA a través del backend y la guarda como asset
+ * @param {string} clientId
+ * @param {string} itemId
+ * @param {object} params - { prompt, aspectRatio }
+ * @returns {Promise<object>} El asset creado enriquecido con preview_url
+ */
+export const generateImageForEvent = async (clientId, itemId, { prompt, aspectRatio }) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}/generate-image`, {
+    method: 'POST',
+    body: JSON.stringify({ prompt, aspectRatio }),
+  });
+  
+  const asset = resp?.data ?? resp;
+  if (asset && asset.storage_path) {
+    const { data, error } = await supabase.storage
+      .from('content-assets')
+      .createSignedUrl(asset.storage_path, 60 * 30);
+    
+    if (!error && data?.signedUrl) {
+      asset.preview_url = data.signedUrl;
+    }
+  }
+  
+  return asset;
+};
+
+/**
+ * Elimina todos los eventos del cronograma para un mes y año específicos.
+ * @param {string} clientId
+ * @param {number} year
+ * @param {number} month (0-indexed, 0 = Enero, 11 = Diciembre)
+ */
+export const clearSchedule = async (clientId, year, month) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule?year=${year}&month=${month}`, {
+    method: 'DELETE',
+  });
+  return resp?.data ?? resp;
+};
+
+/**
+ * Elimina TODOS los eventos del cronograma del cliente (sin filtro de mes).
+ * @param {string} clientId
+ */
+export const clearAllSchedule = async (clientId) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule`, {
+    method: 'DELETE',
+  });
+  return resp?.data ?? resp;
 };

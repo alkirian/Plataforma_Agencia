@@ -19,68 +19,75 @@
 
 @layer base {
   :root {
-    /* App background and gradients */
-    --color-app-bg: #0b0d10;
-    --color-app-gradient-start: #111111;  /* darkest */
-    --color-app-gradient-mid: #0b0b0b;    /* mid dark gray */
-    --color-app-gradient-end: #000000;    /* slightly lighter */
-    /* Neutral dark gradient background (no blue/violet tint) */
-    --gradient-cyber:
-      radial-gradient(1500px 600px at 10% 10%, rgba(82, 82, 82, 0.178), transparent 100%),
-      linear-gradient(180deg, var(--color-app-gradient-start) 0%, var(--color-app-gradient-mid) 38%, var(--color-app-gradient-end) 100%);
-  --gradient-glow: linear-gradient(135deg, #262626 0%, #0b0d10 100%);
+    /* App background and solid surfaces */
+    --color-app-bg: #161517;
+    --color-app-sidebar: #1C1A1E;
+    --gradient-cyber: #161517;
+    --gradient-glow: #1C1A1E;
 
-  /* Surfaces and borders (neutral gray, no blue tint) */
-  --color-surface: rgba(23, 23, 23, 0.65);       /* neutral-900 @ 65% */
-  --color-surface-soft: rgba(23, 23, 23, 0.5);   /* neutral-900 @ 50% */
-  --color-surface-strong: rgba(23, 23, 23, 0.85);/* neutral-900 @ 85% */
-  --color-border-subtle: rgba(163, 163, 163, 0.2);  /* neutral-400 @ 20% */
-  --color-border-strong: rgba(163, 163, 163, 0.35); /* neutral-400 @ 35% */
+    /* Surfaces (neutral warm grays, strictly solid, no blur, opaque) */
+    --color-surface: #222024;
+    --color-surface-soft: #28262B;
+    --color-surface-strong: #1A181C;
+    --color-border-subtle: #2C2930;
+    --color-border-strong: #38343D;
 
-    /* Typography - WCAG 2.1 AA compliant colors */
-  --color-text-primary: #F1F5F9; /* High contrast */
-  --color-text-muted: #C7D2FE0F; /* will be overridden below; keeping token for compatibility */
-  --color-text-muted: #CBD5E1; /* muted gray */
-    --color-text-secondary: #94A3B8; /* Original muted color for less critical text */
+    /* Typography */
+    --color-text-primary: #F3F2F4;
+    --color-text-muted: #A19EA6;
+    --color-text-secondary: #88858C;
     --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* Accent tokens - Converted to grayscale */
-    --color-accent-cyan: #9CA3AF;   /* Gray instead of cyan */
-    --color-accent-blue: #9CA3AF;   /* Gray instead of blue */
-    --color-accent-violet: #E5E7EB; /* Light gray instead of violet */
-    --color-accent-purple: var(--color-accent-violet);
+    /* Solid desaturated pastels (Acentos pasteles mate) */
+    --color-accent-sage: #8FA89B;
+    --color-accent-lavender: #9BA1BA;
+    --color-accent-rose: #BA9B9D;
+    --color-accent-sand: #BAAFA1;
+
+    /* Accent tokens for backward compatibility */
+    --color-accent-cyan: #8FA89B;
+    --color-accent-blue: #9BA1BA;
+    --color-accent-violet: #BA9B9D;
+    --color-accent-purple: #9BA1BA;
   }
 
-  /* Solid theme: opaque surfaces, no blur, minimal shadows */
-  :root[data-theme="solid"],
-  body[data-theme="solid"] {
-    /* Keep app bg but use crisper surfaces */
-  --color-surface: #171717;       /* neutral-900 */
-  --color-surface-soft: #1f1f1f;  /* neutral-900 softer */
-  --color-surface-strong: #121212;/* deep neutral */
-    --color-border-subtle: rgba(148, 163, 184, 0.16);
-    --color-border-strong: rgba(148, 163, 184, 0.32);
-  /* Neutral/Grayscale accent by default; provide dark button palettes */
-  --color-accent-blue: #9CA3AF;   /* Gray primary for gradients */
-  --color-accent-violet: #E5E7EB; /* Light gray end */
-  --color-accent-cyan: #6B7280;   /* Mid gray for subtle glows */
-  --color-accent-purple: var(--color-accent-violet);
+  [data-theme="light"] {
+    /* App background and solid surfaces for Light Mode */
+    --color-app-bg: #F8FAFC;
+    --color-app-sidebar: #F1F5F9;
+    --gradient-cyber: #F8FAFC;
+    --gradient-glow: #F1F5F9;
 
-  /* Dark button palettes */
-  --btn-dark-green: #0f2f1b;
-  --btn-dark-green-hover: #144027;
-  --btn-dark-blue: #0b2540;
-  --btn-dark-blue-hover: #113356;
-  --btn-dark-yellow: #2a2306;
-  --btn-dark-yellow-hover: #3a3209;
+    /* Surfaces (Light Slate / Off-white grays, solid, flat) */
+    --color-surface: #FFFFFF;
+    --color-surface-soft: #F8FAFC;
+    --color-surface-strong: #E2E8F0;
+    --color-border-subtle: #E2E8F0;
+    --color-border-strong: #CBD5E1;
+
+    /* Typography */
+    --color-text-primary: #0F172A;
+    --color-text-muted: #475569;
+    --color-text-secondary: #64748B;
+
+    /* Pastels adjusted for Light contrast */
+    --color-accent-sage: #4E685B;
+    --color-accent-lavender: #4F46E5;
+    --color-accent-rose: #BE185D;
+    --color-accent-sand: #B45309;
+
+    /* Accent tokens for backward compatibility in Light Mode */
+    --color-accent-cyan: #0EA5E9;
+    --color-accent-blue: #2563EB;
+    --color-accent-violet: #7C3AED;
+    --color-accent-purple: #4F46E5;
   }
 
   body {
-    background: var(--gradient-cyber);
+    background-color: var(--color-app-bg);
+    background-image: none;
     color: var(--color-text-primary);
-    font-feature-settings:
-      'rlig' 1,
-      'calt' 1;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
     min-height: 100vh;
     font-family: var(--font-sans);
   }
@@ -92,20 +99,20 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(107, 114, 128, 0.25); /* gray-500/25 */
+    background: #1C1A1E;
   }
 
   ::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, #3a3a3a, #1f1f1f);
-  border-radius: 8px;
+    background: #2C2930;
+    border-radius: 8px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #273232;
+    background: #38343D;
   }
 
   ::selection {
-    background: rgba(156, 163, 175, 0.25); /* gray-400/25 */
+    background: rgba(143, 168, 155, 0.25);
     color: white;
   }
 }
@@ -116,29 +123,16 @@
     padding: 0.625rem 1.5rem;
     border-radius: 0.75rem;
     font-weight: 500;
-    transition: all 0.3s ease;
-    transform: none;
-    position: relative;
-    overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  /* Neutral dark button by default */
-  background: linear-gradient(to right, rgba(44, 44, 44, 0.9), rgba(31, 31, 32, 0.9));
+    transition: all 0.2s ease;
+    border: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-soft);
     color: var(--color-text-primary);
   }
 
   .btn-cyber:hover {
-  border-color: var(--color-border-strong);
-  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.6);
-    transform: scale(1.02);
-  }
-  /* Solid theme: keep neutral dark, subtle shadow */
-  [data-theme="solid"] .btn-cyber {
-    background: linear-gradient(to right, rgba(31,41,55,0.95), rgba(17,24,39,0.95));
-    border-color: var(--color-border-subtle);
-  }
-
-  [data-theme="solid"] .btn-cyber:hover {
-    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.4);
+    border-color: var(--color-border-strong);
+    background-color: #312E35;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 
   .btn-cyber:active {
@@ -147,65 +141,47 @@
 
   /* Cards */
   .card-cyber {
-    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
-    backdrop-filter: blur(14px);
-    border-radius: 1rem;
+    background-color: var(--color-surface);
+    backdrop-filter: none;
+    border-radius: 1.25rem;
     border: 1px solid var(--color-border-subtle);
-  box-shadow: var(--tw-shadow, 0 12px 22px -8px rgba(0,0,0,0.6));
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  /* Solid variant without blur and with flat surface */
-  [data-theme="solid"] .card-cyber {
-    background: var(--color-surface-strong);
-    backdrop-filter: none;
-  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.65);
+    transition: all 0.2s ease;
   }
 
   .card-cyber:hover {
     border-color: var(--color-border-strong);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 16px 32px -14px rgba(0,0,0,0.65);
-    transform: scale(1.01);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
   }
 
   /* Inputs */
   .input-cyber {
     width: 100%;
-    background: rgba(23, 23, 23, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-surface-strong);
+    border: 1px solid var(--color-border-subtle);
     border-radius: 0.75rem;
     padding: 0.625rem 1rem;
     color: var(--color-text-primary);
     transition: all 0.2s ease;
   }
 
-  [data-theme="solid"] .input-cyber {
-    background: var(--color-surface);
-    border-color: var(--color-border-subtle);
-  }
-
   .input-cyber:focus {
     outline: none;
     border-color: var(--color-border-strong);
-  box-shadow: 0 0 0 2px rgba(163, 163, 163, 0.25);
+    box-shadow: 0 0 0 2px rgba(155, 161, 186, 0.2);
   }
 
   .input-cyber::placeholder {
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
   }
 
   /* Header */
   .header-cyber {
-    background: linear-gradient(to right, rgba(23,23,23,0.75), rgba(23,23,23,0.5));
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
-
-  [data-theme="solid"] .header-cyber {
-    background: var(--color-surface);
+    background-color: var(--color-app-sidebar);
     backdrop-filter: none;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 }
 
@@ -215,9 +191,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 36px; /* h-9 */
-    width: 36px;  /* w-9 */
-    border-radius: 0.75rem; /* rounded-xl */
+    height: 36px;
+    width: 36px;
+    border-radius: 0.75rem;
     transition: all 0.2s ease;
     color: var(--color-text-muted);
     border: 1px solid transparent;
@@ -225,102 +201,85 @@
   }
 
   .icon-btn:hover {
-    background: var(--color-surface-soft);
+    background-color: var(--color-surface-soft);
     color: var(--color-text-primary);
     border-color: var(--color-border-subtle);
   }
 
   .icon-btn--active {
-    background: var(--color-surface-strong);
+    background-color: var(--color-surface-strong);
     color: var(--color-text-primary);
     border-color: var(--color-border-subtle);
   }
 
-  /* Text gradient (always grayscale) */
+  /* Text gradient - made solid pastel for new design language */
   .text-cyber-gradient {
-    background: linear-gradient(to right, #80cc94, #3a9f5f);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--color-accent-sage);
   }
 
-  /* Glow hover */
+  /* Glow hover removed, clean shadow instead */
   .hover-cyber-glow {
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
   }
 
   .hover-cyber-glow:hover {
-  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.7);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     border-color: var(--color-border-strong);
   }
 
   /* App background utility */
   .bg-app {
-    background: var(--gradient-cyber);
+    background-color: var(--color-app-bg);
   }
 
   /* Surfaces */
   .surface {
-    background: var(--color-surface);
+    background-color: var(--color-surface);
     border: 1px solid var(--color-border-subtle);
-    backdrop-filter: blur(8px);
-  }
-
-  [data-theme="solid"] .surface {
     backdrop-filter: none;
   }
 
   .card {
-    background: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-soft));
+    background-color: var(--color-surface);
     border: 1px solid var(--color-border-subtle);
-    border-radius: 1rem;
-    backdrop-filter: blur(16px);
-    /* Subtle separation from dark bg, more defined shadow */
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 14px 24px -10px rgba(0,0,0,0.6);
+    border-radius: 1.25rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
   }
 
-  [data-theme="solid"] .card {
-    background: var(--color-surface-strong);
-    backdrop-filter: none;
-  }
-
-  /* Disable all blur utilities under solid theme for a clean, flat look */
-  [data-theme="solid"] .backdrop-blur,
-  [data-theme="solid"] .backdrop-blur-xs,
-  [data-theme="solid"] .backdrop-blur-sm,
-  [data-theme="solid"] .backdrop-blur-md,
-  [data-theme="solid"] .backdrop-blur-lg,
-  [data-theme="solid"] .backdrop-blur-xl,
-  [data-theme="solid"] .backdrop-blur-2xl,
-  [data-theme="solid"] .backdrop-blur-3xl {
+  /* Disable all blur utilities for clean flat look */
+  .backdrop-blur,
+  .backdrop-blur-xs,
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-3xl {
     backdrop-filter: none !important;
   }
 
-  /* Neon ring gradient */
+  /* Solid ring style */
   .ring-gradient {
-    box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 6px rgba(156,163,175,0.15), 0 0 0 12px rgba(209,213,219,0.12);
+    box-shadow: 0 0 0 1px var(--color-border-subtle), 0 0 0 4px rgba(155,161,186,0.1);
   }
 
   /* Focus visible - Enhanced for accessibility */
   .focus-visible:focus-visible {
     outline: none;
-  box-shadow: 0 0 0 2px rgba(156,163,175,0.8), 0 0 0 4px rgba(156,163,175,0.4);
-  border-color: #9CA3AF;
+    box-shadow: 0 0 0 2px rgba(155, 161, 186, 0.4);
+    border-color: var(--color-border-strong);
   }
 
-  /* Enhanced focus for interactive elements */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible,
   [tabindex]:focus-visible {
-  outline: 2px solid #9CA3AF;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    outline: 2px solid var(--color-border-strong);
+    outline-offset: 2px;
   }
 
-  /* Remove default outline and replace with our accessible version */
   button:focus,
   a:focus,
   input:focus,
@@ -330,140 +289,37 @@
     outline: none;
   }
 
-  /* Skip links for keyboard navigation */
-  .skip-link {
-    position: absolute;
-    top: -40px;
-    left: 6px;
-    background: var(--color-accent-blue);
-    color: white;
-    padding: 8px 16px;
-    text-decoration: none;
-    border-radius: 4px;
-    z-index: 1000;
-    font-weight: 500;
-    transition: top 0.3s;
-  }
-
-  .skip-link:focus {
-    top: 6px;
-  }
-
-  /* Enhanced visual feedback for keyboard navigation */
-  .keyboard-nav button:focus-visible,
-  .keyboard-nav a:focus-visible,
-  .keyboard-nav input:focus-visible,
-  .keyboard-nav select:focus-visible {
-    outline: 3px solid #9CA3AF;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px white, 0 0 0 5px #9CA3AF;
-  }
-
-  /* Dark tone button variants */
+  /* Dark tone button variants - adapted to desaturated pastels */
   .btn-tone {
     padding: 0.625rem 1.25rem;
     border-radius: 0.75rem;
     font-weight: 600;
-    color: #F9FAFB;
-    border: 1px solid var(--color-border-subtle);
-    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    color: #161517;
+    border: 1px solid transparent;
+    transition: transform 0.1s ease, background-color 0.2s ease;
   }
   .btn-tone:active { transform: scale(0.98); }
-  .btn-tone--green { background: linear-gradient(to bottom, var(--btn-dark-green), #0a2214); }
-  .btn-tone--green:hover { background: linear-gradient(to bottom, var(--btn-dark-green-hover), #0d2b1a); }
-  .btn-tone--blue { background: linear-gradient(to bottom, var(--btn-dark-blue), #081b2e); }
-  .btn-tone--blue:hover { background: linear-gradient(to bottom, var(--btn-dark-blue-hover), #0d2742); }
-  .btn-tone--yellow { background: linear-gradient(to bottom, var(--btn-dark-yellow), #1f1a05); }
-  .btn-tone--yellow:hover { background: linear-gradient(to bottom, var(--btn-dark-yellow-hover), #2b2407); }
+  .btn-tone--green { background-color: var(--color-accent-sage); }
+  .btn-tone--green:hover { background-color: #7A9486; }
+  .btn-tone--blue { background-color: var(--color-accent-lavender); }
+  .btn-tone--blue:hover { background-color: #8389A3; }
+  .btn-tone--yellow { background-color: var(--color-accent-sand); }
+  .btn-tone--yellow:hover { background-color: #A3988A; }
+}
 
-  /* Touch target improvements for mobile */
-  @media (max-width: 768px) {
-    /* Minimum touch target size */
-    .touch-target {
-      min-height: 44px;
-      min-width: 44px;
-    }
-
-    /* Enhanced touch areas */
-    button, 
-    a, 
-    input[type="button"], 
-    input[type="submit"], 
-    .btn, 
-    .btn-cyber {
-      min-height: 44px;
-      min-width: 44px;
-      padding: 12px 16px;
-    }
-
-    /* Larger spacing for mobile */
-    .mobile-spacing {
-      padding: 16px;
-      gap: 12px;
-    }
-
-    /* Improved form elements */
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    select,
-    textarea {
-      min-height: 44px;
-      padding: 12px 16px;
-      font-size: 16px; /* Prevents zoom on iOS */
-    }
-
-    /* Touch-friendly navigation */
-    nav a {
-      padding: 12px 16px;
-      margin: 4px 0;
-    }
+/* Optimización de Fluidez Visual y Carga (UI Skeletons) */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
-/* Animaciones globales */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.animate-shimmer {
+  animation: shimmer 1.6s infinite ease-in-out;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.fade-in-up {
-  animation:
-    fadeIn 0.6s ease-out,
-    slideUp 0.6s ease-out;
-}
-
-/* Reducir animaciones para usuarios que lo prefieren */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-@layer components {
-  /* Anula rings grandes aplicados vía :focus-within en contenedores */
-  .no-focus-within:focus-within { outline: none !important; box-shadow: none !important; }
-
-  /* Hover gris para reemplazar hover:bg-white/5 */
-  .hover-surface:hover {
-    background-color: var(--color-surface) !important;
-    border-color: var(--color-border-subtle) !important;
-  }
+/* Aceleración por Hardware GPU para transiciones ultra-fluidas */
+.card-cyber {
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }

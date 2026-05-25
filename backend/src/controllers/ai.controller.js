@@ -1,15 +1,16 @@
-import { generateScheduleIdeas, handleChatConversation } from '../services/ai.service.js';
+import { generateScheduleIdeas, handleChatConversation, generateImageWithAI } from '../services/ai.service.js';
 import { listChatMessages, saveChatMessage } from '../services/chat.service.js';
+import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 
 export const handleGenerateIdeas = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const { clientId } = req.params;
-    const { userPrompt, monthContext } = req.body;
+    const { userPrompt, monthContext, quantity, targetDate } = req.body;
     if (!clientId || !userPrompt) {
       return res.status(400).json({ success: false, message: 'clientId y userPrompt son requeridos' });
     }
-    const ideas = await generateScheduleIdeas({ clientId, userPrompt, monthContext, token });
+    const ideas = await generateScheduleIdeas({ clientId, userPrompt, monthContext, quantity, targetDate, token });
     res.status(200).json({ success: true, data: ideas });
   } catch (error) {
     next(error);
@@ -140,6 +141,128 @@ export const handleGetChatHistory = async (req, res, next) => {
     const result = await listChatMessages({ token, clientId, limit: lim, before });
     res.status(200).json({ success: true, data: result });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const handleGenerateImage = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, error: 'Token de autenticación requerido.' });
+    }
+
+    const { clientId, itemId } = req.params;
+    const { prompt, aspectRatio } = req.body;
+
+    if (!clientId || !itemId) {
+      return res.status(400).json({ success: false, error: 'clientId y itemId son requeridos.' });
+    }
+
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ success: false, error: 'El prompt es requerido para generar la imagen.' });
+    }
+
+    // 1. Validar cliente y obtener su agency_id usando el token del usuario
+    const supabaseAuth = createAuthenticatedClient(token);
+    const { data: client, error: clientErr } = await supabaseAuth
+      .from('clients')
+      .select('id, agency_id')
+      .eq('id', clientId)
+      .single();
+
+    if (clientErr || !client) {
+      console.error('❌ Error al validar cliente:', clientErr);
+      return res.status(404).json({ success: false, error: 'Cliente no encontrado o sin permisos.' });
+    }
+
+    // 2. Validar que la publicación (schedule_item) existe y pertenece al cliente
+    const { data: item, error: itemErr } = await supabaseAuth
+      .from('schedule_items')
+      .select('id')
+      .eq('id', itemId)
+      .eq('client_id', clientId)
+      .single();
+
+    if (itemErr || !item) {
+      console.error('❌ Error al validar schedule_item:', itemErr);
+      return res.status(404).json({ success: false, error: 'Publicación no encontrada o sin permisos.' });
+    }
+
+    // 3. Generar la imagen con IA (Nano Banana / Gemini API)
+    let generatedImage;
+    try {
+      generatedImage = await generateImageWithAI({ prompt, aspectRatio });
+    } catch (aiError) {
+      console.error('❌ Error al generar imagen con IA:', aiError);
+      return res.status(aiError.statusCode || 400).json({ success: false, error: aiError.message });
+    }
+
+    // 4. Decodificar la imagen a un Buffer
+    const base64Image = typeof generatedImage === 'string' ? generatedImage : generatedImage.base64;
+    const mimeType = typeof generatedImage === 'string' ? 'image/jpeg' : (generatedImage.mimeType || 'image/png');
+    const extension = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+    const imageBuffer = Buffer.from(base64Image, 'base64');
+    const timestamp = Date.now();
+    const fileName = `ai-generated-${timestamp}.${extension}`;
+    const storagePath = `${clientId}/${itemId}/${fileName}`;
+
+    console.log(`💾 Subiendo imagen generada a Supabase Storage: bucket 'content-assets', path: '${storagePath}'`);
+
+    // 5. Subir imagen a Supabase Storage usando supabaseAdmin
+    const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
+      .from('content-assets')
+      .upload(storagePath, imageBuffer, {
+        contentType: mimeType,
+        upsert: true
+      });
+
+    if (uploadErr) {
+      console.error('❌ Error al subir imagen a Supabase Storage:', uploadErr);
+      return res.status(500).json({ success: false, error: `Error al almacenar la imagen: ${uploadErr.message}` });
+    }
+
+    // 6. Obtener URL pública
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('content-assets')
+      .getPublicUrl(storagePath);
+    
+    const publicUrl = publicUrlData?.publicUrl;
+    if (!publicUrl) {
+      console.error('❌ No se pudo obtener la URL pública de la imagen.');
+      return res.status(500).json({ success: false, error: 'No se pudo obtener la URL pública del asset.' });
+    }
+
+    // 7. Insertar el registro del asset en public.content_assets
+    const { data: asset, error: assetErr } = await supabaseAuth
+      .from('content_assets')
+      .insert({
+        schedule_item_id: itemId,
+        client_id: clientId,
+        agency_id: client.agency_id,
+        created_by: req.user?.id || null,
+        file_name: fileName,
+        storage_path: storagePath,
+        mime_type: mimeType,
+        size_bytes: imageBuffer.length,
+        asset_role: 'final'
+      })
+      .select('*')
+      .single();
+
+    if (assetErr) {
+      console.error('❌ Error al registrar el asset en la base de datos:', assetErr);
+      // Intentar limpiar el archivo subido en storage
+      await supabaseAdmin.storage.from('content-assets').remove([storagePath]).catch(e => {
+        console.error('⚠️ No se pudo eliminar el archivo huérfano del storage:', e.message);
+      });
+      return res.status(500).json({ success: false, error: `Error al registrar el asset: ${assetErr.message}` });
+    }
+
+    console.log('✅ Asset generado e insertado correctamente:', asset);
+    return res.status(200).json({ success: true, data: asset });
+  } catch (error) {
+    console.error('❌ Error general en handleGenerateImage:', error);
     next(error);
   }
 };
