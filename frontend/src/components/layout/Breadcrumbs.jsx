@@ -24,7 +24,9 @@ export const Breadcrumbs = () => {
       };
       fetchClientName();
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [params.id, location.pathname]);
 
   const generateBreadcrumbs = () => {
@@ -58,10 +60,10 @@ export const Breadcrumbs = () => {
           }
       }
 
-      crumbs.push({ 
-        label, 
-        path, 
-        isClickable: isClickable && idx < segments.length - 1 
+      crumbs.push({
+        label,
+        path,
+        isClickable: isClickable && idx < segments.length - 1,
       });
     });
 
@@ -69,7 +71,7 @@ export const Breadcrumbs = () => {
   };
 
   const crumbs = generateBreadcrumbs();
-  
+
   if (crumbs.length === 0) return null;
 
   return (
@@ -77,10 +79,10 @@ export const Breadcrumbs = () => {
       <ol className='flex items-center gap-1.5'>
         {/* Home/Dashboard link */}
         <li className='flex items-center'>
-          <Link 
-            to='/dashboard' 
+          <Link
+            to='/dashboard'
             className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
-            aria-label="Ir al dashboard"
+            aria-label='Ir al dashboard'
           >
             <HomeIcon className='h-4 w-4' />
             <span>Dashboard</span>
@@ -88,21 +90,21 @@ export const Breadcrumbs = () => {
         </li>
 
         {/* Dynamic breadcrumb items */}
-        {crumbs.map((crumb) => (
+        {crumbs.map(crumb => (
           <li key={crumb.path} className='flex items-center'>
-            <ChevronRightIcon className='h-4 w-4 text-text-muted/80 mx-1' aria-hidden="true" />
+            <ChevronRightIcon className='h-4 w-4 text-text-muted/80 mx-1' aria-hidden='true' />
             {crumb.isClickable ? (
-              <Link 
-                to={crumb.path} 
+              <Link
+                to={crumb.path}
                 className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary bg-transparent hover:bg-surface-soft border border-transparent hover:border-[color:var(--color-border-subtle)] transition-colors'
                 aria-label={`Ir a ${crumb.label}`}
               >
                 <span className='truncate'>{crumb.label}</span>
               </Link>
             ) : (
-              <span 
+              <span
                 className='inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface-soft border border-[color:var(--color-border-subtle)] text-text-primary font-medium'
-                aria-current="page"
+                aria-current='page'
               >
                 <span className='truncate'>{crumb.label}</span>
               </span>

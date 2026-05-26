@@ -16,34 +16,35 @@ export const useAutoSave = (data, saveFunction, delay = 2000, enabled = true) =>
   saveCallbackRef.current = saveFunction;
 
   // Función debounced para guardar
-  const debouncedSave = useCallback((dataToSave) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      if (saveCallbackRef.current && enabled) {
-        saveCallbackRef.current(dataToSave);
+  const debouncedSave = useCallback(
+    dataToSave => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
-    }, delay);
-  }, [delay, enabled]);
+
+      timeoutRef.current = setTimeout(() => {
+        if (saveCallbackRef.current && enabled) {
+          saveCallbackRef.current(dataToSave);
+        }
+      }, delay);
+    },
+    [delay, enabled]
+  );
 
   // Efecto para detectar cambios en los datos
   useEffect(() => {
     // Solo guardar si los datos han cambiado realmente
     const dataChanged = JSON.stringify(data) !== JSON.stringify(previousDataRef.current);
-    
+
     if (dataChanged && enabled) {
       // Verificar que hay contenido significativo antes de guardar
-      const hasContent = data && (
-        (data.title && data.title.trim()) ||
-        (data.copy && data.copy.trim())
-      );
+      const hasContent =
+        data && ((data.title && data.title.trim()) || (data.copy && data.copy.trim()));
 
       if (hasContent) {
         debouncedSave(data);
       }
-      
+
       previousDataRef.current = data;
     }
   }, [data, debouncedSave, enabled]);

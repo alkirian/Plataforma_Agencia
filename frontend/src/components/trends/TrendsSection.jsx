@@ -12,11 +12,241 @@ import {
   ClockIcon,
   CalendarIcon,
   MagnifyingGlassIcon,
+  SparklesIcon,
+  FireIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { runTrendsForClient, getTrendReports } from '../../api/trends.js';
 import { createScheduleItem } from '../../api/schedule.js';
 import { generateCopyFromTrend } from '../../api/ai.js';
+import { apiFetch } from '../../api/apiFetch.js';
+
+// ─────────────────────────────────────────────
+// Strategic Coherence Engine
+// ─────────────────────────────────────────────
+
+const computeStrategicMetrics = (insight, client) => {
+  const brandInfo = client?.brand_info || {};
+  const industry = (client?.industry || '').toLowerCase();
+  const audience = (brandInfo.target_audience || '').toLowerCase();
+  const pillars = (brandInfo.content_pillars || []).map(p => String(p || '').toLowerCase());
+  const title = (insight.title || '').toLowerCase();
+  const desc = (insight.description || '').toLowerCase();
+  const action = (insight.suggested_action || '').toLowerCase();
+
+  // 1. Calculate IMPACT POTENTIAL (Engagement/Reach)
+  let impactScore = 55; // default base
+  if (insight.relevance === 'alta') impactScore = 85;
+  else if (insight.relevance === 'media') impactScore = 70;
+
+  // Boosts based on strategic value matching target audience
+  let impactReasons = [];
+  if (audience) {
+    if (
+      audience.includes('joven') ||
+      audience.includes('digital') ||
+      audience.includes('millennial') ||
+      audience.includes('gen z')
+    ) {
+      if (
+        desc.includes('viral') ||
+        desc.includes('meme') ||
+        desc.includes('video') ||
+        desc.includes('tendencia') ||
+        action.includes('tiktok') ||
+        action.includes('reel')
+      ) {
+        impactScore += 10;
+        impactReasons.push('Alto enganche potencial en tu segmento demográfico digital joven.');
+      }
+    }
+    if (
+      audience.includes('profesional') ||
+      audience.includes('b2b') ||
+      audience.includes('empresa') ||
+      audience.includes('corporativo')
+    ) {
+      if (
+        desc.includes('estudio') ||
+        desc.includes('informe') ||
+        desc.includes('análisis') ||
+        desc.includes('datos') ||
+        action.includes('linkedin')
+      ) {
+        impactScore += 10;
+        impactReasons.push(
+          'Gran relevancia y autoridad estratégica para tu audiencia corporativa/B2B.'
+        );
+      }
+    }
+  }
+
+  // Boosts based on matching brand content pillars
+  let matchedPillar = null;
+  for (const pillar of pillars) {
+    if (
+      pillar &&
+      (title.includes(pillar) ||
+        desc.includes(pillar) ||
+        pillar
+          .split(' ')
+          .some(word => word.length > 4 && (title.includes(word) || desc.includes(word))))
+    ) {
+      impactScore += 12;
+      matchedPillar = pillar;
+      impactReasons.push(`Alineación directa con tu pilar de contenido "${pillar}".`);
+      break;
+    }
+  }
+
+  impactScore = Math.min(98, impactScore);
+
+  // 2. Calculate FEASIBILITY (Viabilidad)
+  let feasibilityScore = 75; // default base
+  let formatLabel = 'Publicación Estándar';
+
+  if (
+    action.includes('video') ||
+    action.includes('reel') ||
+    action.includes('tiktok') ||
+    action.includes('grabar') ||
+    action.includes('grabación')
+  ) {
+    feasibilityScore = 60; // video requires recording
+    formatLabel = 'Video Corto (Reel/TikTok)';
+  } else if (
+    action.includes('carrusel') ||
+    action.includes('infografía') ||
+    action.includes('diseño') ||
+    action.includes('visual')
+  ) {
+    feasibilityScore = 80;
+    formatLabel = 'Carrusel / Infografía';
+  } else if (
+    action.includes('post') ||
+    action.includes('texto') ||
+    action.includes('linkedin') ||
+    action.includes('artículo')
+  ) {
+    feasibilityScore = 90;
+    formatLabel = 'Post de Texto / Redacción';
+  }
+
+  // Adjust feasibility based on preferred platforms
+  const preferredPlatforms = (brandInfo.preferred_platforms || []).map(p =>
+    String(p || '').toLowerCase()
+  );
+  if (preferredPlatforms.length > 0) {
+    if (
+      formatLabel.includes('Video') &&
+      (preferredPlatforms.includes('tiktok') ||
+        preferredPlatforms.includes('instagram') ||
+        preferredPlatforms.includes('youtube'))
+    ) {
+      feasibilityScore += 8; // set up for video!
+    }
+    if (formatLabel.includes('Carrusel') && preferredPlatforms.includes('instagram')) {
+      feasibilityScore += 5;
+    }
+    if (formatLabel.includes('Post') && preferredPlatforms.includes('linkedin')) {
+      feasibilityScore += 5;
+    }
+  }
+
+  feasibilityScore = Math.min(95, feasibilityScore);
+
+  // 3. Generate a deeply professional RATIONALE
+  let rationale = '';
+  if (matchedPillar) {
+    rationale = `Esta tendencia es sumamente estratégica para ${client?.name || 'tu marca'} debido a su coincidencia directa con tu pilar de contenido "${matchedPillar.toUpperCase()}". `;
+  } else if (industry) {
+    rationale = `Al pertenecer al sector de ${industry.toUpperCase()}, esta temática representa un punto clave de conversación actual que permite posicionar a ${client?.name || 'tu marca'} como un referente actualizado en el rubro. `;
+  } else {
+    rationale = `Esta tendencia representa una oportunidad valiosa de posicionamiento oportuno. `;
+  }
+
+  if (formatLabel.includes('Video')) {
+    rationale += `Implementar un ${formatLabel.toLowerCase()} impulsará el algoritmo de forma orgánica, ya que es el formato de mayor retención para captar la atención de tu audiencia.`;
+  } else if (formatLabel.includes('Carrusel')) {
+    rationale += `Diseñar un ${formatLabel.toLowerCase()} facilitará la educación de tu audiencia mediante slides visuales de alto valor, aumentando el número de guardados y compartidos.`;
+  } else {
+    rationale += `Publicar un post enfocado en este copy capitalizará la conversación activa del sector de manera rápida y sin complicaciones de producción.`;
+  }
+
+  let alignmentText = 'Alineación Estratégica';
+  let alignmentCls = 'text-blue-400 bg-blue-500/5 border-blue-500/10';
+  if (impactScore >= 85) {
+    alignmentText = 'Oportunidad de Oro (Match Alto)';
+    alignmentCls = 'text-emerald-400 bg-emerald-500/5 border-emerald-500/15';
+  } else if (impactScore < 70) {
+    alignmentText = 'Alineación Específica';
+    alignmentCls = 'text-slate-400 bg-slate-500/5 border-slate-500/10';
+  }
+
+  return {
+    impactScore,
+    feasibilityScore,
+    rationale,
+    formatLabel,
+    alignmentText,
+    alignmentCls,
+    matchedPillar,
+  };
+};
+
+const getChannelInfo = (suggestedAction, client) => {
+  const act = (suggestedAction || '').toLowerCase();
+
+  if (act.includes('tiktok')) {
+    return {
+      label: 'TikTok Video',
+      cls: 'bg-slate-950/80 text-cyan-400 border border-cyan-400/30',
+    };
+  } else if (act.includes('linkedin')) {
+    return {
+      label: 'LinkedIn Post',
+      cls: 'bg-[#0077B5]/10 text-blue-400 border border-[#0077B5]/35',
+    };
+  } else if (
+    act.includes('carrusel') ||
+    act.includes('reel') ||
+    act.includes('instagram') ||
+    act.includes('ig')
+  ) {
+    const isReel = act.includes('video') || act.includes('reel');
+    return {
+      label: isReel ? 'Instagram Reel' : 'Instagram Carrusel',
+      cls: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400 border border-pink-500/25',
+    };
+  } else if (act.includes('youtube') || act.includes('yt') || act.includes('short')) {
+    return {
+      label: 'YouTube Short',
+      cls: 'bg-red-500/10 text-red-400 border border-red-500/25',
+    };
+  }
+
+  // Fallback based on client platforms
+  const platforms = (client?.brand_info?.preferred_platforms || []).map(p =>
+    String(p || '').toLowerCase()
+  );
+  if (platforms.includes('instagram')) {
+    return {
+      label: 'Instagram Post',
+      cls: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400 border border-pink-500/25',
+    };
+  } else if (platforms.includes('linkedin')) {
+    return {
+      label: 'LinkedIn Post',
+      cls: 'bg-[#0077B5]/10 text-blue-400 border border-[#0077B5]/35',
+    };
+  }
+
+  return {
+    label: 'Post Recomendado',
+    cls: 'bg-slate-800 text-slate-300 border border-white/[0.06]',
+  };
+};
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -413,15 +643,22 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 // Report View Component with Premium Carousel
 // ─────────────────────────────────────────────
 
-const ReportView = ({ report, onCreateEvent }) => {
+const ReportView = ({ report, client, onCreateEvent }) => {
   if (!report) return null;
   const insights = report.insights || [];
-  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = React.useRef(null);
 
-  // Reiniciar slide al cambiar de reporte
-  useEffect(() => {
-    setActiveSlide(0);
-  }, [report.id]);
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -464, behavior: 'smooth' }); // 440px width + 24px gap = 464px
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 464, behavior: 'smooth' });
+    }
+  };
 
   if (insights.length === 0) {
     return (
@@ -437,179 +674,258 @@ const ReportView = ({ report, onCreateEvent }) => {
     );
   }
 
-  const activeInsight = insights[activeSlide];
-  const badge = relevanceBadge(activeInsight.relevance);
   const reportTitle =
     report.title || `Análisis: ${(report.keywords || []).slice(0, 3).join(', ') || 'General'}`;
 
-  const nextSlide = () => {
-    setActiveSlide(prev => (prev + 1) % insights.length);
-  };
-
-  const prevSlide = () => {
-    setActiveSlide(prev => (prev - 1 + insights.length) % insights.length);
-  };
-
   return (
     <div className='space-y-6'>
-      {/* Title & Metadata */}
-      <div className='border-b border-white/[0.04] pb-4'>
-        <h3 className='text-lg font-bold text-white tracking-tight'>{reportTitle}</h3>
+      {/* CSS inyectado localmente para ocultar la barra de desplazamiento horizontal */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
 
-        <div className='flex flex-wrap items-center gap-2.5 mt-2.5 text-xs text-slate-400'>
-          <span className='flex items-center gap-1.5 bg-slate-900/60 border border-white/[0.05] px-3 py-1 rounded-lg'>
-            <ClockIcon className='h-3.5 w-3.5 text-slate-500' />
-            {formatDate(report.generated_at)}
-          </span>
-          <span className='flex items-center gap-1.5 bg-slate-900/60 border border-white/[0.05] px-3 py-1 rounded-lg'>
-            <SignalIcon className='h-3.5 w-3.5 text-slate-500' />
-            <span>
-              {insights.length} tendencia{insights.length !== 1 ? 's' : ''} detectada
-              {insights.length !== 1 ? 's' : ''}
-            </span>
-          </span>
+      {/* Title & Metadata */}
+      <div className='border-b border-white/[0.04] pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
+        <div>
+          <h3 className='text-2xl font-black font-title text-white tracking-tight'>
+            {reportTitle}
+          </h3>
+
+          {/* Keywords */}
+          {report.keywords && report.keywords.length > 0 && (
+            <div className='flex flex-wrap gap-2 mt-3.5'>
+              {report.keywords.map((kw, idx) => (
+                <span
+                  key={idx}
+                  className='text-[11px] font-extrabold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-lg'
+                >
+                  #{kw}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Scan Statistics Header Strip */}
+      <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400'>
+            <ClockIcon className='h-5 w-5' />
+          </div>
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Fecha de Escaneo
+            </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {formatDate(report.generated_at)}
+            </p>
+          </div>
         </div>
 
-        {/* Keywords */}
-        {report.keywords && report.keywords.length > 0 && (
-          <div className='flex flex-wrap gap-1.5 mt-3'>
-            {report.keywords.map((kw, idx) => (
-              <span
-                key={idx}
-                className='text-[10px] bg-slate-800/80 text-slate-300 border border-white/[0.04] px-2 py-0.5 rounded'
-              >
-                #{kw}
-              </span>
-            ))}
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400'>
+            <SignalIcon className='h-5 w-5' />
           </div>
-        )}
-      </div>
-
-      {/* Summary card */}
-      <div className='rounded-xl border border-white/[0.06] bg-[#1E293B]/10 p-4'>
-        <p className='text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1'>
-          Resumen Ejecutivo del Escaneo
-        </p>
-        <p className='text-xs text-slate-300 leading-relaxed whitespace-pre-line'>
-          {report.summary}
-        </p>
-      </div>
-
-      {/* CAROUSEL CONTROLLER */}
-      <div className='relative max-w-2xl mx-auto w-full pt-2'>
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={activeSlide}
-            initial={{ opacity: 0, x: 15 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -15 }}
-            transition={{ duration: 0.2 }}
-            className='bg-[#1E293B]/15 border border-white/[0.08] rounded-2xl p-6 md:p-8 flex flex-col gap-5 min-h-[460px] shadow-lg relative overflow-hidden'
-          >
-            {/* Header info inside slide */}
-            <div className='flex items-center justify-between gap-3 border-b border-white/[0.04] pb-4'>
-              <span className='text-[10px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10'>
-                Tendencia {activeSlide + 1} de {insights.length}
-              </span>
-              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${badge.cls}`}>
-                {badge.label}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h4 className='text-base md:text-lg font-bold text-white leading-snug'>
-              {activeInsight.title}
-            </h4>
-
-            {/* Description */}
-            <p className='text-xs md:text-sm text-slate-300 leading-relaxed font-normal'>
-              {activeInsight.description}
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Análisis
             </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {insights.length}{' '}
+              {insights.length === 1 ? 'tendencia detectada' : 'tendencias detectadas'}
+            </p>
+          </div>
+        </div>
 
-            {/* Extra information & Mockup draft */}
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-2'>
-              <div className='rounded-xl bg-slate-900/60 border border-white/[0.04] p-4'>
-                <p className='text-[9px] font-bold uppercase tracking-wider text-blue-400 mb-1 flex items-center gap-1'>
-                  <span>💡</span> Borrador de Copia / Acción
-                </p>
-                <p className='text-xs text-slate-300 leading-relaxed font-normal'>
-                  {activeInsight.suggested_action ||
-                    'Crear publicación enfocada sobre este ángulo en las redes.'}
-                </p>
-              </div>
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400'>
+            <BoltIcon className='h-5 w-5' />
+          </div>
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Impacto Promedio
+            </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {insights.some(i => i.relevance === 'alta') ? 'Muy Alto' : 'Estable / Moderado'}
+            </p>
+          </div>
+        </div>
+      </div>
 
-              <div className='rounded-xl bg-slate-900/60 border border-white/[0.04] p-4'>
-                <p className='text-[9px] font-bold uppercase tracking-wider text-[#10B981] mb-1 flex items-center gap-1'>
-                  <span>🎯</span> Enfoque y Justificación
-                </p>
-                <p className='text-xs text-slate-300 leading-relaxed font-normal'>
-                  Esta idea aprovecha el interés hiper-reciente del último mes detectado en
-                  internet, adaptándose al tono e identidad de la marca.
-                </p>
-              </div>
-            </div>
-
-            {/* Source & Actions */}
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto pt-4 border-t border-white/[0.04]'>
-              {/* Source Link */}
-              {activeInsight.source_url ? (
-                <a
-                  href={activeInsight.source_url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors truncate max-w-full sm:max-w-[45%]'
-                >
-                  <LinkIcon className='h-3.5 w-3.5 flex-shrink-0' />
-                  <span className='truncate'>
-                    {activeInsight.source_url.replace(/^https?:\/\//, '').split('/')[0]}
-                  </span>
-                </a>
-              ) : (
-                <span />
-              )}
-
-              {/* Calendarize trigger */}
-              <button
-                onClick={() => onCreateEvent(activeInsight)}
-                className='w-full sm:w-auto flex items-center justify-center gap-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-5 py-2.5 transition-colors shadow-md'
-              >
-                <CalendarIcon className='h-4 w-4' />
-                Calendarizar esta Idea
-              </button>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Carousel Navigation buttons */}
-        <div className='flex items-center justify-between gap-4 mt-4 px-2'>
+      {/* HORIZONTAL CAROUSEL OF PREMIUM TREND CARDS WITH programmatic arrows */}
+      <div className='relative w-full group/carousel'>
+        {/* Left Arrow Button */}
+        {insights.length > 1 && (
           <button
-            onClick={prevSlide}
-            className='flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/20 bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-bold'
+            onClick={scrollLeft}
+            className='absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
             title='Anterior'
           >
-            ←
+            <span className='text-base font-black'>←</span>
           </button>
+        )}
 
-          {/* Slide Indicator Dots */}
-          <div className='flex items-center gap-1.5'>
-            {insights.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveSlide(idx)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  idx === activeSlide ? 'bg-blue-500 w-4' : 'bg-white/10 hover:bg-white/20'
-                }`}
-              />
-            ))}
-          </div>
-
+        {/* Right Arrow Button */}
+        {insights.length > 1 && (
           <button
-            onClick={nextSlide}
-            className='flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/20 bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-bold'
+            onClick={scrollRight}
+            className='absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
             title='Siguiente'
           >
-            →
+            <span className='text-base font-black'>→</span>
           </button>
+        )}
+
+        <div
+          ref={scrollRef}
+          className='flex gap-6 overflow-x-auto pb-4 pt-2 snap-x snap-mandatory scroll-smooth w-full hide-scrollbar'
+        >
+          {insights.map((insight, idx) => {
+            const metrics = computeStrategicMetrics(insight, client);
+            const channel = getChannelInfo(insight.suggested_action, client);
+            const badge = relevanceBadge(insight.relevance);
+
+            return (
+              <motion.div
+                key={insight.id || idx}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: idx * 0.05 }}
+                className='bg-slate-900/40 border border-white/[0.06] hover:border-blue-500/30 rounded-[24px] p-7 flex flex-col gap-5 shadow-xl hover:-translate-y-1 hover:shadow-blue-500/[0.02] transition-all relative overflow-hidden backdrop-blur-md group min-w-[440px] w-[440px] max-w-[440px] snap-start shrink-0'
+              >
+                {/* Decorative radial background glow */}
+                <div className='absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors' />
+
+                {/* Header: Recommended social channel & Relevance */}
+                <div className='flex items-center justify-between gap-3 border-b border-white/[0.04] pb-3.5'>
+                  <span
+                    className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-lg ${channel.cls}`}
+                  >
+                    {channel.label}
+                  </span>
+
+                  <span
+                    className={`text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${badge.cls}`}
+                  >
+                    <span className='w-1.5 h-1.5 rounded-full bg-current animate-pulse' />
+                    {badge.label}
+                  </span>
+                </div>
+
+                {/* Title & Description */}
+                <div className='space-y-2'>
+                  <h4 className='text-[16px] font-black text-white leading-snug tracking-tight group-hover:text-blue-400 transition-colors'>
+                    {insight.title}
+                  </h4>
+                  <p className='text-[13px] text-slate-300 leading-relaxed font-medium'>
+                    {insight.description}
+                  </p>
+                </div>
+
+                {/* Coherent Strategic Metrics */}
+                <div className='space-y-3.5 py-1'>
+                  {/* Impact score */}
+                  <div className='space-y-1.5'>
+                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
+                      <span className='flex items-center gap-1'>🎯 Potencial de Impacto</span>
+                      <span className='text-blue-400 font-black text-[12px]'>
+                        {metrics.impactScore}%
+                      </span>
+                    </div>
+                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
+                      <div
+                        className='bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500'
+                        style={{ width: `${metrics.impactScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Feasibility score */}
+                  <div className='space-y-1.5'>
+                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
+                      <span className='flex items-center gap-1'>🛠️ Viabilidad de Producción</span>
+                      <span className='text-[#10B981] font-black text-[12px]'>
+                        {metrics.feasibilityScore}%
+                      </span>
+                    </div>
+                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
+                      <div
+                        className='bg-gradient-to-r from-[#10B981] to-[#06B6D4] h-full rounded-full transition-all duration-500'
+                        style={{ width: `${metrics.feasibilityScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Match badge & alignment label */}
+                  <div className='flex flex-wrap items-center gap-2 pt-1.5'>
+                    <span
+                      className={`text-[9.5px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded border ${metrics.alignmentCls}`}
+                    >
+                      {metrics.alignmentText}
+                    </span>
+
+                    {metrics.matchedPillar && (
+                      <span className='text-[9.5px] font-extrabold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/25 px-2.5 py-1 rounded'>
+                        Match con Pilar: {metrics.matchedPillar}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tactical Rationale */}
+                <div className='rounded-xl bg-slate-955/50 border border-white/[0.04] p-3.5 text-[12.5px] leading-relaxed text-slate-300 flex flex-col gap-1.5'>
+                  <span className='text-[10.5px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1'>
+                    <SparklesIcon className='h-3.5 w-3.5 text-indigo-400' /> Por qué funciona para
+                    esta marca
+                  </span>
+                  <p className='font-medium text-slate-200'>{metrics.rationale}</p>
+                </div>
+
+                {/* Action Draft */}
+                <div className='rounded-xl bg-blue-500/[0.02] border-l-2 border-blue-500 p-3.5 text-[12.5px] leading-relaxed text-slate-250 flex flex-col gap-1.5 mt-auto'>
+                  <span className='text-[10.5px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1'>
+                    <span>💡</span> Borrador de Copia / Acción
+                  </span>
+                  <p className='font-semibold text-slate-100'>
+                    {insight.suggested_action ||
+                      'Crear publicación enfocada sobre este ángulo en las redes.'}
+                  </p>
+                </div>
+
+                {/* Source Link & Calendarize */}
+                <div className='flex items-center justify-between gap-3 pt-4 border-t border-white/[0.04] mt-2'>
+                  {insight.source_url ? (
+                    <a
+                      href={insight.source_url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 font-bold transition-colors truncate max-w-[45%]'
+                    >
+                      <LinkIcon className='h-3.5 w-3.5 flex-shrink-0' />
+                      <span className='truncate'>Ver fuente</span>
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+
+                  <button
+                    onClick={() => onCreateEvent(insight)}
+                    className='flex items-center gap-2 text-[12px] font-black text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-5 py-2.5 transition-all duration-150 shadow-md hover:shadow-[0_0_12px_rgba(37,99,235,0.45)]'
+                  >
+                    <CalendarIcon className='h-4 w-4' />
+                    Calendarizar Idea
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -626,24 +942,27 @@ const HistoryItem = ({ report, isActive, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150 ${
+      className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 hover:translate-x-1 flex flex-col gap-1.5 ${
         isActive
-          ? 'bg-slate-800/40 border-white/[0.08] text-white shadow-md'
-          : 'border-transparent text-slate-400 hover:bg-slate-900/50 hover:text-white'
+          ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/30 text-white shadow-lg shadow-blue-500/[0.02]'
+          : 'border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-white'
       }`}
     >
-      <div className='flex items-start justify-between gap-2'>
+      <div className='flex items-center gap-2 w-full'>
+        {isActive && (
+          <span className='w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0' />
+        )}
         <p
-          className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${isActive ? 'text-white' : 'text-slate-300'}`}
+          className={`text-[11px] font-extrabold leading-snug line-clamp-2 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-350 group-hover:text-white'}`}
         >
           {title}
         </p>
       </div>
-      <div className='flex items-center justify-between gap-2 mt-2'>
-        <span className='text-[10px] text-slate-500 font-medium truncate max-w-[80%]'>
+      <div className='flex items-center justify-between gap-2 w-full'>
+        <span className='text-[9px] text-slate-500 font-semibold truncate max-w-[80%] uppercase tracking-wider'>
           {(report.keywords || []).slice(0, 2).join(' · ')}
         </span>
-        <span className='text-[9px] text-slate-500 whitespace-nowrap'>
+        <span className='text-[9px] text-slate-500 whitespace-nowrap font-medium bg-slate-950/40 px-1.5 py-0.5 rounded border border-white/[0.03]'>
           {new Date(report.generated_at).toLocaleTimeString('es-AR', {
             hour: '2-digit',
             minute: '2-digit',
@@ -661,6 +980,7 @@ const HistoryItem = ({ report, isActive, onClick }) => {
 
 export const TrendsSection = ({ clientId }) => {
   const [reports, setReports] = useState([]);
+  const [client, setClient] = useState(null);
   const [activeReportId, setActiveReportId] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -675,6 +995,10 @@ export const TrendsSection = ({ clientId }) => {
       const allReports = await getTrendReports(clientId, 15);
       setReports(allReports);
       if (allReports.length > 0) setActiveReportId(allReports[0].id);
+
+      // Fetch client details in parallel/sequence
+      const cResp = await apiFetch(`/clients/${clientId}`);
+      setClient(cResp?.data ?? cResp ?? null);
     } catch (e) {
       console.error('Error fetching client trend data', e);
     }
@@ -740,7 +1064,7 @@ export const TrendsSection = ({ clientId }) => {
   const groupedReports = groupReportsByDate(reports);
 
   return (
-    <div className='max-w-7xl mx-auto py-6 px-2 sm:px-4 space-y-6'>
+    <div className='w-full max-w-full py-6 px-4 sm:px-6 md:px-8 xl:px-12 space-y-6'>
       {/* ─── Header & Search override ─── */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -853,6 +1177,7 @@ export const TrendsSection = ({ clientId }) => {
                 <ReportView
                   key={activeReport.id}
                   report={activeReport}
+                  client={client}
                   onCreateEvent={handleCreateEvent}
                 />
               ) : (
@@ -864,23 +1189,6 @@ export const TrendsSection = ({ clientId }) => {
           </motion.div>
         </div>
       )}
-
-      {/* ─── Info footer ─── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className='flex items-start gap-3 rounded-xl border border-white/[0.06] bg-[#1E293B]/20 p-5 text-xs text-slate-400 max-w-4xl mt-6'
-      >
-        <CalendarDaysIcon className='h-5 w-5 flex-shrink-0 text-slate-500 mt-0.5' />
-        <div className='leading-relaxed'>
-          <span className='font-bold text-white'>Monitoreo Automatizado de Tendencias</span> — Cada
-          mañana a las 7:00 AM, el sistema ejecuta de forma automática una consulta web
-          hiper-reciente del último mes a través de Tavily y GPT, adaptándose a la industria y
-          pilares de marca de cada cliente para identificar oportunidades estratégicas de marketing
-          digital.
-        </div>
-      </motion.div>
 
       {/* ─── Event Drafting Modal ─── */}
       <AnimatePresence>

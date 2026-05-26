@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 export const useDeviceType = () => {
   const [deviceType, setDeviceType] = useState(() => {
     if (typeof window === 'undefined') return 'desktop';
-    
+
     const width = window.innerWidth;
     if (width <= 640) return 'mobile';
     if (width <= 1024) return 'tablet';
@@ -18,7 +18,7 @@ export const useDeviceType = () => {
     const handleResize = () => {
       const width = window.innerWidth;
       let newDeviceType;
-      
+
       if (width <= 640) {
         newDeviceType = 'mobile';
       } else if (width <= 1024) {

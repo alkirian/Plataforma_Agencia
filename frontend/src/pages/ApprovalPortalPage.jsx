@@ -13,12 +13,17 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as SolidCheckCircleIcon } from '@heroicons/react/24/solid';
 import toast, { Toaster } from 'react-hot-toast';
-import { getSharedApprovalDetails, sharedApprovePost, sharedFeedbackPost, sharedRevertPost } from '../api/shared.js';
+import {
+  getSharedApprovalDetails,
+  sharedApprovePost,
+  sharedFeedbackPost,
+  sharedRevertPost,
+} from '../api/shared.js';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const formatPostDate = (iso) => {
+const formatPostDate = iso => {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString('es-AR', {
@@ -30,14 +35,17 @@ const formatPostDate = (iso) => {
   });
 };
 
-const channelBadge = (ch) => {
+const channelBadge = ch => {
   const map = {
-    IG:      { label: 'Instagram', cls: 'bg-gradient-to-r from-[#8a3ab9] via-[#e95950] to-[#fccc63] text-white' },
-    TikTok:  { label: 'TikTok',    cls: 'bg-black text-[#00f2fe] border border-[#fe0979]/40' },
-    LinkedIn:{ label: 'LinkedIn',  cls: 'bg-[#0077b5] text-white' },
-    YT:      { label: 'YouTube',   cls: 'bg-[#ff0000] text-white' },
-    FB:      { label: 'Facebook',  cls: 'bg-[#1877f2] text-white' },
-    Twitter: { label: 'X (Twitter)',cls: 'bg-[#14171A] text-white border border-white/20' },
+    IG: {
+      label: 'Instagram',
+      cls: 'bg-gradient-to-r from-[#8a3ab9] via-[#e95950] to-[#fccc63] text-white',
+    },
+    TikTok: { label: 'TikTok', cls: 'bg-black text-[#00f2fe] border border-[#fe0979]/40' },
+    LinkedIn: { label: 'LinkedIn', cls: 'bg-[#0077b5] text-white' },
+    YT: { label: 'YouTube', cls: 'bg-[#ff0000] text-white' },
+    FB: { label: 'Facebook', cls: 'bg-[#1877f2] text-white' },
+    Twitter: { label: 'X (Twitter)', cls: 'bg-[#14171A] text-white border border-white/20' },
   };
   return map[ch] || { label: ch || 'Post', cls: 'bg-surface-soft text-text-primary' };
 };
@@ -49,7 +57,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
   const [feedbackText, setFeedbackText] = useState('');
   const [isExpandingFeedback, setIsExpandingFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const chBadge = channelBadge(item.channel);
   const isApproved = item.status === 'Aprobado';
   const hasFeedback = !!item.client_feedback;
@@ -69,7 +77,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
     }
   };
 
-  const handleSendFeedback = async (e) => {
+  const handleSendFeedback = async e => {
     e.preventDefault();
     if (!feedbackText.trim()) return;
 
@@ -110,59 +118,65 @@ const PostCard = ({ item, token, onUpdateItem }) => {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       className={`card-cyber p-6 flex flex-col gap-4 border transition-all duration-200 ${
-        isApproved 
-          ? 'border-[#8FA89B]/40 hover:border-[#8FA89B]/60 bg-[#161917]/90' 
+        isApproved
+          ? 'border-[#8FA89B]/40 hover:border-[#8FA89B]/60 bg-[#161917]/90'
           : 'border-border-subtle hover:border-border-strong bg-[#161517]'
       }`}
     >
       {/* Date & Channel Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span className="flex items-center gap-1.5 text-xs text-text-muted capitalize">
-          <CalendarDaysIcon className="h-4 w-4 text-text-muted" />
+      <div className='flex items-center justify-between gap-3 flex-wrap'>
+        <span className='flex items-center gap-1.5 text-xs text-text-muted capitalize'>
+          <CalendarDaysIcon className='h-4 w-4 text-text-muted' />
           {formatPostDate(item.scheduled_at)}
         </span>
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${chBadge.cls}`}>
+        <span
+          className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${chBadge.cls}`}
+        >
           {chBadge.label}
         </span>
       </div>
 
       {/* Post Title */}
-      <h3 className="text-base font-bold text-text-primary leading-tight">{item.title}</h3>
+      <h3 className='text-base font-bold text-text-primary leading-tight'>{item.title}</h3>
 
       {/* Copy / Text */}
-      <div className="rounded-xl bg-[#222024]/50 border border-border-subtle/40 p-4">
-        <p className="text-xs text-text-muted font-semibold uppercase tracking-wider mb-2">Copia del Post</p>
-        <p className="text-sm text-text-primary whitespace-pre-line leading-relaxed">{item.description || 'Sin copia redactada.'}</p>
+      <div className='rounded-xl bg-[#222024]/50 border border-border-subtle/40 p-4'>
+        <p className='text-xs text-text-muted font-semibold uppercase tracking-wider mb-2'>
+          Copia del Post
+        </p>
+        <p className='text-sm text-text-primary whitespace-pre-line leading-relaxed'>
+          {item.description || 'Sin copia redactada.'}
+        </p>
       </div>
 
       {/* Visual Assets Carousel / Grid */}
       {item.assets && item.assets.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider flex items-center gap-1">
-            <PaperClipIcon className="h-3 w-3" />
+        <div className='space-y-2'>
+          <p className='text-[10px] text-text-muted font-bold uppercase tracking-wider flex items-center gap-1'>
+            <PaperClipIcon className='h-3 w-3' />
             Material de Diseño / Referencia
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
             {item.assets.map((asset, i) => (
               <a
                 key={asset.id || i}
                 href={asset.preview_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative rounded-xl overflow-hidden border border-border-subtle group aspect-[4/3] bg-black"
+                target='_blank'
+                rel='noopener noreferrer'
+                className='relative rounded-xl overflow-hidden border border-border-subtle group aspect-[4/3] bg-black'
               >
                 {asset.mime_type?.startsWith('image/') ? (
                   <img
                     src={asset.preview_url}
                     alt={asset.file_name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-200'
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-text-muted">
+                  <div className='w-full h-full flex items-center justify-center text-xs text-text-muted'>
                     {asset.file_name}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-semibold text-white">
+                <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-semibold text-white'>
                   Ver pantalla completa
                 </div>
               </a>
@@ -173,43 +187,47 @@ const PostCard = ({ item, token, onUpdateItem }) => {
 
       {/* Existing Feedback */}
       {hasFeedback && (
-        <div className="rounded-xl bg-[#A19EA6]/10 border border-[#A19EA6]/30 px-4 py-3 flex items-start gap-2.5">
-          <ChatBubbleLeftRightIcon className="h-4 w-4 text-[#A19EA6] mt-0.5 flex-shrink-0" />
+        <div className='rounded-xl bg-[#A19EA6]/10 border border-[#A19EA6]/30 px-4 py-3 flex items-start gap-2.5'>
+          <ChatBubbleLeftRightIcon className='h-4 w-4 text-[#A19EA6] mt-0.5 flex-shrink-0' />
           <div>
-            <p className="text-[10px] text-[#A19EA6] font-bold uppercase tracking-wider mb-0.5">Ajustes Solicitados</p>
-            <p className="text-xs text-text-primary leading-relaxed italic">"{item.client_feedback}"</p>
+            <p className='text-[10px] text-[#A19EA6] font-bold uppercase tracking-wider mb-0.5'>
+              Ajustes Solicitados
+            </p>
+            <p className='text-xs text-text-primary leading-relaxed italic'>
+              "{item.client_feedback}"
+            </p>
           </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="mt-auto pt-4 border-t border-border-subtle/30 flex flex-col gap-3">
+      <div className='mt-auto pt-4 border-t border-border-subtle/30 flex flex-col gap-3'>
         {isApproved ? (
-          <div className="flex flex-col gap-2">
-            <div className="w-full py-2.5 rounded-xl bg-[#8FA89B]/10 border border-[#8FA89B]/30 flex items-center justify-center gap-2 text-xs font-bold text-[#8FA89B]">
-              <SolidCheckCircleIcon className="h-5 w-5" />
+          <div className='flex flex-col gap-2'>
+            <div className='w-full py-2.5 rounded-xl bg-[#8FA89B]/10 border border-[#8FA89B]/30 flex items-center justify-center gap-2 text-xs font-bold text-[#8FA89B]'>
+              <SolidCheckCircleIcon className='h-5 w-5' />
               Post Aprobado para Publicar
             </div>
             <button
               disabled={isSubmitting}
               onClick={handleRevert}
-              className="w-full py-2 px-4 rounded-xl border border-dashed border-[#fe0979]/30 hover:border-[#fe0979]/60 bg-[#fe0979]/5 hover:bg-[#fe0979]/10 text-xs font-bold text-[#fe0979] flex items-center justify-center gap-1.5 transition-all duration-150"
+              className='w-full py-2 px-4 rounded-xl border border-dashed border-[#fe0979]/30 hover:border-[#fe0979]/60 bg-[#fe0979]/5 hover:bg-[#fe0979]/10 text-xs font-bold text-[#fe0979] flex items-center justify-center gap-1.5 transition-all duration-150'
             >
               {isSubmitting ? (
-                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                <ArrowPathIcon className='h-3.5 w-3.5 animate-spin' />
               ) : (
                 'Deshacer Aprobación'
               )}
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className='flex items-center gap-3'>
             {/* Request Adjustments Button */}
             {!isExpandingFeedback && (
               <button
                 disabled={isSubmitting}
                 onClick={() => setIsExpandingFeedback(true)}
-                className="flex-1 py-2 px-4 rounded-xl border border-border-strong hover:border-text-primary text-xs font-semibold text-text-primary transition-all duration-150"
+                className='flex-1 py-2 px-4 rounded-xl border border-border-strong hover:border-text-primary text-xs font-semibold text-text-primary transition-all duration-150'
               >
                 Solicitar Ajustes
               </button>
@@ -220,12 +238,12 @@ const PostCard = ({ item, token, onUpdateItem }) => {
               <button
                 disabled={isSubmitting}
                 onClick={handleApprove}
-                className="flex-1 btn-cyber py-2 px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold"
+                className='flex-1 btn-cyber py-2 px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold'
               >
                 {isSubmitting ? (
-                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  <ArrowPathIcon className='h-4 w-4 animate-spin' />
                 ) : (
-                  <CheckCircleIcon className="h-4 w-4 text-[#8FA89B]" />
+                  <CheckCircleIcon className='h-4 w-4 text-[#8FA89B]' />
                 )}
                 Aprobar Post
               </button>
@@ -241,30 +259,30 @@ const PostCard = ({ item, token, onUpdateItem }) => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               onSubmit={handleSendFeedback}
-              className="space-y-3 overflow-hidden"
+              className='space-y-3 overflow-hidden'
             >
               <textarea
                 value={feedbackText}
                 onChange={e => setFeedbackText(e.target.value)}
-                placeholder="Describe qué cambios o ajustes de copia/diseño te gustaría solicitar..."
-                className="input-cyber w-full py-2.5 px-3 text-xs h-20 resize-none"
+                placeholder='Describe qué cambios o ajustes de copia/diseño te gustaría solicitar...'
+                className='input-cyber w-full py-2.5 px-3 text-xs h-20 resize-none'
                 required
               />
-              <div className="flex items-center justify-end gap-2">
+              <div className='flex items-center justify-end gap-2'>
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => {
                     setIsExpandingFeedback(false);
                     setFeedbackText('');
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors"
+                  className='px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors'
                 >
                   Cancelar
                 </button>
                 <button
-                  type="submit"
+                  type='submit'
                   disabled={isSubmitting || !feedbackText.trim()}
-                  className="bg-[#9BA1BA] text-[#161517] hover:bg-[#F3F2F4] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                  className='bg-[#9BA1BA] text-[#161517] hover:bg-[#F3F2F4] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50'
                 >
                   Enviar Comentarios
                 </button>
@@ -322,10 +340,10 @@ export const ApprovalPortalPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#100F11] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#9BA1BA] border-t-transparent animate-spin" />
-          <p className="text-xs text-[#A19EA6]">Cargando cronograma compartido...</p>
+      <div className='min-h-screen bg-[#100F11] flex items-center justify-center'>
+        <div className='flex flex-col items-center gap-3'>
+          <div className='w-8 h-8 rounded-full border-2 border-[#9BA1BA] border-t-transparent animate-spin' />
+          <p className='text-xs text-[#A19EA6]'>Cargando cronograma compartido...</p>
         </div>
       </div>
     );
@@ -333,14 +351,15 @@ export const ApprovalPortalPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#100F11] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#161517] border border-[#fe0979]/30 rounded-2xl p-8 text-center space-y-4 shadow-2xl">
-          <div className="w-12 h-12 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center mx-auto">
-            <ExclamationCircleIcon className="h-6 w-6 text-[#fe0979]" />
+      <div className='min-h-screen bg-[#100F11] flex items-center justify-center p-4'>
+        <div className='max-w-md w-full bg-[#161517] border border-[#fe0979]/30 rounded-2xl p-8 text-center space-y-4 shadow-2xl'>
+          <div className='w-12 h-12 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center mx-auto'>
+            <ExclamationCircleIcon className='h-6 w-6 text-[#fe0979]' />
           </div>
-          <h2 className="text-lg font-bold text-text-primary">Enlace No Válido</h2>
-          <p className="text-xs text-[#A19EA6] leading-relaxed">
-            {error}. Comunícate con tu agencia de publicidad para solicitar un nuevo enlace de aprobación vigente.
+          <h2 className='text-lg font-bold text-text-primary'>Enlace No Válido</h2>
+          <p className='text-xs text-[#A19EA6] leading-relaxed'>
+            {error}. Comunícate con tu agencia de publicidad para solicitar un nuevo enlace de
+            aprobación vigente.
           </p>
         </div>
       </div>
@@ -360,62 +379,70 @@ export const ApprovalPortalPage = () => {
   const approvedCount = items.filter(item => item.status === 'Aprobado').length;
 
   return (
-    <div className="min-h-screen bg-[#100F11] text-text-primary pb-16">
-      <Toaster position="top-center" reverseOrder={false} />
+    <div className='min-h-screen bg-[#100F11] text-text-primary pb-16'>
+      <Toaster position='top-center' reverseOrder={false} />
 
       {/* ─── Premium Standalone Header ─── */}
-      <header className="sticky top-0 z-40 bg-[#161517]/80 backdrop-blur-md border-b border-border-subtle">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2C2930] to-black border border-border-subtle flex items-center justify-center font-bold text-[#F3F2F4] text-sm">
+      <header className='sticky top-0 z-40 bg-[#161517]/80 backdrop-blur-md border-b border-border-subtle'>
+        <div className='max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap'>
+          <div className='flex items-center gap-3'>
+            <div className='w-9 h-9 rounded-xl bg-gradient-to-br from-[#2C2930] to-black border border-border-subtle flex items-center justify-center font-bold text-[#F3F2F4] text-sm'>
               C
             </div>
             <div>
-              <h1 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
+              <h1 className='text-sm font-bold text-text-primary flex items-center gap-1.5'>
                 Portal de Aprobaciones
-                <span className="px-2 py-0.5 rounded-full bg-surface-soft border border-border-subtle text-[10px] text-text-muted font-normal">
+                <span className='px-2 py-0.5 rounded-full bg-surface-soft border border-border-subtle text-[10px] text-text-muted font-normal'>
                   Cliente
                 </span>
               </h1>
-              <p className="text-[10px] text-text-muted mt-0.5">
-                Revisión de calendario · Desarrollado por <span className="font-semibold text-text-primary">{agency.name}</span>
+              <p className='text-[10px] text-text-muted mt-0.5'>
+                Revisión de calendario · Desarrollado por{' '}
+                <span className='font-semibold text-text-primary'>{agency.name}</span>
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8FA89B] animate-pulse" />
-            <span className="text-[10px] text-text-muted font-semibold uppercase tracking-wider">Conexión Segura</span>
+
+          <div className='flex items-center gap-2'>
+            <span className='w-1.5 h-1.5 rounded-full bg-[#8FA89B] animate-pulse' />
+            <span className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
+              Conexión Segura
+            </span>
           </div>
         </div>
       </header>
 
       {/* ─── Content container ─── */}
-      <main className="max-w-4xl mx-auto px-4 pt-8 space-y-6">
-        
+      <main className='max-w-4xl mx-auto px-4 pt-8 space-y-6'>
         {/* Brand Banner */}
-        <div className="rounded-2xl border border-border-subtle bg-surface-soft/40 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className='rounded-2xl border border-border-subtle bg-surface-soft/40 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
           <div>
-            <span className="text-[10px] font-bold text-[#9BA1BA] uppercase tracking-wider">Marca</span>
-            <h2 className="text-xl font-black text-text-primary mt-0.5">{client.name}</h2>
-            <p className="text-xs text-text-muted mt-0.5">{client.industry || 'Industria'}</p>
+            <span className='text-[10px] font-bold text-[#9BA1BA] uppercase tracking-wider'>
+              Marca
+            </span>
+            <h2 className='text-xl font-black text-text-primary mt-0.5'>{client.name}</h2>
+            <p className='text-xs text-text-muted mt-0.5'>{client.industry || 'Industria'}</p>
           </div>
-          
+
           {/* Summary Stats */}
-          <div className="flex items-center gap-4">
-            <div className="bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center">
-              <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wider">Pendientes</p>
-              <p className="text-lg font-black text-[#F3F2F4] mt-0.5">{pendingCount}</p>
+          <div className='flex items-center gap-4'>
+            <div className='bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center'>
+              <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
+                Pendientes
+              </p>
+              <p className='text-lg font-black text-[#F3F2F4] mt-0.5'>{pendingCount}</p>
             </div>
-            <div className="bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center">
-              <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wider">Aprobados</p>
-              <p className="text-lg font-black text-[#8FA89B] mt-0.5">{approvedCount}</p>
+            <div className='bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center'>
+              <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
+                Aprobados
+              </p>
+              <p className='text-lg font-black text-[#8FA89B] mt-0.5'>{approvedCount}</p>
             </div>
           </div>
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center justify-start border-b border-border-subtle pb-3 gap-2 flex-wrap">
+        <div className='flex items-center justify-start border-b border-border-subtle pb-3 gap-2 flex-wrap'>
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -449,18 +476,13 @@ export const ApprovalPortalPage = () => {
         </div>
 
         {/* Posts Grid */}
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div layout className='grid grid-cols-1 md:grid-cols-2 gap-6'>
           {filteredItems.length > 0 ? (
             filteredItems.map(item => (
-              <PostCard
-                key={item.id}
-                item={item}
-                token={token}
-                onUpdateItem={handleUpdateItem}
-              />
+              <PostCard key={item.id} item={item} token={token} onUpdateItem={handleUpdateItem} />
             ))
           ) : (
-            <div className="col-span-full py-16 text-center text-xs text-text-muted bg-surface-soft/20 border border-dashed border-border-subtle rounded-2xl">
+            <div className='col-span-full py-16 text-center text-xs text-text-muted bg-surface-soft/20 border border-dashed border-border-subtle rounded-2xl'>
               No hay publicaciones en esta sección.
             </div>
           )}

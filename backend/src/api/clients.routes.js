@@ -19,6 +19,7 @@ import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleGenerateIm
 import { handleGetBrandAssets, handleCreateBrandAsset, handleDeleteBrandAsset } from '../controllers/brandAssets.controller.js';
 import { handleAutoFillBrandProfile, handleSearchCompanyBrandProfile, handleAnalyzeBrandConsistency } from '../controllers/brand.controller.js';
 import scheduleRoutes from './schedule.routes.js';
+import metaIntegrationRoutes from './metaAds.routes.js';
 
 const router = Router();
 
@@ -79,6 +80,9 @@ router.route('/:clientId/approval-link')
 
 // Rutas anidadas para el calendario - ESTA LÍNEA FALTABA
 router.use('/:clientId/schedule', scheduleRoutes);
+
+// Rutas anidadas para la integración con Meta Ads
+router.use('/:clientId/meta-integration', metaIntegrationRoutes);
 
 // Ruta para un cliente específico - DEBE IR AL FINAL
 router.route('/:clientId')

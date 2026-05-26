@@ -5,11 +5,11 @@ import { BoardColumn } from './BoardColumn';
 import { ColumnModal } from './ColumnModal';
 import { useDocumentBoard } from '../../hooks/useDocumentBoard';
 
-export const DocumentBoard = ({ 
-  documents = [], 
+export const DocumentBoard = ({
+  documents = [],
   clientId,
   onDocumentDelete,
-  onDocumentDownload 
+  onDocumentDownload,
 }) => {
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
@@ -23,7 +23,7 @@ export const DocumentBoard = ({
     deleteColumn,
     moveDocument,
     reorderColumns,
-    stats
+    stats,
   } = useDocumentBoard(clientId, documents);
 
   const handleCreateColumn = () => {
@@ -31,12 +31,12 @@ export const DocumentBoard = ({
     setIsColumnModalOpen(true);
   };
 
-  const handleEditColumn = (column) => {
+  const handleEditColumn = column => {
     setEditingColumn(column);
     setIsColumnModalOpen(true);
   };
 
-  const handleSaveColumn = async (columnData) => {
+  const handleSaveColumn = async columnData => {
     if (editingColumn) {
       await updateColumn(editingColumn.id, columnData);
     } else {
@@ -46,8 +46,12 @@ export const DocumentBoard = ({
     setEditingColumn(null);
   };
 
-  const handleDeleteColumn = async (columnId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta columna? Los documentos se moverán a "Sin clasificar".')) {
+  const handleDeleteColumn = async columnId => {
+    if (
+      window.confirm(
+        '¿Estás seguro de que quieres eliminar esta columna? Los documentos se moverán a "Sin clasificar".'
+      )
+    ) {
       await deleteColumn(columnId);
     }
   };
@@ -58,41 +62,41 @@ export const DocumentBoard = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header del tablero */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h3 className="text-xl font-bold text-text-primary">📋 Tablero de Documentos</h3>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center space-x-4'>
+          <h3 className='text-xl font-bold text-text-primary'>📋 Tablero de Documentos</h3>
           {stats.totalDocuments > 0 && (
-            <div className="text-sm text-text-muted">
+            <div className='text-sm text-text-muted'>
               {stats.totalDocuments} documentos • {stats.totalColumns} columnas
             </div>
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className='flex items-center space-x-2'>
           <motion.button
             onClick={handleCreateColumn}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+            className='flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium'
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <PlusIcon className="h-4 w-4" />
+            <PlusIcon className='h-4 w-4' />
             <span>Nueva Columna</span>
           </motion.button>
         </div>
       </div>
 
       {/* Tablero de columnas */}
-      <div className="flex space-x-4 overflow-x-auto pb-4">
+      <div className='flex space-x-4 overflow-x-auto pb-4'>
         {/* Columna "Sin clasificar" siempre presente */}
         <BoardColumn
-          key="unassigned"
+          key='unassigned'
           column={{
             id: 'unassigned',
             name: 'Sin clasificar',
             color: '#6b7280',
-            isSystem: true
+            isSystem: true,
           }}
           documents={unassignedDocuments}
           onDocumentDrop={handleDocumentDrop}
@@ -120,15 +124,15 @@ export const DocumentBoard = ({
         {/* Botón para agregar columna (placeholder visual) */}
         {columns.length === 0 && (
           <motion.div
-            className="flex-shrink-0 w-80 h-96 border-2 border-dashed border-white/20 rounded-xl flex items-center justify-center cursor-pointer hover:border-primary-500/50 hover:bg-primary-500/10 transition-colors"
+            className='flex-shrink-0 w-80 h-96 border-2 border-dashed border-white/20 rounded-xl flex items-center justify-center cursor-pointer hover:border-primary-500/50 hover:bg-primary-500/10 transition-colors'
             onClick={handleCreateColumn}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="text-center">
-              <PlusIcon className="h-12 w-12 text-text-muted mx-auto mb-2" />
-              <p className="text-text-muted font-medium">Crear primera columna</p>
-              <p className="text-text-muted text-sm">Organiza tus documentos</p>
+            <div className='text-center'>
+              <PlusIcon className='h-12 w-12 text-text-muted mx-auto mb-2' />
+              <p className='text-text-muted font-medium'>Crear primera columna</p>
+              <p className='text-text-muted text-sm'>Organiza tus documentos</p>
             </div>
           </motion.div>
         )}

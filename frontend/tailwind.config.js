@@ -95,10 +95,16 @@ export default {
           },
         },
       },
+      fontFamily: {
+        sans: ['Outfit', 'sans-serif'],
+        title: ['Lexend', 'sans-serif'],
+      },
       borderRadius: {
         xl: '1rem',
         '2xl': '1.25rem',
         '3xl': '1.75rem',
+        'bento': '1.5rem',      // 24px
+        'bento-lg': '2rem',     // 32px
         pill: '2.25rem'
       },
       boxShadow: {

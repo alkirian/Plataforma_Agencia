@@ -5,10 +5,17 @@ export { Input, Textarea } from './Input';
 export { AnimatedText, useStaggerDelay } from './AnimatedText';
 export { ProgressIndicator, ProgressBadge } from './ProgressIndicator';
 export { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+export { InteractiveAvatar } from './InteractiveAvatar';
 
 // Componentes de estado y feedback
 export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay } from './LoadingSpinner';
-export { ErrorBoundary, ErrorFallback, ErrorCard, NetworkError, NotFoundError } from './ErrorBoundary';
+export {
+  ErrorBoundary,
+  ErrorFallback,
+  ErrorCard,
+  NetworkError,
+  NotFoundError,
+} from './ErrorBoundary';
 export { Tooltip, HelpTooltip, ShortcutTooltip } from './Tooltip';
 export { ClientCardSkeleton } from './ClientCardSkeleton';
 

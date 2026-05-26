@@ -101,7 +101,7 @@ const searchWithTavily = async (keywords) => {
 /**
  * Analiza los resultados de Tavily con GPT y genera insights accionables.
  */
-const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) => {
+const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = [], isCustomSearch = false) => {
   if (!openaiApiKey) {
     // fallback sin OpenAI
     return {
@@ -140,7 +140,9 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
   const systemPrompt = `Eres un estratega de contenido senior. Analizas tendencias recientes de mercado y las conviertes en oportunidades de contenido para marcas. Devuelve exclusivamente JSON válido.`;
 
   const userPrompt = JSON.stringify({
-    tarea: 'Analiza las tendencias encontradas y genera insights accionables para esta marca. Compara estas tendencias con las que ya reportamos anteriormente y solo genera nuevas tendencias si son realmente novedosas y diferentes.',
+    tarea: isCustomSearch
+      ? `Analiza las tendencias encontradas para los términos de búsqueda específicos "${tavilyData.query}" y genera insights accionables para esta marca.`
+      : 'Analiza las tendencias encontradas y genera insights accionables para esta marca. Compara estas tendencias con las que ya reportamos anteriormente y solo genera nuevas tendencias si son realmente novedosas y diferentes.',
     identidad_del_cliente: contextBlock,
     tendencias_ya_reportadas: previousInsightsBlock,
     resultados_de_busqueda: tavilyBlock,
@@ -159,15 +161,24 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
         },
       ],
     },
-    instrucciones: [
-      'Crea un título muy profesional y descriptivo para el reporte y colócalo en el campo "title". Evita términos fantasiosos u ostentosos.',
-      'Genera entre 3 y 6 insights SOLO si hay tendencias de este mes que sean genuinamente nuevas o presenten un ángulo diferente a las tendencias_ya_reportadas.',
-      'Si las tendencias web obtenidas hoy son sustancialmente iguales o repetitivas comparadas con las tendencias_ya_reportadas, debes devolver el array de "insights" vacío: [].',
-      'Prioriza tendencias con relevance alta.',
-      'Las suggested_action deben ser específicas y ejecutables.',
-      'Adapta el tono de las sugerencias al brand_voice del cliente.',
-      'No inventes datos. Basate solo en los resultados proporcionados.',
-    ],
+    instrucciones: isCustomSearch
+      ? [
+          'Crea un título muy profesional y descriptivo para el reporte y colócalo en el campo "title". Evita términos fantasiosos u ostentosos.',
+          'Genera entre 3 y 6 insights accionables basados en los resultados de búsqueda hiper-recientes.',
+          'Prioriza tendencias con relevance alta.',
+          'Las suggested_action deben ser específicas y ejecutables.',
+          'Adapta el tono de las sugerencias al brand_voice del cliente.',
+          'No inventes datos. Basate solo en los resultados proporcionados.',
+        ]
+      : [
+          'Crea un título muy profesional y descriptivo para el reporte y colócalo en el campo "title". Evita términos fantasiosos u ostentosos.',
+          'Genera entre 3 y 6 insights SOLO si hay tendencias de este mes que sean genuinamente nuevas o presenten un ángulo diferente a las tendencias_ya_reportadas.',
+          'Si las tendencias web obtenidas hoy son sustancialmente iguales o repetitivas comparadas con las tendencias_ya_reportadas, debes devolver el array de "insights" vacío: [].',
+          'Prioriza tendencias con relevance alta.',
+          'Las suggested_action deben ser específicas y ejecutables.',
+          'Adapta el tono de las sugerencias al brand_voice del cliente.',
+          'No inventes datos. Basate solo en los resultados proporcionados.',
+        ],
   });
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -216,8 +227,9 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
  * Ejecuta el análisis de tendencias para un único cliente.
  * Guarda el resultado en la tabla trend_reports.
  */
-export const runTrendsForClient = async (client, customKeywords = null) => {
+export const runTrendsForClient = async (client, customKeywords = null, isManual = false) => {
   let keywords = [];
+  let isCustomSearch = false;
 
   if (customKeywords) {
     if (Array.isArray(customKeywords)) {
@@ -227,6 +239,9 @@ export const runTrendsForClient = async (client, customKeywords = null) => {
         .split(',')
         .map(k => k.trim())
         .filter(Boolean);
+    }
+    if (keywords.length > 0) {
+      isCustomSearch = true;
     }
   }
 
@@ -240,32 +255,30 @@ export const runTrendsForClient = async (client, customKeywords = null) => {
     return null;
   }
 
-  logger.info?.(`[trends] Buscando tendencias para "${client.name}" — keywords: ${keywords.join(', ')}`);
+  logger.info?.(`[trends] Buscando tendencias para "${client.name}" — keywords: ${keywords.join(', ')} (isCustomSearch: ${isCustomSearch}, isManual: ${isManual})`);
 
   // Obtener el reporte anterior para comparar e identificar si hay novedades
+  // Si es una búsqueda customizada, no comparamos contra reportes generales anteriores para no filtrar
   let prevReport = null;
-  try {
-    const { data } = await supabaseAdmin
-      .from('trend_reports')
-      .select('insights')
-      .eq('client_id', client.id)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    prevReport = data;
-  } catch (err) {
-    logger.warn?.(`[trends] No se pudo obtener el reporte anterior para comparar: ${err.message}`);
+  if (!isCustomSearch) {
+    try {
+      const { data } = await supabaseAdmin
+        .from('trend_reports')
+        .select('insights')
+        .eq('client_id', client.id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      prevReport = data;
+    } catch (err) {
+      logger.warn?.(`[trends] No se pudo obtener el reporte anterior para comparar: ${err.message}`);
+    }
   }
 
   const previousInsights = prevReport?.insights || [];
 
   const tavilyData = await searchWithTavily(keywords);
-  const analysis = await analyzeTrendsWithGPT(client, tavilyData, previousInsights);
-
-  if (!analysis.insights || analysis.insights.length === 0) {
-    logger.info?.(`[trends] ℹ️ No se encontraron nuevas tendencias para "${client.name}". Saltando guardado en Base de Datos.`);
-    return null;
-  }
+  const analysis = await analyzeTrendsWithGPT(client, tavilyData, previousInsights, isCustomSearch);
 
   let title = analysis.title || '';
   if (!title) {
@@ -273,6 +286,33 @@ export const runTrendsForClient = async (client, customKeywords = null) => {
       title = `Análisis: ${keywords.slice(0, 3).join(', ')}`;
     } else {
       title = `Análisis de Tendencias (${new Date().toLocaleDateString('es-AR')})`;
+    }
+  }
+
+  if (!analysis.insights || analysis.insights.length === 0) {
+    if (isManual) {
+      // Guardar de todas formas para indicar término exitoso de la búsqueda manual y detener el polling
+      const { data: report, error } = await supabaseAdmin
+        .from('trend_reports')
+        .insert({
+          client_id: client.id,
+          agency_id: client.agency_id,
+          keywords,
+          title,
+          raw_results: tavilyData,
+          summary: analysis.summary || "No se encontraron nuevas tendencias hoy respecto al análisis anterior.",
+          insights: [],
+          generated_at: new Date().toISOString(),
+        })
+        .select('*')
+        .single();
+
+      if (error) throw new Error(`Error guardando reporte de tendencias vacío manual: ${error.message}`);
+      logger.info?.(`[trends] ℹ️ No se encontraron nuevas tendencias para "${client.name}" (manual). Reporte vacío guardado.`);
+      return report;
+    } else {
+      logger.info?.(`[trends] ℹ️ No se encontraron nuevas tendencias para "${client.name}". Saltando guardado en Base de Datos.`);
+      return null;
     }
   }
 
@@ -364,8 +404,7 @@ export const getTrendReports = async ({ clientId, limit = 7, token }) => {
 
   if (error) throw new Error(error.message);
   
-  // Filtrar reportes que tengan al menos 1 insight (no vacíos)
-  return (data || []).filter(r => Array.isArray(r.insights) && r.insights.length > 0);
+  return data || [];
 };
 
 /**

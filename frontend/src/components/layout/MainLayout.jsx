@@ -1,5 +1,5 @@
 import React from 'react';
-import { Header } from './Header';
+import { Sidebar } from './Sidebar';
 import { Toaster } from 'react-hot-toast';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
@@ -8,22 +8,30 @@ export const MainLayout = ({ children, userEmail, profile, onLogout }) => {
   useAppKeyboardShortcuts();
 
   return (
-    // El fondo y el texto principal se definen aquí
-    <div className='min-h-screen bg-app text-text-primary keyboard-nav'>
-      <Header userEmail={userEmail} profile={profile} onLogout={onLogout} />
-      <Toaster
-        position='bottom-right'
-        toastOptions={{
-          style: {
-            background: 'var(--color-surface-strong)',
-            color: 'var(--color-text-primary)',
-            border: '1px solid var(--color-border-subtle)',
-          },
-        }}
-      />
-      <main id="main-content" className='w-full py-3 px-4 md:px-6'>
-        {children}
-      </main>
+    // Estructura de pantalla completa con Sidebar lateral izquierdo (look Rambla)
+    <div className='flex h-screen w-screen overflow-hidden bg-app text-text-primary font-sans keyboard-nav'>
+      {/* Sidebar de navegación y lista de clientes de Supabase */}
+      <Sidebar userEmail={userEmail} profile={profile} onLogout={onLogout} />
+
+      {/* Área del contenedor principal y vistas */}
+      <div className='flex-1 flex flex-col h-screen overflow-hidden relative'>
+        <Toaster
+          position='bottom-right'
+          toastOptions={{
+            style: {
+              background: 'var(--color-surface-soft)',
+              color: 'var(--color-text-primary)',
+              border: '1px solid var(--color-border-subtle)',
+              borderRadius: '14px',
+              fontFamily: 'inherit',
+              fontSize: '13px',
+            },
+          }}
+        />
+        <main id='main-content' className='flex-1 overflow-y-auto w-full'>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

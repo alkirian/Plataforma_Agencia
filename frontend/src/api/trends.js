@@ -5,8 +5,7 @@ import { apiFetch } from './apiFetch.js';
  * Dispara el análisis de tendencias para todos los clientes de la agencia.
  * El servidor devuelve 202 inmediatamente y procesa en background.
  */
-export const runTrendsNow = () =>
-  apiFetch('/trends/run', { method: 'POST' }).then(resp => resp);
+export const runTrendsNow = () => apiFetch('/trends/run', { method: 'POST' }).then(resp => resp);
 
 /**
  * Dispara el análisis de tendencias para un cliente específico.

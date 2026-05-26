@@ -11,7 +11,7 @@ export const generateIdeas = (clientId, promptData) => {
   return apiFetch(`/clients/${clientId}/generate-ideas`, {
     method: 'POST',
     body: JSON.stringify(promptData),
-  }).then((resp) => resp?.data ?? resp);
+  }).then(resp => resp?.data ?? resp);
 };
 
 /**
@@ -24,7 +24,7 @@ export const getChatResponse = (clientId, chatData) => {
   return apiFetch(`/clients/${clientId}/chat`, {
     method: 'POST',
     body: JSON.stringify(chatData),
-  }).then((resp) => resp?.data ?? resp);
+  }).then(resp => resp?.data ?? resp);
 };
 
 /**
@@ -37,8 +37,9 @@ export const getChatHistory = (clientId, params = {}) => {
   if (params.limit) usp.set('limit', String(params.limit));
   if (params.before) usp.set('before', params.before);
   const qs = usp.toString();
-  return apiFetch(`/clients/${clientId}/chat/history${qs ? `?${qs}` : ''}`)
-    .then((resp) => resp?.data ?? resp);
+  return apiFetch(`/clients/${clientId}/chat/history${qs ? `?${qs}` : ''}`).then(
+    resp => resp?.data ?? resp
+  );
 };
 
 /**
@@ -50,5 +51,5 @@ export const generateCopyFromTrend = (clientId, trendData) => {
   return apiFetch(`/clients/${clientId}/generate-copy`, {
     method: 'POST',
     body: JSON.stringify(trendData),
-  }).then((resp) => resp?.data ?? resp);
+  }).then(resp => resp?.data ?? resp);
 };

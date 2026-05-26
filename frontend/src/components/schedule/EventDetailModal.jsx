@@ -148,9 +148,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                           >
                             {currentState.name}
                           </div>
-                          <p className='text-xs text-text-muted mt-1'>
-                            {currentState.description}
-                          </p>
+                          <p className='text-xs text-text-muted mt-1'>{currentState.description}</p>
                         </div>
                       </div>
 
@@ -290,7 +288,6 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                             </p>
                           )}
                         </div>
-
                       </motion.div>
 
                       {/* Status (when editing) */}

@@ -36,7 +36,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
               agencyName: resJson.data.agencyName,
               role: resJson.data.role,
               isLinkInvite: true,
-              code: pendingCode
+              code: pendingCode,
             });
           }
         }
@@ -105,20 +105,23 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   return (
     <div className='min-h-screen text-text-primary flex items-center justify-center p-6 bg-app'>
       <div className='w-full max-w-md card rounded-xl border border-white/10 bg-surface-strong p-6 shadow-lg'>
-        <h2 className='mb-1 text-2xl font-bold text-cyber-gradient text-white'>Completa tu registro</h2>
+        <h2 className='mb-1 text-2xl font-bold text-cyber-gradient text-white'>
+          Completa tu registro
+        </h2>
         <p className='mb-6 text-sm text-text-muted'>
           ¡Bienvenido! Solo un paso más para empezar a trabajar.
         </p>
 
         {invitation && (
-          <div className="mb-6 rounded-xl border border-primary-500/20 bg-primary-950/20 p-4 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">✨</span>
+          <div className='mb-6 rounded-xl border border-primary-500/20 bg-primary-950/20 p-4 backdrop-blur-md'>
+            <div className='flex items-center gap-3'>
+              <span className='text-2xl'>✨</span>
               <div>
-                <h4 className="font-semibold text-white">¡Invitación Encontrada!</h4>
-                <p className="text-xs text-text-muted mt-0.5">
-                  Has sido invitado a unirte a la agencia <span className="font-bold text-primary-400">{invitation.agencyName}</span>. 
-                  Solo ingresa tu nombre para unirte.
+                <h4 className='font-semibold text-white'>¡Invitación Encontrada!</h4>
+                <p className='text-xs text-text-muted mt-0.5'>
+                  Has sido invitado a unirte a la agencia{' '}
+                  <span className='font-bold text-primary-400'>{invitation.agencyName}</span>. Solo
+                  ingresa tu nombre para unirte.
                 </p>
               </div>
             </div>
@@ -163,7 +166,11 @@ export const Onboarding = ({ session, onProfileComplete }) => {
             disabled={loading}
             className='w-full btn-cyber px-4 py-2 font-semibold hover-cyber-glow disabled:opacity-60'
           >
-            {loading ? 'Procesando...' : invitation ? 'Aceptar Invitación y Unirse' : 'Crear Agencia'}
+            {loading
+              ? 'Procesando...'
+              : invitation
+                ? 'Aceptar Invitación y Unirse'
+                : 'Crear Agencia'}
           </button>
         </form>
       </div>

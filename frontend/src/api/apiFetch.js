@@ -2,16 +2,21 @@
 import { supabase } from '../supabaseClient.js';
 
 export const getApiUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
-  
-  // Si accedemos desde otro dispositivo en la red local y apunta a localhost
+  const envUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    'http://127.0.0.1:3001/api/v1';
+
+  // Si accedemos desde otro dispositivo en la red local y apunta a localhost o 127.0.0.1
   if (
-    typeof window !== 'undefined' && 
-    window.location.hostname !== 'localhost' && 
-    window.location.hostname !== '127.0.0.1' && 
-    envUrl.includes('localhost')
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    (envUrl.includes('localhost') || envUrl.includes('127.0.0.1'))
   ) {
-    return envUrl.replace('localhost', window.location.hostname);
+    return envUrl
+      .replace('localhost', window.location.hostname)
+      .replace('127.0.0.1', window.location.hostname);
   }
   return envUrl;
 };
@@ -45,10 +50,11 @@ export const apiFetch = async (endpoint, options = {}) => {
     headers.Authorization = `Bearer ${tokenToUse}`;
   }
 
-  const doFetch = async () => fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const doFetch = async () =>
+    fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
   let response = await doFetch();
 

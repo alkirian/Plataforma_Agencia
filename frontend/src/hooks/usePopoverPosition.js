@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
  * Hook para calcular la posición óptima del popover
  * Evita que se salga del viewport y ajusta automáticamente
  */
-export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320, height: 420 }) => {
+export const usePopoverPosition = (
+  clickCoords,
+  popoverDimensions = { width: 320, height: 420 }
+) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
 
@@ -13,7 +16,7 @@ export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320
 
     const viewport = {
       width: window.innerWidth,
-      height: window.innerHeight
+      height: window.innerHeight,
     };
 
     const { x: clickX, y: clickY } = clickCoords;
@@ -39,7 +42,7 @@ export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320
     // ========== CÁLCULO VERTICAL - LÓGICA MEJORADA ==========
     const spaceBelow = viewport.height - clickY - margin;
     const spaceAbove = clickY - margin;
-    
+
     let y;
 
     // Estrategia: Si cabe abajo del click, ponerlo ahí. Si no, evaluar mejor opción.
@@ -63,7 +66,7 @@ export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320
     // Asegurar que no se salga del viewport (double-check)
     x = Math.max(margin, Math.min(x, viewport.width - popoverWidth - margin));
     y = Math.max(margin, Math.min(y, viewport.height - popoverHeight - margin));
-    
+
     // Debug info mejorado
     if (process.env.NODE_ENV === 'development') {
       console.log('PopoverPosition Debug:', {
@@ -73,8 +76,13 @@ export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320
         spaces: { above: spaceAbove, below: spaceBelow },
         fitsBelow: spaceBelow >= popoverHeight,
         fitsAbove: spaceAbove >= popoverHeight,
-        strategy: spaceBelow >= popoverHeight ? 'below' : spaceAbove >= popoverHeight ? 'above' : 'best-fit',
-        calculatedPosition: { x, y }
+        strategy:
+          spaceBelow >= popoverHeight
+            ? 'below'
+            : spaceAbove >= popoverHeight
+              ? 'above'
+              : 'best-fit',
+        calculatedPosition: { x, y },
       });
     }
 
@@ -107,6 +115,6 @@ export const usePopoverPosition = (clickCoords, popoverDimensions = { width: 320
 
   return {
     position,
-    isVisible
+    isVisible,
   };
 };

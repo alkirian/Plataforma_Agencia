@@ -6,24 +6,20 @@ import { useState, useCallback } from 'react';
  * @returns {Object} - Estados y métodos para manejar UI
  */
 export const useUIState = (options = {}) => {
-  const {
-    initialLoading = false,
-    initialError = null,
-    initialData = null
-  } = options;
+  const { initialLoading = false, initialError = null, initialData = null } = options;
 
   const [isLoading, setIsLoading] = useState(initialLoading);
   const [error, setError] = useState(initialError);
   const [data, setData] = useState(initialData);
 
-  const setLoading = useCallback((loading) => {
+  const setLoading = useCallback(loading => {
     setIsLoading(loading);
     if (loading) {
       setError(null); // Clear errors when starting a new operation
     }
   }, []);
 
-  const setSuccess = useCallback((result) => {
+  const setSuccess = useCallback(result => {
     setData(result);
     setIsLoading(false);
     setError(null);
@@ -40,18 +36,21 @@ export const useUIState = (options = {}) => {
     setData(null);
   }, []);
 
-  const execute = useCallback(async (asyncOperation) => {
-    try {
-      setLoading(true);
-      const result = await asyncOperation();
-      setSuccess(result);
-      return result;
-    } catch (err) {
-      const errorMessage = err.message || 'Ha ocurrido un error inesperado';
-      setFailure(errorMessage, err);
-      throw err; // Re-throw to allow caller to handle if needed
-    }
-  }, [setLoading, setSuccess, setFailure]);
+  const execute = useCallback(
+    async asyncOperation => {
+      try {
+        setLoading(true);
+        const result = await asyncOperation();
+        setSuccess(result);
+        return result;
+      } catch (err) {
+        const errorMessage = err.message || 'Ha ocurrido un error inesperado';
+        setFailure(errorMessage, err);
+        throw err; // Re-throw to allow caller to handle if needed
+      }
+    },
+    [setLoading, setSuccess, setFailure]
+  );
 
   return {
     // States
@@ -60,17 +59,17 @@ export const useUIState = (options = {}) => {
     data,
     hasError: !!error,
     hasData: !!data,
-    
+
     // Actions
     setLoading,
     setSuccess,
     setFailure,
     reset,
     execute,
-    
+
     // Convenience getters
     isIdle: !isLoading && !error && !data,
-    isSuccess: !isLoading && !error && data !== null
+    isSuccess: !isLoading && !error && data !== null,
   };
 };
 
@@ -82,23 +81,26 @@ export const useFormState = (options = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
-  const submitForm = useCallback(async (formData, submitOperation) => {
-    try {
-      setIsSubmitting(true);
-      setValidationErrors({});
-      
-      const result = await uiState.execute(() => submitOperation(formData));
-      return result;
-    } catch (error) {
-      // Handle validation errors specifically
-      if (error.status === 422 && error.errors) {
-        setValidationErrors(error.errors);
+  const submitForm = useCallback(
+    async (formData, submitOperation) => {
+      try {
+        setIsSubmitting(true);
+        setValidationErrors({});
+
+        const result = await uiState.execute(() => submitOperation(formData));
+        return result;
+      } catch (error) {
+        // Handle validation errors specifically
+        if (error.status === 422 && error.errors) {
+          setValidationErrors(error.errors);
+        }
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [uiState]);
+    },
+    [uiState]
+  );
 
   const clearValidationErrors = useCallback(() => {
     setValidationErrors({});
@@ -110,7 +112,7 @@ export const useFormState = (options = {}) => {
     validationErrors,
     hasValidationErrors: Object.keys(validationErrors).length > 0,
     submitForm,
-    clearValidationErrors
+    clearValidationErrors,
   };
 };
 
@@ -123,11 +125,9 @@ export const useListState = (options = {}) => {
   const [filters, setFilters] = useState({});
   const [sortBy, setSortBy] = useState(options.defaultSort || '');
 
-  const selectItem = useCallback((item) => {
-    setSelectedItems(prev => 
-      prev.find(i => i.id === item.id) 
-        ? prev.filter(i => i.id !== item.id)
-        : [...prev, item]
+  const selectItem = useCallback(item => {
+    setSelectedItems(prev =>
+      prev.find(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]
     );
   }, []);
 
@@ -139,7 +139,7 @@ export const useListState = (options = {}) => {
     setSelectedItems([]);
   }, []);
 
-  const updateFilters = useCallback((newFilters) => {
+  const updateFilters = useCallback(newFilters => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
 
@@ -158,6 +158,6 @@ export const useListState = (options = {}) => {
     clearSelection,
     updateFilters,
     clearFilters,
-    setSortBy
+    setSortBy,
   };
 };

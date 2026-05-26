@@ -3,10 +3,10 @@
  * Centraliza la lógica de fecha actual para toda la aplicación
  * Usando date-fns como librería base para operaciones avanzadas
  */
-import { 
-  format, 
-  isToday as dateFnsIsToday, 
-  startOfDay as dateFnsStartOfDay, 
+import {
+  format,
+  isToday as dateFnsIsToday,
+  startOfDay as dateFnsStartOfDay,
   endOfDay as dateFnsEndOfDay,
   isThisWeek,
   isThisMonth,
@@ -19,7 +19,7 @@ import {
   differenceInDays,
   differenceInHours,
   differenceInMinutes,
-  parseISO
+  parseISO,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -37,7 +37,7 @@ export const getCurrentDate = () => {
  * @param {Date|string} date - Fecha a verificar
  * @returns {boolean}
  */
-export const isToday = (date) => {
+export const isToday = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return dateFnsIsToday(dateObj);
 };
@@ -47,7 +47,7 @@ export const isToday = (date) => {
  * @param {Date|string} date - Fecha a verificar
  * @returns {boolean}
  */
-export const isCurrentWeek = (date) => {
+export const isCurrentWeek = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return isThisWeek(dateObj);
 };
@@ -57,14 +57,14 @@ export const isCurrentWeek = (date) => {
  * @param {Date|string} date - Fecha a verificar
  * @returns {boolean}
  */
-export const isCurrentMonth = (date) => {
+export const isCurrentMonth = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return isThisMonth(dateObj);
 };
 
 /**
  * Formatea fecha para display
- * @param {Date|string} date 
+ * @param {Date|string} date
  * @param {string} formatString - Formato deseado
  * @returns {string}
  */
@@ -75,14 +75,14 @@ export const formatDate = (date, formatString = 'dd/MM/yyyy') => {
 
 /**
  * Formatea fecha de manera relativa (hace X días, en X días)
- * @param {Date|string} date 
+ * @param {Date|string} date
  * @returns {string}
  */
-export const formatRelativeDate = (date) => {
+export const formatRelativeDate = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   const now = getCurrentDate();
   const daysDiff = differenceInDays(dateObj, now);
-  
+
   if (daysDiff === 0) return 'Hoy';
   if (daysDiff === 1) return 'Mañana';
   if (daysDiff === -1) return 'Ayer';
@@ -92,28 +92,28 @@ export const formatRelativeDate = (date) => {
 
 /**
  * Obtiene el inicio del día
- * @param {Date|string} date 
+ * @param {Date|string} date
  * @returns {Date}
  */
-export const startOfDay = (date) => {
+export const startOfDay = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return dateFnsStartOfDay(dateObj);
 };
 
 /**
  * Obtiene el final del día
- * @param {Date|string} date 
+ * @param {Date|string} date
  * @returns {Date}
  */
-export const endOfDay = (date) => {
+export const endOfDay = date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return dateFnsEndOfDay(dateObj);
 };
 
 /**
  * Añade días a una fecha
- * @param {Date|string} date 
- * @param {number} amount 
+ * @param {Date|string} date
+ * @param {number} amount
  * @returns {Date}
  */
 export const addDaysToDate = (date, amount) => {
@@ -123,8 +123,8 @@ export const addDaysToDate = (date, amount) => {
 
 /**
  * Calcula diferencia en días entre dos fechas
- * @param {Date|string} laterDate 
- * @param {Date|string} earlierDate 
+ * @param {Date|string} laterDate
+ * @param {Date|string} earlierDate
  * @returns {number}
  */
 export const daysDifference = (laterDate, earlierDate) => {
@@ -135,8 +135,8 @@ export const daysDifference = (laterDate, earlierDate) => {
 
 /**
  * Calcula diferencia en horas entre dos fechas
- * @param {Date|string} laterDate 
- * @param {Date|string} earlierDate 
+ * @param {Date|string} laterDate
+ * @param {Date|string} earlierDate
  * @returns {number}
  */
 export const hoursDifference = (laterDate, earlierDate) => {

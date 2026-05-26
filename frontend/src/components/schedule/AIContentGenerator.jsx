@@ -13,10 +13,11 @@ const normalizeDateTime = date => {
   return parsed.toISOString();
 };
 
-const normalizeFormat = (formatStr) => {
+const normalizeFormat = formatStr => {
   if (!formatStr) return 'Post Estático';
   const s = formatStr.toLowerCase();
-  if (s.includes('reel') || s.includes('tiktok') || s.includes('short') || s.includes('video')) return 'Reel / TikTok';
+  if (s.includes('reel') || s.includes('tiktok') || s.includes('short') || s.includes('video'))
+    return 'Reel / TikTok';
   if (s.includes('carrusel') || s.includes('carousel')) return 'Carrusel';
   if (s.includes('historia') || s.includes('story')) return 'Historia';
   if (s.includes('entrevista')) return 'Entrevista';
@@ -26,7 +27,7 @@ const normalizeFormat = (formatStr) => {
   return 'Post Estático';
 };
 
-const normalizePlatform = (channel) => {
+const normalizePlatform = channel => {
   if (!channel) return 'Instagram';
   const c = channel.toUpperCase();
   if (c === 'IG' || c.includes('INSTAGRAM')) return 'Instagram';
@@ -71,7 +72,11 @@ const buildMonthDatePool = (monthDate, includeNextMonth = false) => {
 
   if (includeNextMonth) {
     const nextMonthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0);
-    for (let cursor = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1); cursor <= nextMonthEnd; cursor.setDate(cursor.getDate() + 1)) {
+    for (
+      let cursor = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
+      cursor <= nextMonthEnd;
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
       dates.push(toDateInputValue(cursor));
     }
   }
@@ -94,11 +99,14 @@ const assignDatesToIdeas = ({ ideas, requestedDates, monthDate, includeNextMonth
     .filter(Boolean)
     .map(toDateInputValue);
   const requestedSet = new Set(validRequestedDates);
-  const pool = shuffled(buildMonthDatePool(monthDate, includeNextMonth).filter(date => !requestedSet.has(date)));
+  const pool = shuffled(
+    buildMonthDatePool(monthDate, includeNextMonth).filter(date => !requestedSet.has(date))
+  );
   let poolIndex = 0;
 
   return ideas.map((idea, index) => {
-    const assignedDate = validRequestedDates[index] || pool[poolIndex++] || toDateInputValue(monthDate);
+    const assignedDate =
+      validRequestedDates[index] || pool[poolIndex++] || toDateInputValue(monthDate);
     return {
       ...idea,
       scheduled_at: assignedDate,
@@ -107,17 +115,27 @@ const assignDatesToIdeas = ({ ideas, requestedDates, monthDate, includeNextMonth
   });
 };
 
-const buildImagePrompt = idea => [
-  `Imagen publicitaria para redes sociales.`,
-  `Titulo del post: ${idea.title || 'Contenido de marca'}.`,
-  idea.format ? `Formato editorial: ${idea.format}.` : '',
-  idea.channel ? `Canal: ${idea.channel}.` : '',
-  idea.objective ? `Objetivo: ${idea.objective}.` : '',
-  idea.copy ? `Contexto del copy: ${idea.copy}` : '',
-  'Crear una pieza visual profesional, coherente con la marca, sin texto pequeno ilegible y sin logos inventados.'
-].filter(Boolean).join(' ');
+const buildImagePrompt = idea =>
+  [
+    `Imagen publicitaria para redes sociales.`,
+    `Titulo del post: ${idea.title || 'Contenido de marca'}.`,
+    idea.format ? `Formato editorial: ${idea.format}.` : '',
+    idea.channel ? `Canal: ${idea.channel}.` : '',
+    idea.objective ? `Objetivo: ${idea.objective}.` : '',
+    idea.copy ? `Contexto del copy: ${idea.copy}` : '',
+    'Crear una pieza visual profesional, coherente con la marca, sin texto pequeno ilegible y sin logos inventados.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, existingEvents, onCreateItems }) => {
+export const AIContentGenerator = ({
+  isOpen,
+  onClose,
+  clientId,
+  currentDate,
+  existingEvents,
+  onCreateItems,
+}) => {
   const [topic, setTopic] = useState('Ideas para el calendario mensual');
   const [quantity, setQuantity] = useState(8);
   const [ideas, setIdeas] = useState([]);
@@ -130,14 +148,18 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
   const [brandProfile, setBrandProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(() => {
-    return currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date();
+    return currentDate instanceof Date && !Number.isNaN(currentDate.getTime())
+      ? currentDate
+      : new Date();
   });
   const [selectedSpecialDates, setSelectedSpecialDates] = useState([]);
 
   useEffect(() => {
     if (!isOpen) return;
     setChosenDates(prev => Array.from({ length: quantity }, (_, index) => prev[index] || ''));
-    setCalendarViewDate(currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date());
+    setCalendarViewDate(
+      currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date()
+    );
   }, [isOpen, quantity, currentDate]);
 
   useEffect(() => {
@@ -178,21 +200,29 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
       ...(Array.isArray(profile.content_goals) ? profile.content_goals : []),
       ...(Array.isArray(profile.products_services) ? profile.products_services : []),
     ];
-    const usefulText = values.map(value => String(value || '').trim()).filter(Boolean).join(' ');
+    const usefulText = values
+      .map(value => String(value || '').trim())
+      .filter(Boolean)
+      .join(' ');
     const ready = usefulText.length >= 80;
 
     return {
       ready,
       score: Math.min(100, Math.round((usefulText.length / 220) * 100)),
-      missingMessage: 'Completa la identidad del cliente antes de generar: negocio, audiencia, tono, pilares y productos/servicios.',
+      missingMessage:
+        'Completa la identidad del cliente antes de generar: negocio, audiencia, tono, pilares y productos/servicios.',
     };
   }, [brandProfile]);
 
   const monthContext = useMemo(() => {
-    const monthDate = currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date();
+    const monthDate =
+      currentDate instanceof Date && !Number.isNaN(currentDate.getTime())
+        ? currentDate
+        : new Date();
     const month = monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
     const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
-    const pickedDates = chosenDates.filter(Boolean).join(', ') || 'Sin fechas elegidas por el usuario';
+    const pickedDates =
+      chosenDates.filter(Boolean).join(', ') || 'Sin fechas elegidas por el usuario';
     const existing = (existingEvents || []).map(event => {
       const date = event.start ? new Date(event.start).toISOString().slice(0, 10) : 'sin fecha';
       return `${date}: ${event.title}`;
@@ -203,7 +233,9 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
       `Mes permitido principal: ${monthKey}`,
       `Cantidad deseada: ${quantity}`,
       `Fechas elegidas por el usuario: ${pickedDates}`,
-      allowNextMonth ? 'El usuario autorizo usar el proximo mes si faltan dias disponibles.' : 'Priorizar exclusivamente el mes de trabajo.',
+      allowNextMonth
+        ? 'El usuario autorizo usar el proximo mes si faltan dias disponibles.'
+        : 'Priorizar exclusivamente el mes de trabajo.',
       selectedSpecialDates.length > 0
         ? `Fechas especiales/feriados que DEBES conmemorar en la planificación (obligatoriamente): ${selectedSpecialDates.map(d => `${d.day ? `${d.day} de ` : ''}${month}: ${d.title} (Categoría: ${d.category}, Descripción: ${d.desc})`).join('; ')}`
         : '',
@@ -212,34 +244,44 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
   }, [allowNextMonth, chosenDates, currentDate, existingEvents, quantity, selectedSpecialDates]);
 
   const datePlanning = useMemo(() => {
-    const monthDate = currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date();
+    const monthDate =
+      currentDate instanceof Date && !Number.isNaN(currentDate.getTime())
+        ? currentDate
+        : new Date();
     const currentMonthPool = buildMonthDatePool(monthDate, false);
     const validChosenInMonth = chosenDates
       .map(parseDateInput)
-      .filter(date => date && isSameMonthHelper(date, monthDate))
-      .length;
+      .filter(date => date && isSameMonthHelper(date, monthDate)).length;
 
     return {
       monthDate,
       currentMonthPool,
       remainingDays: currentMonthPool.length,
       overflowsCurrentMonth: Math.max(quantity - validChosenInMonth, 0) > currentMonthPool.length,
-      minDate: currentMonthPool[0] || toDateInputValue(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)),
-      maxDate: toDateInputValue(new Date(monthDate.getFullYear(), monthDate.getMonth() + (allowNextMonth ? 2 : 1), 0)),
+      minDate:
+        currentMonthPool[0] ||
+        toDateInputValue(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)),
+      maxDate: toDateInputValue(
+        new Date(monthDate.getFullYear(), monthDate.getMonth() + (allowNextMonth ? 2 : 1), 0)
+      ),
       monthLabel: monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
-      nextMonthLabel: new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
+      nextMonthLabel: new Date(
+        monthDate.getFullYear(),
+        monthDate.getMonth() + 1,
+        1
+      ).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
     };
   }, [allowNextMonth, chosenDates, currentDate, quantity]);
 
   const calendarDays = useMemo(() => {
     const year = calendarViewDate.getFullYear();
     const month = calendarViewDate.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDayOfWeek = firstDay.getDay();
     const days = [];
-    
+
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const prevDate = new Date(year, month - 1, prevMonthLastDay - i);
@@ -249,7 +291,7 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
         isCurrentMonth: false,
       });
     }
-    
+
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const currentDayDate = new Date(year, month, day);
       days.push({
@@ -258,7 +300,7 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
         isCurrentMonth: true,
       });
     }
-    
+
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       const nextDate = new Date(year, month + 1, day);
@@ -268,19 +310,24 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
         isCurrentMonth: false,
       });
     }
-    
+
     return days;
   }, [calendarViewDate]);
 
-  const handleCalendarDayClick = (dateString) => {
+  const handleCalendarDayClick = dateString => {
     const clickedDate = parseDateInput(dateString);
-    const monthDate = currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date();
+    const monthDate =
+      currentDate instanceof Date && !Number.isNaN(currentDate.getTime())
+        ? currentDate
+        : new Date();
     const isNextMonthClick = clickedDate && !isSameMonthHelper(clickedDate, monthDate);
 
     // Si hace clic en el próximo mes y no estaba habilitado, lo habilitamos dinámicamente
     let currentMaxDate = datePlanning.maxDate;
     if (isNextMonthClick && !allowNextMonth) {
-      const nextMonthMaxDate = toDateInputValue(new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0));
+      const nextMonthMaxDate = toDateInputValue(
+        new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0)
+      );
       if (dateString >= datePlanning.minDate && dateString <= nextMonthMaxDate) {
         setAllowNextMonth(true);
         currentMaxDate = nextMonthMaxDate;
@@ -311,11 +358,13 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
         return next;
       });
     } else {
-      toast.error(`Ya asignaste fechas para las ${quantity} piezas. Deselecciona una para elegir otra.`);
+      toast.error(
+        `Ya asignaste fechas para las ${quantity} piezas. Deselecciona una para elegir otra.`
+      );
     }
   };
 
-  const hasEventOnDay = (dateString) => {
+  const hasEventOnDay = dateString => {
     if (!existingEvents) return false;
     return existingEvents.some(event => {
       const eventDate = event.start ? new Date(event.start).toISOString().slice(0, 10) : '';
@@ -323,7 +372,7 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
     });
   };
 
-  const formatDateString = (str) => {
+  const formatDateString = str => {
     if (!str) return 'Sin asignar (al azar)';
     const parts = str.split('-');
     if (parts.length !== 3) return str;
@@ -332,7 +381,7 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
   };
 
   const specialDatesList = useMemo(() => {
-    return getSpecialDatesForMonth(calendarViewDate, brandProfile?.industry || "");
+    return getSpecialDatesForMonth(calendarViewDate, brandProfile?.industry || '');
   }, [calendarViewDate, brandProfile?.industry]);
 
   const nextMonthDate = useMemo(() => {
@@ -340,12 +389,12 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
   }, [calendarViewDate]);
 
   const nextMonthSpecialDatesList = useMemo(() => {
-    return getSpecialDatesForMonth(nextMonthDate, brandProfile?.industry || "");
+    return getSpecialDatesForMonth(nextMonthDate, brandProfile?.industry || '');
   }, [nextMonthDate, brandProfile?.industry]);
 
-  const handleToggleSpecialDate = (specialDate) => {
+  const handleToggleSpecialDate = specialDate => {
     const isSelected = selectedSpecialDates.some(d => d.title === specialDate.title);
-    
+
     if (isSelected) {
       setSelectedSpecialDates(prev => prev.filter(d => d.title !== specialDate.title));
     } else {
@@ -353,11 +402,14 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
     }
   };
 
-  const selectedImageCount = useMemo(() => (
-    ideas.reduce((count, _idea, index) => (
-      selected[index] && generateImages[index] ? count + 1 : count
-    ), 0)
-  ), [generateImages, ideas, selected]);
+  const selectedImageCount = useMemo(
+    () =>
+      ideas.reduce(
+        (count, _idea, index) => (selected[index] && generateImages[index] ? count + 1 : count),
+        0
+      ),
+    [generateImages, ideas, selected]
+  );
 
   const ensureDateCapacity = () => {
     if (!datePlanning.overflowsCurrentMonth || allowNextMonth) return true;
@@ -425,20 +477,22 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
 
     setCreating(true);
     try {
-      await onCreateItems(datedIdeas.map((idea, index) => ({
-        title: idea.title || 'Pieza sin titulo',
-        copy: idea.copy || '',
-        creative_idea: idea.creative_idea || idea.title || '',
-        goal: idea.objective || '',
-        format: normalizeFormat(idea.format),
-        platforms: normalizePlatform(idea.channel),
-        channel: idea.channel || 'IG',
-        status: idea.status || 'en-diseño',
-        scheduled_at: normalizeDateTime(idea.scheduled_at),
-        generateImage: Boolean(generateImages[selectedIdeaEntries[index].index]),
-        imagePrompt: buildImagePrompt(idea),
-        imageAspectRatio: idea.channel === 'TikTok' ? '9:16' : '1:1',
-      })));
+      await onCreateItems(
+        datedIdeas.map((idea, index) => ({
+          title: idea.title || 'Pieza sin titulo',
+          copy: idea.copy || '',
+          creative_idea: idea.creative_idea || idea.title || '',
+          goal: idea.objective || '',
+          format: normalizeFormat(idea.format),
+          platforms: normalizePlatform(idea.channel),
+          channel: idea.channel || 'IG',
+          status: idea.status || 'en-diseño',
+          scheduled_at: normalizeDateTime(idea.scheduled_at),
+          generateImage: Boolean(generateImages[selectedIdeaEntries[index].index]),
+          imagePrompt: buildImagePrompt(idea),
+          imageAspectRatio: idea.channel === 'TikTok' ? '9:16' : '1:1',
+        }))
+      );
       setIdeas([]);
       setSelected({});
       setGenerateImages({});
@@ -451,28 +505,70 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as='div' className='relative z-50' onClose={onClose}>
-        <Transition.Child as={Fragment} enter='ease-out duration-200' enterFrom='opacity-0' enterTo='opacity-100' leave='ease-in duration-150' leaveFrom='opacity-100' leaveTo='opacity-0'>
+        <Transition.Child
+          as={Fragment}
+          enter='ease-out duration-200'
+          enterFrom='opacity-0'
+          enterTo='opacity-100'
+          leave='ease-in duration-150'
+          leaveFrom='opacity-100'
+          leaveTo='opacity-0'
+        >
           <div className='fixed inset-0 bg-black/70' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
-            <Transition.Child as={Fragment} enter='ease-out duration-200' enterFrom='opacity-0 scale-95' enterTo='opacity-100 scale-100' leave='ease-in duration-150' leaveFrom='opacity-100 scale-100' leaveTo='opacity-0 scale-95'>
+            <Transition.Child
+              as={Fragment}
+              enter='ease-out duration-200'
+              enterFrom='opacity-0 scale-95'
+              enterTo='opacity-100 scale-100'
+              leave='ease-in duration-150'
+              leaveFrom='opacity-100 scale-100'
+              leaveTo='opacity-0 scale-95'
+            >
               <Dialog.Panel className='w-full max-w-5xl rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-strong p-5 shadow-2xl'>
                 <div className='flex items-start justify-between gap-4'>
                   <div>
-                    <Dialog.Title className='text-xl font-semibold text-text-primary'>Generar contenido con IA</Dialog.Title>
-                    <p className='mt-1 text-sm text-text-muted'>La IA usa la identidad del cliente, documentos y eventos existentes.</p>
+                    <Dialog.Title className='text-xl font-semibold text-text-primary'>
+                      Generar contenido con IA
+                    </Dialog.Title>
+                    <p className='mt-1 text-sm text-text-muted'>
+                      La IA usa la identidad del cliente, documentos y eventos existentes.
+                    </p>
                   </div>
-                  <button onClick={onClose} className='rounded-md px-2 py-1 text-text-muted hover:bg-white/5 hover:text-text-primary'>Cerrar</button>
+                  <button
+                    onClick={onClose}
+                    className='rounded-md px-2 py-1 text-text-muted hover:bg-white/5 hover:text-text-primary'
+                  >
+                    Cerrar
+                  </button>
                 </div>
 
                 <div className='mt-5 grid grid-cols-1 gap-3 md:grid-cols-[1fr_120px_auto]'>
-                  <input value={topic} onChange={e => setTopic(e.target.value)} className='rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30' placeholder='Ej: contenido educativo para captar leads' />
-                  <select value={quantity} onChange={e => setQuantity(Number(e.target.value))} className='rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30'>
-                    {[4, 6, 8, 10, 12].map(value => <option key={value} value={value}>{value} piezas</option>)}
+                  <input
+                    value={topic}
+                    onChange={e => setTopic(e.target.value)}
+                    className='rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30'
+                    placeholder='Ej: contenido educativo para captar leads'
+                  />
+                  <select
+                    value={quantity}
+                    onChange={e => setQuantity(Number(e.target.value))}
+                    className='rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30'
+                  >
+                    {[4, 6, 8, 10, 12].map(value => (
+                      <option key={value} value={value}>
+                        {value} piezas
+                      </option>
+                    ))}
                   </select>
-                  <button onClick={handleGenerate} disabled={loading || loadingProfile || !identityStatus.ready} className='btn-cyber rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60'>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={loading || loadingProfile || !identityStatus.ready}
+                    className='btn-cyber rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60'
+                  >
                     {loading ? 'Generando...' : 'Generar'}
                   </button>
                 </div>
@@ -482,33 +578,37 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                   <div className='mt-4 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 p-4 space-y-3.5'>
                     <div className='flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/10 pb-2.5'>
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base select-none">📅</span>
+                        <div className='flex items-center gap-1.5'>
+                          <span className='text-base select-none'>📅</span>
                           <p className='text-sm font-semibold text-amber-300'>
                             Efemérides y Fechas Especiales Clave
                           </p>
                         </div>
                         <p className='mt-1 text-xs text-text-muted leading-relaxed'>
-                          Hacé clic en las efemérides que querés que la IA conmemore o considere para el calendario:
+                          Hacé clic en las efemérides que querés que la IA conmemore o considere
+                          para el calendario:
                         </p>
                       </div>
                       {brandProfile?.industry && (
-                        <span className="rounded-md bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[9px] font-bold text-amber-400">
+                        <span className='rounded-md bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[9px] font-bold text-amber-400'>
                           ✨ Filtrado para el sector: {brandProfile.industry}
                         </span>
                       )}
                     </div>
 
-                    <div className="space-y-3.5 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar">
+                    <div className='space-y-3.5 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar'>
                       {/* MES ACTUAL */}
                       {specialDatesList.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize">
-                            En {calendarViewDate.toLocaleDateString('es-ES', { month: 'long' })} (Mes seleccionado):
+                        <div className='space-y-1.5'>
+                          <span className='text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize'>
+                            En {calendarViewDate.toLocaleDateString('es-ES', { month: 'long' })}{' '}
+                            (Mes seleccionado):
                           </span>
                           <div className='flex flex-wrap gap-2'>
                             {specialDatesList.map((specialDate, index) => {
-                              const isSelected = selectedSpecialDates.some(d => d.title === specialDate.title);
+                              const isSelected = selectedSpecialDates.some(
+                                d => d.title === specialDate.title
+                              );
                               return (
                                 <button
                                   key={`special-date-curr-${index}`}
@@ -516,11 +616,12 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                                   onClick={() => handleToggleSpecialDate(specialDate)}
                                   className={`
                                     px-3 py-1.5 text-xs rounded-xl border transition-all duration-200 text-left flex items-center gap-2 group hover:scale-[1.02] active:scale-98 cursor-pointer
-                                    ${isSelected
-                                      ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
-                                      : specialDate.isRecommended
-                                        ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
-                                        : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
+                                    ${
+                                      isSelected
+                                        ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
+                                        : specialDate.isRecommended
+                                          ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
+                                          : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
                                     }
                                   `}
                                 >
@@ -528,16 +629,22 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                                     type='checkbox'
                                     checked={isSelected}
                                     readOnly
-                                    className="h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none"
+                                    className='h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none'
                                   />
-                                  <div className="leading-tight flex items-center">
-                                    <span className="font-bold">
-                                      {specialDate.isMonthLong ? '🗓️ Mes entero' : `${specialDate.day} de ${calendarViewDate.toLocaleDateString('es-ES', { month: 'short' })}`}
+                                  <div className='leading-tight flex items-center'>
+                                    <span className='font-bold'>
+                                      {specialDate.isMonthLong
+                                        ? '🗓️ Mes entero'
+                                        : `${specialDate.day} de ${calendarViewDate.toLocaleDateString('es-ES', { month: 'short' })}`}
                                     </span>
-                                    <span className="mx-1.5 opacity-40">|</span>
-                                    <span className="font-semibold text-gray-200">{specialDate.title}</span>
+                                    <span className='mx-1.5 opacity-40'>|</span>
+                                    <span className='font-semibold text-gray-200'>
+                                      {specialDate.title}
+                                    </span>
                                     {specialDate.isRecommended && !isSelected && (
-                                      <span className="ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide">Sugerido</span>
+                                      <span className='ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide'>
+                                        Sugerido
+                                      </span>
                                     )}
                                   </div>
                                 </button>
@@ -549,13 +656,16 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
 
                       {/* MES SIGUIENTE */}
                       {nextMonthSpecialDatesList.length > 0 && (
-                        <div className="space-y-1.5 pt-2 border-t border-amber-500/5">
-                          <span className="text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize">
-                            En {nextMonthDate.toLocaleDateString('es-ES', { month: 'long' })} (Próximo mes):
+                        <div className='space-y-1.5 pt-2 border-t border-amber-500/5'>
+                          <span className='text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize'>
+                            En {nextMonthDate.toLocaleDateString('es-ES', { month: 'long' })}{' '}
+                            (Próximo mes):
                           </span>
                           <div className='flex flex-wrap gap-2'>
                             {nextMonthSpecialDatesList.map((specialDate, index) => {
-                              const isSelected = selectedSpecialDates.some(d => d.title === specialDate.title);
+                              const isSelected = selectedSpecialDates.some(
+                                d => d.title === specialDate.title
+                              );
                               return (
                                 <button
                                   key={`special-date-next-${index}`}
@@ -563,11 +673,12 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                                   onClick={() => handleToggleSpecialDate(specialDate)}
                                   className={`
                                     px-3 py-1.5 text-xs rounded-xl border transition-all duration-200 text-left flex items-center gap-2 group hover:scale-[1.02] active:scale-98 cursor-pointer
-                                    ${isSelected
-                                      ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
-                                      : specialDate.isRecommended
-                                        ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
-                                        : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
+                                    ${
+                                      isSelected
+                                        ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
+                                        : specialDate.isRecommended
+                                          ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
+                                          : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
                                     }
                                   `}
                                 >
@@ -575,16 +686,22 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                                     type='checkbox'
                                     checked={isSelected}
                                     readOnly
-                                    className="h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none"
+                                    className='h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none'
                                   />
-                                  <div className="leading-tight flex items-center">
-                                    <span className="font-bold">
-                                      {specialDate.isMonthLong ? '🗓️ Mes entero' : `${specialDate.day} de ${nextMonthDate.toLocaleDateString('es-ES', { month: 'short' })}`}
+                                  <div className='leading-tight flex items-center'>
+                                    <span className='font-bold'>
+                                      {specialDate.isMonthLong
+                                        ? '🗓️ Mes entero'
+                                        : `${specialDate.day} de ${nextMonthDate.toLocaleDateString('es-ES', { month: 'short' })}`}
                                     </span>
-                                    <span className="mx-1.5 opacity-40">|</span>
-                                    <span className="font-semibold text-gray-200">{specialDate.title}</span>
+                                    <span className='mx-1.5 opacity-40'>|</span>
+                                    <span className='font-semibold text-gray-200'>
+                                      {specialDate.title}
+                                    </span>
                                     {specialDate.isRecommended && !isSelected && (
-                                      <span className="ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide">Sugerido</span>
+                                      <span className='ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide'>
+                                        Sugerido
+                                      </span>
                                     )}
                                   </div>
                                 </button>
@@ -600,9 +717,12 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                 <div className='mt-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft p-4'>
                   <div className='flex flex-wrap items-center justify-between gap-2 border-b border-[color:var(--color-border-subtle)] pb-3 mb-4'>
                     <div>
-                      <p className='text-sm font-semibold text-text-primary'>Fechas de Publicación</p>
+                      <p className='text-sm font-semibold text-text-primary'>
+                        Fechas de Publicación
+                      </p>
                       <p className='mt-1 text-xs text-text-muted'>
-                        Hacé clic en los días del calendario para asignar fechas de publicación a cada pieza.
+                        Hacé clic en los días del calendario para asignar fechas de publicación a
+                        cada pieza.
                       </p>
                     </div>
                     <span className='rounded-md bg-white/5 px-2.5 py-1 text-[11px] font-mono text-text-muted'>
@@ -610,64 +730,84 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-6">
+                  <div className='grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-6'>
                     {/* CALENDARIO INTERACTIVO */}
-                    <div className="bg-surface-strong/40 border border-[color:var(--color-border-subtle)] rounded-xl p-4 flex flex-col justify-between">
+                    <div className='bg-surface-strong/40 border border-[color:var(--color-border-subtle)] rounded-xl p-4 flex flex-col justify-between'>
                       <div>
                         {/* Cabecera del Calendario */}
-                        <div className="flex items-center justify-between mb-3 px-1">
+                        <div className='flex items-center justify-between mb-3 px-1'>
                           <button
-                            type="button"
-                            onClick={() => setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                            className="p-1.5 hover:bg-white/5 rounded-lg text-text-muted hover:text-text-primary transition-all text-xs font-bold leading-none"
-                            title="Mes anterior"
+                            type='button'
+                            onClick={() =>
+                              setCalendarViewDate(
+                                prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+                              )
+                            }
+                            className='p-1.5 hover:bg-white/5 rounded-lg text-text-muted hover:text-text-primary transition-all text-xs font-bold leading-none'
+                            title='Mes anterior'
                           >
                             ◀
                           </button>
-                          <span className="text-xs font-bold text-text-primary uppercase tracking-wider select-none capitalize">
-                            {calendarViewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                          <span className='text-xs font-bold text-text-primary uppercase tracking-wider select-none capitalize'>
+                            {calendarViewDate.toLocaleDateString('es-ES', {
+                              month: 'long',
+                              year: 'numeric',
+                            })}
                           </span>
                           <button
-                            type="button"
-                            onClick={() => setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                            className="p-1.5 hover:bg-white/5 rounded-lg text-text-muted hover:text-text-primary transition-all text-xs font-bold leading-none"
-                            title="Mes siguiente"
+                            type='button'
+                            onClick={() =>
+                              setCalendarViewDate(
+                                prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+                              )
+                            }
+                            className='p-1.5 hover:bg-white/5 rounded-lg text-text-muted hover:text-text-primary transition-all text-xs font-bold leading-none'
+                            title='Mes siguiente'
                           >
                             ▶
                           </button>
                         </div>
 
                         {/* Días de la Semana */}
-                        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                        <div className='grid grid-cols-7 gap-1 text-center mb-2'>
                           {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                            <span key={d} className="text-[10px] font-bold text-text-muted py-1 uppercase">{d.slice(0, 1)}</span>
+                            <span
+                              key={d}
+                              className='text-[10px] font-bold text-text-muted py-1 uppercase'
+                            >
+                              {d.slice(0, 1)}
+                            </span>
                           ))}
                         </div>
 
                         {/* Grilla de Días */}
-                        <div className="grid grid-cols-7 gap-1">
+                        <div className='grid grid-cols-7 gap-1'>
                           {calendarDays.map((day, idx) => {
                             const isAssigned = chosenDates.includes(day.dateString);
                             const assignedIndex = chosenDates.indexOf(day.dateString);
                             const hasEvents = hasEventOnDay(day.dateString);
-                            const isOutsideRange = day.dateString < datePlanning.minDate || day.dateString > datePlanning.maxDate;
+                            const isOutsideRange =
+                              day.dateString < datePlanning.minDate ||
+                              day.dateString > datePlanning.maxDate;
 
                             return (
                               <button
                                 key={`cal-day-${idx}`}
-                                type="button"
+                                type='button'
                                 disabled={isOutsideRange}
                                 onClick={() => handleCalendarDayClick(day.dateString)}
                                 className={`
                                   relative aspect-square flex flex-col items-center justify-center text-xs font-semibold rounded-lg transition-all select-none
                                   ${day.isCurrentMonth ? 'text-text-primary' : 'text-text-muted/40'}
-                                  ${isOutsideRange 
-                                    ? 'opacity-25 cursor-not-allowed bg-black/10' 
-                                    : 'hover:bg-white/5 active:scale-95'
+                                  ${
+                                    isOutsideRange
+                                      ? 'opacity-25 cursor-not-allowed bg-black/10'
+                                      : 'hover:bg-white/5 active:scale-95'
                                   }
-                                  ${isAssigned 
-                                    ? 'bg-[color:var(--color-accent-blue)] text-white hover:bg-[color:var(--color-accent-blue)]/80 font-bold shadow-md shadow-[color:var(--color-accent-blue)]/20' 
-                                    : ''
+                                  ${
+                                    isAssigned
+                                      ? 'bg-[color:var(--color-accent-blue)] text-white hover:bg-[color:var(--color-accent-blue)]/80 font-bold shadow-md shadow-[color:var(--color-accent-blue)]/20'
+                                      : ''
                                   }
                                 `}
                               >
@@ -675,14 +815,17 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
 
                                 {/* Indicador de pieza asignada */}
                                 {isAssigned && (
-                                  <span className="absolute top-1 right-1 text-[7px] leading-none bg-white text-[color:var(--color-accent-blue)] font-extrabold px-1 rounded-sm shadow-sm scale-90">
+                                  <span className='absolute top-1 right-1 text-[7px] leading-none bg-white text-[color:var(--color-accent-blue)] font-extrabold px-1 rounded-sm shadow-sm scale-90'>
                                     P{assignedIndex + 1}
                                   </span>
                                 )}
 
                                 {/* Indicador de post programado existente */}
                                 {hasEvents && !isAssigned && (
-                                  <span className="absolute bottom-1 w-1 h-1 bg-amber-400 rounded-full animate-pulse" title="Post existente" />
+                                  <span
+                                    className='absolute bottom-1 w-1 h-1 bg-amber-400 rounded-full animate-pulse'
+                                    title='Post existente'
+                                  />
                                 )}
                               </button>
                             );
@@ -691,24 +834,24 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                       </div>
 
                       {/* Leyendas */}
-                      <div className="mt-4 pt-3 border-t border-[color:var(--color-border-subtle)] flex items-center justify-between text-[9px] text-text-muted select-none">
-                        <div className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent-blue)]" />
+                      <div className='mt-4 pt-3 border-t border-[color:var(--color-border-subtle)] flex items-center justify-between text-[9px] text-text-muted select-none'>
+                        <div className='flex items-center gap-1'>
+                          <span className='w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent-blue)]' />
                           <span>Asignado</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        <div className='flex items-center gap-1'>
+                          <span className='w-1.5 h-1.5 rounded-full bg-amber-400' />
                           <span>Post programado</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-black/30 border border-white/5" />
+                        <div className='flex items-center gap-1'>
+                          <span className='w-1.5 h-1.5 rounded-full bg-black/30 border border-white/5' />
                           <span>Muted</span>
                         </div>
                       </div>
                     </div>
 
                     {/* COLUMNA DERECHA: LISTADO DE PIEZAS */}
-                    <div className="flex flex-col gap-2 max-h-[310px] overflow-y-auto pr-1.5 custom-scrollbar">
+                    <div className='flex flex-col gap-2 max-h-[310px] overflow-y-auto pr-1.5 custom-scrollbar'>
                       {Array.from({ length: quantity }, (_, index) => {
                         const dateVal = chosenDates[index];
                         return (
@@ -716,50 +859,63 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                             key={`piece-date-slot-${index}`}
                             className={`
                               p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all duration-200
-                              ${dateVal 
-                                ? 'bg-[color:var(--color-accent-blue)]/5 border-[color:var(--color-accent-blue)]/30' 
-                                : 'bg-surface-strong/30 border-[color:var(--color-border-subtle)]'
+                              ${
+                                dateVal
+                                  ? 'bg-[color:var(--color-accent-blue)]/5 border-[color:var(--color-accent-blue)]/30'
+                                  : 'bg-surface-strong/30 border-[color:var(--color-border-subtle)]'
                               }
                             `}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span className={`
+                            <div className='flex items-center gap-2.5 min-w-0'>
+                              <span
+                                className={`
                                 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold select-none
-                                ${dateVal 
-                                  ? 'bg-[color:var(--color-accent-blue)] text-white shadow-sm' 
-                                  : 'bg-white/5 text-text-muted'
+                                ${
+                                  dateVal
+                                    ? 'bg-[color:var(--color-accent-blue)] text-white shadow-sm'
+                                    : 'bg-white/5 text-text-muted'
                                 }
-                              `}>
+                              `}
+                              >
                                 P{index + 1}
                               </span>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-text-primary">Pieza {index + 1}</p>
-                                <p className={`text-[10px] truncate ${dateVal ? 'text-[color:var(--color-accent-blue)] font-medium' : 'text-text-muted'}`}>
+                              <div className='min-w-0'>
+                                <p className='text-xs font-bold text-text-primary'>
+                                  Pieza {index + 1}
+                                </p>
+                                <p
+                                  className={`text-[10px] truncate ${dateVal ? 'text-[color:var(--color-accent-blue)] font-medium' : 'text-text-muted'}`}
+                                >
                                   {formatDateString(dateVal)}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className='flex items-center gap-1.5'>
                               {/* Selector manual por si quieren elegir directamente */}
-                              <div className="relative">
+                              <div className='relative'>
                                 <input
                                   type='date'
                                   value={dateVal || ''}
                                   min={datePlanning.minDate}
                                   max={datePlanning.maxDate}
-                                  onChange={e => setChosenDates(prev => {
-                                    const next = Array.from({ length: quantity }, (_, itemIndex) => prev[itemIndex] || '');
-                                    next[index] = e.target.value;
-                                    return next;
-                                  })}
-                                  className="absolute inset-0 opacity-0 cursor-pointer"
-                                  title="Seleccionar fecha manualmente"
+                                  onChange={e =>
+                                    setChosenDates(prev => {
+                                      const next = Array.from(
+                                        { length: quantity },
+                                        (_, itemIndex) => prev[itemIndex] || ''
+                                      );
+                                      next[index] = e.target.value;
+                                      return next;
+                                    })
+                                  }
+                                  className='absolute inset-0 opacity-0 cursor-pointer'
+                                  title='Seleccionar fecha manualmente'
                                 />
                                 <button
-                                  type="button"
-                                  className="w-6 h-6 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary text-[10px] flex items-center justify-center hover:bg-white/5 transition-all"
-                                  title="Seleccionar fecha manualmente"
+                                  type='button'
+                                  className='w-6 h-6 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary text-[10px] flex items-center justify-center hover:bg-white/5 transition-all'
+                                  title='Seleccionar fecha manualmente'
                                 >
                                   📅
                                 </button>
@@ -767,14 +923,16 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
 
                               {dateVal && (
                                 <button
-                                  type="button"
-                                  onClick={() => setChosenDates(prev => {
-                                    const next = [...prev];
-                                    next[index] = '';
-                                    return next;
-                                  })}
-                                  className="p-1 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-text-muted hover:text-red-400 rounded-md transition-all text-[10px]"
-                                  title="Quitar fecha"
+                                  type='button'
+                                  onClick={() =>
+                                    setChosenDates(prev => {
+                                      const next = [...prev];
+                                      next[index] = '';
+                                      return next;
+                                    })
+                                  }
+                                  className='p-1 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-text-muted hover:text-red-400 rounded-md transition-all text-[10px]'
+                                  title='Quitar fecha'
                                 >
                                   ❌
                                 </button>
@@ -788,7 +946,8 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
 
                   {datePlanning.overflowsCurrentMonth && !allowNextMonth && (
                     <div className='mt-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-100 leading-relaxed'>
-                      Hay más piezas que días restantes en {datePlanning.monthLabel}. Al generar o crear se pedirá confirmación para usar {datePlanning.nextMonthLabel}.
+                      Hay más piezas que días restantes en {datePlanning.monthLabel}. Al generar o
+                      crear se pedirá confirmación para usar {datePlanning.nextMonthLabel}.
                     </div>
                   )}
                   {allowNextMonth && (
@@ -798,46 +957,87 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                   )}
                 </div>
 
-                <div className={`mt-4 rounded-lg border p-3 text-sm ${identityStatus.ready ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100' : 'border-amber-500/25 bg-amber-500/10 text-amber-100'}`}>
+                <div
+                  className={`mt-4 rounded-lg border p-3 text-sm ${identityStatus.ready ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100' : 'border-amber-500/25 bg-amber-500/10 text-amber-100'}`}
+                >
                   <div className='flex flex-wrap items-center justify-between gap-2'>
                     <span className='font-semibold'>
-                      {loadingProfile ? 'Revisando identidad...' : identityStatus.ready ? 'Identidad lista para generar' : 'Identidad incompleta'}
+                      {loadingProfile
+                        ? 'Revisando identidad...'
+                        : identityStatus.ready
+                          ? 'Identidad lista para generar'
+                          : 'Identidad incompleta'}
                     </span>
                     {!loadingProfile && <span>{identityStatus.score}% de contexto util</span>}
                   </div>
                   {!identityStatus.ready && (
-                    <p className='mt-1 text-xs text-amber-100/80'>{identityStatus.missingMessage}</p>
+                    <p className='mt-1 text-xs text-amber-100/80'>
+                      {identityStatus.missingMessage}
+                    </p>
                   )}
                 </div>
 
                 <div className='mt-5 max-h-[55vh] space-y-3 overflow-y-auto pr-1'>
                   {ideas.map((idea, index) => (
-                    <motion.label key={`${idea.title}-${index}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='block rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft p-4'>
+                    <motion.label
+                      key={`${idea.title}-${index}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className='block rounded-lg border border-[color:var(--color-border-subtle)] bg-surface-soft p-4'
+                    >
                       <div className='flex items-start gap-3'>
-                        <input type='checkbox' checked={Boolean(selected[index])} onChange={e => setSelected(prev => ({ ...prev, [index]: e.target.checked }))} className='mt-1 h-4 w-4' />
+                        <input
+                          type='checkbox'
+                          checked={Boolean(selected[index])}
+                          onChange={e =>
+                            setSelected(prev => ({ ...prev, [index]: e.target.checked }))
+                          }
+                          className='mt-1 h-4 w-4'
+                        />
                         <div className='min-w-0 flex-1'>
                           <div className='flex flex-wrap items-center gap-2'>
-                            <h3 className='text-sm font-semibold text-text-primary'>{idea.title || 'Pieza sin titulo'}</h3>
-                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>{idea.channel || 'IG'}</span>
-                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>{idea.format || 'Formato libre'}</span>
-                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>{idea.scheduled_at || 'Sin fecha'}</span>
+                            <h3 className='text-sm font-semibold text-text-primary'>
+                              {idea.title || 'Pieza sin titulo'}
+                            </h3>
+                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>
+                              {idea.channel || 'IG'}
+                            </span>
+                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>
+                              {idea.format || 'Formato libre'}
+                            </span>
+                            <span className='rounded-md bg-white/5 px-2 py-1 text-[11px] text-text-muted'>
+                              {idea.scheduled_at || 'Sin fecha'}
+                            </span>
                           </div>
                           {idea.creative_idea && (
-                            <div className="mt-2 text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-start gap-1.5 leading-relaxed">
-                              <span className="text-sm select-none">💡</span>
+                            <div className='mt-2 text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-start gap-1.5 leading-relaxed'>
+                              <span className='text-sm select-none'>💡</span>
                               <div>
-                                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide block mb-0.5">Idea Creativa</span>
+                                <span className='text-[10px] font-bold text-amber-400 uppercase tracking-wide block mb-0.5'>
+                                  Idea Creativa
+                                </span>
                                 {idea.creative_idea}
                               </div>
                             </div>
                           )}
-                          <p className='mt-2 whitespace-pre-wrap text-sm leading-6 text-text-muted'>{idea.copy || 'Sin copy generado.'}</p>
-                          {idea.objective && <p className='mt-2 text-xs text-text-muted'>Objetivo: {idea.objective}</p>}
-                          <div className='mt-3 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-strong px-3 py-2 text-xs text-text-muted' onClick={e => e.stopPropagation()}>
+                          <p className='mt-2 whitespace-pre-wrap text-sm leading-6 text-text-muted'>
+                            {idea.copy || 'Sin copy generado.'}
+                          </p>
+                          {idea.objective && (
+                            <p className='mt-2 text-xs text-text-muted'>
+                              Objetivo: {idea.objective}
+                            </p>
+                          )}
+                          <div
+                            className='mt-3 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-strong px-3 py-2 text-xs text-text-muted'
+                            onClick={e => e.stopPropagation()}
+                          >
                             <input
                               type='checkbox'
                               checked={Boolean(generateImages[index])}
-                              onChange={e => setGenerateImages(prev => ({ ...prev, [index]: e.target.checked }))}
+                              onChange={e =>
+                                setGenerateImages(prev => ({ ...prev, [index]: e.target.checked }))
+                              }
                               className='h-4 w-4'
                             />
                             <span>Generar imagen del posteo al crear</span>
@@ -854,11 +1054,24 @@ export const AIContentGenerator = ({ isOpen, onClose, clientId, currentDate, exi
                 </div>
 
                 <div className='mt-5 flex justify-end gap-3 border-t border-[color:var(--color-border-subtle)] pt-4'>
-                  <button onClick={onClose} className='rounded-lg border border-[color:var(--color-border-subtle)] px-4 py-2 text-sm text-text-muted hover:text-text-primary'>Cancelar</button>
-                  <button onClick={handleCreateSelected} disabled={creating || !ideas.length} className='btn-cyber rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60'>
+                  <button
+                    onClick={onClose}
+                    className='rounded-lg border border-[color:var(--color-border-subtle)] px-4 py-2 text-sm text-text-muted hover:text-text-primary'
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleCreateSelected}
+                    disabled={creating || !ideas.length}
+                    className='btn-cyber rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60'
+                  >
                     {creating
-                      ? selectedImageCount ? 'Creando y generando...' : 'Creando...'
-                      : selectedImageCount ? `Crear y generar ${selectedImageCount} imagen${selectedImageCount > 1 ? 'es' : ''}` : 'Crear seleccionadas'}
+                      ? selectedImageCount
+                        ? 'Creando y generando...'
+                        : 'Creando...'
+                      : selectedImageCount
+                        ? `Crear y generar ${selectedImageCount} imagen${selectedImageCount > 1 ? 'es' : ''}`
+                        : 'Crear seleccionadas'}
                   </button>
                 </div>
               </Dialog.Panel>

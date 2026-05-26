@@ -81,4 +81,3 @@ export const analyzeBrandConsistency = (clientId, currentProfile, sourceLinks) =
     body: JSON.stringify({ currentProfile, sourceLinks }),
   });
 };
-

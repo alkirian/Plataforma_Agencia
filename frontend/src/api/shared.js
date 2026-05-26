@@ -5,7 +5,7 @@ import { apiFetch } from './apiFetch.js';
  * Obtiene la información del cronograma compartido para el cliente (Ruta Pública)
  * @param {string} token
  */
-export const getSharedApprovalDetails = (token) =>
+export const getSharedApprovalDetails = token =>
   apiFetch(`/shared/approval/${token}`).then(resp => resp?.data ?? resp);
 
 /**
@@ -40,12 +40,14 @@ export const sharedRevertPost = (token, itemId) =>
  * Obtiene el enlace de aprobación activo de un cliente (Ruta de Agencia - Autenticada)
  * @param {string} clientId
  */
-export const getClientApprovalLink = (clientId) =>
+export const getClientApprovalLink = clientId =>
   apiFetch(`/clients/${clientId}/approval-link`).then(resp => resp?.data ?? null);
 
 /**
  * Genera o regenera un enlace de aprobación activo para el cliente (Ruta de Agencia - Autenticada)
  * @param {string} clientId
  */
-export const createClientApprovalLink = (clientId) =>
-  apiFetch(`/clients/${clientId}/approval-link`, { method: 'POST' }).then(resp => resp?.data ?? null);
+export const createClientApprovalLink = clientId =>
+  apiFetch(`/clients/${clientId}/approval-link`, { method: 'POST' }).then(
+    resp => resp?.data ?? null
+  );

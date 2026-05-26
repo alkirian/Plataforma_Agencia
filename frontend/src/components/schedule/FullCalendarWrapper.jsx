@@ -26,7 +26,7 @@ const FullCalendarWrapper = ({
   height = '600px',
   headerToolbar = false, // Disable default toolbar
   className = '',
-  clientName = ''
+  clientName = '',
 }) => {
   const calendarRef = useRef(null);
   const [calendarLabel, setCalendarLabel] = useState('');
@@ -61,7 +61,6 @@ const FullCalendarWrapper = ({
     }
   }, []);
 
-
   // Cambiar vista programáticamente
   useEffect(() => {
     if (calendarRef.current && currentView) {
@@ -71,28 +70,28 @@ const FullCalendarWrapper = ({
   }, [currentView]);
 
   // Handlers optimizados
-  const handleDateClick = (arg) => {
+  const handleDateClick = arg => {
     const clickedDate = new Date(arg.date);
     const clickInfo = {
       clickCoords: {
         x: arg.jsEvent.clientX,
-        y: arg.jsEvent.clientY
+        y: arg.jsEvent.clientY,
       },
       elementRect: arg.dayEl ? arg.dayEl.getBoundingClientRect() : null,
-      originalEvent: arg
+      originalEvent: arg,
     };
     onDateClick?.(clickedDate, clickInfo);
   };
 
-  const handleEventClick = (arg) => {
+  const handleEventClick = arg => {
     arg.jsEvent.preventDefault(); // Prevenir navegación default
     onEventClick?.(arg.event, arg);
   };
 
-  const handleDatesSet = (arg) => {
+  const handleDatesSet = arg => {
     // Actualizar label cuando cambia la fecha
     setCalendarLabel(arg.view.title);
-    
+
     // Usar el inicio "real" del periodo de la vista (p.ej., 1er día del mes) en lugar del rango visible
     const computedStart = arg.view?.currentStart ?? arg.start;
     const computedEnd = arg.view?.currentEnd ?? arg.end;
@@ -113,7 +112,8 @@ const FullCalendarWrapper = ({
       const viewType = arg.view?.type;
       const cs = computedStart;
       const anchor = anchorYMRef.current;
-      const isMonthView = viewType === 'dayGridMonth' || viewType === 'multiMonthYear' || viewType === 'listMonth';
+      const isMonthView =
+        viewType === 'dayGridMonth' || viewType === 'multiMonthYear' || viewType === 'listMonth';
       if (isMonthView && cs) {
         // Actualizar ancla cuando estamos en vista de mes
         anchorYMRef.current = { y: cs.getFullYear(), m: cs.getMonth() };
@@ -131,24 +131,24 @@ const FullCalendarWrapper = ({
     }
   };
 
-  const handleViewChange = (arg) => {
+  const handleViewChange = arg => {
     // Solo propagar el cambio
     if (onViewChange && arg.view?.type) {
       onViewChange(arg.view.type, arg.view);
     }
   };
 
-  const handleViewDidMount = (arg) => {
+  const handleViewDidMount = arg => {
     // No modificar nada, dejar que FullCalendar funcione normalmente
   };
 
-  const handleEventDrop = (arg) => {
+  const handleEventDrop = arg => {
     if (onEventDrop) {
       onEventDrop(arg.event, arg.oldEvent, arg);
     }
   };
 
-  const handleEventResize = (arg) => {
+  const handleEventResize = arg => {
     if (onEventResize) {
       onEventResize(arg.event, arg.oldEvent, arg);
     }
@@ -158,17 +158,17 @@ const FullCalendarWrapper = ({
   const calendarOptions = {
     // Plugins requeridos
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
-    
+
     // Configuración de localización estándar
     locale: esLocale,
-    
+
     // Vista inicial y navegación
     initialView: currentView,
     initialDate: currentDate || getCurrentDate(), // CRUCIAL: Establecer fecha inicial
-    
+
     // Datos
     events,
-    
+
     // Interactividad
     selectable: true,
     selectMirror: true,
@@ -176,49 +176,52 @@ const FullCalendarWrapper = ({
     weekends: true,
     editable: true,
     droppable: false,
-    
+
     // Configuración de tiempo
     nowIndicator: true,
     scrollTime: '08:00:00',
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
     slotDuration: '00:30:00',
-    
+
     // Header y navegación
     headerToolbar,
-    
+
     // Eliminar titleFormat personalizado para evitar conflictos
-    
+
     // Altura
     height,
-    
+
     // Configuración de eventos
     eventDisplay: 'block',
-    eventContent: (arg) => {
+    eventContent: arg => {
       const hasFeedback = !!arg.event.extendedProps?.client_feedback;
       const title = arg.event.title;
       const timeText = arg.timeText;
-      const platformText = arg.event.extendedProps?.platforms || arg.event.extendedProps?.channel || '';
+      const platformText =
+        arg.event.extendedProps?.platforms || arg.event.extendedProps?.channel || '';
 
       return (
-        <div className="fc-event-main-custom flex flex-col w-full h-full p-1.5 min-w-0 relative">
-          <div className="flex items-center justify-between gap-1 w-full">
-            {timeText && <span className="text-[9px] font-semibold opacity-75 leading-none">{timeText}</span>}
+        <div className='fc-event-main-custom flex flex-col w-full h-full p-1.5 min-w-0 relative'>
+          <div className='flex items-center justify-between gap-1 w-full'>
+            {timeText && (
+              <span className='text-[9px] font-semibold opacity-75 leading-none'>{timeText}</span>
+            )}
             {platformText && (
-              <span className="text-[7px] font-extrabold uppercase px-1 rounded-sm bg-black/45 border border-white/10 max-w-[65px] truncate leading-none text-gray-300">
+              <span className='text-[7px] font-extrabold uppercase px-1 rounded-sm bg-black/45 border border-white/10 max-w-[65px] truncate leading-none text-gray-300'>
                 {platformText.split(', ')[0]}
               </span>
             )}
           </div>
-          <div className="text-[10px] font-semibold truncate mt-1 text-white leading-normal pr-3">
+          <div className='text-[10px] font-semibold truncate mt-1 text-white leading-normal pr-3'>
             {title}
           </div>
-          
+
           {hasFeedback && (
-            <div className="absolute right-0.5 bottom-0.5 flex items-center justify-center">
-              <span className="relative flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fe0979] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#fe0979] text-[8px] font-bold text-white items-center justify-center shadow-[0_0_10px_rgba(254,9,121,0.6)]">
+            <div className='absolute right-0.5 bottom-0.5 flex items-center justify-center'>
+              <span className='relative flex h-3.5 w-3.5'>
+                <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fe0979] opacity-75'></span>
+                <span className='relative inline-flex rounded-full h-3.5 w-3.5 bg-[#fe0979] text-[8px] font-bold text-white items-center justify-center shadow-[0_0_10px_rgba(254,9,121,0.6)]'>
                   💬
                 </span>
               </span>
@@ -229,24 +232,43 @@ const FullCalendarWrapper = ({
     },
     eventStartEditable: true,
     eventDurationEditable: true,
-    eventClassNames: (arg) => {
+    eventClassNames: arg => {
       const s = (arg.event.extendedProps?.status || '').toLowerCase();
       const classes = ['fc-event-base'];
-      
+
       // Mapeo unificado de todos los estados a las 3 clases principales del calendario
       let key = 'en-diseño';
-      if (s === 'planificacion' || s === 'pendiente' || s === 'en-diseño' || s === 'en-diseno' || s === 'en diseño' || s === 'requiere-cambios' || s === 'cancelado') {
+      if (
+        s === 'planificacion' ||
+        s === 'pendiente' ||
+        s === 'en-diseño' ||
+        s === 'en-diseno' ||
+        s === 'en diseño' ||
+        s === 'requiere-cambios' ||
+        s === 'cancelado'
+      ) {
         key = 'en-diseño';
-      } else if (s === 'en-progreso' || s === 'en-revision' || s === 'esperando-aprobacion' || s === 'pausado' || s === 'en progreso') {
+      } else if (
+        s === 'en-progreso' ||
+        s === 'en-revision' ||
+        s === 'esperando-aprobacion' ||
+        s === 'pausado' ||
+        s === 'en progreso'
+      ) {
         key = 'en-progreso';
-      } else if (s === 'aprobado' || s === 'listo-publicar' || s === 'publicado' || s === 'completado') {
+      } else if (
+        s === 'aprobado' ||
+        s === 'listo-publicar' ||
+        s === 'publicado' ||
+        s === 'completado'
+      ) {
         key = 'aprobado';
       }
-      
+
       classes.push(`fc-event--${key}`);
       return classes;
     },
-    
+
     // Handlers
     dateClick: handleDateClick,
     eventClick: handleEventClick,
@@ -254,7 +276,7 @@ const FullCalendarWrapper = ({
     viewDidMount: handleViewDidMount, // Forzar título correcto
     eventDrop: handleEventDrop,
     eventResize: handleEventResize,
-    
+
     // Configuración de vistas específicas
     views: {
       dayGridMonth: {
@@ -263,76 +285,76 @@ const FullCalendarWrapper = ({
         eventTimeFormat: {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: false
-        }
+          hour12: false,
+        },
       },
       timeGridWeek: {
         allDaySlot: false,
         slotLabelFormat: {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: false
+          hour12: false,
         },
-        dayHeaderFormat: { weekday: 'short', day: 'numeric', month: 'short' }
+        dayHeaderFormat: { weekday: 'short', day: 'numeric', month: 'short' },
       },
       timeGridDay: {
         allDaySlot: false,
-        dayHeaderFormat: { weekday: 'long', day: 'numeric', month: 'long' }
+        dayHeaderFormat: { weekday: 'long', day: 'numeric', month: 'long' },
       },
       listWeek: {
-        listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' }
+        listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
       },
       listMonth: {
         listDayFormat: { weekday: 'long', day: 'numeric', month: 'short' },
         listDaySideFormat: { month: 'short', day: 'numeric' },
         noEventsText: '📋 No hay tareas programadas para este mes',
-        dayHeaderFormat: { month: 'long', year: 'numeric' }
-      }
+        dayHeaderFormat: { month: 'long', year: 'numeric' },
+      },
     },
-    
+
     // Configuración de eventos
     eventTimeFormat: {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     },
-    
+
     // Textos personalizados
     buttonText: {
       today: 'Hoy',
       month: 'Mes',
       week: 'Semana',
       day: 'Día',
-      listMonth: 'Lista'
+      listMonth: 'Lista',
     },
-    
+
     // Configuración de más enlaces
     moreLinkClick: 'popover',
-    
+
     // Configuración de días
     dayHeaderFormat: { weekday: 'short' },
-    
+
     // Configuración responsive
     aspectRatio: window.innerWidth < 768 ? 0.8 : 1.35,
-    
+
     // Optimizaciones de rendimiento
     lazyFetching: true,
     rerenderDelay: 10,
-    
+
     // Loading state
-    loading: (isLoading) => {
+    loading: isLoading => {
       if (loading !== isLoading) {
         // Aquí podrías emitir un evento de loading si lo necesitas
       }
-    }
+    },
   };
 
   // Keyboard shortcuts para navegación rápida
   useEffect(() => {
-    const handleKeyPress = (event) => {
+    const handleKeyPress = event => {
       // Solo activar si no estamos escribiendo en un input
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
-      
+
       const calendarApi = calendarRef.current?.getApi();
       if (!calendarApi) return;
 
@@ -393,18 +415,15 @@ const FullCalendarWrapper = ({
   return (
     <div className={`fullcalendar-wrapper ${className}`}>
       {loading && (
-  <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-accent-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-400">Cargando eventos...</span>
+        <div className='absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg'>
+          <div className='flex items-center space-x-2'>
+            <div className='w-4 h-4 border-2 border-accent-500 border-t-transparent rounded-full animate-spin'></div>
+            <span className='text-sm text-gray-400'>Cargando eventos...</span>
           </div>
         </div>
       )}
-      
-      <FullCalendar
-        ref={calendarRef}
-        {...calendarOptions}
-      />
+
+      <FullCalendar ref={calendarRef} {...calendarOptions} />
     </div>
   );
 };

@@ -7,7 +7,7 @@ const getStorageKey = (clientId, type) => `document_board_${clientId}_${type}`;
 const loadClientData = (clientId, type) => {
   try {
     const saved = localStorage.getItem(getStorageKey(clientId, type));
-    return saved ? JSON.parse(saved) : (type === 'columns' ? [] : {});
+    return saved ? JSON.parse(saved) : type === 'columns' ? [] : {};
   } catch (error) {
     console.warn(`Error loading ${type} for client ${clientId}:`, error);
     return type === 'columns' ? [] : {};
@@ -25,7 +25,9 @@ const saveClientData = (clientId, type, data) => {
 
 export const useDocumentBoard = (clientId, documents = []) => {
   const [columns, setColumns] = useState(() => loadClientData(clientId, 'columns'));
-  const [documentAssignments, setDocumentAssignments] = useState(() => loadClientData(clientId, 'assignments'));
+  const [documentAssignments, setDocumentAssignments] = useState(() =>
+    loadClientData(clientId, 'assignments')
+  );
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Efecto para cargar datos cuando cambia el cliente
@@ -39,7 +41,7 @@ export const useDocumentBoard = (clientId, documents = []) => {
     const columnsWithDocs = columns.map(column => ({
       ...column,
       // Usar claves de documento como string para evitar inconsistencias (número vs string)
-      documents: documents.filter(doc => documentAssignments[String(doc.id)] === column.id)
+      documents: documents.filter(doc => documentAssignments[String(doc.id)] === column.id),
     }));
 
     const assignedDocumentIds = new Set(Object.keys(documentAssignments));
@@ -48,114 +50,129 @@ export const useDocumentBoard = (clientId, documents = []) => {
 
     return {
       columns: columnsWithDocs.sort((a, b) => a.order - b.order),
-      unassignedDocuments
+      unassignedDocuments,
     };
   }, [columns, documents, documentAssignments, refreshKey]);
 
   // Crear nueva columna
-  const createColumn = useCallback(async (columnData) => {
-    try {
-      const newColumns = [...columns, columnData];
-      setColumns(newColumns);
-      saveClientData(clientId, 'columns', newColumns);
-      setRefreshKey(prev => prev + 1);
-      return { success: true, column: columnData };
-    } catch (error) {
-      console.error('Error creating column:', error);
-      return { success: false, error: error.message };
-    }
-  }, [columns, clientId]);
+  const createColumn = useCallback(
+    async columnData => {
+      try {
+        const newColumns = [...columns, columnData];
+        setColumns(newColumns);
+        saveClientData(clientId, 'columns', newColumns);
+        setRefreshKey(prev => prev + 1);
+        return { success: true, column: columnData };
+      } catch (error) {
+        console.error('Error creating column:', error);
+        return { success: false, error: error.message };
+      }
+    },
+    [columns, clientId]
+  );
 
   // Actualizar columna existente
-  const updateColumn = useCallback(async (columnId, updates) => {
-    try {
-      const updatedColumns = columns.map(column => 
-        column.id === columnId ? { ...column, ...updates } : column
-      );
-      setColumns(updatedColumns);
-      saveClientData(clientId, 'columns', updatedColumns);
-      setRefreshKey(prev => prev + 1);
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating column:', error);
-      return { success: false, error: error.message };
-    }
-  }, [columns, clientId]);
+  const updateColumn = useCallback(
+    async (columnId, updates) => {
+      try {
+        const updatedColumns = columns.map(column =>
+          column.id === columnId ? { ...column, ...updates } : column
+        );
+        setColumns(updatedColumns);
+        saveClientData(clientId, 'columns', updatedColumns);
+        setRefreshKey(prev => prev + 1);
+        return { success: true };
+      } catch (error) {
+        console.error('Error updating column:', error);
+        return { success: false, error: error.message };
+      }
+    },
+    [columns, clientId]
+  );
 
   // Eliminar columna
-  const deleteColumn = useCallback(async (columnId) => {
-    try {
-      // Remover la columna
-      const filteredColumns = columns.filter(column => column.id !== columnId);
-      setColumns(filteredColumns);
-      saveClientData(clientId, 'columns', filteredColumns);
+  const deleteColumn = useCallback(
+    async columnId => {
+      try {
+        // Remover la columna
+        const filteredColumns = columns.filter(column => column.id !== columnId);
+        setColumns(filteredColumns);
+        saveClientData(clientId, 'columns', filteredColumns);
 
-      // Remover asignaciones de documentos a esta columna
-      const updatedAssignments = { ...documentAssignments };
-      Object.keys(updatedAssignments).forEach(docId => {
-        if (updatedAssignments[docId] === columnId) {
-          delete updatedAssignments[docId];
-        }
-      });
-      setDocumentAssignments(updatedAssignments);
-      saveClientData(clientId, 'assignments', updatedAssignments);
+        // Remover asignaciones de documentos a esta columna
+        const updatedAssignments = { ...documentAssignments };
+        Object.keys(updatedAssignments).forEach(docId => {
+          if (updatedAssignments[docId] === columnId) {
+            delete updatedAssignments[docId];
+          }
+        });
+        setDocumentAssignments(updatedAssignments);
+        saveClientData(clientId, 'assignments', updatedAssignments);
 
-      setRefreshKey(prev => prev + 1);
-      return { success: true };
-    } catch (error) {
-      console.error('Error deleting column:', error);
-      return { success: false, error: error.message };
-    }
-  }, [columns, documentAssignments, clientId]);
+        setRefreshKey(prev => prev + 1);
+        return { success: true };
+      } catch (error) {
+        console.error('Error deleting column:', error);
+        return { success: false, error: error.message };
+      }
+    },
+    [columns, documentAssignments, clientId]
+  );
 
   // Mover documento entre columnas
-  const moveDocument = useCallback(async (documentId, sourceColumnId, targetColumnId, targetIndex) => {
-    try {
-      const updatedAssignments = { ...documentAssignments };
-      const docKey = String(documentId);
-      
-      if (targetColumnId === 'unassigned') {
-        // Mover a sin clasificar (remover asignación)
-        delete updatedAssignments[docKey];
-      } else {
-        // Asignar a columna específica
-        updatedAssignments[docKey] = targetColumnId;
+  const moveDocument = useCallback(
+    async (documentId, sourceColumnId, targetColumnId, targetIndex) => {
+      try {
+        const updatedAssignments = { ...documentAssignments };
+        const docKey = String(documentId);
+
+        if (targetColumnId === 'unassigned') {
+          // Mover a sin clasificar (remover asignación)
+          delete updatedAssignments[docKey];
+        } else {
+          // Asignar a columna específica
+          updatedAssignments[docKey] = targetColumnId;
+        }
+
+        setDocumentAssignments(updatedAssignments);
+        saveClientData(clientId, 'assignments', updatedAssignments);
+        setRefreshKey(prev => prev + 1);
+
+        return { success: true };
+      } catch (error) {
+        console.error('Error moving document:', error);
+        return { success: false, error: error.message };
       }
-
-      setDocumentAssignments(updatedAssignments);
-      saveClientData(clientId, 'assignments', updatedAssignments);
-      setRefreshKey(prev => prev + 1);
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error moving document:', error);
-      return { success: false, error: error.message };
-    }
-  }, [documentAssignments, clientId]);
+    },
+    [documentAssignments, clientId]
+  );
 
   // Reordenar columnas
-  const reorderColumns = useCallback(async (sourceIndex, targetIndex) => {
-    try {
-      const reorderedColumns = [...columns];
-      const [movedColumn] = reorderedColumns.splice(sourceIndex, 1);
-      reorderedColumns.splice(targetIndex, 0, movedColumn);
+  const reorderColumns = useCallback(
+    async (sourceIndex, targetIndex) => {
+      try {
+        const reorderedColumns = [...columns];
+        const [movedColumn] = reorderedColumns.splice(sourceIndex, 1);
+        reorderedColumns.splice(targetIndex, 0, movedColumn);
 
-      // Actualizar órdenes
-      const updatedColumns = reorderedColumns.map((column, index) => ({
-        ...column,
-        order: index
-      }));
+        // Actualizar órdenes
+        const updatedColumns = reorderedColumns.map((column, index) => ({
+          ...column,
+          order: index,
+        }));
 
-      setColumns(updatedColumns);
-      saveClientData(clientId, 'columns', updatedColumns);
-      setRefreshKey(prev => prev + 1);
+        setColumns(updatedColumns);
+        saveClientData(clientId, 'columns', updatedColumns);
+        setRefreshKey(prev => prev + 1);
 
-      return { success: true };
-    } catch (error) {
-      console.error('Error reordering columns:', error);
-      return { success: false, error: error.message };
-    }
-  }, [columns, clientId]);
+        return { success: true };
+      } catch (error) {
+        console.error('Error reordering columns:', error);
+        return { success: false, error: error.message };
+      }
+    },
+    [columns, clientId]
+  );
 
   // Obtener estadísticas
   const stats = useMemo(() => {
@@ -167,7 +184,7 @@ export const useDocumentBoard = (clientId, documents = []) => {
       totalDocuments,
       totalColumns,
       organizedDocuments,
-      unorganizedDocuments: totalDocuments - organizedDocuments
+      unorganizedDocuments: totalDocuments - organizedDocuments,
     };
   }, [documents.length, columns.length, documentAssignments]);
 
@@ -186,6 +203,6 @@ export const useDocumentBoard = (clientId, documents = []) => {
 
     // Utilidades
     isEmpty: documents.length === 0,
-    hasColumns: columns.length > 0
+    hasColumns: columns.length > 0,
   };
 };

@@ -3,9 +3,9 @@ import { RocketLaunchIcon } from '@heroicons/react/24/outline';
 
 export const WelcomeEmptyState = ({ onActionClick }) => {
   return (
-  <div className='text-center rounded-xl border border-dashed border-white/20 bg-surface-strong p-12'>
+    <div className='text-center rounded-xl border border-dashed border-white/20 bg-surface-strong p-12'>
       <RocketLaunchIcon className='mx-auto h-12 w-12 text-rambla-text-secondary' />
-  <h2 className='mt-4 text-xl font-semibold text-white'>¡Bienvenido a Cadence!</h2>
+      <h2 className='mt-4 text-xl font-semibold text-white'>¡Bienvenido a Cadence!</h2>
       <p className='mt-2 text-rambla-text-secondary'>
         Estás a un solo paso de empezar a organizar tu flujo de trabajo.
       </p>

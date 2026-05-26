@@ -87,7 +87,7 @@ export const DocumentList = ({
     setDraggedDocument(doc);
     e.dataTransfer.setData('text/plain', JSON.stringify(doc));
     e.dataTransfer.effectAllowed = 'move';
-    
+
     // Crear una imagen de arrastre personalizada
     const dragImage = e.target.cloneNode(true);
     dragImage.style.transform = 'rotate(3deg)';
@@ -102,19 +102,17 @@ export const DocumentList = ({
   return (
     <div className='mt-6 flow-root'>
       <ul role='list' className='-my-4 divide-y divide-[color:var(--color-border-subtle)]'>
-        {documents.length === 0 && (
-          <li className='py-4 text-text-muted'>No hay documentos aún.</li>
-        )}
+        {documents.length === 0 && <li className='py-4 text-text-muted'>No hay documentos aún.</li>}
         {documents.map(doc => (
-          <motion.li 
-            key={doc.id} 
+          <motion.li
+            key={doc.id}
             className={`flex items-center justify-between py-4 rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing ${
-                  draggedDocument?.id === doc.id 
-                    ? 'opacity-50 scale-95 bg-cyan-500/10 border border-cyan-400/30' 
-                    : 'hover:bg-surface-soft'
+              draggedDocument?.id === doc.id
+                ? 'opacity-50 scale-95 bg-cyan-500/10 border border-cyan-400/30'
+                : 'hover:bg-surface-soft'
             }`}
             draggable
-            onDragStart={(e) => handleDragStart(e, doc)}
+            onDragStart={e => handleDragStart(e, doc)}
             onDragEnd={handleDragEnd}
             whileHover={{ scale: 1.01 }}
             whileDrag={{ scale: 1.05, rotate: 2 }}
@@ -124,10 +122,10 @@ export const DocumentList = ({
           >
             <div className='flex items-center space-x-4'>
               {/* Drag handle */}
-              <div className="flex-shrink-0 text-text-muted opacity-50 hover:opacity-100 transition-opacity">
-                <Bars3Icon className="h-4 w-4" />
+              <div className='flex-shrink-0 text-text-muted opacity-50 hover:opacity-100 transition-opacity'>
+                <Bars3Icon className='h-4 w-4' />
               </div>
-              
+
               <div className='h-10 w-10 flex-shrink-0 rounded-lg bg-surface-soft flex items-center justify-center border border-[color:var(--color-border-subtle)]'>
                 <span className='text-xs font-bold text-text-muted'>
                   {(doc.file_type || '').toUpperCase().includes('PDF') ? 'PDF' : 'DOC'}
@@ -194,7 +192,7 @@ export const DocumentList = ({
           </motion.li>
         ))}
       </ul>
-      
+
       {/* Modal de vista previa */}
       <DocumentPreview
         isOpen={!!previewDocument}

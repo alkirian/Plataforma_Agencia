@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import { 
-  BellIcon, 
+import {
+  BellIcon,
   XMarkIcon,
   CheckIcon,
   ClockIcon,
   ExclamationTriangleIcon,
   CalendarDaysIcon,
-  TrashIcon 
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-export const NotificationPanel = ({ 
-  notifications = [], 
+export const NotificationPanel = ({
+  notifications = [],
   groupedNotifications = {},
   stats = {},
   onMarkAsRead,
@@ -22,13 +22,13 @@ export const NotificationPanel = ({
   onDeleteNotification,
   onDeleteAllNotifications,
   onClose,
-  isOpen 
+  isOpen,
 }) => {
   const [selectedTab, setSelectedTab] = useState('all');
   const navigate = useNavigate();
 
   const unreadNotifications = notifications.filter(n => !n.isRead);
-  
+
   const tabs = [
     { id: 'all', name: 'Todas', count: notifications.length },
     { id: 'unread', name: 'No leídas', count: unreadNotifications.length },
@@ -43,22 +43,22 @@ export const NotificationPanel = ({
     return groupedNotifications[selectedTab] || [];
   };
 
-  const getNotificationIcon = (type) => {
+  const getNotificationIcon = type => {
     switch (type) {
       case 'overdue':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />;
+        return <ExclamationTriangleIcon className='h-5 w-5 text-red-400' />;
       case 'due-today':
-        return <CalendarDaysIcon className="h-5 w-5 text-orange-400" />;
+        return <CalendarDaysIcon className='h-5 w-5 text-orange-400' />;
       case 'due-tomorrow':
-        return <ClockIcon className="h-5 w-5 text-gray-400" />;
+        return <ClockIcon className='h-5 w-5 text-gray-400' />;
       case 'upcoming':
-        return <BellIcon className="h-5 w-5 text-green-400" />;
+        return <BellIcon className='h-5 w-5 text-green-400' />;
       default:
-        return <BellIcon className="h-5 w-5 text-gray-400" />;
+        return <BellIcon className='h-5 w-5 text-gray-400' />;
     }
   };
 
-  const getNotificationColor = (type) => {
+  const getNotificationColor = type => {
     switch (type) {
       case 'overdue':
         return 'border-red-500/30 bg-red-500/10';
@@ -73,14 +73,14 @@ export const NotificationPanel = ({
     }
   };
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = notification => {
     if (notification.task && notification.task.client_id) {
       navigate(`/clients/${notification.task.client_id}`);
       onClose();
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = date.getTime() - now.getTime();
@@ -95,92 +95,98 @@ export const NotificationPanel = ({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          enter='ease-out duration-300'
+          enterFrom='opacity-0'
+          enterTo='opacity-100'
+          leave='ease-in duration-200'
+          leaveFrom='opacity-100'
+          leaveTo='opacity-0'
         >
-          <div className="fixed inset-0 bg-black/60" />
+          <div className='fixed inset-0 bg-black/60' />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-start justify-end p-4 pt-16">
+        <div className='fixed inset-0 overflow-y-auto'>
+          <div className='flex min-h-full items-start justify-end p-4 pt-16'>
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-x-full"
-              enterTo="opacity-100 translate-x-0"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-x-0"
-              leaveTo="opacity-0 translate-x-full"
+              enter='ease-out duration-300'
+              enterFrom='opacity-0 translate-x-full'
+              enterTo='opacity-100 translate-x-0'
+              leave='ease-in duration-200'
+              leaveFrom='opacity-100 translate-x-0'
+              leaveTo='opacity-0 translate-x-full'
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-l-xl 
+              <Dialog.Panel
+                className='w-full max-w-md transform overflow-hidden rounded-l-xl 
                                         bg-surface-soft border-l border-t border-b border-[color:var(--color-border-subtle)] 
-                                        shadow-xl transition-all h-[calc(100vh-4rem)] text-text-primary">
+                                        shadow-xl transition-all h-[calc(100vh-4rem)] text-text-primary'
+              >
                 {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[color:var(--color-border-subtle)]">
-                  <div className="flex items-center space-x-2">
-          <BellIcon className="h-5 w-5 text-[color:var(--color-accent-blue)]" />
-          <Dialog.Title className="text-lg font-medium text-text-primary">
+                <div className='flex items-center justify-between p-4 border-b border-[color:var(--color-border-subtle)]'>
+                  <div className='flex items-center space-x-2'>
+                    <BellIcon className='h-5 w-5 text-[color:var(--color-accent-blue)]' />
+                    <Dialog.Title className='text-lg font-medium text-text-primary'>
                       Notificaciones
                     </Dialog.Title>
                     {stats.total > 0 && (
-            <span className="bg-[color:var(--color-accent-blue)] text-black text-xs px-2 py-0.5 rounded-full">
+                      <span className='bg-[color:var(--color-accent-blue)] text-black text-xs px-2 py-0.5 rounded-full'>
                         {stats.total}
                       </span>
                     )}
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
+
+                  <div className='flex items-center space-x-2'>
                     {notifications.length > 0 && (
                       <>
                         <motion.button
                           onClick={onMarkAllAsRead}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-              className="text-xs text-text-muted hover:text-text-primary transition-colors"
+                          className='text-xs text-text-muted hover:text-text-primary transition-colors'
                         >
                           Marcar todas como leídas
                         </motion.button>
-                        
+
                         <motion.button
                           onClick={() => {
-                            if (window.confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')) {
+                            if (
+                              window.confirm(
+                                '¿Estás seguro de que quieres eliminar todas las notificaciones?'
+                              )
+                            ) {
                               onDeleteAllNotifications();
                             }
                           }}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center space-x-1"
-                          title="Eliminar todas las notificaciones"
+                          className='text-xs text-red-400 hover:text-red-300 transition-colors flex items-center space-x-1'
+                          title='Eliminar todas las notificaciones'
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <TrashIcon className='h-3 w-3' />
                           <span>Limpiar todas</span>
                         </motion.button>
                       </>
                     )}
-                    
+
                     <motion.button
                       onClick={onClose}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-            className="rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-surface-soft 
-                                 transition-colors"
+                      className='rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-surface-soft 
+                                 transition-colors'
                     >
-                      <XMarkIcon className="h-4 w-4" />
+                      <XMarkIcon className='h-4 w-4' />
                     </motion.button>
                   </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="px-4 py-2 border-b border-[color:var(--color-border-subtle)]">
-                  <div className="flex space-x-1">
-                    {tabs.map((tab) => (
+                <div className='px-4 py-2 border-b border-[color:var(--color-border-subtle)]'>
+                  <div className='flex space-x-1'>
+                    {tabs.map(tab => (
                       <motion.button
                         key={tab.id}
                         onClick={() => setSelectedTab(tab.id)}
@@ -195,11 +201,13 @@ export const NotificationPanel = ({
                       >
                         <span>{tab.name}</span>
                         {tab.count > 0 && (
-                          <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                            selectedTab === tab.id
-                              ? 'bg-white/20 text-black'
-                              : 'bg-surface-soft text-text-muted'
-                          }`}>
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full text-xs ${
+                              selectedTab === tab.id
+                                ? 'bg-white/20 text-black'
+                                : 'bg-surface-soft text-text-muted'
+                            }`}
+                          >
                             {tab.count}
                           </span>
                         )}
@@ -209,19 +217,18 @@ export const NotificationPanel = ({
                 </div>
 
                 {/* Notificaciones */}
-                <div className="flex-1 overflow-y-auto">
+                <div className='flex-1 overflow-y-auto'>
                   {getDisplayNotifications().length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-text-muted">
-                      <BellIcon className="h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-center">
-                        {selectedTab === 'all' 
-                          ? 'No hay notificaciones' 
-                          : `No hay notificaciones ${tabs.find(t => t.id === selectedTab)?.name.toLowerCase()}`
-                        }
+                    <div className='flex flex-col items-center justify-center py-12 text-text-muted'>
+                      <BellIcon className='h-12 w-12 mb-4 opacity-50' />
+                      <p className='text-center'>
+                        {selectedTab === 'all'
+                          ? 'No hay notificaciones'
+                          : `No hay notificaciones ${tabs.find(t => t.id === selectedTab)?.name.toLowerCase()}`}
                       </p>
                     </div>
                   ) : (
-                    <div className="p-4 space-y-3">
+                    <div className='p-4 space-y-3'>
                       <AnimatePresence>
                         {getDisplayNotifications().map((notification, index) => (
                           <motion.div
@@ -230,62 +237,66 @@ export const NotificationPanel = ({
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] ${
-                              getNotificationColor(notification.type)
-                            } ${notification.isRead ? 'opacity-60 bg-white/5' : ''}`}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] ${getNotificationColor(
+                              notification.type
+                            )} ${notification.isRead ? 'opacity-60 bg-white/5' : ''}`}
                             onClick={() => handleNotificationClick(notification)}
                           >
-                            <div className="flex items-start space-x-3">
-                              <div className="flex-shrink-0 mt-0.5">
+                            <div className='flex items-start space-x-3'>
+                              <div className='flex-shrink-0 mt-0.5'>
                                 {getNotificationIcon(notification.type)}
                               </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center space-x-2">
-                                    <p className={`text-sm font-medium ${notification.isRead ? 'text-text-muted' : 'text-text-primary'}`}>
+
+                              <div className='flex-1 min-w-0'>
+                                <div className='flex items-center justify-between mb-1'>
+                                  <div className='flex items-center space-x-2'>
+                                    <p
+                                      className={`text-sm font-medium ${notification.isRead ? 'text-text-muted' : 'text-text-primary'}`}
+                                    >
                                       {notification.title}
                                     </p>
                                     {notification.isRead && (
-                                      <span className="text-xs text-green-400 font-medium">✓ Leída</span>
+                                      <span className='text-xs text-green-400 font-medium'>
+                                        ✓ Leída
+                                      </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center space-x-1">
+                                  <div className='flex items-center space-x-1'>
                                     {!notification.isRead && (
                                       <motion.button
-                                        onClick={(e) => {
+                                        onClick={e => {
                                           e.stopPropagation();
                                           onMarkAsRead(notification.id);
                                         }}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="text-text-muted hover:text-text-primary transition-colors"
-                                        title="Marcar como leída"
+                                        className='text-text-muted hover:text-text-primary transition-colors'
+                                        title='Marcar como leída'
                                       >
-                                        <CheckIcon className="h-4 w-4" />
+                                        <CheckIcon className='h-4 w-4' />
                                       </motion.button>
                                     )}
-                                    
+
                                     <motion.button
-                                      onClick={(e) => {
+                                      onClick={e => {
                                         e.stopPropagation();
                                         onDeleteNotification(notification.id);
                                       }}
                                       whileHover={{ scale: 1.1 }}
                                       whileTap={{ scale: 0.9 }}
-                                      className="text-text-muted hover:text-red-400 transition-colors"
-                                      title="Eliminar notificación"
+                                      className='text-text-muted hover:text-red-400 transition-colors'
+                                      title='Eliminar notificación'
                                     >
-                                      <TrashIcon className="h-4 w-4" />
+                                      <TrashIcon className='h-4 w-4' />
                                     </motion.button>
                                   </div>
                                 </div>
-                                
-                                <p className="text-sm text-text-primary/80 mb-2">
+
+                                <p className='text-sm text-text-primary/80 mb-2'>
                                   {notification.message}
                                 </p>
-                                
-                                <div className="flex items-center justify-between text-xs text-text-muted">
+
+                                <div className='flex items-center justify-between text-xs text-text-muted'>
                                   <span>{notification.clientName}</span>
                                   {notification.task?.scheduled_at && (
                                     <span>{formatDate(notification.task.scheduled_at)}</span>
@@ -302,19 +313,19 @@ export const NotificationPanel = ({
 
                 {/* Footer con estadísticas */}
                 {stats.total > 0 && (
-  <div className="p-4 border-t border-[color:var(--color-border-subtle)] bg-surface-soft">
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className='p-4 border-t border-[color:var(--color-border-subtle)] bg-surface-soft'>
+                    <div className='grid grid-cols-3 gap-4 text-center'>
                       <div>
-        <div className="text-lg font-medium text-red-400">{stats.overdue}</div>
-        <div className="text-xs text-text-muted">Vencidas</div>
+                        <div className='text-lg font-medium text-red-400'>{stats.overdue}</div>
+                        <div className='text-xs text-text-muted'>Vencidas</div>
                       </div>
                       <div>
-        <div className="text-lg font-medium text-orange-400">{stats.dueToday}</div>
-        <div className="text-xs text-text-muted">Para hoy</div>
+                        <div className='text-lg font-medium text-orange-400'>{stats.dueToday}</div>
+                        <div className='text-xs text-text-muted'>Para hoy</div>
                       </div>
                       <div>
-        <div className="text-lg font-medium text-green-400">{stats.upcoming}</div>
-        <div className="text-xs text-text-muted">Próximas</div>
+                        <div className='text-lg font-medium text-green-400'>{stats.upcoming}</div>
+                        <div className='text-xs text-text-muted'>Próximas</div>
                       </div>
                     </div>
                   </div>

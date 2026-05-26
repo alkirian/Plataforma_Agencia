@@ -6,14 +6,7 @@
  * Convierte eventos a formato CSV
  */
 export const exportToCSV = (events, clientName = '') => {
-  const headers = [
-    'Título',
-    'Fecha y Hora',
-    'Estado',
-    'Descripción',
-    'Canal',
-    'Prioridad'
-  ];
+  const headers = ['Título', 'Fecha y Hora', 'Estado', 'Descripción', 'Canal', 'Prioridad'];
 
   const csvContent = [
     headers.join(','),
@@ -24,14 +17,14 @@ export const exportToCSV = (events, clientName = '') => {
         `"${event.extendedProps?.status || ''}"`,
         `"${event.extendedProps?.description || ''}"`,
         `"${event.extendedProps?.channel || ''}"`,
-        `"${event.extendedProps?.priority || ''}"`
+        `"${event.extendedProps?.priority || ''}"`,
       ];
       return row.join(',');
-    })
+    }),
   ].join('\n');
 
   downloadFile(
-    csvContent, 
+    csvContent,
     `calendario-${clientName ? clientName.toLowerCase().replace(/\s+/g, '-') : 'eventos'}-${formatDate()}.csv`,
     'text/csv'
   );
@@ -42,7 +35,10 @@ export const exportToCSV = (events, clientName = '') => {
  */
 export const exportToICS = (events, clientName = '') => {
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[-:\.]/g, '').split('T');
+  const timestamp = now
+    .toISOString()
+    .replace(/[-:\.]/g, '')
+    .split('T');
   const dateStamp = timestamp[0] + 'T' + timestamp[1].substring(0, 6) + 'Z';
 
   let icsContent = [
@@ -52,30 +48,39 @@ export const exportToICS = (events, clientName = '') => {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${clientName ? `${clientName} - ` : ''}Calendario Cadence`,
-    'X-WR-TIMEZONE:America/Argentina/Buenos_Aires'
+    'X-WR-TIMEZONE:America/Argentina/Buenos_Aires',
   ];
 
   events.forEach(event => {
     const startDate = new Date(event.start);
-    const endDate = event.end ? new Date(event.end) : new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hora por defecto
-    
-    const formatICSDate = (date) => {
-      return date.toISOString().replace(/[-:\.]/g, '').split('.')[0] + 'Z';
+    const endDate = event.end
+      ? new Date(event.end)
+      : new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hora por defecto
+
+    const formatICSDate = date => {
+      return (
+        date
+          .toISOString()
+          .replace(/[-:\.]/g, '')
+          .split('.')[0] + 'Z'
+      );
     };
 
     const description = [
       event.extendedProps?.description || '',
       event.extendedProps?.channel ? `Canal: ${event.extendedProps.channel}` : '',
       event.extendedProps?.priority ? `Prioridad: ${event.extendedProps.priority}` : '',
-      event.extendedProps?.status ? `Estado: ${event.extendedProps.status}` : ''
-    ].filter(Boolean).join('\\n');
+      event.extendedProps?.status ? `Estado: ${event.extendedProps.status}` : '',
+    ]
+      .filter(Boolean)
+      .join('\\n');
 
     icsContent.push(
       'BEGIN:VEVENT',
       `DTSTART:${formatICSDate(startDate)}`,
       `DTEND:${formatICSDate(endDate)}`,
       `DTSTAMP:${dateStamp}`,
-  `UID:${event.id}@cadence-calendar`,
+      `UID:${event.id}@cadence-calendar`,
       `SUMMARY:${event.title || 'Sin título'}`,
       description ? `DESCRIPTION:${description}` : '',
       event.extendedProps?.status ? `CATEGORIES:${event.extendedProps.status}` : '',
@@ -88,7 +93,7 @@ export const exportToICS = (events, clientName = '') => {
   icsContent.push('END:VCALENDAR');
 
   downloadFile(
-    icsContent.join('\r\n'), 
+    icsContent.join('\r\n'),
     `calendario-${clientName ? clientName.toLowerCase().replace(/\s+/g, '-') : 'eventos'}-${formatDate()}.ics`,
     'text/calendar'
   );
@@ -113,12 +118,12 @@ export const exportToJSON = (events, clientName = '') => {
       channel: event.extendedProps?.channel,
       priority: event.extendedProps?.priority,
       backgroundColor: event.backgroundColor,
-      originalData: event.extendedProps?.originalData
-    }))
+      originalData: event.extendedProps?.originalData,
+    })),
   };
 
   downloadFile(
-    JSON.stringify(exportData, null, 2), 
+    JSON.stringify(exportData, null, 2),
     `calendario-${clientName ? clientName.toLowerCase().replace(/\s+/g, '-') : 'eventos'}-${formatDate()}.json`,
     'application/json'
   );
@@ -131,15 +136,15 @@ const downloadFile = (content, filename, contentType) => {
   const blob = new Blob([content], { type: contentType });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
-  
+
   link.href = url;
   link.download = filename;
   link.style.display = 'none';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   window.URL.revokeObjectURL(url);
 };
 
@@ -154,12 +159,12 @@ const formatDate = () => {
 /**
  * Función para obtener estadísticas de eventos para el resumen de exportación
  */
-export const getExportSummary = (events) => {
+export const getExportSummary = events => {
   const stats = {
     total: events.length,
     byStatus: {},
     byMonth: {},
-    dateRange: null
+    dateRange: null,
   };
 
   if (events.length === 0) return stats;
@@ -173,9 +178,9 @@ export const getExportSummary = (events) => {
   // Estadísticas por mes
   events.forEach(event => {
     if (event.start) {
-      const month = new Date(event.start).toLocaleString('es-ES', { 
-        year: 'numeric', 
-        month: 'long' 
+      const month = new Date(event.start).toLocaleString('es-ES', {
+        year: 'numeric',
+        month: 'long',
       });
       stats.byMonth[month] = (stats.byMonth[month] || 0) + 1;
     }
@@ -183,14 +188,14 @@ export const getExportSummary = (events) => {
 
   // Rango de fechas
   const dates = events
-    .map(event => event.start ? new Date(event.start) : null)
+    .map(event => (event.start ? new Date(event.start) : null))
     .filter(Boolean)
     .sort((a, b) => a - b);
 
   if (dates.length > 0) {
     stats.dateRange = {
       from: dates[0].toLocaleDateString('es-ES'),
-      to: dates[dates.length - 1].toLocaleDateString('es-ES')
+      to: dates[dates.length - 1].toLocaleDateString('es-ES'),
     };
   }
 

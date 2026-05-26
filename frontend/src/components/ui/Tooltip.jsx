@@ -11,7 +11,7 @@ export const Tooltip = ({
   className,
   disabled = false,
   delay = 300,
-  maxWidth = 'max-w-xs'
+  maxWidth = 'max-w-xs',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -21,7 +21,7 @@ export const Tooltip = ({
 
   const showTooltip = () => {
     if (disabled || !content) return;
-    
+
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
       updatePosition();
@@ -40,7 +40,7 @@ export const Tooltip = ({
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipElement = tooltipRef.current;
-    
+
     if (!tooltipElement) return;
 
     const tooltipRect = tooltipElement.getBoundingClientRect();
@@ -52,20 +52,20 @@ export const Tooltip = ({
     // Calculate base position based on side
     switch (side) {
       case 'top':
-        x = triggerRect.left + (triggerRect.width / 2);
+        x = triggerRect.left + triggerRect.width / 2;
         y = triggerRect.top - spacing;
         break;
       case 'bottom':
-        x = triggerRect.left + (triggerRect.width / 2);
+        x = triggerRect.left + triggerRect.width / 2;
         y = triggerRect.bottom + spacing;
         break;
       case 'left':
         x = triggerRect.left - spacing;
-        y = triggerRect.top + (triggerRect.height / 2);
+        y = triggerRect.top + triggerRect.height / 2;
         break;
       case 'right':
         x = triggerRect.right + spacing;
-        y = triggerRect.top + (triggerRect.height / 2);
+        y = triggerRect.top + triggerRect.height / 2;
         break;
     }
 
@@ -80,10 +80,10 @@ export const Tooltip = ({
           break;
         case 'center':
         default:
-          x = x - (tooltipRect.width / 2);
+          x = x - tooltipRect.width / 2;
           break;
       }
-      
+
       if (side === 'top') {
         y = y - tooltipRect.height;
       }
@@ -97,10 +97,10 @@ export const Tooltip = ({
           break;
         case 'center':
         default:
-          y = y - (tooltipRect.height / 2);
+          y = y - tooltipRect.height / 2;
           break;
       }
-      
+
       if (side === 'left') {
         x = x - tooltipRect.width;
       }
@@ -109,7 +109,7 @@ export const Tooltip = ({
     // Keep tooltip within viewport
     const viewport = {
       width: window.innerWidth,
-      height: window.innerHeight
+      height: window.innerHeight,
     };
 
     x = Math.max(spacing, Math.min(x, viewport.width - tooltipRect.width - spacing));
@@ -121,13 +121,13 @@ export const Tooltip = ({
   useEffect(() => {
     if (isVisible) {
       updatePosition();
-      
+
       const handleResize = () => updatePosition();
       const handleScroll = () => hideTooltip();
-      
+
       window.addEventListener('resize', handleResize);
       window.addEventListener('scroll', handleScroll, true);
-      
+
       return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('scroll', handleScroll, true);
@@ -140,7 +140,7 @@ export const Tooltip = ({
       initial: { opacity: 0, scale: 0.95 },
       animate: { opacity: 1, scale: 1 },
       exit: { opacity: 0, scale: 0.95 },
-      transition: { duration: 0.2, ease: 'easeOut' }
+      transition: { duration: 0.2, ease: 'easeOut' },
     };
 
     switch (side) {
@@ -172,21 +172,18 @@ export const Tooltip = ({
             top: position.y,
           }}
           {...getAnimationProps()}
-          role="tooltip"
+          role='tooltip'
         >
           {content}
-          
+
           {/* Arrow */}
           <div
-            className={cn(
-              'absolute w-2 h-2 bg-gray-900 rotate-45',
-              {
-                'bottom-[-4px] left-1/2 transform -translate-x-1/2': side === 'top',
-                'top-[-4px] left-1/2 transform -translate-x-1/2': side === 'bottom',
-                'right-[-4px] top-1/2 transform -translate-y-1/2': side === 'left',
-                'left-[-4px] top-1/2 transform -translate-y-1/2': side === 'right',
-              }
-            )}
+            className={cn('absolute w-2 h-2 bg-gray-900 rotate-45', {
+              'bottom-[-4px] left-1/2 transform -translate-x-1/2': side === 'top',
+              'top-[-4px] left-1/2 transform -translate-x-1/2': side === 'bottom',
+              'right-[-4px] top-1/2 transform -translate-y-1/2': side === 'left',
+              'left-[-4px] top-1/2 transform -translate-y-1/2': side === 'right',
+            })}
           />
         </motion.div>
       )}
@@ -201,7 +198,7 @@ export const Tooltip = ({
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}
         onBlur={hideTooltip}
-        className="inline-block"
+        className='inline-block'
       >
         {children}
       </div>
@@ -212,14 +209,9 @@ export const Tooltip = ({
 
 // Convenience wrapper for help tooltips
 export const HelpTooltip = ({ content, children, ...props }) => (
-  <Tooltip
-    content={content}
-    side="top"
-    maxWidth="max-w-sm"
-    {...props}
-  >
+  <Tooltip content={content} side='top' maxWidth='max-w-sm' {...props}>
     {children || (
-      <span className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-600 text-white rounded-full cursor-help">
+      <span className='inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-600 text-white rounded-full cursor-help'>
         ?
       </span>
     )}
@@ -230,14 +222,14 @@ export const HelpTooltip = ({ content, children, ...props }) => (
 export const ShortcutTooltip = ({ shortcut, description, children, ...props }) => (
   <Tooltip
     content={
-      <div className="space-y-1">
+      <div className='space-y-1'>
         <div>{description}</div>
-        <div className="text-xs text-gray-300">
-          Atajo: <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">{shortcut}</kbd>
+        <div className='text-xs text-gray-300'>
+          Atajo: <kbd className='px-1 py-0.5 bg-gray-700 rounded text-xs'>{shortcut}</kbd>
         </div>
       </div>
     }
-    maxWidth="max-w-sm"
+    maxWidth='max-w-sm'
     {...props}
   >
     {children}

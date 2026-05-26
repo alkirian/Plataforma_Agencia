@@ -3,7 +3,7 @@ import React from 'react';
 
 export const MessageList = ({ messages }) => {
   return (
-    <div className="space-y-3">
+    <div className='space-y-3'>
       {messages.map(msg => (
         <div
           key={msg.id}
@@ -16,7 +16,7 @@ export const MessageList = ({ messages }) => {
                 : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-bl-md'
             }`}
           >
-            <p className="whitespace-pre-wrap">{msg.content}</p>
+            <p className='whitespace-pre-wrap'>{msg.content}</p>
           </div>
         </div>
       ))}

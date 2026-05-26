@@ -15,7 +15,7 @@ export const useSwipeGestures = (options = {}) => {
     preventDefaultTouchmoveEvent = false,
     onTouchStart,
     onTouchMove,
-    onTouchEnd
+    onTouchEnd,
   } = options;
 
   const elementRef = useRef(null);
@@ -26,37 +26,37 @@ export const useSwipeGestures = (options = {}) => {
     const element = elementRef.current;
     if (!element) return;
 
-    const handleTouchStart = (e) => {
+    const handleTouchStart = e => {
       const touch = e.touches[0];
       startPos.current = { x: touch.clientX, y: touch.clientY };
       isTracking.current = true;
-      
+
       onTouchStart?.(e);
     };
 
-    const handleTouchMove = (e) => {
+    const handleTouchMove = e => {
       if (preventDefaultTouchmoveEvent) {
         e.preventDefault();
       }
-      
+
       if (!isTracking.current) return;
-      
+
       onTouchMove?.(e);
     };
 
-    const handleTouchEnd = (e) => {
+    const handleTouchEnd = e => {
       if (!isTracking.current) return;
-      
+
       isTracking.current = false;
       const touch = e.changedTouches[0];
       const endPos = { x: touch.clientX, y: touch.clientY };
-      
+
       const deltaX = endPos.x - startPos.current.x;
       const deltaY = endPos.y - startPos.current.y;
-      
+
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
-      
+
       // Determinar dirección del swipe
       if (Math.max(absDeltaX, absDeltaY) > threshold) {
         if (absDeltaX > absDeltaY) {
@@ -75,13 +75,15 @@ export const useSwipeGestures = (options = {}) => {
           }
         }
       }
-      
+
       onTouchEnd?.(e);
     };
 
     // Agregar event listeners
     element.addEventListener('touchstart', handleTouchStart, { passive: true });
-    element.addEventListener('touchmove', handleTouchMove, { passive: !preventDefaultTouchmoveEvent });
+    element.addEventListener('touchmove', handleTouchMove, {
+      passive: !preventDefaultTouchmoveEvent,
+    });
     element.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     // Cleanup
@@ -99,11 +101,11 @@ export const useSwipeGestures = (options = {}) => {
     preventDefaultTouchmoveEvent,
     onTouchStart,
     onTouchMove,
-    onTouchEnd
+    onTouchEnd,
   ]);
 
   return {
-    ref: elementRef
+    ref: elementRef,
   };
 };
 
@@ -131,40 +133,40 @@ export const usePullToRefresh = ({ onRefresh, threshold = 80 }) => {
   const currentY = useRef(0);
 
   return useSwipeGestures({
-    onTouchStart: (e) => {
+    onTouchStart: e => {
       const touch = e.touches[0];
       startY.current = touch.clientY;
       currentY.current = touch.clientY;
     },
-    onTouchMove: (e) => {
+    onTouchMove: e => {
       const touch = e.touches[0];
       currentY.current = touch.clientY;
-      
+
       const deltaY = currentY.current - startY.current;
-      
+
       // Solo permitir pull-to-refresh si estamos en la parte superior
       if (window.scrollY === 0 && deltaY > 0) {
         const element = e.currentTarget;
         const pullDistance = Math.min(deltaY, threshold * 1.5);
-        
+
         // Aplicar transformación visual
         element.style.transform = `translateY(${pullDistance * 0.3}px)`;
         element.style.transition = 'none';
-        
+
         // Cambiar opacidad basado en la distancia
         const opacity = Math.min(pullDistance / threshold, 1);
-        element.style.opacity = 0.7 + (0.3 * opacity);
+        element.style.opacity = 0.7 + 0.3 * opacity;
       }
     },
-    onTouchEnd: (e) => {
+    onTouchEnd: e => {
       const element = e.currentTarget;
       const deltaY = currentY.current - startY.current;
-      
+
       // Resetear estilos
       element.style.transform = '';
       element.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
       element.style.opacity = '';
-      
+
       // Activar refresh si se alcanzó el threshold
       if (deltaY > threshold && window.scrollY === 0 && !isRefreshing.current) {
         isRefreshing.current = true;
@@ -173,7 +175,7 @@ export const usePullToRefresh = ({ onRefresh, threshold = 80 }) => {
         });
       }
     },
-    preventDefaultTouchmoveEvent: false
+    preventDefaultTouchmoveEvent: false,
   });
 };
 
@@ -192,6 +194,6 @@ export const useSlideGestures = ({ onSlideNext, onSlidePrev, sensitivity = 0.3 }
         onSlidePrev?.();
       }
     },
-    threshold: 30
+    threshold: 30,
   });
 };

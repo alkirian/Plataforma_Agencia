@@ -13,6 +13,9 @@ import {
   ClockIcon,
   CalendarIcon,
   MagnifyingGlassIcon,
+  SparklesIcon,
+  FireIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import {
@@ -26,19 +29,248 @@ import { createScheduleItem } from '../api/schedule.js';
 import { generateCopyFromTrend } from '../api/ai.js';
 
 // ─────────────────────────────────────────────
+// Strategic Coherence Engine
+// ─────────────────────────────────────────────
+
+const computeStrategicMetrics = (insight, client) => {
+  const brandInfo = client?.brand_info || {};
+  const industry = (client?.industry || '').toLowerCase();
+  const audience = (brandInfo.target_audience || '').toLowerCase();
+  const pillars = (brandInfo.content_pillars || []).map(p => String(p || '').toLowerCase());
+  const title = (insight.title || '').toLowerCase();
+  const desc = (insight.description || '').toLowerCase();
+  const action = (insight.suggested_action || '').toLowerCase();
+
+  // 1. Calculate IMPACT POTENTIAL (Engagement/Reach)
+  let impactScore = 55; // default base
+  if (insight.relevance === 'alta') impactScore = 85;
+  else if (insight.relevance === 'media') impactScore = 70;
+
+  // Boosts based on strategic value matching target audience
+  let impactReasons = [];
+  if (audience) {
+    if (
+      audience.includes('joven') ||
+      audience.includes('digital') ||
+      audience.includes('millennial') ||
+      audience.includes('gen z')
+    ) {
+      if (
+        desc.includes('viral') ||
+        desc.includes('meme') ||
+        desc.includes('video') ||
+        desc.includes('tendencia') ||
+        action.includes('tiktok') ||
+        action.includes('reel')
+      ) {
+        impactScore += 10;
+        impactReasons.push('Alto enganche potencial en tu segmento demográfico digital joven.');
+      }
+    }
+    if (
+      audience.includes('profesional') ||
+      audience.includes('b2b') ||
+      audience.includes('empresa') ||
+      audience.includes('corporativo')
+    ) {
+      if (
+        desc.includes('estudio') ||
+        desc.includes('informe') ||
+        desc.includes('análisis') ||
+        desc.includes('datos') ||
+        action.includes('linkedin')
+      ) {
+        impactScore += 10;
+        impactReasons.push(
+          'Gran relevancia y autoridad estratégica para tu audiencia corporativa/B2B.'
+        );
+      }
+    }
+  }
+
+  // Boosts based on matching brand content pillars
+  let matchedPillar = null;
+  for (const pillar of pillars) {
+    if (
+      pillar &&
+      (title.includes(pillar) ||
+        desc.includes(pillar) ||
+        pillar
+          .split(' ')
+          .some(word => word.length > 4 && (title.includes(word) || desc.includes(word))))
+    ) {
+      impactScore += 12;
+      matchedPillar = pillar;
+      impactReasons.push(`Alineación directa con tu pilar de contenido "${pillar}".`);
+      break;
+    }
+  }
+
+  impactScore = Math.min(98, impactScore);
+
+  // 2. Calculate FEASIBILITY (Viabilidad)
+  let feasibilityScore = 75; // default base
+  let formatLabel = 'Publicación Estándar';
+
+  if (
+    action.includes('video') ||
+    action.includes('reel') ||
+    action.includes('tiktok') ||
+    action.includes('grabar') ||
+    action.includes('grabación')
+  ) {
+    feasibilityScore = 60; // video requires recording
+    formatLabel = 'Video Corto (Reel/TikTok)';
+  } else if (
+    action.includes('carrusel') ||
+    action.includes('infografía') ||
+    action.includes('diseño') ||
+    action.includes('visual')
+  ) {
+    feasibilityScore = 80;
+    formatLabel = 'Carrusel / Infografía';
+  } else if (
+    action.includes('post') ||
+    action.includes('texto') ||
+    action.includes('linkedin') ||
+    action.includes('artículo')
+  ) {
+    feasibilityScore = 90;
+    formatLabel = 'Post de Texto / Redacción';
+  }
+
+  // Adjust feasibility based on preferred platforms
+  const preferredPlatforms = (brandInfo.preferred_platforms || []).map(p =>
+    String(p || '').toLowerCase()
+  );
+  if (preferredPlatforms.length > 0) {
+    if (
+      formatLabel.includes('Video') &&
+      (preferredPlatforms.includes('tiktok') ||
+        preferredPlatforms.includes('instagram') ||
+        preferredPlatforms.includes('youtube'))
+    ) {
+      feasibilityScore += 8; // set up for video!
+    }
+    if (formatLabel.includes('Carrusel') && preferredPlatforms.includes('instagram')) {
+      feasibilityScore += 5;
+    }
+    if (formatLabel.includes('Post') && preferredPlatforms.includes('linkedin')) {
+      feasibilityScore += 5;
+    }
+  }
+
+  feasibilityScore = Math.min(95, feasibilityScore);
+
+  // 3. Generate a deeply professional RATIONALE
+  let rationale = '';
+  if (matchedPillar) {
+    rationale = `Esta tendencia es sumamente estratégica para ${client?.name || 'tu marca'} debido a su coincidencia directa con tu pilar de contenido "${matchedPillar.toUpperCase()}". `;
+  } else if (industry) {
+    rationale = `Al pertenecer al sector de ${industry.toUpperCase()}, esta temática representa un punto clave de conversación actual que permite posicionar a ${client?.name || 'tu marca'} como un referente actualizado en el rubro. `;
+  } else {
+    rationale = `Esta tendencia representa una oportunidad valiosa de posicionamiento oportuno. `;
+  }
+
+  if (formatLabel.includes('Video')) {
+    rationale += `Implementar un ${formatLabel.toLowerCase()} impulsará el algoritmo de forma orgánica, ya que es el formato de mayor retención para captar la atención de tu audiencia.`;
+  } else if (formatLabel.includes('Carrusel')) {
+    rationale += `Diseñar un ${formatLabel.toLowerCase()} facilitará la educación de tu audiencia mediante slides visuales de alto valor, aumentando el número de guardados y compartidos.`;
+  } else {
+    rationale += `Publicar un post enfocado en este copy capitalizará la conversación activa del sector de manera rápida y sin complicaciones de producción.`;
+  }
+
+  let alignmentText = 'Alineación Estratégica';
+  let alignmentCls = 'text-blue-400 bg-blue-500/5 border-blue-500/10';
+  if (impactScore >= 85) {
+    alignmentText = 'Oportunidad de Oro (Match Alto)';
+    alignmentCls = 'text-emerald-400 bg-emerald-500/5 border-emerald-500/15';
+  } else if (impactScore < 70) {
+    alignmentText = 'Alineación Específica';
+    alignmentCls = 'text-slate-400 bg-slate-500/5 border-slate-500/10';
+  }
+
+  return {
+    impactScore,
+    feasibilityScore,
+    rationale,
+    formatLabel,
+    alignmentText,
+    alignmentCls,
+    matchedPillar,
+  };
+};
+
+const getChannelInfo = (suggestedAction, client) => {
+  const act = (suggestedAction || '').toLowerCase();
+
+  if (act.includes('tiktok')) {
+    return {
+      label: 'TikTok Video',
+      cls: 'bg-slate-955/80 text-cyan-400 border border-cyan-400/30',
+    };
+  } else if (act.includes('linkedin')) {
+    return {
+      label: 'LinkedIn Post',
+      cls: 'bg-[#0077B5]/10 text-blue-400 border border-[#0077B5]/35',
+    };
+  } else if (
+    act.includes('carrusel') ||
+    act.includes('reel') ||
+    act.includes('instagram') ||
+    act.includes('ig')
+  ) {
+    const isReel = act.includes('video') || act.includes('reel');
+    return {
+      label: isReel ? 'Instagram Reel' : 'Instagram Carrusel',
+      cls: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400 border border-pink-500/25',
+    };
+  } else if (act.includes('youtube') || act.includes('yt') || act.includes('short')) {
+    return {
+      label: 'YouTube Short',
+      cls: 'bg-red-500/10 text-red-400 border border-red-500/25',
+    };
+  }
+
+  // Fallback based on client platforms
+  const platforms = (client?.brand_info?.preferred_platforms || []).map(p =>
+    String(p || '').toLowerCase()
+  );
+  if (platforms.includes('instagram')) {
+    return {
+      label: 'Instagram Post',
+      cls: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400 border border-pink-500/25',
+    };
+  } else if (platforms.includes('linkedin')) {
+    return {
+      label: 'LinkedIn Post',
+      cls: 'bg-[#0077B5]/10 text-blue-400 border border-[#0077B5]/35',
+    };
+  }
+
+  return {
+    label: 'Post Recomendado',
+    cls: 'bg-slate-800 text-slate-300 border border-white/[0.06]',
+  };
+};
+
+// ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 
-const formatDate = (iso) => {
+const formatDate = iso => {
   if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
-const relativeDate = (iso) => {
+const relativeDate = iso => {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
   const hours = Math.floor(diff / 3600000);
@@ -48,23 +280,32 @@ const relativeDate = (iso) => {
   return `Hace ${days} día${days > 1 ? 's' : ''}`;
 };
 
-const relevanceBadge = (rel) => {
+const relevanceBadge = rel => {
   const map = {
-    alta:  { label: 'Relevancia Alta',  cls: 'bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/25' },
-    media: { label: 'Relevancia Media', cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/20' },
-    baja:  { label: 'Relevancia Baja',  cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/20' },
+    alta: {
+      label: 'Relevancia Alta',
+      cls: 'bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/25',
+    },
+    media: {
+      label: 'Relevancia Media',
+      cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+    },
+    baja: {
+      label: 'Relevancia Baja',
+      cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+    },
   };
   return map[rel] || map.media;
 };
 
-const groupReportsByDate = (reportsList) => {
+const groupReportsByDate = reportsList => {
   const groups = {};
   reportsList.forEach(report => {
     const d = new Date(report.generated_at);
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    
+
     let dateStr = '';
     if (d.toDateString() === today.toDateString()) {
       dateStr = 'Hoy';
@@ -73,7 +314,7 @@ const groupReportsByDate = (reportsList) => {
     } else {
       dateStr = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
     }
-    
+
     if (!groups[dateStr]) groups[dateStr] = [];
     groups[dateStr].push(report);
   });
@@ -88,24 +329,25 @@ const EmptyState = ({ onRun, isRunning }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center justify-center py-20 text-center bg-[#0F172A]/40 border border-white/[0.06] rounded-2xl p-8 max-w-2xl mx-auto"
+    className='flex flex-col items-center justify-center py-20 text-center bg-[#0F172A]/40 border border-white/[0.06] rounded-2xl p-8 max-w-2xl mx-auto'
   >
-    <div className="w-16 h-16 rounded-xl bg-slate-800/60 border border-white/[0.08] flex items-center justify-center mb-6">
-      <ArrowTrendingUpIcon className="h-8 w-8 text-slate-400" />
+    <div className='w-16 h-16 rounded-xl bg-slate-800/60 border border-white/[0.08] flex items-center justify-center mb-6'>
+      <ArrowTrendingUpIcon className='h-8 w-8 text-slate-400' />
     </div>
-    <h3 className="text-base font-bold text-white mb-2">Sin reportes generados</h3>
-    <p className="text-xs text-slate-400 max-w-sm mb-8 leading-relaxed">
-      El sistema genera reportes automáticamente cada mañana, o puedes iniciar un análisis global sobre tu marca en este instante.
+    <h3 className='text-base font-bold text-white mb-2'>Sin reportes generados</h3>
+    <p className='text-xs text-slate-400 max-w-sm mb-8 leading-relaxed'>
+      El sistema genera reportes automáticamente cada mañana, o puedes iniciar un análisis global
+      sobre tu marca en este instante.
     </p>
     <button
       onClick={onRun}
       disabled={isRunning}
-      className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold disabled:opacity-50 transition-colors flex items-center gap-2"
+      className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold disabled:opacity-50 transition-colors flex items-center gap-2'
     >
       {isRunning ? (
-        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+        <ArrowPathIcon className='h-4 w-4 animate-spin' />
       ) : (
-        <BoltIcon className="h-4 w-4" />
+        <BoltIcon className='h-4 w-4' />
       )}
       {isRunning ? 'Buscando tendencias...' : 'Generar tendencias ahora'}
     </button>
@@ -125,7 +367,7 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
   const [channel, setChannel] = useState('IG');
   const [priority, setPriority] = useState('medium');
   const [scheduledAt, setScheduledAt] = useState('');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
@@ -135,18 +377,22 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 
     // Set fallback/initial values first
     setTitle(`Idea: ${insight.title.slice(0, 45)}`);
-    setCopy(`💡 Tendencia: ${insight.title}\n\n📝 Descripción: ${insight.description}\n\n🚀 Acción sugerida: ${insight.suggested_action || 'N/A'}`);
+    setCopy(
+      `💡 Tendencia: ${insight.title}\n\n📝 Descripción: ${insight.description}\n\n🚀 Acción sugerida: ${insight.suggested_action || 'N/A'}`
+    );
     setCreativeIdea(`Crear una publicación o video sobre "${insight.title}".`);
     setGoal('Aprovechar tendencia hiper-reciente de mercado.');
-    setDescription(`💡 Tendencia original: ${insight.title}\n🔗 Fuente: ${insight.source_url || 'N/A'}`);
-    
+    setDescription(
+      `💡 Tendencia original: ${insight.title}\n🔗 Fuente: ${insight.source_url || 'N/A'}`
+    );
+
     // Set scheduled date for tomorrow at 10:00 AM local
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
-    
+
     const tzOffset = tomorrow.getTimezoneOffset() * 60000; // in ms
-    const localISODate = (new Date(tomorrow.getTime() - tzOffset)).toISOString().slice(0, 16);
+    const localISODate = new Date(tomorrow.getTime() - tzOffset).toISOString().slice(0, 16);
     setScheduledAt(localISODate);
 
     // Call AI to generate professional copy and creative idea
@@ -178,7 +424,7 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 
   if (!isOpen || !insight) return null;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!title.trim() || !scheduledAt) {
       toast.error('Por favor, completa el título y la fecha.');
@@ -208,92 +454,107 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4'>
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="w-full max-w-2xl bg-[#0F172A] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
+        className='w-full max-w-2xl bg-[#0F172A] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]'
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-slate-900/40">
+        <div className='px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-slate-900/40'>
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className='text-sm font-bold text-white flex items-center gap-2'>
               <span>📅</span> Calendarizar Contenido Sugerido
             </h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">La IA redactará contenido específico adaptado al tono de tu cliente</p>
+            <p className='text-[10px] text-slate-400 mt-0.5'>
+              La IA redactará contenido específico adaptado al tono de tu cliente
+            </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-sm transition-colors">✕</button>
+          <button
+            onClick={onClose}
+            className='text-slate-400 hover:text-white text-sm transition-colors'
+          >
+            ✕
+          </button>
         </div>
 
         {/* AI Processing Status Banner */}
-        <div className="px-6 py-2.5 bg-[#1E293B]/60 border-b border-white/[0.04] flex items-center justify-between text-[11px]">
+        <div className='px-6 py-2.5 bg-[#1E293B]/60 border-b border-white/[0.04] flex items-center justify-between text-[11px]'>
           {isGeneratingAI ? (
-            <div className="flex items-center gap-2 text-blue-400 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+            <div className='flex items-center gap-2 text-blue-400 font-medium'>
+              <span className='w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping' />
               <span>🤖 Redactando copy e idea creativa con IA para {channel}...</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-[#10B981] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+            <div className='flex items-center gap-2 text-[#10B981] font-medium'>
+              <span className='w-1.5 h-1.5 rounded-full bg-[#10B981]' />
               <span>✨ ¡Borrador optimizado con IA y alineado con la identidad de marca!</span>
             </div>
           )}
-          <span className="text-[9px] text-slate-500 font-bold uppercase">OpenAI GPT-4o</span>
+          <span className='text-[9px] text-slate-500 font-bold uppercase'>OpenAI GPT-4o</span>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className='p-6 space-y-4 overflow-y-auto flex-1'>
           {/* Title */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Título de la Publicación</label>
+            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              Título de la Publicación
+            </label>
             <input
-              type="text"
+              type='text'
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-              placeholder="Ej. Post sobre tendencia de mercado"
+              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors'
+              placeholder='Ej. Post sobre tendencia de mercado'
               required
             />
           </div>
 
           {/* Grid: Channel, Priority & Scheduled Date */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Red Social / Canal</label>
+              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+                Red Social / Canal
+              </label>
               <select
                 value={channel}
                 onChange={e => setChannel(e.target.value)}
-                className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer"
+                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer'
               >
-                <option value="IG">Instagram</option>
-                <option value="TikTok">TikTok</option>
-                <option value="LinkedIn">LinkedIn</option>
-                <option value="YT">YouTube</option>
-                <option value="FB">Facebook</option>
-                <option value="Twitter">X / Twitter</option>
+                <option value='IG'>Instagram</option>
+                <option value='TikTok'>TikTok</option>
+                <option value='LinkedIn'>LinkedIn</option>
+                <option value='YT'>YouTube</option>
+                <option value='FB'>Facebook</option>
+                <option value='Twitter'>X / Twitter</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Prioridad</label>
+              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+                Prioridad
+              </label>
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value)}
-                className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer"
+                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer'
               >
-                <option value="low">Baja</option>
-                <option value="medium">Media</option>
-                <option value="high">Alta</option>
-                <option value="urgente">Urgente</option>
+                <option value='low'>Baja</option>
+                <option value='medium'>Media</option>
+                <option value='high'>Alta</option>
+                <option value='urgente'>Urgente</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fecha y Hora</label>
+              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+                Fecha y Hora
+              </label>
               <input
-                type="datetime-local"
+                type='datetime-local'
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
-                className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors"
+                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors'
                 required
               />
             </div>
@@ -301,65 +562,79 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 
           {/* Social Media Post Copy */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Copia / Copy de Redes Sociales (Redactado por IA)</label>
-              {isGeneratingAI && <span className="text-[9px] text-blue-400 animate-pulse font-medium">Re-redactando...</span>}
+            <div className='flex items-center justify-between mb-1.5'>
+              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider'>
+                Copia / Copy de Redes Sociales (Redactado por IA)
+              </label>
+              {isGeneratingAI && (
+                <span className='text-[9px] text-blue-400 animate-pulse font-medium'>
+                  Re-redactando...
+                </span>
+              )}
             </div>
             <textarea
               value={copy}
               onChange={e => setCopy(e.target.value)}
-              className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition-colors h-28 resize-none leading-relaxed"
-              placeholder="El copy completo listo para publicar..."
+              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition-colors h-28 resize-none leading-relaxed'
+              placeholder='El copy completo listo para publicar...'
             />
           </div>
 
           {/* Creative Idea / Visual Focus */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Idea Creativa / Enfoque de Diseño Visual (Sugerido por IA)</label>
+            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              Idea Creativa / Enfoque de Diseño Visual (Sugerido por IA)
+            </label>
             <textarea
               value={creativeIdea}
               onChange={e => setCreativeIdea(e.target.value)}
-              className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none transition-colors h-16 resize-none leading-relaxed"
-              placeholder="Detalle visual o idea del formato del video/imagen..."
+              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none transition-colors h-16 resize-none leading-relaxed'
+              placeholder='Detalle visual o idea del formato del video/imagen...'
             />
           </div>
 
           {/* Strategic Goal / Objective */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Objetivo Estratégico de la Publicación</label>
+            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              Objetivo Estratégico de la Publicación
+            </label>
             <input
-              type="text"
+              type='text'
               value={goal}
               onChange={e => setGoal(e.target.value)}
-              className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-              placeholder="Ej. Aumentar alcance orgánico"
+              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors'
+              placeholder='Ej. Aumentar alcance orgánico'
             />
           </div>
 
           {/* Context original read-only */}
-          <div className="p-3 bg-slate-950/60 rounded-xl border border-white/[0.03] space-y-1">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">Contexto de la Tendencia (Original)</span>
-            <p className="text-[10px] text-slate-400 leading-relaxed font-normal truncate">{insight.description}</p>
+          <div className='p-3 bg-slate-950/60 rounded-xl border border-white/[0.03] space-y-1'>
+            <span className='text-[9px] font-bold text-slate-500 uppercase tracking-wide'>
+              Contexto de la Tendencia (Original)
+            </span>
+            <p className='text-[10px] text-slate-400 leading-relaxed font-normal truncate'>
+              {insight.description}
+            </p>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.06] mt-4">
+          <div className='flex items-center justify-end gap-3 pt-3 border-t border-white/[0.06] mt-4'>
             <button
-              type="button"
+              type='button'
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+              className='px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors'
             >
               Cancelar
             </button>
             <button
-              type="submit"
+              type='submit'
               disabled={isSubmitting || isGeneratingAI}
-              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+              className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 transition-colors'
             >
               {isSubmitting ? (
-                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                <ArrowPathIcon className='h-3.5 w-3.5 animate-spin' />
               ) : (
-                <CalendarIcon className="h-3.5 w-3.5" />
+                <CalendarIcon className='h-3.5 w-3.5' />
               )}
               {isSubmitting ? 'Agregando...' : 'Programar en Calendario'}
             </button>
@@ -374,182 +649,289 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 // Report View Component with Premium Carousel
 // ─────────────────────────────────────────────
 
-const ReportView = ({ report, onCreateEvent }) => {
+const ReportView = ({ report, client, onCreateEvent }) => {
   if (!report) return null;
   const insights = report.insights || [];
-  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = React.useRef(null);
 
-  // Reiniciar slide al cambiar de reporte
-  useEffect(() => {
-    setActiveSlide(0);
-  }, [report.id]);
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -464, behavior: 'smooth' }); // 440px width + 24px gap = 464px
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 464, behavior: 'smooth' });
+    }
+  };
 
   if (insights.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-white/[0.08] bg-slate-900/20 p-8 text-center">
-        <LightBulbIcon className="h-8 w-8 text-slate-500 mx-auto mb-3" />
-        <p className="text-sm text-white font-semibold mb-1">Sin tendencias nuevas hoy</p>
-        <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-          La búsqueda web del último mes no arrojó tendencias nuevas o diferentes respecto al análisis anterior. ¡El mercado se mantiene estable! Volveremos a buscar automáticamente mañana.
+      <div className='rounded-xl border border-dashed border-white/[0.08] bg-slate-900/20 p-8 text-center'>
+        <LightBulbIcon className='h-8 w-8 text-slate-500 mx-auto mb-3' />
+        <p className='text-sm text-white font-semibold mb-1'>Sin tendencias nuevas hoy</p>
+        <p className='text-xs text-slate-400 max-w-md mx-auto leading-relaxed'>
+          La búsqueda web del último mes no arrojó tendencias nuevas o diferentes respecto al
+          análisis anterior. ¡El mercado se mantiene estable! Volveremos a buscar automáticamente
+          mañana.
         </p>
       </div>
     );
   }
 
-  const activeInsight = insights[activeSlide];
-  const badge = relevanceBadge(activeInsight.relevance);
-  const reportTitle = report.title || `Análisis: ${(report.keywords || []).slice(0, 3).join(', ') || 'General'}`;
-
-  const nextSlide = () => {
-    setActiveSlide(prev => (prev + 1) % insights.length);
-  };
-
-  const prevSlide = () => {
-    setActiveSlide(prev => (prev - 1 + insights.length) % insights.length);
-  };
+  const reportTitle =
+    report.title || `Análisis: ${(report.keywords || []).slice(0, 3).join(', ') || 'General'}`;
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
+      {/* CSS inyectado localmente para ocultar la barra de desplazamiento horizontal */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+
       {/* Title & Metadata */}
-      <div className="border-b border-white/[0.04] pb-4">
-        <h3 className="text-lg font-bold text-white tracking-tight">{reportTitle}</h3>
-        
-        <div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-xs text-slate-400">
-          <span className="flex items-center gap-1.5 bg-slate-900/60 border border-white/[0.05] px-3 py-1 rounded-lg">
-            <ClockIcon className="h-3.5 w-3.5 text-slate-500" />
-            {formatDate(report.generated_at)}
-          </span>
-          <span className="flex items-center gap-1.5 bg-slate-900/60 border border-white/[0.05] px-3 py-1 rounded-lg">
-            <SignalIcon className="h-3.5 w-3.5 text-slate-500" />
-            <span>{insights.length} tendencia{insights.length !== 1 ? 's' : ''} detectada{insights.length !== 1 ? 's' : ''}</span>
-          </span>
+      <div className='border-b border-white/[0.04] pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
+        <div>
+          <h3 className='text-2xl font-black font-title text-white tracking-tight'>
+            {reportTitle}
+          </h3>
+
+          {/* Keywords */}
+          {report.keywords && report.keywords.length > 0 && (
+            <div className='flex flex-wrap gap-2 mt-3.5'>
+              {report.keywords.map((kw, idx) => (
+                <span
+                  key={idx}
+                  className='text-[11px] font-extrabold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-lg'
+                >
+                  #{kw}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Scan Statistics Header Strip */}
+      <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400'>
+            <ClockIcon className='h-5 w-5' />
+          </div>
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Fecha de Escaneo
+            </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {formatDate(report.generated_at)}
+            </p>
+          </div>
         </div>
 
-        {/* Keywords */}
-        {report.keywords && report.keywords.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {report.keywords.map((kw, idx) => (
-              <span key={idx} className="text-[10px] bg-slate-800/80 text-slate-300 border border-white/[0.04] px-2 py-0.5 rounded">
-                #{kw}
-              </span>
-            ))}
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400'>
+            <SignalIcon className='h-5 w-5' />
           </div>
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Análisis
+            </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {insights.length}{' '}
+              {insights.length === 1 ? 'tendencia detectada' : 'tendencias detectadas'}
+            </p>
+          </div>
+        </div>
+
+        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
+          <div className='w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400'>
+            <BoltIcon className='h-5 w-5' />
+          </div>
+          <div>
+            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
+              Impacto Promedio
+            </p>
+            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
+              {insights.some(i => i.relevance === 'alta') ? 'Muy Alto' : 'Estable / Moderado'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* HORIZONTAL CAROUSEL OF PREMIUM TREND CARDS WITH programmatic arrows */}
+      <div className='relative w-full group/carousel'>
+        {/* Left Arrow Button */}
+        {insights.length > 1 && (
+          <button
+            onClick={scrollLeft}
+            className='absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
+            title='Anterior'
+          >
+            <span className='text-base font-black'>←</span>
+          </button>
         )}
-      </div>
 
-      {/* Summary card */}
-      <div className="rounded-xl border border-white/[0.06] bg-[#1E293B]/10 p-4">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1">Resumen Ejecutivo del Escaneo</p>
-        <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{report.summary}</p>
-      </div>
-
-      {/* CAROUSEL CONTROLLER */}
-      <div className="relative max-w-2xl mx-auto w-full pt-2">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeSlide}
-            initial={{ opacity: 0, x: 15 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -15 }}
-            transition={{ duration: 0.2 }}
-            className="bg-[#1E293B]/15 border border-white/[0.08] rounded-2xl p-6 md:p-8 flex flex-col gap-5 min-h-[460px] shadow-lg relative overflow-hidden"
+        {/* Right Arrow Button */}
+        {insights.length > 1 && (
+          <button
+            onClick={scrollRight}
+            className='absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
+            title='Siguiente'
           >
-            {/* Header info inside slide */}
-            <div className="flex items-center justify-between gap-3 border-b border-white/[0.04] pb-4">
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10">
-                Tendencia {activeSlide + 1} de {insights.length}
-              </span>
-              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${badge.cls}`}>
-                {badge.label}
-              </span>
-            </div>
+            <span className='text-base font-black'>→</span>
+          </button>
+        )}
 
-            {/* Title */}
-            <h4 className="text-base md:text-lg font-bold text-white leading-snug">{activeInsight.title}</h4>
+        <div
+          ref={scrollRef}
+          className='flex gap-6 overflow-x-auto pb-4 pt-2 snap-x snap-mandatory scroll-smooth w-full hide-scrollbar'
+        >
+          {insights.map((insight, idx) => {
+            const metrics = computeStrategicMetrics(insight, client);
+            const channel = getChannelInfo(insight.suggested_action, client);
+            const badge = relevanceBadge(insight.relevance);
 
-            {/* Description */}
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-normal">{activeInsight.description}</p>
-
-            {/* Extra information & Mockup draft */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div className="rounded-xl bg-slate-900/60 border border-white/[0.04] p-4">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-blue-400 mb-1 flex items-center gap-1">
-                  <span>💡</span> Borrador de Copia / Acción
-                </p>
-                <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                  {activeInsight.suggested_action || "Crear publicación enfocada sobre este ángulo en las redes."}
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-slate-900/60 border border-white/[0.04] p-4">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[#10B981] mb-1 flex items-center gap-1">
-                  <span>🎯</span> Enfoque y Justificación
-                </p>
-                <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                  Esta idea aprovecha el interés hiper-reciente del último mes detectado en internet, adaptándose al tono e identidad de la marca.
-                </p>
-              </div>
-            </div>
-
-            {/* Source & Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto pt-4 border-t border-white/[0.04]">
-              {/* Source Link */}
-              {activeInsight.source_url ? (
-                <a
-                  href={activeInsight.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors truncate max-w-full sm:max-w-[45%]"
-                >
-                  <LinkIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">{activeInsight.source_url.replace(/^https?:\/\//, '').split('/')[0]}</span>
-                </a>
-              ) : (
-                <span />
-              )}
-
-              {/* Calendarize trigger */}
-              <button
-                onClick={() => onCreateEvent(activeInsight)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-5 py-2.5 transition-colors shadow-md"
+            return (
+              <motion.div
+                key={insight.id || idx}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: idx * 0.05 }}
+                className='bg-slate-900/40 border border-white/[0.06] hover:border-blue-500/30 rounded-[24px] p-7 flex flex-col gap-5 shadow-xl hover:-translate-y-1 hover:shadow-blue-500/[0.02] transition-all relative overflow-hidden backdrop-blur-md group min-w-[440px] w-[440px] max-w-[440px] snap-start shrink-0'
               >
-                <CalendarIcon className="h-4 w-4" />
-                Calendarizar esta Idea
-              </button>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+                {/* Decorative radial background glow */}
+                <div className='absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors' />
 
-        {/* Carousel Navigation buttons */}
-        <div className="flex items-center justify-between gap-4 mt-4 px-2">
-          <button
-            onClick={prevSlide}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/20 bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-bold"
-            title="Anterior"
-          >
-            ←
-          </button>
-          
-          {/* Slide Indicator Dots */}
-          <div className="flex items-center gap-1.5">
-            {insights.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveSlide(idx)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  idx === activeSlide ? 'bg-blue-500 w-4' : 'bg-white/10 hover:bg-white/20'
-                }`}
-              />
-            ))}
-          </div>
+                {/* Header: Recommended social channel & Relevance */}
+                <div className='flex items-center justify-between gap-3 border-b border-white/[0.04] pb-3.5'>
+                  <span
+                    className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-lg ${channel.cls}`}
+                  >
+                    {channel.label}
+                  </span>
 
-          <button
-            onClick={nextSlide}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/20 bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-bold"
-            title="Siguiente"
-          >
-            →
-          </button>
+                  <span
+                    className={`text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${badge.cls}`}
+                  >
+                    <span className='w-1.5 h-1.5 rounded-full bg-current animate-pulse' />
+                    {badge.label}
+                  </span>
+                </div>
+
+                {/* Title & Description */}
+                <div className='space-y-2'>
+                  <h4 className='text-[16px] font-black text-white leading-snug tracking-tight group-hover:text-blue-400 transition-colors'>
+                    {insight.title}
+                  </h4>
+                  <p className='text-[13px] text-slate-300 leading-relaxed font-medium'>
+                    {insight.description}
+                  </p>
+                </div>
+
+                {/* Coherent Strategic Metrics */}
+                <div className='space-y-3.5 py-1'>
+                  {/* Impact score */}
+                  <div className='space-y-1.5'>
+                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
+                      <span className='flex items-center gap-1'>🎯 Potencial de Impacto</span>
+                      <span className='text-blue-400 font-black text-[12px]'>
+                        {metrics.impactScore}%
+                      </span>
+                    </div>
+                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
+                      <div
+                        className='bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500'
+                        style={{ width: `${metrics.impactScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Feasibility score */}
+                  <div className='space-y-1.5'>
+                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
+                      <span className='flex items-center gap-1'>🛠️ Viabilidad de Producción</span>
+                      <span className='text-[#10B981] font-black text-[12px]'>
+                        {metrics.feasibilityScore}%
+                      </span>
+                    </div>
+                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
+                      <div
+                        className='bg-gradient-to-r from-[#10B981] to-[#06B6D4] h-full rounded-full transition-all duration-500'
+                        style={{ width: `${metrics.feasibilityScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Match badge & alignment label */}
+                  <div className='flex flex-wrap items-center gap-2 pt-1.5'>
+                    <span
+                      className={`text-[9.5px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded border ${metrics.alignmentCls}`}
+                    >
+                      {metrics.alignmentText}
+                    </span>
+
+                    {metrics.matchedPillar && (
+                      <span className='text-[9.5px] font-extrabold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/25 px-2.5 py-1 rounded'>
+                        Match con Pilar: {metrics.matchedPillar}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tactical Rationale */}
+                <div className='rounded-xl bg-slate-955/50 border border-white/[0.04] p-3.5 text-[12.5px] leading-relaxed text-slate-300 flex flex-col gap-1.5'>
+                  <span className='text-[10.5px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1'>
+                    <SparklesIcon className='h-3.5 w-3.5 text-indigo-400' /> Por qué funciona para
+                    esta marca
+                  </span>
+                  <p className='font-medium text-slate-200'>{metrics.rationale}</p>
+                </div>
+
+                {/* Action Draft */}
+                <div className='rounded-xl bg-blue-500/[0.02] border-l-2 border-blue-500 p-3.5 text-[12.5px] leading-relaxed text-slate-250 flex flex-col gap-1.5 mt-auto'>
+                  <span className='text-[10.5px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1'>
+                    <span>💡</span> Borrador de Copia / Acción
+                  </span>
+                  <p className='font-semibold text-slate-100'>
+                    {insight.suggested_action ||
+                      'Crear publicación enfocada sobre este ángulo en las redes.'}
+                  </p>
+                </div>
+
+                {/* Source Link & Calendarize */}
+                <div className='flex items-center justify-between gap-3 pt-4 border-t border-white/[0.04] mt-2'>
+                  {insight.source_url ? (
+                    <a
+                      href={insight.source_url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 font-bold transition-colors truncate max-w-[45%]'
+                    >
+                      <LinkIcon className='h-3.5 w-3.5 flex-shrink-0' />
+                      <span className='truncate'>Ver fuente</span>
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+
+                  <button
+                    onClick={() => onCreateEvent(insight)}
+                    className='flex items-center gap-2 text-[12px] font-black text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-5 py-2.5 transition-all duration-150 shadow-md hover:shadow-[0_0_12px_rgba(37,99,235,0.45)]'
+                  >
+                    <CalendarIcon className='h-4 w-4' />
+                    Calendarizar Idea
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -561,31 +943,44 @@ const ReportView = ({ report, onCreateEvent }) => {
 // ─────────────────────────────────────────────
 
 const HistoryItem = ({ report, isActive, onClick, isGlobal }) => {
-  const title = report.title || `Análisis: ${(report.keywords || []).slice(0, 2).join(', ') || 'General'}`;
-  const subtitle = isGlobal && report.clients?.name
-    ? report.clients.name
-    : (report.keywords || []).slice(0, 2).join(' · ');
+  const title =
+    report.title || `Análisis: ${(report.keywords || []).slice(0, 2).join(', ') || 'General'}`;
+  const subtitle =
+    isGlobal && report.clients?.name
+      ? report.clients.name
+      : (report.keywords || []).slice(0, 2).join(' · ');
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150 ${
+      className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 hover:translate-x-1 flex flex-col gap-1.5 ${
         isActive
-          ? 'bg-slate-800/40 border-white/[0.08] text-white shadow-md'
-          : 'border-transparent text-slate-400 hover:bg-slate-900/50 hover:text-white'
+          ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/30 text-white shadow-lg shadow-blue-500/[0.02]'
+          : 'border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-white'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${isActive ? 'text-white' : 'text-slate-300'}`}>
+      <div className='flex items-center gap-2 w-full'>
+        {isActive && (
+          <span className='w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0' />
+        )}
+        <p
+          className={`text-[11px] font-extrabold leading-snug line-clamp-2 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-355 group-hover:text-white'}`}
+        >
           {title}
         </p>
       </div>
-      <div className="flex items-center justify-between gap-2 mt-2">
-        <span className={`text-[10px] font-medium truncate max-w-[80%] ${isGlobal && report.clients?.name ? 'text-blue-400 font-bold' : 'text-slate-500'}`}>
+      <div className='flex items-center justify-between gap-2 w-full'>
+        <span
+          className={`text-[9px] font-semibold truncate max-w-[80%] uppercase tracking-wider ${isGlobal && report.clients?.name ? 'text-blue-400 font-bold' : 'text-slate-500'}`}
+        >
           {subtitle}
         </span>
-        <span className="text-[9px] text-slate-500 whitespace-nowrap">
-          {new Date(report.generated_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs
+        <span className='text-[9px] text-slate-500 whitespace-nowrap font-medium bg-slate-955/40 px-1.5 py-0.5 rounded border border-white/[0.03]'>
+          {new Date(report.generated_at).toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}{' '}
+          hs
         </span>
       </div>
     </button>
@@ -630,7 +1025,7 @@ export const TrendsPage = () => {
   }, []);
 
   // Obtener reportes de un cliente específico
-  const fetchClientReports = useCallback(async (clientId) => {
+  const fetchClientReports = useCallback(async clientId => {
     try {
       const data = await getTrendReports(clientId, 15);
       setClientReports(data);
@@ -678,7 +1073,9 @@ export const TrendsPage = () => {
     setPollingActive(true);
     try {
       await runTrendsNow();
-      toast.success('Análisis global iniciado para todos los clientes de la agencia.', { duration: 4000 });
+      toast.success('Análisis global iniciado para todos los clientes de la agencia.', {
+        duration: 4000,
+      });
       // Detener polling luego de 60s
       setTimeout(() => {
         setPollingActive(false);
@@ -697,7 +1094,10 @@ export const TrendsPage = () => {
     setPollingActive(true);
     try {
       await runTrendsForClient(selectedClientId, customKeywords);
-      toast.success('Análisis de tendencias iniciado. Buscando información hiper-reciente del último mes...', { duration: 4500 });
+      toast.success(
+        'Análisis de tendencias iniciado. Buscando información hiper-reciente del último mes...',
+        { duration: 4500 }
+      );
       setTimeout(() => {
         setPollingActive(false);
         setIsRunning(false);
@@ -711,42 +1111,50 @@ export const TrendsPage = () => {
 
   const handleRun = selectedClientId === 'all' ? handleRunAll : handleRunForClient;
 
-  const handleCreateEvent = (insight) => {
+  const handleCreateEvent = insight => {
     setSelectedInsight(insight);
     setIsModalOpen(true);
   };
 
   // Reporte activo a mostrar
-  const activeReport = selectedClientId === 'all'
-    ? latestReports.find(r => r.id === activeReportId) || latestReports[0] || null
-    : clientReports.find(r => r.id === activeReportId) || null;
+  const activeReport =
+    selectedClientId === 'all'
+      ? latestReports.find(r => r.id === activeReportId) || latestReports[0] || null
+      : clientReports.find(r => r.id === activeReportId) || null;
 
   const historyList = selectedClientId === 'all' ? latestReports : clientReports;
   const hasReports = historyList.length > 0;
 
   // Nombre del cliente activo en vista "all"
-  const activeClientName = selectedClientId === 'all'
-    ? activeReport?.clients?.name || null
-    : clients.find(c => c.id === selectedClientId)?.name || null;
+  const activeClientName =
+    selectedClientId === 'all'
+      ? activeReport?.clients?.name || null
+      : clients.find(c => c.id === selectedClientId)?.name || null;
+
+  // Cliente activo para cálculos de métricas coherentes
+  const activeClient =
+    selectedClientId === 'all'
+      ? clients.find(c => c.id === activeReport?.client_id)
+      : clients.find(c => c.id === selectedClientId);
 
   // Agrupado de historial por fecha
   const groupedReports = groupReportsByDate(historyList);
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-2 sm:px-4 space-y-6">
+    <div className='w-full max-w-full py-6 px-4 sm:px-6 md:px-8 xl:px-12 space-y-6'>
       {/* ─── Page Header ─── */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-5"
+        className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-5'
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1E293B]/40 border border-white/[0.08] flex items-center justify-center">
-            <ArrowTrendingUpIcon className="h-5 w-5 text-blue-400" />
+        <div className='flex items-center gap-3'>
+          <div className='w-10 h-10 rounded-xl bg-[#1E293B]/40 border border-white/[0.08] flex items-center justify-center'>
+            <ArrowTrendingUpIcon className='h-5 w-5 text-blue-400' />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Monitoreo General de Tendencias</h1>
-            <p className="text-xs text-slate-400">
+            <h1 className='text-xl font-bold text-white'>Monitoreo General de Tendencias</h1>
+            <p className='text-xs text-slate-400'>
               Escaneo web diario mediante inteligencia artificial para tu cartera de clientes
             </p>
           </div>
@@ -754,42 +1162,44 @@ export const TrendsPage = () => {
             <motion.div
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10"
+              className='flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10'
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span className='w-1.5 h-1.5 rounded-full bg-blue-500' />
               Escaneando fuentes...
             </motion.div>
           )}
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
+        <div className='flex items-center gap-3 flex-wrap w-full sm:w-auto'>
           {/* Client selector */}
-          <div className="relative">
+          <div className='relative'>
             <select
-              id="trends-client-selector"
+              id='trends-client-selector'
               value={selectedClientId}
               onChange={e => setSelectedClientId(e.target.value)}
-              className="bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-3 pr-9 py-2 text-sm text-white focus:outline-none transition-colors cursor-pointer appearance-none min-w-[200px]"
+              className='bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-3 pr-9 py-2 text-sm text-white focus:outline-none transition-colors cursor-pointer appearance-none min-w-[200px]'
             >
-              <option value="all">Todos los clientes</option>
+              <option value='all'>Todos los clientes</option>
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
-            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <ChevronDownIcon className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none' />
           </div>
 
           {/* Custom Keywords Search Override (Only for specific client) */}
           {selectedClientId !== 'all' && (
-            <div className="relative w-full sm:w-64">
-              <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <div className='relative w-full sm:w-64'>
+              <MagnifyingGlassIcon className='absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500' />
               <input
-                type="text"
+                type='text'
                 value={customKeywords}
                 onChange={e => setCustomKeywords(e.target.value)}
-                placeholder="Buscar conceptos customizados..."
-                className="w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors"
+                placeholder='Buscar conceptos customizados...'
+                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors'
                 disabled={isRunning}
               />
             </div>
@@ -797,15 +1207,15 @@ export const TrendsPage = () => {
 
           {/* Run button */}
           <button
-            id="run-trends-btn"
+            id='run-trends-btn'
             onClick={handleRun}
             disabled={isRunning}
-            className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5"
+            className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5'
           >
             {isRunning ? (
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              <ArrowPathIcon className='h-4 w-4 animate-spin' />
             ) : (
-              <BoltIcon className="h-4 w-4" />
+              <BoltIcon className='h-4 w-4' />
             )}
             {isRunning
               ? 'Escaneando...'
@@ -818,36 +1228,35 @@ export const TrendsPage = () => {
 
       {/* ─── Main content layout ─── */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-32">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 rounded-full border-2 border-slate-500 border-t-transparent animate-spin" />
-            <p className="text-sm text-slate-400">Recuperando reportes de tendencias...</p>
+        <div className='flex items-center justify-center py-32'>
+          <div className='flex flex-col items-center gap-4'>
+            <div className='w-8 h-8 rounded-full border-2 border-slate-500 border-t-transparent animate-spin' />
+            <p className='text-sm text-slate-400'>Recuperando reportes de tendencias...</p>
           </div>
         </div>
       ) : !hasReports ? (
         <EmptyState onRun={handleRun} isRunning={isRunning} />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-
+        <div className='grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start'>
           {/* ─── Sidebar: History / Client list grouped by Date ─── */}
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            className="rounded-xl border border-white/[0.06] bg-[#121A2C]/20 p-4 space-y-4 lg:sticky lg:top-24 max-h-[75vh] overflow-y-auto"
+            className='rounded-xl border border-white/[0.06] bg-[#121A2C]/20 p-4 space-y-4 lg:sticky lg:top-24 max-h-[75vh] overflow-y-auto'
           >
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 border-b border-white/[0.04] pb-2">
+            <p className='text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 border-b border-white/[0.04] pb-2'>
               {selectedClientId === 'all' ? 'Último reporte por cliente' : 'Historial de Búsquedas'}
             </p>
 
-            <div className="space-y-4">
-              {Object.keys(groupedReports).map((dateGroup) => (
-                <div key={dateGroup} className="space-y-1">
+            <div className='space-y-4'>
+              {Object.keys(groupedReports).map(dateGroup => (
+                <div key={dateGroup} className='space-y-1'>
                   {/* Date marker Header with Larger Title */}
-                  <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider px-1 py-0.5">
+                  <h4 className='text-[10px] font-bold text-blue-400 uppercase tracking-wider px-1 py-0.5'>
                     {dateGroup}
                   </h4>
-                  
-                  <div className="space-y-1 pl-0.5 border-l border-white/[0.03]">
+
+                  <div className='space-y-1 pl-0.5 border-l border-white/[0.03]'>
                     {groupedReports[dateGroup].map(report => (
                       <HistoryItem
                         key={report.id}
@@ -867,31 +1276,32 @@ export const TrendsPage = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-w-0 bg-[#0F172A]/20 border border-white/[0.04] rounded-2xl p-6 lg:p-8"
+            className='min-w-0 bg-[#0F172A]/20 border border-white/[0.04] rounded-2xl p-6 lg:p-8'
           >
             {/* Client name badge (when viewing all) */}
             {selectedClientId === 'all' && activeClientName && (
-              <div className="flex items-center gap-2 mb-4 bg-slate-900/50 border border-white/[0.05] w-fit px-3 py-1.5 rounded-xl">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cliente analizado:</span>
-                <span className="text-xs text-white font-bold">
-                  {activeClientName}
+              <div className='flex items-center gap-2 mb-4 bg-slate-900/50 border border-white/[0.05] w-fit px-3 py-1.5 rounded-xl'>
+                <span className='text-[10px] font-bold uppercase tracking-wider text-slate-500'>
+                  Cliente analizado:
                 </span>
+                <span className='text-xs text-white font-bold'>{activeClientName}</span>
               </div>
             )}
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode='wait'>
               {activeReport ? (
                 <ReportView
                   key={activeReport.id}
                   report={activeReport}
+                  client={activeClient}
                   onCreateEvent={handleCreateEvent}
                 />
               ) : (
                 <motion.div
-                  key="no-report"
+                  key='no-report'
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex items-center justify-center py-24 text-slate-400 text-xs"
+                  className='flex items-center justify-center py-24 text-slate-400 text-xs'
                 >
                   Selecciona un reporte de tendencias para ver los detalles estratégicos.
                 </motion.div>
@@ -900,20 +1310,6 @@ export const TrendsPage = () => {
           </motion.div>
         </div>
       )}
-
-      {/* ─── Info footer ─── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-[#1E293B]/20 p-5 text-xs text-slate-400 max-w-4xl"
-      >
-        <CalendarDaysIcon className="h-5 w-5 flex-shrink-0 text-slate-500 mt-0.5" />
-        <div className="leading-relaxed">
-          <span className="font-bold text-white">Monitoreo Automatizado de Tendencias</span>
-          {' '}— Cada mañana a las 7:00 AM, el sistema ejecuta de forma automática una consulta web hiper-reciente del último mes a través de Tavily y GPT, adaptándose a la industria y pilares de marca de cada cliente para identificar oportunidades estratégicas de marketing digital.
-        </div>
-      </motion.div>
 
       {/* ─── Event Drafting Modal ─── */}
       <AnimatePresence>

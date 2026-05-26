@@ -11,7 +11,7 @@ import { TASK_STATES } from '../constants/taskStates';
 export const useClientStats = (clientId, clientPreloaded = null) => {
   // Si ya tenemos los datos precargados, no hacemos la consulta a la base de datos
   const hasPreloaded = clientPreloaded && Array.isArray(clientPreloaded.schedule_items);
-  
+
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['client-stats', clientId],
     queryFn: () => getSchedule(clientId),
@@ -34,8 +34,13 @@ export const useClientStats = (clientId, clientPreloaded = null) => {
     // Contar por estado
     sourceEvents.forEach(event => {
       const status = (event.status || 'pendiente').toLowerCase();
-      
-      if (status === 'publicado' || status === 'completado' || status === 'aprobado' || status === 'listo-publicar') {
+
+      if (
+        status === 'publicado' ||
+        status === 'completado' ||
+        status === 'aprobado' ||
+        status === 'listo-publicar'
+      ) {
         stats.completed++;
       } else if (status === 'en-progreso' || status === 'en-diseño' || status === 'en-revision') {
         stats.inProgress++;
@@ -62,7 +67,7 @@ export const useClientStats = (clientId, clientPreloaded = null) => {
  */
 export const useMultipleClientStats = (clients = []) => {
   const statsMap = {};
-  
+
   clients.forEach(client => {
     const events = client.schedule_items || [];
 
@@ -77,8 +82,13 @@ export const useMultipleClientStats = (clients = []) => {
     if (events.length > 0) {
       events.forEach(event => {
         const status = (event.status || 'pendiente').toLowerCase();
-        
-        if (status === 'publicado' || status === 'completado' || status === 'aprobado' || status === 'listo-publicar') {
+
+        if (
+          status === 'publicado' ||
+          status === 'completado' ||
+          status === 'aprobado' ||
+          status === 'listo-publicar'
+        ) {
           stats.completed++;
         } else if (status === 'en-progreso' || status === 'en-diseño' || status === 'en-revision') {
           stats.inProgress++;

@@ -6,7 +6,6 @@ import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
 import { getLatestTrendReports } from '../api/trends';
 
-
 /**
  * Hook para manejar notificaciones y recordatorios
  */
@@ -43,7 +42,7 @@ export const useNotifications = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      
+
       // Si no hay sesión, limpiar notificaciones
       if (!session) {
         setNotifications([]);
@@ -90,7 +89,7 @@ export const useNotifications = () => {
         createdAt: now,
       });
     }
-    
+
     // Tarea para hoy
     else if (daysDiff === 0 && task.status === 'pendiente') {
       reminders.push({
@@ -105,7 +104,7 @@ export const useNotifications = () => {
         createdAt: now,
       });
     }
-    
+
     // Tarea para mañana
     else if (daysDiff === 1 && task.status === 'pendiente') {
       reminders.push({
@@ -120,7 +119,7 @@ export const useNotifications = () => {
         createdAt: now,
       });
     }
-    
+
     // Tarea próxima (2-3 días)
     else if (daysDiff >= 2 && daysDiff <= 3 && task.status === 'pendiente') {
       reminders.push({
@@ -142,15 +141,15 @@ export const useNotifications = () => {
   // Función para obtener todas las tareas de todos los clientes (Optimizado: en memoria, O(1) red)
   const getAllTasks = useCallback(async () => {
     if (!isEnabled || !session) return [];
-    
+
     try {
       const response = await getClients();
       const currentClients = response?.data || [];
-      
+
       if (currentClients.length === 0) return [];
 
       const allTasks = [];
-      
+
       for (const client of currentClients) {
         const schedule = client.schedule_items || [];
         const tasksWithClient = schedule.map(task => ({
@@ -160,7 +159,7 @@ export const useNotifications = () => {
         }));
         allTasks.push(...tasksWithClient);
       }
-      
+
       return allTasks;
     } catch (error) {
       // Si el error es por token inválido, no loguearlo como error
@@ -191,7 +190,7 @@ export const useNotifications = () => {
       try {
         const latestTrends = await getLatestTrendReports();
         const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        
+
         latestTrends.forEach(report => {
           const reportTime = new Date(report.generated_at).getTime();
           // Solo notificar si se generó en las últimas 24 horas y tiene nuevos insights
@@ -216,7 +215,7 @@ export const useNotifications = () => {
 
       // Filtrar notificaciones duplicadas y eliminadas
       const uniqueNotifications = newNotifications.filter(
-        (notification, index, self) => 
+        (notification, index, self) =>
           index === self.findIndex(n => n.id === notification.id) &&
           !deletedNotifications.has(notification.id)
       );
@@ -224,15 +223,14 @@ export const useNotifications = () => {
       // Marcar las notificaciones como leídas o no leídas
       const notificationsWithReadStatus = uniqueNotifications.map(notification => ({
         ...notification,
-        isRead: readNotifications.has(notification.id)
+        isRead: readNotifications.has(notification.id),
       }));
 
       setNotifications(notificationsWithReadStatus);
 
       // Mostrar toasts para notificaciones de alta prioridad que son nuevas y no se han mostrado antes
-      const highPriorityNew = uniqueNotifications.filter(n => 
-        n.priority === 'high' && 
-        !toastShownNotifications.has(n.id)
+      const highPriorityNew = uniqueNotifications.filter(
+        n => n.priority === 'high' && !toastShownNotifications.has(n.id)
       );
 
       if (highPriorityNew.length > 0) {
@@ -240,16 +238,16 @@ export const useNotifications = () => {
         if (toastTimeoutRef.current) {
           clearTimeout(toastTimeoutRef.current);
         }
-        
+
         // Debounce de 1 segundo para evitar toasts múltiples
         toastTimeoutRef.current = setTimeout(() => {
           const newToastShown = new Set(toastShownNotifications);
-          
+
           // Mostrar solo un toast resumen si hay múltiples notificaciones
           if (highPriorityNew.length === 1) {
             const notification = highPriorityNew[0];
             newToastShown.add(notification.id);
-            
+
             if (notification.type === 'overdue') {
               toast.error(notification.message, {
                 duration: 6000,
@@ -269,7 +267,7 @@ export const useNotifications = () => {
             // Si hay múltiples, mostrar un toast resumen
             const overdueCount = highPriorityNew.filter(n => n.type === 'overdue').length;
             const dueTodayCount = highPriorityNew.filter(n => n.type === 'due-today').length;
-            
+
             let message = '';
             if (overdueCount > 0 && dueTodayCount > 0) {
               message = `${overdueCount} tareas vencidas y ${dueTodayCount} para hoy`;
@@ -278,12 +276,12 @@ export const useNotifications = () => {
             } else if (dueTodayCount > 0) {
               message = `${dueTodayCount} tarea${dueTodayCount > 1 ? 's' : ''} para hoy`;
             }
-            
+
             toast.error(message, {
               duration: 6000,
               icon: '🔔',
             });
-            
+
             // Marcar todas como mostradas
             highPriorityNew.forEach(notification => {
               newToastShown.add(notification.id);
@@ -302,16 +300,26 @@ export const useNotifications = () => {
         console.error('Error generating notifications:', error);
       }
     }
-  }, [isEnabled, getAllTasks, readNotifications, toastShownNotifications, deletedNotifications, session]);
+  }, [
+    isEnabled,
+    getAllTasks,
+    readNotifications,
+    toastShownNotifications,
+    deletedNotifications,
+    session,
+  ]);
 
   // Función para marcar notificación como leída
-  const markAsRead = useCallback((notificationId) => {
-    const newReadNotifications = new Set(readNotifications);
-    newReadNotifications.add(notificationId);
-    setReadNotifications(newReadNotifications);
-    localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-  }, [readNotifications]);
+  const markAsRead = useCallback(
+    notificationId => {
+      const newReadNotifications = new Set(readNotifications);
+      newReadNotifications.add(notificationId);
+      setReadNotifications(newReadNotifications);
+      localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    },
+    [readNotifications]
+  );
 
   // Función para marcar todas como leídas
   const markAllAsRead = useCallback(() => {
@@ -328,33 +336,36 @@ export const useNotifications = () => {
     const newReadNotifications = new Set([...readNotifications, ...currentNotificationIds]);
     setReadNotifications(newReadNotifications);
     localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
-    
+
     // No eliminamos las notificaciones, solo las marcamos como leídas
     // Las notificaciones seguirán apareciendo en el panel pero marcadas como leídas
   }, [notifications, readNotifications]);
 
   // Función para eliminar una notificación específica
-  const deleteNotification = useCallback((notificationId) => {
-    // Marcar como eliminada permanentemente
-    const newDeletedNotifications = new Set(deletedNotifications);
-    newDeletedNotifications.add(notificationId);
-    setDeletedNotifications(newDeletedNotifications);
-    localStorage.setItem('deleted-notifications', JSON.stringify([...newDeletedNotifications]));
-    
-    // Remover de la lista actual
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    
-    // También limpiar de otros estados
-    const newReadNotifications = new Set(readNotifications);
-    const newToastShown = new Set(toastShownNotifications);
-    newReadNotifications.delete(notificationId);
-    newToastShown.delete(notificationId);
-    
-    setReadNotifications(newReadNotifications);
-    setToastShownNotifications(newToastShown);
-    localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
-    localStorage.setItem('toast-shown-notifications', JSON.stringify([...newToastShown]));
-  }, [deletedNotifications, readNotifications, toastShownNotifications]);
+  const deleteNotification = useCallback(
+    notificationId => {
+      // Marcar como eliminada permanentemente
+      const newDeletedNotifications = new Set(deletedNotifications);
+      newDeletedNotifications.add(notificationId);
+      setDeletedNotifications(newDeletedNotifications);
+      localStorage.setItem('deleted-notifications', JSON.stringify([...newDeletedNotifications]));
+
+      // Remover de la lista actual
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+
+      // También limpiar de otros estados
+      const newReadNotifications = new Set(readNotifications);
+      const newToastShown = new Set(toastShownNotifications);
+      newReadNotifications.delete(notificationId);
+      newToastShown.delete(notificationId);
+
+      setReadNotifications(newReadNotifications);
+      setToastShownNotifications(newToastShown);
+      localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
+      localStorage.setItem('toast-shown-notifications', JSON.stringify([...newToastShown]));
+    },
+    [deletedNotifications, readNotifications, toastShownNotifications]
+  );
 
   // Función para eliminar todas las notificaciones
   const deleteAllNotifications = useCallback(() => {
@@ -363,14 +374,14 @@ export const useNotifications = () => {
     const newDeletedNotifications = new Set([...deletedNotifications, ...currentNotificationIds]);
     setDeletedNotifications(newDeletedNotifications);
     localStorage.setItem('deleted-notifications', JSON.stringify([...newDeletedNotifications]));
-    
+
     // Limpiar la lista actual
     setNotifications([]);
-    
+
     // Limpiar otros estados
     const newReadNotifications = new Set();
     const newToastShown = new Set();
-    
+
     setReadNotifications(newReadNotifications);
     setToastShownNotifications(newToastShown);
     localStorage.setItem('read-notifications', JSON.stringify([]));
@@ -378,7 +389,7 @@ export const useNotifications = () => {
   }, [notifications, deletedNotifications]);
 
   // Función para alternar notificaciones
-  const toggleNotifications = useCallback((enabled) => {
+  const toggleNotifications = useCallback(enabled => {
     setIsEnabled(enabled);
     localStorage.setItem('notifications-enabled', enabled.toString());
     if (!enabled) {
@@ -394,9 +405,12 @@ export const useNotifications = () => {
     generateNotifications();
 
     // Configurar intervalo para revisar cada 5 minutos
-    const interval = setInterval(() => {
-      generateNotifications();
-    }, 5 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        generateNotifications();
+      },
+      5 * 60 * 1000
+    );
 
     return () => {
       clearInterval(interval);
@@ -410,14 +424,14 @@ export const useNotifications = () => {
   // Efecto para limpiar notificaciones antiguas (ejecutar una vez al día)
   useEffect(() => {
     const cleanupOldNotifications = () => {
-      const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const lastCleanup = localStorage.getItem('last-notification-cleanup');
-      
+
       if (!lastCleanup || parseInt(lastCleanup) < oneWeekAgo) {
         // Limpiar notificaciones leídas y toasts mostrados que son más antiguos de una semana
         // (Aquí mantenemos todas por simplicidad, pero podrías implementar una lógica más sofisticada)
         localStorage.setItem('last-notification-cleanup', Date.now().toString());
-        
+
         // Opcional: Limpiar algunos datos antiguos para evitar acumulación infinita
         // localStorage.removeItem('read-notifications');
         // localStorage.removeItem('toast-shown-notifications');

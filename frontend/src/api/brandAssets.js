@@ -17,7 +17,9 @@ export const getBrandAssetsWithPreview = async clientId => {
       const isVisual = mime.startsWith('image/') || mime.startsWith('video/');
       if (!isVisual) return { ...asset, preview_url: null };
 
-      const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUrl(asset.storage_path, 60 * 30);
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .createSignedUrl(asset.storage_path, 60 * 30);
       if (error || !data?.signedUrl) return { ...asset, preview_url: null };
       return { ...asset, preview_url: data.signedUrl };
     })

@@ -52,11 +52,7 @@ TASK_STATES['cancelado'] = TASK_STATES['en-diseño'];
 TASK_STATES['Cancelado'] = TASK_STATES['en-diseño'];
 
 // Orden de estados para selectores e interfaz
-export const STATE_ORDER = [
-  'en-diseño',
-  'en-progreso',
-  'aprobado',
-];
+export const STATE_ORDER = ['en-diseño', 'en-progreso', 'aprobado'];
 
 // Grupos de estados para organización simplificada
 export const STATE_GROUPS = {
@@ -73,7 +69,7 @@ export const getStateStyle = state => {
 // Utilidad para obtener siguientes estados posibles de forma fluida
 export const getNextStates = currentState => {
   const normalized = (currentState || 'en-diseño').toLowerCase();
-  
+
   if (normalized === 'en-diseño' || normalized === 'en-diseno') {
     return ['en-progreso', 'aprobado'];
   }
@@ -83,7 +79,7 @@ export const getNextStates = currentState => {
   if (normalized === 'aprobado') {
     return ['en-diseño', 'en-progreso'];
   }
-  
+
   // Por defecto, permitir transición a cualquiera de los otros
   return ['en-diseño', 'en-progreso', 'aprobado'];
 };

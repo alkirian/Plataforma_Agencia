@@ -11,13 +11,13 @@ export const useClickOutside = (callback, enabled = true) => {
   useEffect(() => {
     if (!enabled) return;
 
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (ref.current && !ref.current.contains(event.target)) {
         callback();
       }
     };
 
-    const handleEscapeKey = (event) => {
+    const handleEscapeKey = event => {
       if (event.key === 'Escape') {
         callback();
       }

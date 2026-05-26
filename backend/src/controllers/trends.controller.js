@@ -66,7 +66,7 @@ export const handleRunTrendsForClient = async (req, res, next) => {
     const { customKeywords } = req.body || {};
 
     // También async para no bloquear
-    runTrendsForClient(client, customKeywords)
+    runTrendsForClient(client, customKeywords, true)
       .then(report => {
         console.log(`[trends] Reporte generado para cliente ${clientId}:`, report?.id);
       })
