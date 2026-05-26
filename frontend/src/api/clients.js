@@ -74,3 +74,11 @@ export const deleteClient = clientId => {
     method: 'DELETE',
   });
 };
+
+export const analyzeBrandConsistency = (clientId, currentProfile, sourceLinks) => {
+  return apiFetch(`/clients/${clientId}/brand-profile/analyze-consistency`, {
+    method: 'POST',
+    body: JSON.stringify({ currentProfile, sourceLinks }),
+  });
+};
+

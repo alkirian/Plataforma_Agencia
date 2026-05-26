@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@api/apiFetch';
 
 export const Onboarding = ({ session, onProfileComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -7,8 +8,8 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   const [invitation, setInvitation] = useState(null);
   const [checkingInvitation, setCheckingInvitation] = useState(true);
 
-  // Obtenemos la URL base de la API desde las variables de entorno de Vite
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  // Obtenemos la URL base de la API de forma dinámica y robusta
+  const API_URL = getApiUrl();
 
   useEffect(() => {
     const checkInvitation = async () => {

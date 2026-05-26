@@ -11,7 +11,10 @@ import {
   EllipsisVerticalIcon,
   ArrowUpTrayIcon,
   LinkIcon,
-  TrashIcon
+  TrashIcon,
+  CalendarIcon,
+  FolderIcon,
+  FingerPrintIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
@@ -52,10 +55,30 @@ export const Header = ({ userEmail, profile, onLogout }) => {
   const isTrendsTab = isClientPage && activeClientTab === 'trends';
   const showCalendarViewControls = isClientPage && !isDocumentsTab && !isIdentityTab && !isTrendsTab;
   const clientTabs = [
-    { id: 'schedule', label: 'Cronograma' },
-    { id: 'documents', label: 'Documentos' },
-    { id: 'identity', label: 'Identidad' },
-    { id: 'trends', label: 'Tendencias' },
+    { 
+      id: 'schedule', 
+      label: 'Cronograma', 
+      icon: CalendarIcon, 
+      tooltip: 'Calendario interactivo y cronograma de contenidos con IA' 
+    },
+    { 
+      id: 'documents', 
+      label: 'Documentos', 
+      icon: FolderIcon, 
+      tooltip: 'Historial de entregables y biblioteca de briefs para RAG' 
+    },
+    { 
+      id: 'identity', 
+      label: 'Identidad', 
+      icon: FingerPrintIcon, 
+      tooltip: 'ADN de marca, valores, tono de voz y personalización de IA' 
+    },
+    { 
+      id: 'trends', 
+      label: 'Tendencias', 
+      icon: ArrowTrendingUpIcon, 
+      tooltip: 'Análisis diario de tendencias de mercado e ideas' 
+    },
   ];
 
 
@@ -119,167 +142,80 @@ export const Header = ({ userEmail, profile, onLogout }) => {
       role="banner"
       aria-label="Navegación principal"
     >
-      <div className='flex h-16 w-full items-center justify-between px-4 sm:px-6'>
-        {/* Mobile: Hamburger Menu */}
-        <div className="flex items-center md:hidden">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors"
-            aria-label="Abrir menú de navegación"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-        </div>
-
-        {/* Logo - Centrado en mobile, izquierda en desktop */}
-        <motion.div
-          className='flex items-center md:flex-none absolute left-1/2 transform -translate-x-1/2 md:relative md:left-auto md:transform-none'
-          whileHover={{ scale: 1.02 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Tooltip content="Ve al inicio">
-            <Link 
-              to='/dashboard' 
-              className='text-xl sm:text-2xl font-bold text-text-primary hover:text-text-primary/95 transition-colors'
-              aria-label="Ir al dashboard - Cadence"
+      <div className='relative flex h-16 w-full items-center justify-between px-4 sm:px-6'>
+        {/* Left section: Logo and Client Selector */}
+        <div className="flex items-center gap-4">
+          {/* Mobile: Hamburger Menu */}
+          <div className="flex items-center md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-soft transition-colors"
+              aria-label="Abrir menú de navegación"
             >
-              Cadence
-            </Link>
-          </Tooltip>
-          <motion.div
-            className='ml-2 w-1.5 h-1.5 bg-gray-500 rounded-full'
-            animate={{
-              opacity: [0.4, 1, 0.4]
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+          </div>
 
-        {/* Centro: cliente y secciones fijas */}
-        {isClientPage && (
+          {/* Logo - Centrado en mobile, izquierda en desktop */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="hidden md:flex min-w-0 flex-1 items-center justify-center gap-3 px-4"
+            className='flex items-center md:flex-none absolute left-1/2 transform -translate-x-1/2 md:relative md:left-auto md:transform-none'
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
           >
+            <Tooltip content="Ve al inicio">
+              <Link 
+                to='/dashboard' 
+                className='text-xl sm:text-2xl font-bold text-text-primary hover:text-text-primary/95 transition-colors'
+                aria-label="Ir al dashboard - Cadence"
+              >
+                Cadence
+              </Link>
+            </Tooltip>
+            <motion.div
+              className='ml-2 w-1.5 h-1.5 bg-gray-500 rounded-full'
+              animate={{
+                opacity: [0.4, 1, 0.4]
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </motion.div>
+
+          {isClientPage && (
             <div className="hidden lg:block min-w-[10rem]">
               <ClientSelector currentClientId={currentClientId} />
             </div>
+          )}
+        </div>
 
-             <nav
-               className="flex items-center rounded-lg border border-border-subtle bg-surface-soft/80 p-1 shadow-sm"
-               aria-label="Secciones del cliente"
-             >
-               {clientTabs.map(tab => {
-                 const isActive = activeClientTab === tab.id;
-                 return (
-                   <Link
-                     key={tab.id}
-                     to={`${location.pathname}?tab=${tab.id}`}
-                     className={`rounded-md px-3 py-1.5 text-xs font-semibold leading-none transition-colors ${
-                       isActive
-                         ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
-                         : 'text-text-muted hover:bg-surface-soft hover:text-text-primary'
-                     }`}
-                     aria-current={isActive ? 'page' : undefined}
-                   >
-                     {tab.label}
-                   </Link>
-                 );
-               })}
-             </nav>
-
-             {showCalendarViewControls && (
-                <div className="flex items-center gap-2">
-                  {/* Selector de vistas */}
-                  <div className='flex gap-0.5 rounded-lg border border-border-subtle bg-surface-soft/80 p-1 shadow-sm'>
-                    {[
-                      ['dayGridMonth', 'Mes'],
-                      ['timeGridWeek', 'Semana'],
-                      ['timeGridDay', 'Día'],
-                      ['listMonth', 'Agenda'],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        onClick={() => handleHeaderCalendarView(value)}
-                        className={`rounded-md px-2.5 py-1 text-xs font-semibold leading-none transition-colors ${
-                          calendarView === value
-                            ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
-                            : 'text-text-muted hover:text-text-primary border border-transparent'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Menú de opciones de tres puntos (...) */}
-                  <Menu as="div" className="relative inline-block text-left">
-                    <div>
-                      <Menu.Button className="inline-flex items-center justify-center p-2 rounded-lg border border-border-subtle bg-surface-soft/80 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-1 focus:ring-border-strong shadow-sm">
-                        <EllipsisVerticalIcon className="h-4 w-4" aria-hidden="true" />
-                      </Menu.Button>
-                    </div>
-
-                    <Transition
-                      as={Fragment}
-                      enter="transition ease-out duration-100"
-                      enterFrom="transform opacity-0 scale-95"
-                      enterTo="transform opacity-100 scale-100"
-                      leave="transition ease-in duration-75"
-                      leaveFrom="transform opacity-100 scale-100"
-                      leaveTo="transform opacity-0 scale-95"
+        {/* Centro: secciones fijas y estáticas con centrado absoluto */}
+        {isClientPage && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-10">
+            <nav
+              className="flex items-center rounded-lg border border-border-subtle bg-surface-soft/80 p-1 shadow-sm"
+              aria-label="Secciones del cliente"
+            >
+              {clientTabs.map(tab => {
+                const isActive = activeClientTab === tab.id;
+                const Icon = tab.icon;
+                return (
+                  <Tooltip key={tab.id} content={tab.tooltip}>
+                    <Link
+                      to={`${location.pathname}?tab=${tab.id}`}
+                      className={`rounded-md px-3 py-1.5 text-xs font-semibold leading-none transition-all flex items-center gap-1.5 border border-transparent ${
+                        isActive
+                          ? 'bg-surface border-border-strong text-text-primary shadow-sm font-bold scale-[1.02]'
+                          : 'text-text-muted hover:bg-surface-soft hover:text-text-primary'
+                      }`}
+                      aria-current={isActive ? 'page' : undefined}
                     >
-                      <Menu.Items className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl border border-white/10 bg-[#161517] shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-1.5">
-                        <div className="space-y-0.5">
-                          <Menu.Item>
-                            {({ active }) => (
-                              <button
-                                onClick={() => handleCalendarAction('import')}
-                                className={`${
-                                  active ? 'bg-white/5 text-white' : 'text-gray-300'
-                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
-                              >
-                                <ArrowUpTrayIcon className="h-4 w-4 text-gray-400 group-hover:text-white" />
-                                <span>Importar archivo</span>
-                              </button>
-                            )}
-                          </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <button
-                                onClick={() => handleCalendarAction('share')}
-                                className={`${
-                                  active ? 'bg-white/5 text-white' : 'text-gray-300'
-                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
-                              >
-                                <LinkIcon className="h-4 w-4 text-[#8FA89B] group-hover:text-white" />
-                                <span>Compartir calendario</span>
-                              </button>
-                            )}
-                          </Menu.Item>
-                          <div className="my-1 border-t border-white/5" />
-                          <Menu.Item>
-                            {({ active }) => (
-                              <button
-                                onClick={() => handleCalendarAction('clear')}
-                                className={`${
-                                  active ? 'bg-red-500/10 text-red-300' : 'text-red-400/80'
-                                } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors`}
-                              >
-                                <TrashIcon className="h-4 w-4 text-red-500/70 group-hover:text-red-400" />
-                                <span>Limpiar Cronograma</span>
-                              </button>
-                            )}
-                          </Menu.Item>
-                        </div>
-                      </Menu.Items>
-                    </Transition>
-                  </Menu>
-                </div>
-              )}
-          </motion.div>
+                      <Icon className={`h-3.5 w-3.5 transition-colors ${isActive ? 'text-text-primary' : 'text-text-muted/70 hover:text-text-primary'}`} />
+                      <span>{tab.label}</span>
+                    </Link>
+                  </Tooltip>
+                );
+              })}
+            </nav>
+          </div>
         )}
 
         {/* Mobile: Búsqueda y notificaciones */}
@@ -318,6 +254,72 @@ export const Header = ({ userEmail, profile, onLogout }) => {
 
         {/* Desktop: Navegación completa */}
         <div className='hidden md:flex items-center space-x-4'>
+          {/* Menú de opciones de tres puntos (...) para Calendario */}
+          {isClientPage && activeClientTab === 'schedule' && (
+            <Menu as="div" className="relative inline-block text-left">
+              <div>
+                <Menu.Button className="inline-flex items-center justify-center p-2 rounded-lg border border-border-subtle bg-surface-soft/80 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-1 focus:ring-border-strong shadow-sm">
+                  <EllipsisVerticalIcon className="h-4 w-4" aria-hidden="true" />
+                </Menu.Button>
+              </div>
+
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl border border-white/10 bg-[#161517] shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-1.5">
+                  <div className="space-y-0.5">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleCalendarAction('import')}
+                          className={`${
+                            active ? 'bg-white/5 text-white' : 'text-gray-300'
+                          } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
+                        >
+                          <ArrowUpTrayIcon className="h-4 w-4 text-gray-400 group-hover:text-white" />
+                          <span>Importar archivo</span>
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleCalendarAction('share')}
+                          className={`${
+                            active ? 'bg-white/5 text-white' : 'text-gray-300'
+                          } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors`}
+                        >
+                          <LinkIcon className="h-4 w-4 text-[#8FA89B] group-hover:text-white" />
+                          <span>Compartir calendario</span>
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <div className="my-1 border-t border-white/5" />
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleCalendarAction('clear')}
+                          className={`${
+                            active ? 'bg-red-500/10 text-red-300' : 'text-red-400/80'
+                          } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors`}
+                        >
+                          <TrashIcon className="h-4 w-4 text-red-500/70 group-hover:text-red-400" />
+                          <span>Limpiar Cronograma</span>
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          )}
+
           <motion.nav
             id="navigation"
             className='flex items-center space-x-2'
@@ -365,7 +367,7 @@ export const Header = ({ userEmail, profile, onLogout }) => {
             {/* Botón de notificaciones - Desktop */}
             <motion.button
               onClick={handleOpenNotifications}
-              className={`rounded-xl p-2.5 transition-all duration-300 relative overflow-hidden ${
+              className={`rounded-xl p-2.5 transition-all duration-300 relative ${
                 isNotificationPanelOpen
                   ? 'bg-surface-strong text-text-primary border border-[color:var(--color-border-subtle)] shadow-sm'
                   : 'text-text-muted hover:bg-surface-soft hover:text-text-primary hover:border-[color:var(--color-border-subtle)] border border-transparent'

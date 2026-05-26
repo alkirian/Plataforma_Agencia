@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@api/apiFetch';
 
 const inputClass =
   'w-full rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft px-3 py-2 text-text-primary placeholder-text-muted focus:border-[color:var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-blue)]/30';
@@ -35,7 +36,7 @@ export const AuthPage = () => {
       if (!code) return;
 
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+        const apiBaseUrl = getApiUrl();
         const response = await fetch(`${apiBaseUrl}/shared/invite/${code}`);
         const result = await response.json();
         
@@ -58,7 +59,7 @@ export const AuthPage = () => {
   const checkEmail = async (email) => {
     setIsCheckingEmail(true);
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+      const apiBaseUrl = getApiUrl();
       const response = await fetch(`${apiBaseUrl}/users/check-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +129,7 @@ export const AuthPage = () => {
   // Handler para registro
   const handleRegister = async (data) => {
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+      const apiBaseUrl = getApiUrl();
       const inviteCode = localStorage.getItem('pending_invite_code') || undefined;
 
       const response = await fetch(`${apiBaseUrl}/users/register`, {

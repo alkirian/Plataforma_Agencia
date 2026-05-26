@@ -15,9 +15,9 @@ import {
   handleCreateClientApprovalLink,
 } from '../controllers/clients.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
-import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleGenerateImage } from '../controllers/ai.controller.js';
+import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleGenerateImage, handleGenerateCopyFromTrend } from '../controllers/ai.controller.js';
 import { handleGetBrandAssets, handleCreateBrandAsset, handleDeleteBrandAsset } from '../controllers/brandAssets.controller.js';
-import { handleAutoFillBrandProfile, handleSearchCompanyBrandProfile } from '../controllers/brand.controller.js';
+import { handleAutoFillBrandProfile, handleSearchCompanyBrandProfile, handleAnalyzeBrandConsistency } from '../controllers/brand.controller.js';
 import scheduleRoutes from './schedule.routes.js';
 
 const router = Router();
@@ -46,6 +46,7 @@ router.delete('/:clientId/documents/:documentId', handleDeleteDocument);
 
 // Rutas de IA - deben ir ANTES de la ruta /:clientId genérica
 router.post('/:clientId/generate-ideas', handleGenerateIdeas);
+router.post('/:clientId/generate-copy', handleGenerateCopyFromTrend);
 router.post('/:clientId/chat', handleChat);
 router.get('/:clientId/chat/history', handleGetChatHistory);
 router.post('/:clientId/schedule/:itemId/generate-image', handleGenerateImage);
@@ -61,6 +62,7 @@ router.route('/:clientId/brand-profile')
 
 router.post('/:clientId/brand-profile/auto-fill', handleAutoFillBrandProfile);
 router.post('/:clientId/brand-profile/search-company', handleSearchCompanyBrandProfile);
+router.post('/:clientId/brand-profile/analyze-consistency', handleAnalyzeBrandConsistency);
 
 router.put('/:clientId/card-color', handleUpdateClientCardColor);
 

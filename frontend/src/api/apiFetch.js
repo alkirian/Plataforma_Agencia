@@ -1,7 +1,22 @@
 // src/api/apiFetch.js
 import { supabase } from '../supabaseClient.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+export const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  
+  // Si accedemos desde otro dispositivo en la red local y apunta a localhost
+  if (
+    typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' && 
+    envUrl.includes('localhost')
+  ) {
+    return envUrl.replace('localhost', window.location.hostname);
+  }
+  return envUrl;
+};
+
+const API_URL = getApiUrl();
 
 /**
  * Ayudante centralizado para realizar peticiones a la API del backend.

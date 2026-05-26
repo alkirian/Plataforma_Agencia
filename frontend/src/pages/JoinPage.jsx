@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import { CyberButton } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
+import { getApiUrl } from '@api/apiFetch';
 
 export const JoinPage = () => {
   const { code } = useParams();
@@ -25,7 +26,7 @@ export const JoinPage = () => {
   const [session, setSession] = useState(null);
   const [accepting, setAccepting] = useState(false);
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  const apiBaseUrl = getApiUrl();
 
   // 1) Cargar sesión y resolver el código
   useEffect(() => {

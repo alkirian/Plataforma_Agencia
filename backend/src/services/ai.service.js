@@ -236,6 +236,7 @@ Reglas obligatorias:
     fechas_importantes: calendarCtx,
     estructura_de_cada_idea: {
       title: 'Titulo especifico del post, maximo 80 caracteres',
+      creative_idea: 'Idea creativa y concepto visual/video de la pieza (ej: Video influencer explicando el producto en blabla, o infografía detallada mostrando..., o entrevista rápida a un experto, o carrusel paso a paso de fotos...)',
       copy: 'Copy completo listo para publicar',
       scheduled_at: 'YYYY-MM-DD',
       channel: 'Red social recomendada',
@@ -265,6 +266,7 @@ Reglas obligatorias:
     .slice(0, requestedQuantity)
     .map(idea => ({
       title: cleanText(idea.title).slice(0, 120),
+      creative_idea: cleanText(idea.creative_idea || idea.objective || ''),
       copy: cleanText(idea.copy),
       scheduled_at: targetDateText || cleanText(idea.scheduled_at),
       channel: cleanText(idea.channel) || asList(brandInfo.preferred_platforms)[0] || 'Instagram',
@@ -469,4 +471,66 @@ export const generateImageWithAI = async ({ prompt, aspectRatio }) => {
   }
 
   return { base64, mimeType };
+};
+
+export const generateCopyFromTrend = async ({ clientId, trendTitle, trendDescription, suggestedAction, channel, token }) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data: client, error: clientErr } = await supabaseAuth
+    .from('clients')
+    .select('id, name, industry, brand_info')
+    .eq('id', clientId)
+    .single();
+  if (clientErr) throw new Error(clientErr.message);
+
+  if (!openaiApiKey) {
+    // fallback if no OpenAI key
+    return {
+      title: `Idea: ${trendTitle}`,
+      copy: `✨ ¡Tendencia caliente del mes! ✨\n\nAnalizamos la tendencia "${trendTitle}" y es el momento ideal para que ${client.name} tome acción.\n\n👉 Enfoque: ${suggestedAction || trendDescription}\n\n¿Qué opinan ustedes? ¡Comenten abajo! 👇`,
+      creative_idea: `Un video o post estático mostrando la postura de la marca respecto a ${trendTitle}.`,
+      objective: `Posicionar a ${client.name} como referente de tendencia en la industria de ${client.industry || 'marketing'}.`
+    };
+  }
+
+  const brandInfo = client.brand_info || {};
+  const identityPayload = {
+    nombre: client.name,
+    industria: client.industry || null,
+    negocio_y_propuesta: brandInfo.business_description || null,
+    audiencia_objetivo: brandInfo.target_audience || null,
+    tono_de_voz: brandInfo.brand_voice || null,
+    pilares: asList(brandInfo.content_pillars),
+    objetivos: asList(brandInfo.content_goals),
+    productos_servicios: asList(brandInfo.products_services),
+    redes_preferidas: asList(brandInfo.preferred_platforms),
+  };
+
+  const systemPrompt = `Eres un copywriter creativo y estratega de redes sociales senior. Tu tarea es convertir una tendencia caliente y cruda de internet en un borrador de copy final, listo para publicar, y una idea creativa específica adaptada al 100% a la identidad, voz, productos e industria de la marca. Devuelve únicamente JSON válido.`;
+
+  const userPrompt = JSON.stringify({
+    marca: identityPayload,
+    tendencia: {
+      titulo: trendTitle,
+      descripcion: trendDescription,
+      accion_sugerida: suggestedAction,
+      red_social_objetivo: channel || 'Instagram'
+    },
+    tarea: `Redacta un post completo para redes sociales sobre esta tendencia. Crea un copy final pulido, listo para publicar en ${channel || 'Instagram'}, con gancho, cuerpo, llamado a la acción (CTA) y hashtags adecuados. Además, genera una idea creativa de diseño/video para acompañar el copy y un objetivo concreto.`,
+    estructura_esperada: {
+      title: 'Un título corto e ingenioso de la publicación (máx. 50 caracteres)',
+      copy: 'El copy del post listo para publicar en la red social con gancho inicial, cuerpo legible, espacios adecuados, hashtags y llamada a la acción.',
+      creative_idea: 'Una breve sugerencia del diseño visual o idea de video (ej: "Un carrusel de 3 slides donde...", o "Video corto mostrando el proceso con música en tendencia...")',
+      objective: 'El objetivo estratégico del post (ej: "Aumentar engagement de marca" o "Generar conversiones de leads")'
+    }
+  }, null, 2);
+
+  const llmResponse = await callLLM({ systemPrompt, userPrompt });
+  const parsed = JSON.parse(llmResponse);
+
+  return {
+    title: cleanText(parsed.title || `Idea: ${trendTitle}`),
+    copy: cleanText(parsed.copy || ''),
+    creative_idea: cleanText(parsed.creative_idea || ''),
+    objective: cleanText(parsed.objective || 'Generar autoridad y conversación sobre la tendencia.')
+  };
 };

@@ -21,7 +21,7 @@ import { ScheduleImportModal } from './ScheduleImportModal';
 // Estilos
 import '../../styles/fullcalendar-custom.css';
 import { getClientById } from '../../api/clients';
-import { uploadScheduleAsset, getScheduleItemAssetsWithPreview, generateImageForEvent } from '../../api/schedule';
+import { uploadScheduleAsset, getScheduleItemAssetsWithPreview, generateImageForEvent, deleteScheduleItemAsset } from '../../api/schedule';
 import { generateIdeas } from '../../api/ai';
 
 const toDateInputValue = date => {
@@ -82,6 +82,8 @@ export const ScheduleSection = ({ clientId }) => {
   const [isGeneratingEventImage, setIsGeneratingEventImage] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [mockupTab, setMockupTab] = useState('Instagram');
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [isModalDragOver, setIsModalDragOver] = useState(false);
   
   // Estados para el nuevo popover
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
@@ -117,6 +119,10 @@ export const ScheduleSection = ({ clientId }) => {
     moveEvent
   } = useCalendarEvents(clientId);
 
+  const feedbackEventsCount = useMemo(() => {
+    return (events || []).filter(e => e.extendedProps?.client_feedback).length;
+  }, [events]);
+
   // Calcular estadísticas basadas en eventos visibles del calendario (simplificado a los 3 estados principales)
   const calculateVisibleStats = () => {
     const total = events.length;
@@ -146,6 +152,18 @@ export const ScheduleSection = ({ clientId }) => {
   };
 
   const visibleStats = calculateVisibleStats();
+
+  const activePreviewUrl = useMemo(() => {
+    if (eventAssets && eventAssets.length > 0) {
+      const found = eventAssets.find(a => a.preview_url);
+      if (found) return found.preview_url;
+    }
+    if (pendingFiles && pendingFiles.length > 0) {
+      const found = pendingFiles.find(f => f.preview_url);
+      if (found) return found.preview_url;
+    }
+    return null;
+  }, [eventAssets, pendingFiles]);
 
   // Cargar datos iniciales - memoizar loadInitialData
   const loadInitialData = useCallback(async () => {
@@ -184,6 +202,41 @@ export const ScheduleSection = ({ clientId }) => {
     };
     loadAssets();
   }, [isModalOpen, selectedEvent, clientId]);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setIsEventDetailOpen(false);
+    setSelectedEvent(null);
+    setEventAssets([]);
+    setIsGeneratingEventAI(false);
+    setIsEventAIGenOpen(false);
+    setEventAIPrompt('');
+    setEventAIAspectRatio('1:1');
+    setIsGeneratingEventImage(false);
+    
+    // Revocar objectURLs de los archivos temporales para evitar fugas de memoria
+    pendingFiles.forEach(fileObj => {
+      if (fileObj.preview_url && fileObj.preview_url.startsWith('blob:')) {
+        URL.revokeObjectURL(fileObj.preview_url);
+      }
+    });
+    setPendingFiles([]);
+    setIsModalDragOver(false);
+
+    setFormData({
+      title: '',
+      date: '',
+      time: '09:00',
+      status: 'en-diseño',
+      copy: '',
+      channel: 'IG',
+      creative_idea: '',
+      goal: '',
+      format: 'Carrusel',
+      platforms: 'Instagram',
+      description: ''
+    });
+  }, [pendingFiles]);
 
   // Handlers del calendario - memoizados para evitar re-renders
   const handleDateClick = useCallback((date, clickInfo) => {
@@ -272,6 +325,97 @@ export const ScheduleSection = ({ clientId }) => {
     }
   }, [currentDate]);
 
+  // Handlers para carga de archivos en el modal
+  const handleModalDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsModalDragOver(true);
+  }, []);
+
+  const handleModalDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsModalDragOver(false);
+  }, []);
+
+  const handleModalFileUpload = useCallback(async (filesList) => {
+    const files = Array.from(filesList);
+    if (!files.length) return;
+
+    const maxSizeBytes = 250 * 1024 * 1024;
+    const oversized = files.find(file => file.size > maxSizeBytes);
+    if (oversized) {
+      toast.error(`${oversized.name} supera los 250MB.`);
+      return;
+    }
+
+    if (selectedEvent?.id) {
+      // Editar post existente: subir inmediatamente al backend
+      const uploadToast = toast.loading('Subiendo archivo multimedia...');
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const newAsset = await uploadScheduleAsset(clientId, selectedEvent.id, files[i], {
+            asset_role: 'carousel_slide',
+            sort_order: eventAssets.length + i,
+          });
+          
+          // Crear url de previsualización local para mostrar de inmediato
+          const localUrl = URL.createObjectURL(files[i]);
+          newAsset.preview_url = localUrl;
+          
+          setEventAssets(prev => [...prev, newAsset]);
+        }
+        toast.success('Archivo subido con éxito.', { id: uploadToast });
+        // Recargar assets del backend reales por si acaso
+        const updatedAssets = await getScheduleItemAssetsWithPreview(clientId, selectedEvent.id);
+        setEventAssets(updatedAssets);
+      } catch (err) {
+        toast.error(err.message || 'Error al subir archivo.', { id: uploadToast });
+      }
+    } else {
+      // Nuevo post: guardar localmente temporalmente en pendingFiles
+      const filesWithPreview = files.map((file, idx) => ({
+        id: `temp-${Date.now()}-${idx}-${Math.random()}`,
+        file_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size,
+        file: file,
+        preview_url: URL.createObjectURL(file),
+      }));
+      setPendingFiles(prev => [...prev, ...filesWithPreview]);
+      toast.success(`${files.length} archivo(s) agregado(s).`);
+    }
+  }, [clientId, selectedEvent, eventAssets, setEventAssets]);
+
+  const handleModalDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsModalDragOver(false);
+    if (e.dataTransfer?.files?.length) {
+      handleModalFileUpload(e.dataTransfer.files);
+    }
+  }, [handleModalFileUpload]);
+
+  const handleRemoveModalAsset = useCallback(async (assetToRemove) => {
+    if (assetToRemove.id.startsWith('temp-')) {
+      // Borrar de pendingFiles locales
+      setPendingFiles(prev => prev.filter(a => a.id !== assetToRemove.id));
+      if (assetToRemove.preview_url && assetToRemove.preview_url.startsWith('blob:')) {
+        URL.revokeObjectURL(assetToRemove.preview_url);
+      }
+      toast.success('Archivo removido.');
+    } else {
+      // Borrar de la base de datos
+      if (window.confirm('¿Estás seguro de que deseas eliminar este archivo de forma permanente?')) {
+        const deleteToast = toast.loading('Eliminando archivo...');
+        try {
+          await deleteScheduleItemAsset(clientId, assetToRemove.id);
+          setEventAssets(prev => prev.filter(a => a.id !== assetToRemove.id));
+          toast.success('Archivo eliminado.', { id: deleteToast });
+        } catch (err) {
+          toast.error(err.message || 'Error al eliminar archivo.', { id: deleteToast });
+        }
+      }
+    }
+  }, [clientId, setEventAssets]);
+
   // Formulario handlers - memoizados
   const handleFormSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -299,14 +443,29 @@ export const ScheduleSection = ({ clientId }) => {
         await updateEvent(selectedEvent.id, eventData);
         toast.success('Evento actualizado');
       } else {
-        await createEvent(eventData);
-        toast.success('Evento creado');
+        const created = await createEvent(eventData);
+        
+        // Cargar los pendingFiles si existen
+        if (pendingFiles.length > 0) {
+          const uploadToast = toast.loading('Subiendo archivos al nuevo post...');
+          try {
+            for (let i = 0; i < pendingFiles.length; i++) {
+              await uploadScheduleAsset(clientId, created.id, pendingFiles[i].file, {
+                asset_role: pendingFiles.length > 1 ? 'carousel_slide' : 'final',
+                sort_order: i,
+              });
+            }
+            toast.success('¡Archivos asociados al nuevo post con éxito!', { id: uploadToast });
+          } catch (uploadErr) {
+            toast.error('Post creado, pero no se pudieron cargar todos los archivos.', { id: uploadToast });
+          }
+        }
       }
       closeModal();
     } catch (err) {
       // El hook ya maneja los errores
     }
-  }, [formData, selectedEvent, createEvent, updateEvent]);
+  }, [formData, selectedEvent, createEvent, updateEvent, pendingFiles, clientId, closeModal]);
 
   const handleDeleteEvent = useCallback(async () => {
     if (selectedEvent && window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
@@ -475,30 +634,7 @@ export const ScheduleSection = ({ clientId }) => {
     }
   }, [clientId, formData]);
 
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    setIsEventDetailOpen(false);
-    setSelectedEvent(null);
-    setEventAssets([]);
-    setIsGeneratingEventAI(false);
-    setIsEventAIGenOpen(false);
-    setEventAIPrompt('');
-    setEventAIAspectRatio('1:1');
-    setIsGeneratingEventImage(false);
-    setFormData({
-      title: '',
-      date: '',
-      time: '09:00',
-      status: 'en-diseño',
-      copy: '',
-      channel: 'IG',
-      creative_idea: '',
-      goal: '',
-      format: 'Carrusel',
-      platforms: 'Instagram',
-      description: ''
-    });
-  }, []);
+
 
   const inferFormatFromFiles = files => {
     if (!files?.length) return 'Post';
@@ -697,12 +833,7 @@ export const ScheduleSection = ({ clientId }) => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="calendar-container"
-    >
+    <div className="calendar-container h-full">
       {/* Header rediseñado con mejor jerarquía sólida */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -870,7 +1001,7 @@ export const ScheduleSection = ({ clientId }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="xl:w-64 xl:flex-shrink-0 xl:max-h-[calc(100vh-4.5rem)] xl:overflow-y-auto"
+          className="xl:w-64 xl:flex-shrink-0 max-h-[calc(100dvh-6.25rem)] xl:max-h-[calc(100dvh-6.5rem)] xl:overflow-y-auto"
         >
           <MiniMonth 
             currentDate={currentDate}
@@ -896,13 +1027,51 @@ export const ScheduleSection = ({ clientId }) => {
           }`}
         >
           <div
-            className={`flex h-[calc(100vh-4.5rem)] flex-col overflow-hidden bg-transparent p-0 shadow-none transition-colors ${
+            className={`flex h-[calc(100dvh-6.25rem)] md:h-[calc(100dvh-6.5rem)] flex-col overflow-hidden bg-transparent p-0 shadow-none transition-colors ${
               isCalendarDragOver ? 'ring-1 ring-[color:var(--color-accent-blue)] bg-surface-soft' : ''
             }`}
             onDragOver={handleCalendarDragOver}
             onDragLeave={handleCalendarDragLeave}
             onDrop={handleCalendarDrop}
           >
+            {/* Selector de vistas compacto y elegante */}
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border-subtle bg-surface-strong/30 px-3 py-1.5 rounded-xl border border-border-subtle/50 flex-wrap gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  {currentView === 'dayGridMonth' && 'Vista mensual'}
+                  {currentView === 'timeGridWeek' && 'Vista semanal'}
+                  {currentView === 'timeGridDay' && 'Vista diaria'}
+                  {currentView === 'listMonth' && 'Agenda mensual'}
+                </span>
+                {feedbackEventsCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#fe0979]/10 border border-[#fe0979]/30 text-[#fe0979] animate-pulse select-none">
+                    💬 {feedbackEventsCount} {feedbackEventsCount === 1 ? 'Ajuste solicitado' : 'Ajustes solicitados'}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-0.5 rounded-lg border border-border-subtle bg-surface-soft/80 p-0.5 shadow-sm">
+                {[
+                  ['dayGridMonth', 'Mes'],
+                  ['timeGridWeek', 'Semana'],
+                  ['timeGridDay', 'Día'],
+                  ['listMonth', 'Agenda'],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setCurrentView(value)}
+                    type="button"
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold leading-none transition-all duration-200 ${
+                      currentView === value
+                        ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
+                        : 'text-text-muted hover:text-text-primary border border-transparent'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {isCalendarDragOver && (
               <div className="mb-3 rounded-lg border border-[color:var(--color-accent-blue)] bg-[color:var(--color-accent-blue)]/10 px-3 py-2 text-sm text-text-primary">
                 Suelta archivos para anclarlos a esta fecha del calendario.
@@ -1014,10 +1183,10 @@ export const ScheduleSection = ({ clientId }) => {
                   
                   <form onSubmit={handleFormSubmit}>
                     {/* Dos Columnas Layout */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    
-                    {/* Columna Izquierda: Formulario (col-span-7) */}
-                    <div className="lg:col-span-7 space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                      
+                      {/* Columna Izquierda: Formulario (col-span-7) */}
+                      <div className="lg:col-span-7 space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                       
                       {selectedEvent?.extendedProps?.client_feedback && (
                         <div className="rounded-xl bg-[#fe0979]/10 border border-[#fe0979]/20 p-4 space-y-1">
@@ -1033,101 +1202,340 @@ export const ScheduleSection = ({ clientId }) => {
                         </div>
                       )}
 
-                      {/* Grupo 1: Datos Básicos */}
-                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">1. Planificación General</h3>
-                        
-                        <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-gray-300">Título del Post</label>
-                          <input 
-                            type="text" 
-                            value={formData.title} 
-                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} 
-                            className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all shadow-inner" 
-                            placeholder="Nombre explicativo del evento" 
-                            required 
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Idea Creativa (Concepto)</label>
-                            <input 
-                              type="text" 
-                              value={formData.creative_idea || ''} 
-                              onChange={(e) => setFormData(prev => ({ ...prev, creative_idea: e.target.value }))} 
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all" 
-                              placeholder="Ej: Infografía de cómo cuidar la salud" 
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Objetivo del Post</label>
-                            <input 
-                              type="text" 
-                              value={formData.goal || ''} 
-                              onChange={(e) => setFormData(prev => ({ ...prev, goal: e.target.value }))} 
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all" 
-                              placeholder="Ej: Captar leads, interacción, etc." 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Formato de Publicación</label>
-                            <select
-                              value={formData.format || 'Carrusel'}
-                              onChange={(e) => setFormData(prev => ({ ...prev, format: e.target.value }))}
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
-                            >
-                              {['Historia', 'Carrusel', 'Reel / TikTok', 'Entrevista', 'Video Influencer', 'Cobertura de Evento', 'Post Estático'].map(f => (
-                                <option key={f} value={f} className="bg-[#161517] text-white">{f}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Prioridad</label>
-                            <select
-                              value={formData.priority || 'medium'}
-                              onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
-                            >
-                              <option value="low" className="bg-[#161517] text-white">Baja</option>
-                              <option value="medium" className="bg-[#161517] text-white">Media</option>
-                              <option value="high" className="bg-[#161517] text-white">Alta</option>
-                              <option value="urgente" className="bg-[#161517] text-white">Urgente</option>
-                            </select>
-                          </div>
-                        </div>
+                      {/* 1. Título de la Publicación (Estilo Editor Premium) */}
+                      <div className="space-y-1">
+                        <input 
+                          type="text" 
+                          value={formData.title} 
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} 
+                          className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500/50 py-2 focus:outline-none focus:ring-0 text-xl md:text-2xl font-bold text-white placeholder-white/20 transition-colors tracking-tight" 
+                          placeholder="Escribe el título de tu publicación..." 
+                          required 
+                        />
                       </div>
 
-                      {/* Grupo 2: Canales y Programación */}
-                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400">2. Canales, Programación y Estado</h3>
+                      {/* 2. Zona Unificada de Contenido Visual (Media + IA) */}
+                      <div 
+                        onDragOver={handleModalDragOver}
+                        onDragLeave={handleModalDragLeave}
+                        onDrop={handleModalDrop}
+                        className={`relative rounded-2xl border border-dashed transition-all duration-300 overflow-hidden ${
+                          isModalDragOver 
+                            ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]' 
+                            : 'border-white/10 bg-[#1e1c20]/30 hover:border-white/25 hover:bg-[#1e1c20]/50'
+                        }`}
+                      >
+                        <input 
+                          type="file" 
+                          id="modal-media-input" 
+                          className="hidden" 
+                          multiple 
+                          accept="image/*,video/*"
+                          onChange={(e) => handleModalFileUpload(e.target.files)}
+                        />
+
+                        {/* Modo Generador IA Inline Abierto */}
+                        {isEventAIGenOpen ? (
+                          <div className="p-5 space-y-4 bg-gradient-to-b from-[#25221d] to-[#1e1b17] border-b border-amber-500/20">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                                <SparklesIcon className="w-4 h-4 animate-pulse text-amber-400" />
+                                <span>Generador Nano Banana</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setIsEventAIGenOpen(false)}
+                                className="text-xs text-gray-400 hover:text-white transition-colors font-semibold"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div>
+                                <textarea
+                                  rows={3}
+                                  value={eventAIPrompt}
+                                  onChange={(e) => setEventAIPrompt(e.target.value)}
+                                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none transition-all resize-none leading-relaxed"
+                                  placeholder="Describe la imagen que quieres generar en detalle (e.g. 'Infografía moderna en tonos pastel sobre cómo cuidar la salud'...)"
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="grid grid-cols-3 gap-1.5">
+                                    {[
+                                      { id: '1:1', label: '1:1', desc: 'Post' },
+                                      { id: '16:9', label: '16:9', desc: 'YT' },
+                                      { id: '9:16', label: '9:16', desc: 'Short' }
+                                    ].map(ratio => (
+                                      <button
+                                        key={ratio.id}
+                                        type="button"
+                                        onClick={() => setEventAIAspectRatio(ratio.id)}
+                                        className={`rounded-lg border py-1 px-1.5 text-center transition-all ${
+                                          eventAIAspectRatio === ratio.id
+                                            ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
+                                            : 'border-white/5 bg-black/20 text-gray-400 hover:bg-black/30'
+                                        }`}
+                                      >
+                                        <div className="text-[10px] font-bold leading-none">{ratio.label}</div>
+                                        <div className="text-[8px] opacity-60 mt-0.5 leading-none">{ratio.desc}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={isGeneratingEventImage || !eventAIPrompt.trim()}
+                                  onClick={async () => {
+                                    setIsGeneratingEventImage(true);
+                                    try {
+                                      let targetId = selectedEvent?.id;
+                                      if (!targetId) {
+                                        if (!formData.title) {
+                                          toast.error('Por favor escribe un título antes de generar con IA.');
+                                          setIsGeneratingEventImage(false);
+                                          return;
+                                        }
+                                        const scheduled_at = new Date(`${formData.date || toDateInputValue(getCurrentDate())}T${formData.time || '09:00'}:00`);
+                                        const created = await createEvent({
+                                          title: formData.title,
+                                          status: formData.status,
+                                          scheduled_at: scheduled_at.toISOString(),
+                                          copy: formData.copy || '',
+                                          channel: formData.channel || 'IG',
+                                          platforms: formData.platforms || 'Instagram',
+                                        });
+                                        targetId = created.id;
+                                        setSelectedEvent({
+                                          id: created.id,
+                                          title: created.title,
+                                          start: new Date(created.scheduled_at),
+                                          extendedProps: {
+                                            status: created.status,
+                                            channel: created.channel,
+                                            copy: created.copy || '',
+                                          }
+                                        });
+                                      }
+
+                                      const newAsset = await generateImageForEvent(clientId, targetId, {
+                                        prompt: eventAIPrompt,
+                                        aspectRatio: eventAIAspectRatio
+                                      });
+                                      setEventAssets(prev => [...prev, newAsset]);
+                                      toast.success('¡Imagen generada e incorporada!');
+                                      setIsEventAIGenOpen(false);
+                                    } catch (err) {
+                                      console.error(err);
+                                      toast.error(err.message || 'Error al generar imagen');
+                                    } finally {
+                                      setIsGeneratingEventImage(false);
+                                    }
+                                  }}
+                                  className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md h-fit"
+                                >
+                                  {isGeneratingEventImage ? (
+                                    <>
+                                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                                      <span>Generando...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <SparklesIcon className="h-3.5 w-3.5" />
+                                      <span>Generar</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {/* Listado de archivos cargados y pendientes (Carrusel Horizontal Premium) */}
+                        {(eventAssets.length > 0 || pendingFiles.length > 0) ? (
+                          <div className="p-4 bg-black/10">
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                              <span>Archivos Multimedia ({eventAssets.length + pendingFiles.length})</span>
+                              <span className="text-[9px] text-gray-500 lowercase font-normal">Arrastra más archivos aquí</span>
+                            </div>
+                            <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                              {/* Assets de BD */}
+                              {eventAssets.map(asset => {
+                                const mime = asset.mime_type || '';
+                                const isImage = mime.startsWith('image/');
+                                const isVideo = mime.startsWith('video/');
+                                return (
+                                  <div key={asset.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/15 bg-white/5 flex-shrink-0 group">
+                                    {isImage && asset.preview_url ? (
+                                      <img src={asset.preview_url} alt={asset.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
+                                    ) : isVideo && asset.preview_url ? (
+                                      <video src={asset.preview_url} className="w-full h-full object-cover" muted />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold uppercase p-1 text-center">
+                                        Doc
+                                      </div>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveModalAsset(asset)}
+                                      className="absolute top-1 right-1 p-1 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                                      title="Eliminar archivo"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                );
+                              })}
+
+                              {/* Assets Pendientes (Locales) */}
+                              {pendingFiles.map(asset => {
+                                const mime = asset.mime_type || '';
+                                const isImage = mime.startsWith('image/');
+                                const isVideo = mime.startsWith('video/');
+                                return (
+                                  <div key={asset.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-emerald-500/30 bg-emerald-500/5 flex-shrink-0 group">
+                                    {isImage && asset.preview_url ? (
+                                      <img src={asset.preview_url} alt={asset.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
+                                    ) : isVideo && asset.preview_url ? (
+                                      <video src={asset.preview_url} className="w-full h-full object-cover" muted />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[9px] text-emerald-400 font-bold uppercase p-1 text-center">
+                                        Doc
+                                      </div>
+                                    )}
+                                    <span className="absolute bottom-1 left-1 bg-emerald-500/90 text-[7px] text-black font-extrabold uppercase px-1 rounded-sm shadow-sm tracking-wider">
+                                      Local
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveModalAsset(asset)}
+                                      className="absolute top-1 right-1 p-1 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                                      title="Remover archivo"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                );
+                              })}
+
+                              {/* Tarjeta para agregar más archivos */}
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('modal-media-input').click()}
+                                className="w-20 h-20 rounded-lg border border-dashed border-white/10 hover:border-white/20 bg-white/5 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-all flex-shrink-0 group"
+                              >
+                                <PlusIcon className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:scale-110 transition-all" />
+                                <span className="text-[8px] text-gray-400 font-bold">Subir</span>
+                              </button>
+                              
+                              {/* Botón IA adicional si no está abierto el inline */}
+                              {!isEventAIGenOpen && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsEventAIGenOpen(true);
+                                    const suggestedPrompt = `${formData.title || ''} ${formData.copy || ''}`.trim().slice(0, 400);
+                                    setEventAIPrompt(suggestedPrompt);
+                                  }}
+                                  className="w-20 h-20 rounded-lg border border-dashed border-amber-500/20 hover:border-amber-500/40 bg-amber-500/5 flex flex-col items-center justify-center gap-1 hover:bg-amber-500/10 transition-all flex-shrink-0 group"
+                                >
+                                  <SparklesIcon className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-all" />
+                                  <span className="text-[8px] text-amber-400 font-bold">Generar IA</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          /* Estado Vacío (Sin assets y sin form de IA abierto) */
+                          !isEventAIGenOpen && (
+                            <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/5">
+                              {/* Lado Subir */}
+                              <div 
+                                onClick={() => document.getElementById('modal-media-input').click()}
+                                className="flex-1 p-6 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all"
+                              >
+                                <ArrowUpTrayIcon className="w-7 h-7 text-gray-400 group-hover:text-emerald-400 group-hover:-translate-y-0.5 transition-all" />
+                                <p className="mt-2 text-xs font-semibold text-gray-200">Sube fotos o videos</p>
+                                <p className="text-[10px] text-gray-500 mt-1">Arrastra archivos aquí o haz clic</p>
+                              </div>
+
+                              {/* Lado IA */}
+                              <div 
+                                onClick={() => {
+                                  setIsEventAIGenOpen(true);
+                                  const suggestedPrompt = `${formData.title || ''} ${formData.copy || ''}`.trim().slice(0, 400);
+                                  setEventAIPrompt(suggestedPrompt);
+                                }}
+                                className="flex-1 p-6 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all"
+                              >
+                                <SparklesIcon className="w-7 h-7 text-amber-400 group-hover:scale-110 transition-all" />
+                                <p className="mt-2 text-xs font-semibold text-gray-200">Generar con IA</p>
+                                <p className="text-[10px] text-gray-500 mt-1">Crea una imagen premium con IA</p>
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+
+                      {/* Idea Creativa (Concepto / Dirección) */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                          Idea Creativa (Concepto / Dirección)
+                        </label>
+                        <input 
+                          type="text" 
+                          value={formData.creative_idea || ''} 
+                          onChange={(e) => setFormData(prev => ({ ...prev, creative_idea: e.target.value }))} 
+                          className="w-full rounded-xl border border-white/10 bg-[#1e1c20]/25 focus:border-emerald-500/40 focus:bg-[#1e1c20]/45 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all" 
+                          placeholder="Ej: Video de influencer haciendo un unboxing, infografía explicando uso, carrusel paso a paso..." 
+                        />
+                      </div>
+
+                      {/* 3. Copy de la Publicación (Textarea Minimalista) */}
+                      <div className="relative rounded-2xl border border-white/10 bg-[#1e1c20]/20 focus-within:border-emerald-500/40 focus-within:bg-[#1e1c20]/40 transition-all p-3">
+                        <textarea
+                          rows={4}
+                          maxLength={2000}
+                          value={formData.copy}
+                          onChange={(e) => setFormData(prev => ({ ...prev, copy: e.target.value }))}
+                          className="w-full bg-transparent px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none transition-all resize-none min-h-[90px] pr-2 custom-scrollbar font-sans leading-relaxed border-none focus:ring-0"
+                          placeholder="Escribe el copy con emojis y hashtags aquí..."
+                        />
+                        <div className="absolute bottom-2 right-3 text-[9px] text-gray-500 font-mono">{(formData.copy || '').length}/2000</div>
+                      </div>
+
+                      {/* 4. Ajustes de Programación Simplificados (Grilla Limpia) */}
+                      <div className="space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5">
                         
+                        {/* Canales (Plataformas Destino) */}
                         <div>
-                          <label className="mb-2 block text-xs font-semibold text-gray-300">Plataformas Destino (Multi-selección)</label>
-                          <div className="flex flex-wrap gap-2.5">
+                          <label className="mb-2 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Plataformas Destino</label>
+                          <div className="flex flex-wrap gap-2">
                             {['Instagram', 'TikTok', 'YouTube', 'Facebook', 'LinkedIn'].map(p => {
                               const active = formData.platforms ? formData.platforms.split(', ').includes(p) : p === 'Instagram';
                               
-                              // Native brand color gradients
                               const colors = {
-                                'Instagram': active ? 'bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-500 text-white border-transparent' : 'bg-[#222024] hover:bg-white/5 text-gray-400 border-white/10',
-                                'TikTok': active ? 'bg-black text-white border-[#00f2fe]' : 'bg-[#222024] hover:bg-white/5 text-gray-400 border-white/10',
-                                'YouTube': active ? 'bg-red-600 text-white border-transparent' : 'bg-[#222024] hover:bg-white/5 text-gray-400 border-white/10',
-                                'Facebook': active ? 'bg-blue-600 text-white border-transparent' : 'bg-[#222024] hover:bg-white/5 text-gray-400 border-white/10',
-                                'LinkedIn': active ? 'bg-[#0077b5] text-white border-transparent' : 'bg-[#222024] hover:bg-white/5 text-gray-400 border-white/10'
+                                'Instagram': active ? 'bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-500 text-white border-transparent' : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                'TikTok': active ? 'bg-white text-black border-transparent' : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                'YouTube': active ? 'bg-red-600 text-white border-transparent' : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                'Facebook': active ? 'bg-blue-600 text-white border-transparent' : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                'LinkedIn': active ? 'bg-[#0077b5] text-white border-transparent' : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5'
                               };
 
                               return (
                                 <motion.button
                                   key={p}
                                   type="button"
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.97 }}
                                   onClick={() => {
                                     const activePlats = formData.platforms ? formData.platforms.split(', ').filter(Boolean) : ['Instagram'];
                                     let newPlats;
@@ -1140,7 +1548,7 @@ export const ScheduleSection = ({ clientId }) => {
                                     setFormData(prev => ({ ...prev, platforms: resultStr }));
                                     setMockupTab(p);
                                   }}
-                                  className={`rounded-xl px-4 py-2 text-xs font-semibold border transition-all duration-200 flex items-center gap-1.5 ${colors[p]}`}
+                                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition-all duration-200 flex items-center gap-1.5 ${colors[p]}`}
                                 >
                                   <span>{p}</span>
                                 </motion.button>
@@ -1149,232 +1557,84 @@ export const ScheduleSection = ({ clientId }) => {
                           </div>
                         </div>
 
+                        {/* Fecha y Hora en paralelo */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Fecha de Publicación</label>
+                            <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Fecha de Publicación</label>
                             <input 
                               type="date" 
                               value={formData.date} 
                               onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))} 
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all" 
+                              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all" 
                               required 
                             />
                           </div>
                           <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Hora</label>
+                            <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hora</label>
                             <input 
                               type="time" 
                               value={formData.time} 
                               onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))} 
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all" 
+                              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all" 
                               required 
                             />
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* selectores en 3 columnas */}
+                        <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Estado de la Publicación</label>
+                            <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Formato</label>
+                            <select
+                              value={formData.format || 'Carrusel'}
+                              onChange={(e) => setFormData(prev => ({ ...prev, format: e.target.value }))}
+                              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all"
+                            >
+                              {['Historia', 'Carrusel', 'Reel / TikTok', 'Entrevista', 'Video Influencer', 'Cobertura de Evento', 'Post Estático'].map(f => (
+                                <option key={f} value={f} className="bg-[#161517] text-white">{f}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Prioridad</label>
+                            <select
+                              value={formData.priority || 'medium'}
+                              onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all"
+                            >
+                              <option value="low" className="bg-[#161517] text-white">Baja</option>
+                              <option value="medium" className="bg-[#161517] text-white">Media</option>
+                              <option value="high" className="bg-[#161517] text-white">Alta</option>
+                              <option value="urgente" className="bg-[#161517] text-white">Urgente</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estado</label>
                             <select 
                               value={formData.status} 
                               onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))} 
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all"
                             >
                               <option value="en-diseño" className="bg-[#161517] text-white">En Diseño</option>
                               <option value="en-progreso" className="bg-[#161517] text-white">En Producción</option>
                               <option value="aprobado" className="bg-[#161517] text-white">Aprobado</option>
                             </select>
                           </div>
-
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-gray-300">Canal Principal (Reportes)</label>
-                            <select
-                              value={formData.channel || 'IG'}
-                              onChange={(e) => setFormData(prev => ({ ...prev, channel: e.target.value }))}
-                              className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
-                            >
-                              <option value="IG" className="bg-[#161517] text-white">Instagram</option>
-                              <option value="TikTok" className="bg-[#161517] text-white">TikTok</option>
-                              <option value="YT" className="bg-[#161517] text-white">YouTube</option>
-                              <option value="FB" className="bg-[#161517] text-white">Facebook</option>
-                              <option value="LI" className="bg-[#161517] text-white">LinkedIn</option>
-                            </select>
-                          </div>
                         </div>
-                      </div>
 
-                      {/* Grupo 3: Copy del Post */}
-                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">3. Copy de la Publicación</h3>
-                        </div>
-                        
-                        <div className="relative">
-                          <textarea
-                            rows={4}
-                            maxLength={2000}
-                            value={formData.copy}
-                            onChange={(e) => setFormData(prev => ({ ...prev, copy: e.target.value }))}
-                            className="w-full rounded-xl border border-white/10 bg-[#222024] px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all resize-none min-h-[100px] pr-2 custom-scrollbar font-sans leading-relaxed"
-                            placeholder="Redacta el texto del posteo para copiar y pegar directamente en las redes (puedes usar emojis y hashtags)..."
+                        {/* Objetivo de la publicación */}
+                        <div className="pt-3.5 border-t border-white/5">
+                          <label className="mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Objetivo de la publicación</label>
+                          <input 
+                            type="text" 
+                            value={formData.goal || ''} 
+                            onChange={(e) => setFormData(prev => ({ ...prev, goal: e.target.value }))} 
+                            className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all" 
+                            placeholder="Ej: Captar leads, posicionamiento de marca, generar engagement..." 
                           />
-                          <div className="absolute bottom-2.5 right-3 text-[10px] text-gray-500">{(formData.copy || '').length}/2000</div>
                         </div>
-                      </div>
-
-                      {/* Grupo 4: Assets y Nano Banana */}
-                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                        <div className="mb-1 flex items-center justify-between">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">4. Multimedia & Generador Visual</h3>
-                          {selectedEvent?.id && !isEventAIGenOpen && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsEventAIGenOpen(true);
-                                const suggestedPrompt = `${formData.title || ''} ${formData.copy || ''}`.trim().slice(0, 400);
-                                setEventAIPrompt(suggestedPrompt);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-all animate-pulse"
-                            >
-                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.75 11 7l3.25 1.25L11 9.5l-1.25 3.25L8.5 9.5 5.25 8.25 8.5 7l1.25-3.25ZM17 12l.8 2.2L20 15l-2.2.8L17 18l-.8-2.2L14 15l2.2-.8L17 12Z" />
-                              </svg>
-                              <span>Generar Imagen con IA 🍌</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {isEventAIGenOpen && (
-                          <div className="rounded-xl border border-amber-500/30 bg-[#25221d] p-4 space-y-4">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                                <span>🍌</span>
-                                <span>Generador Nano Banana</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setIsEventAIGenOpen(false)}
-                                className="text-gray-400 hover:text-white text-xs font-medium"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-gray-300">Prompt de la Imagen</label>
-                                <textarea
-                                  rows={3}
-                                  value={eventAIPrompt}
-                                  onChange={(e) => setEventAIPrompt(e.target.value)}
-                                  className="w-full rounded-xl border border-white/10 bg-[#161517] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none transition-all resize-none"
-                                  placeholder="Describe la imagen que quieres generar en detalle (e.g. 'Infografía moderna en tonos pastel sobre cómo cuidar la salud'...)"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-gray-300">Proporción / Formato</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {[
-                                    { id: '1:1', label: '1:1', desc: 'Cuadrado (Post)' },
-                                    { id: '16:9', label: '16:9', desc: 'Horizontal (YT)' },
-                                    { id: '9:16', label: '9:16', desc: 'Story / Reel' }
-                                  ].map(ratio => (
-                                    <button
-                                      key={ratio.id}
-                                      type="button"
-                                      onClick={() => setEventAIAspectRatio(ratio.id)}
-                                      className={`rounded-xl border p-2 text-center transition-all ${
-                                        eventAIAspectRatio === ratio.id
-                                          ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
-                                          : 'border-white/10 bg-[#161517] text-gray-400 hover:bg-white/5'
-                                      }`}
-                                    >
-                                      <div className="text-sm font-bold">{ratio.label}</div>
-                                      <div className="text-[9px] opacity-70 mt-0.5">{ratio.desc}</div>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <button
-                                type="button"
-                                disabled={isGeneratingEventImage || !eventAIPrompt.trim()}
-                                onClick={async () => {
-                                  setIsGeneratingEventImage(true);
-                                  try {
-                                    const newAsset = await generateImageForEvent(clientId, selectedEvent.id, {
-                                      prompt: eventAIPrompt,
-                                      aspectRatio: eventAIAspectRatio
-                                    });
-                                    setEventAssets(prev => [...prev, newAsset]);
-                                    toast.success('¡Imagen generada e incorporada!');
-                                    setIsEventAIGenOpen(false);
-                                  } catch (err) {
-                                    console.error(err);
-                                    toast.error(err.message || 'Error al generar imagen');
-                                  } finally {
-                                    setIsGeneratingEventImage(false);
-                                  }
-                                }}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black py-2.5 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                              >
-                                {isGeneratingEventImage ? (
-                                  <>
-                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                                    <span>Generando Imagen con IA...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                    <span>Generar e Insertar</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Visualizador de assets actuales */}
-                        {isLoadingAssets ? (
-                          <div className="rounded-xl border border-white/5 bg-[#222024]/40 px-3 py-4 text-center text-sm text-gray-500 animate-pulse">
-                            Cargando archivos multimedia...
-                          </div>
-                        ) : eventAssets.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-white/10 bg-[#222024]/30 px-3 py-6 text-center text-sm text-gray-500">
-                            Ningún archivo multimedia adjunto. Guarda el post y usa Nano Banana o sube archivos desde el calendario.
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            {eventAssets.map(asset => {
-                              const mime = asset.mime_type || '';
-                              const isImage = mime.startsWith('image/');
-                              const isVideo = mime.startsWith('video/');
-                              return (
-                                <div key={asset.id} className="overflow-hidden rounded-xl border border-white/10 bg-[#222024]/60 group relative shadow-md">
-                                  <div className="aspect-square w-full bg-black/40 relative">
-                                    {isImage && asset.preview_url && (
-                                      <img src={asset.preview_url} alt={asset.file_name} className="h-full w-full object-cover group-hover:scale-105 transition-all duration-300" />
-                                    )}
-                                    {isVideo && asset.preview_url && (
-                                      <video src={asset.preview_url} className="h-full w-full object-cover group-hover:scale-105 transition-all duration-300" controls muted />
-                                    )}
-                                    {!isImage && !isVideo && (
-                                      <div className="flex h-full w-full items-center justify-center text-xs text-gray-400 font-semibold uppercase">
-                                        Archivo
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="truncate px-2 py-1.5 text-[10px] text-gray-300 bg-[#1a181c] border-t border-white/5" title={asset.file_name}>
-                                    {asset.file_name}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
 
                     </div>
@@ -1435,9 +1695,9 @@ export const ScheduleSection = ({ clientId }) => {
 
                                 {/* IG Post Image */}
                                 <div className="aspect-square w-full bg-[#222024] relative flex items-center justify-center overflow-hidden border-b border-white/5">
-                                  {eventAssets.find(a => a.preview_url) ? (
+                                  {activePreviewUrl ? (
                                     <img 
-                                      src={eventAssets.find(a => a.preview_url).preview_url} 
+                                      src={activePreviewUrl} 
                                       alt="Preview" 
                                       className="w-full h-full object-cover"
                                     />
@@ -1477,9 +1737,9 @@ export const ScheduleSection = ({ clientId }) => {
                               <div className="h-full flex flex-col justify-between text-xs relative select-none">
                                 {/* TikTok Background Video/Photo Mockup */}
                                 <div className="absolute inset-0 bg-[#161517] z-0 flex items-center justify-center overflow-hidden">
-                                  {eventAssets.find(a => a.preview_url) ? (
+                                  {activePreviewUrl ? (
                                     <img 
-                                      src={eventAssets.find(a => a.preview_url).preview_url} 
+                                      src={activePreviewUrl} 
                                       alt="Preview" 
                                       className="w-full h-full object-cover opacity-80"
                                     />
@@ -1536,9 +1796,9 @@ export const ScheduleSection = ({ clientId }) => {
                               // YouTube Shorts Mockup
                               <div className="h-full flex flex-col justify-between text-xs relative select-none">
                                 <div className="absolute inset-0 bg-[#161517] z-0 flex items-center justify-center overflow-hidden">
-                                  {eventAssets.find(a => a.preview_url) ? (
+                                  {activePreviewUrl ? (
                                     <img 
-                                      src={eventAssets.find(a => a.preview_url).preview_url} 
+                                      src={activePreviewUrl} 
                                       alt="Preview" 
                                       className="w-full h-full object-cover opacity-85"
                                     />
@@ -1654,7 +1914,7 @@ export const ScheduleSection = ({ clientId }) => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsAIGeneratorOpen(true)}
-        className="fixed bottom-6 right-6 z-40 h-12 rounded-full px-5 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-500/30 text-emerald-300 hover:border-emerald-400 hover:text-white shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 font-semibold text-sm hover:from-emerald-500/25 hover:via-teal-500/25 hover:to-cyan-500/25"
+        className="fixed bottom-20 md:bottom-8 right-6 z-40 h-12 rounded-full px-5 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-500/30 text-emerald-300 hover:border-emerald-400 hover:text-white shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 font-semibold text-sm hover:from-emerald-500/25 hover:via-teal-500/25 hover:to-cyan-500/25"
         style={{
           boxShadow: '0 8px 32px rgba(16, 185, 129, 0.15)'
         }}
@@ -1696,6 +1956,6 @@ export const ScheduleSection = ({ clientId }) => {
 	        clientName={client?.name || ''}
 	      />
 
-	    </motion.div>
+	    </div>
   );
 };

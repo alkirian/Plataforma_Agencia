@@ -1,4 +1,4 @@
-import { generateScheduleIdeas, handleChatConversation, generateImageWithAI } from '../services/ai.service.js';
+import { generateScheduleIdeas, handleChatConversation, generateImageWithAI, generateCopyFromTrend } from '../services/ai.service.js';
 import { listChatMessages, saveChatMessage } from '../services/chat.service.js';
 import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 
@@ -263,6 +263,31 @@ export const handleGenerateImage = async (req, res, next) => {
     return res.status(200).json({ success: true, data: asset });
   } catch (error) {
     console.error('❌ Error general en handleGenerateImage:', error);
+    next(error);
+  }
+};
+
+export const handleGenerateCopyFromTrend = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    const { clientId } = req.params;
+    const { trendTitle, trendDescription, suggestedAction, channel } = req.body;
+
+    if (!clientId || !trendTitle) {
+      return res.status(400).json({ success: false, message: 'clientId y trendTitle son requeridos' });
+    }
+
+    const copyData = await generateCopyFromTrend({
+      clientId,
+      trendTitle,
+      trendDescription,
+      suggestedAction,
+      channel,
+      token
+    });
+
+    res.status(200).json({ success: true, data: copyData });
+  } catch (error) {
     next(error);
   }
 };

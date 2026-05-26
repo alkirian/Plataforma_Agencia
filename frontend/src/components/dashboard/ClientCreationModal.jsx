@@ -1123,6 +1123,9 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                         <p className="text-xs text-[color:var(--color-text-muted)] max-w-sm mx-auto leading-relaxed">
                           La identidad de marca ha sido registrada y estructurada. Gemini ya cuenta con toda la información necesaria para generar ideas y calendarios adaptados a su tono.
                         </p>
+                        <p className="text-[11px] mt-4 text-[color:var(--color-accent-sage)] bg-[color:var(--color-accent-sage)]/5 border border-[color:var(--color-accent-sage)]/10 rounded-lg p-2.5 max-w-sm mx-auto leading-relaxed">
+                          💡 <strong>Tip Profesional:</strong> Puedes vincular sus cuentas de redes sociales (Instagram, TikTok, etc.) y fotos de referencia en la Ficha de Identidad para auditar y perfeccionar la consistencia de su marca con IA.
+                        </p>
                       </div>
 
                       {/* Botones de acción final */}

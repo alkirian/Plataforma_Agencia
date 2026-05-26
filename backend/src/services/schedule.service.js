@@ -1,4 +1,4 @@
-import { createAuthenticatedClient } from '../config/supabaseClient.js';
+import { createAuthenticatedClient, supabaseAdmin } from '../config/supabaseClient.js';
 import { logActivity } from './activity.service.js';
 
 // Helper: normaliza el estado al formato esperado por el ENUM de la BD
@@ -185,7 +185,25 @@ export const deleteScheduleItem = async (itemId, clientId, token, userId = null)
 
   if (fetchError) throw new Error('Evento no encontrado');
 
-  // Eliminar el item
+  // Obtener los assets asociados para poder borrarlos de storage
+  const { data: assets, error: assetsError } = await supabaseAuth
+    .from('content_assets')
+    .select('storage_path')
+    .eq('schedule_item_id', itemId);
+
+  if (!assetsError && assets && assets.length > 0) {
+    const paths = assets.map(a => a.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('content-assets')
+        .remove(paths);
+      if (storageError) {
+        console.error('[deleteScheduleItem] Error deleting files from storage:', storageError.message);
+      }
+    }
+  }
+
+  // Eliminar el item (esto borrará en cascada los registros de content_assets en la BD)
   const { error } = await supabaseAuth
     .from('schedule_items')
     .delete()
@@ -275,6 +293,21 @@ export const clearAllScheduleItems = async (clientId, token, userId = null) => {
     return { count: 0 };
   }
 
+  // Obtener todos los assets de estos items para borrarlos de storage
+  const { data: assets, error: assetsError } = await supabaseAuth
+    .from('content_assets')
+    .select('storage_path')
+    .eq('client_id', clientId);
+
+  if (!assetsError && assets && assets.length > 0) {
+    const paths = assets.map(a => a.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      await supabaseAdmin.storage.from('content-assets').remove(paths).catch(e => {
+        console.error('[clearAllScheduleItems] Error deleting files from storage:', e.message);
+      });
+    }
+  }
+
   // Eliminar físicamente todos los registros del cliente
   const { error } = await supabaseAuth
     .from('schedule_items')
@@ -326,6 +359,23 @@ export const clearScheduleItemsByMonth = async (clientId, year, month, token, us
     return { count: 0 };
   }
 
+  const itemIds = items.map(i => i.id);
+
+  // Obtener assets asociados a estos items para borrarlos de storage
+  const { data: assets, error: assetsError } = await supabaseAuth
+    .from('content_assets')
+    .select('storage_path')
+    .in('schedule_item_id', itemIds);
+
+  if (!assetsError && assets && assets.length > 0) {
+    const paths = assets.map(a => a.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      await supabaseAdmin.storage.from('content-assets').remove(paths).catch(e => {
+        console.error('[clearScheduleItemsByMonth] Error deleting files from storage:', e.message);
+      });
+    }
+  }
+
   // Eliminar físicamente los registros
   const { error } = await supabaseAuth
     .from('schedule_items')
@@ -354,4 +404,80 @@ export const clearScheduleItemsByMonth = async (clientId, year, month, token, us
   }
 
   return { count: items.length };
+};
+
+/**
+ * Obtiene todos los assets del cronograma de un cliente, unidos con su publicación.
+ */
+export const getScheduleAssetsByClient = async (clientId, token) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+  const { data, error } = await supabaseAuth
+    .from('content_assets')
+    .select(`
+      *,
+      schedule_items (
+        title,
+        status,
+        scheduled_at,
+        channel
+      )
+    `)
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+/**
+ * Elimina un asset individual del cronograma (storage y base de datos).
+ */
+export const deleteScheduleItemAsset = async (assetId, clientId, token, userId = null) => {
+  const supabaseAuth = createAuthenticatedClient(token);
+
+  // 1. Obtener detalles del asset
+  const { data: asset, error: fetchError } = await supabaseAuth
+    .from('content_assets')
+    .select('*, schedule_items(agency_id)')
+    .eq('id', assetId)
+    .eq('client_id', clientId)
+    .single();
+
+  if (fetchError || !asset) throw new Error('Asset no encontrado');
+
+  // 2. Borrar del Storage de Supabase
+  if (asset.storage_path) {
+    const { error: storageError } = await supabaseAdmin.storage
+      .from('content-assets')
+      .remove([asset.storage_path]);
+    if (storageError) {
+      console.error('[deleteScheduleItemAsset] Error removing from storage:', storageError.message);
+    }
+  }
+
+  // 3. Eliminar de la base de datos
+  const { error } = await supabaseAuth
+    .from('content_assets')
+    .delete()
+    .eq('id', assetId)
+    .eq('client_id', clientId);
+
+  if (error) throw new Error(error.message);
+
+  // 4. Registrar actividad
+  if (userId) {
+    await logActivity({
+      agency_id: asset.agency_id || (asset.schedule_items ? asset.schedule_items.agency_id : null),
+      client_id: clientId,
+      user_id: userId,
+      action_type: 'SCHEDULE_ASSET_DELETED',
+      details: {
+        file_name: asset.file_name,
+        asset_id: asset.id,
+        schedule_item_id: asset.schedule_item_id
+      }
+    });
+  }
+
+  return true;
 };

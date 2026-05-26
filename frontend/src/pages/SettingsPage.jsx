@@ -23,6 +23,7 @@ import { CyberButton } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@api/apiFetch';
 import { supabase } from '../supabaseClient';
 
 const translations = {
@@ -250,7 +251,7 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
   // Diagnóstico de base de datos
   const [isDbTableMissing, setIsDbTableMissing] = useState(false);
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  const apiBaseUrl = getApiUrl();
 
   // Inicializar Datos del Perfil
   useEffect(() => {

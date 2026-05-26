@@ -40,3 +40,15 @@ export const getChatHistory = (clientId, params = {}) => {
   return apiFetch(`/clients/${clientId}/chat/history${qs ? `?${qs}` : ''}`)
     .then((resp) => resp?.data ?? resp);
 };
+
+/**
+ * Genera el copy redactado por IA y la propuesta creativa para un post del calendario basado en una tendencia.
+ * @param {string} clientId
+ * @param {object} trendData - { trendTitle, trendDescription, suggestedAction, channel }
+ */
+export const generateCopyFromTrend = (clientId, trendData) => {
+  return apiFetch(`/clients/${clientId}/generate-copy`, {
+    method: 'POST',
+    body: JSON.stringify(trendData),
+  }).then((resp) => resp?.data ?? resp);
+};

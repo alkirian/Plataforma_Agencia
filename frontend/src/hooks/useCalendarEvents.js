@@ -3,13 +3,25 @@ import { getSchedule, createScheduleItem, updateScheduleItem, deleteScheduleItem
 import { TASK_STATES } from '../constants/taskStates';
 import toast from 'react-hot-toast';
 
+// Caché global en memoria para persistir eventos entre montajes del componente
+const calendarCache = new Map();
+
 /**
  * Hook personalizado para manejar eventos del calendario con FullCalendar
- * Implementa mejores prácticas: memoización, manejo de errores, optimistic updates
+ * Implementa mejores prácticas: memoización, manejo de errores, optimistic updates, caché SWR
  */
 export const useCalendarEvents = (clientId) => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [events, setEvents] = useState(() => {
+    if (clientId && calendarCache.has(clientId)) {
+      return calendarCache.get(clientId);
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState(() => {
+    return !(clientId && calendarCache.has(clientId));
+  });
+
   const [error, setError] = useState(null);
 
   // Transformar datos del backend a formato FullCalendar con mapeo de color directo
@@ -53,16 +65,20 @@ export const useCalendarEvents = (clientId) => {
     if (!clientId) return;
     
     try {
-      setLoading(true);
+      // Solo encendemos el loading bloqueante si no tenemos nada en el caché
+      if (!calendarCache.has(clientId)) {
+        setLoading(true);
+      }
       setError(null);
       
       const scheduleData = await getSchedule(clientId);
       const transformedEvents = transformToFullCalendarEvents(scheduleData);
       
       setEvents(transformedEvents);
+      calendarCache.set(clientId, transformedEvents);
       
       if (process.env.NODE_ENV === 'development') {
-        console.log('📅 FullCalendar events loaded:', {
+        console.log('📅 FullCalendar events loaded (cached/updated):', {
           rawData: scheduleData,
           transformedEvents,
           eventCount: transformedEvents.length
@@ -103,19 +119,25 @@ export const useCalendarEvents = (clientId) => {
         }
       };
       
-      setEvents(prev => [...prev, tempEvent]);
+      setEvents(prev => {
+        const next = [...prev, tempEvent];
+        calendarCache.set(clientId, next);
+        return next;
+      });
       
       // Crear en backend
       const newEvent = await createScheduleItem(clientId, eventData);
       
       // Reemplazar evento temporal con el real
-      setEvents(prev => 
-        prev.map(event => 
+      setEvents(prev => {
+        const next = prev.map(event => 
           event.id === tempEvent.id 
             ? transformToFullCalendarEvents([newEvent])[0]
             : event
-        )
-      );
+        );
+        calendarCache.set(clientId, next);
+        return next;
+      });
       
       toast.success('Evento creado exitosamente');
       return newEvent;
@@ -125,7 +147,11 @@ export const useCalendarEvents = (clientId) => {
         console.error('[createEvent] Error:', err?.message || err, { eventData });
       }
       // Revertir optimistic update en caso de error
-      setEvents(prev => prev.filter(event => !event.extendedProps?.isTemporary));
+      setEvents(prev => {
+        const next = prev.filter(event => !event.extendedProps?.isTemporary);
+        calendarCache.set(clientId, next);
+        return next;
+      });
       toast.error('Error al crear evento');
       throw err;
     }
@@ -137,13 +163,15 @@ export const useCalendarEvents = (clientId) => {
       const updatedEvent = await updateScheduleItem(clientId, eventId, updateData);
       
       // Actualizar estado local
-      setEvents(prev => 
-        prev.map(event => 
+      setEvents(prev => {
+        const next = prev.map(event => 
           event.id === eventId 
             ? transformToFullCalendarEvents([updatedEvent])[0]
             : event
-        )
-      );
+        );
+        calendarCache.set(clientId, next);
+        return next;
+      });
       
       toast.success('Evento actualizado');
       return updatedEvent;
@@ -163,7 +191,11 @@ export const useCalendarEvents = (clientId) => {
       await deleteScheduleItem(clientId, eventId);
       
       // Actualizar estado local
-      setEvents(prev => prev.filter(event => event.id !== eventId));
+      setEvents(prev => {
+        const next = prev.filter(event => event.id !== eventId);
+        calendarCache.set(clientId, next);
+        return next;
+      });
       
       toast.success('Evento eliminado');
       
@@ -180,10 +212,14 @@ export const useCalendarEvents = (clientId) => {
       await clearSchedule(clientId, year, month);
       
       // Actualizar estado local: filtrar y mantener solo los que no coincidan con este mes
-      setEvents(prev => prev.filter(event => {
-        const d = new Date(event.start);
-        return !(d.getFullYear() === year && d.getMonth() === month);
-      }));
+      setEvents(prev => {
+        const next = prev.filter(event => {
+          const d = new Date(event.start);
+          return !(d.getFullYear() === year && d.getMonth() === month);
+        });
+        calendarCache.set(clientId, next);
+        return next;
+      });
       
       toast.success('Cronograma del mes limpiado');
     } catch (err) {
@@ -203,6 +239,7 @@ export const useCalendarEvents = (clientId) => {
       setLoading(true);
       await clearAllSchedule(clientId);
       setEvents([]);
+      calendarCache.set(clientId, []);
       toast.success('Cronograma completo eliminado');
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {

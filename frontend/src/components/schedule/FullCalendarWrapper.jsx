@@ -194,6 +194,39 @@ const FullCalendarWrapper = ({
     
     // Configuración de eventos
     eventDisplay: 'block',
+    eventContent: (arg) => {
+      const hasFeedback = !!arg.event.extendedProps?.client_feedback;
+      const title = arg.event.title;
+      const timeText = arg.timeText;
+      const platformText = arg.event.extendedProps?.platforms || arg.event.extendedProps?.channel || '';
+
+      return (
+        <div className="fc-event-main-custom flex flex-col w-full h-full p-1.5 min-w-0 relative">
+          <div className="flex items-center justify-between gap-1 w-full">
+            {timeText && <span className="text-[9px] font-semibold opacity-75 leading-none">{timeText}</span>}
+            {platformText && (
+              <span className="text-[7px] font-extrabold uppercase px-1 rounded-sm bg-black/45 border border-white/10 max-w-[65px] truncate leading-none text-gray-300">
+                {platformText.split(', ')[0]}
+              </span>
+            )}
+          </div>
+          <div className="text-[10px] font-semibold truncate mt-1 text-white leading-normal pr-3">
+            {title}
+          </div>
+          
+          {hasFeedback && (
+            <div className="absolute right-0.5 bottom-0.5 flex items-center justify-center">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fe0979] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#fe0979] text-[8px] font-bold text-white items-center justify-center shadow-[0_0_10px_rgba(254,9,121,0.6)]">
+                  💬
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    },
     eventStartEditable: true,
     eventDurationEditable: true,
     eventClassNames: (arg) => {

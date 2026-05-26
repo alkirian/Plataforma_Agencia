@@ -187,3 +187,134 @@ ESTRUCTURA JSON REQUERIDA:
   }
 };
 
+/**
+ * Realiza una auditoría inteligente cruzando la información manual del formulario
+ * de identidad con la información detectada públicamente en las fuentes vinculadas.
+ * @param {object} currentProfile - Datos actuales del formulario de identidad.
+ * @param {Array} sourceLinks - Enlaces de fuentes provistos por el usuario.
+ * @returns {Promise<object>} Reporte estructurado de consistencia con conflictos y resoluciones sugeridas.
+ */
+export const analyzeBrandConsistency = async (currentProfile, sourceLinks = []) => {
+  console.log('🤖 [OpenAI Brand Alignment] Iniciando análisis de consistencia de marca...');
+
+  let gatheredInfoText = '';
+  const activeLinks = (sourceLinks || []).filter(link => link.url && link.url.trim());
+
+  for (const link of activeLinks) {
+    const rawUrl = link.url.trim();
+    let query = rawUrl;
+    try {
+      const parsed = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`);
+      const host = parsed.hostname.replace('www.', '');
+      const path = parsed.pathname;
+      query = `${host} ${path} brand bio profile description`;
+    } catch (_e) {
+      query = `${rawUrl} brand info`;
+    }
+
+    console.log(`📡 [OpenAI Brand Alignment] Buscando info en web para enlace de tipo [${link.type || 'other'}]: "${query}"`);
+    const scraped = await searchWebDuckDuckGo(query);
+    if (scraped) {
+      gatheredInfoText += `\n\n--- INFORMACIÓN DE FUENTE [Tipo: ${link.type || 'other'}, URL: ${rawUrl}] ---\n${scraped}`;
+    }
+  }
+
+  if (!gatheredInfoText.trim()) {
+    gatheredInfoText = 'No se encontraron enlaces de fuentes activas con información pública detectable. Compara en base al contexto general.';
+  }
+
+  const systemPrompt = `Eres un estratega de marca senior y auditor de consistencia digital.
+Tu trabajo es auditar la identidad de una marca comparando los datos ingresados manualmente por el usuario en su formulario de identidad con la información real de sus canales digitales (Instagram, TikTok, YouTube, LinkedIn, Facebook, Web, etc.).
+Debes identificar contradicciones o inconsistencias y, además, redactar un perfil completo y súper detallado de lo que la IA detecta en internet para las siguientes 6 áreas estratégicas:
+- Descripción del Negocio (business_description)
+- Audiencia Objetivo (target_audience)
+- Tono de Voz (brand_voice)
+- Estilo Visual de Referencia (reference_style)
+- Valores y Filosofía (brand_values)
+- Competidores de Referencia (competitors)
+
+Debes devolver estrictamente un objeto JSON que siga el formato exacto especificado, sin explicaciones ni markdown en el exterior de tu respuesta.`;
+
+  const userPrompt = `Realiza una auditoría y extracción detallada de identidad de marca.
+  
+DATOS DEL FORMULARIO DE IDENTIDAD (INGRESADOS MANUALMENTE):
+- Descripción del Negocio: "${currentProfile.business_description || 'Sin describir'}"
+- Audiencia Objetivo: "${currentProfile.target_audience || 'Sin definir'}"
+- Tono de Voz: "${currentProfile.brand_voice || 'Sin definir'}"
+- Estilo Visual / Estética de Referencia: "${currentProfile.reference_style || 'Sin definir'}"
+- Valores y Filosofía: "${currentProfile.brand_values || 'Sin definir'}"
+- Competidores de Referencia: "${currentProfile.competitors || 'Sin definir'}"
+
+INFORMACIÓN REAL DETECTADA EN SUS ENLACES/REDES EN LA WEB:
+"""
+${gatheredInfoText}
+"""
+
+Completa estrictamente la estructura JSON indicada abajo.
+CRÍTICO:
+1. El campo "detected_profile" debe completarse SIEMPRE con la información más rica, profunda y detallada posible obtenida de las redes o deducida del comportamiento digital del cliente. Cada campo ("business_description", "target_audience", "brand_voice", "reference_style", "brand_values", "competitors") debe tener una descripción de al menos 3 a 5 oraciones extensas, sumamente profesionales y completas.
+2. Si detectas cualquier discrepancia (ej: el usuario describió el tono como formal pero en Instagram usan emojis, memes o modismos informales), define "is_consistent" como false, calcula el score y agrega los conflictos en "conflicts".
+3. Tanto los valores en "detected_value" y "description" del conflicto como los "value" de las "suggested_actions" deben ser sumamente extensos, profesionales, detallados y redactados en español de alta calidad, listos para inyectarse directamente en el formulario del cliente. EVITA textos cortos de una sola frase simple.
+
+ESTRUCTURA JSON REQUERIDA:
+{
+  "is_consistent": false,
+  "consistency_score": 75,
+  "detected_profile": {
+    "business_description": "Párrafo sumamente detallado de 3-5 oraciones sobre a qué se dedica el negocio en base a lo captado en internet...",
+    "target_audience": "Párrafo sumamente detallado de 3-5 oraciones sobre la audiencia real captada de las redes sociales del cliente...",
+    "brand_voice": "Párrafo sumamente detallado de 3-5 oraciones sobre el tono de comunicación, adjetivos y reglas detectadas...",
+    "reference_style": "Párrafo sumamente detallado de 3-5 oraciones sobre la estética, colores, tipos de fotos y vibra visual de sus perfiles...",
+    "brand_values": "Párrafo sumamente detallado de 3-5 oraciones describiendo la misión, visión, pilares éticos o filosofía detectada...",
+    "competitors": "Párrafo detallado listando competidores directos y marcas similares en base a las menciones y sector analizado..."
+  },
+  "conflicts": [
+    {
+      "id": "conflicto-brand_voice",
+      "field": "brand_voice",
+      "title": "Inconsistencia en el Tono de Voz",
+      "severity": "high", 
+      "manual_value": "Valor escrito en el formulario",
+      "detected_value": "Valor real detectado en sus redes (párrafo extenso y rico)",
+      "description": "Explicación detallada de la contradicción detectada entre lo manual y lo real en redes sociales, fundamentando por qué confunde a la IA.",
+      "suggested_actions": [
+        {
+          "type": "use_detected",
+          "label": "Adoptar tono real de redes",
+          "value": "Párrafo completo y súper profesional redactado en español de 3-5 oraciones que reemplazará el tono de voz para alinearlo a lo real en redes."
+        },
+        {
+          "type": "use_manual",
+          "label": "Mantener original del formulario",
+          "value": "Párrafo pulido para reafirmar y mantener el valor manual original."
+        },
+        {
+          "type": "merge_both",
+          "label": "Fusionar ambos estilos",
+          "value": "Párrafo redactado por ti de 3-5 oraciones que logre una fusión perfecta y armoniosa de ambos estilos."
+        }
+      ]
+    }
+  ]
+}
+
+Nota: Los valores de texto deben estar redactados en español, ser amplios, elegantes y listos para inyectarse directamente en la base de datos del cliente.`;
+
+  console.log('🤖 [OpenAI Brand Alignment] Solicitando diagnóstico a GPT-4o-mini...');
+  const jsonText = await callOpenAIJSON(systemPrompt, userPrompt);
+
+  try {
+    const parsedData = JSON.parse(jsonText);
+    console.log(`✅ [OpenAI Brand Alignment] Diagnóstico de coherencia estructurado correctamente. Coherencia: ${parsedData.consistency_score}%`);
+    return parsedData;
+  } catch (parseError) {
+    console.error('❌ [OpenAI Brand Alignment] Error al parsear el JSON de coherencia:', jsonText);
+    return {
+      is_consistent: true,
+      consistency_score: 100,
+      conflicts: []
+    };
+  }
+};
+
+

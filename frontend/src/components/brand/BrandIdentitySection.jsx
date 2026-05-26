@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { getClientBrandProfile, updateClientBrandProfile, autoFillBrandProfile, searchCompanyBrandProfile } from '../../api/clients';
+import { getClientBrandProfile, updateClientBrandProfile, autoFillBrandProfile, searchCompanyBrandProfile, analyzeBrandConsistency } from '../../api/clients';
 import { deleteBrandAsset, getBrandAssetsWithPreview, uploadBrandAsset } from '../../api/brandAssets';
 import { getDocumentsForClient } from '../../api/documents';
 import { TagInput } from '../common/TagInput';
@@ -9,15 +9,25 @@ const DEFAULT_PROFILE = {
   business_description: '',
   target_audience: '',
   brand_voice: '',
+  reference_style: '',
+  brand_values: '',
+  competitors: '',
+  // Enlaces específicos lado a lado
+  instagram_url: '',
+  website_url: '',
+  tiktok_url: '',
+  youtube_url: '',
+  facebook_url: '',
+  linkedin_url: '',
+  source_notes: '',
+  // Campos antiguos preservados para compatibilidad
   content_pillars: [],
   content_goals: [],
   products_services: [],
   preferred_platforms: [],
   preferred_formats: [],
   avoid_topics: [],
-  reference_style: '',
   source_links: [],
-  source_notes: '',
   ai_insights: {
     summary: '',
     tone_detected: '',
@@ -73,8 +83,48 @@ export const BrandIdentitySection = ({ clientId }) => {
   const [formData, setFormData] = useState(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Estados para el verificador de coherencia multicanal
+  const [consistencyReport, setConsistencyReport] = useState(null);
+  const [isAnalyzingConsistency, setIsAnalyzingConsistency] = useState(false);
+  const [resolvedConflicts, setResolvedConflicts] = useState(new Set());
+  const [highlightedField, setHighlightedField] = useState(null);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  const CONSISTENCY_LOADER_MSGS = [
+    "🔌 Conectando perfiles...",
+    "🧠 Analizando contenido real...",
+    "📡 Evaluando coherencia...",
+    "✨ Generando informe..."
+  ];
+
+  // Rotador de mensajes de carga
+  useEffect(() => {
+    let interval;
+    if (isAnalyzingConsistency) {
+      interval = setInterval(() => {
+        setLoadingMessageIndex(prev => (prev + 1) % CONSISTENCY_LOADER_MSGS.length);
+      }, 1800);
+    } else {
+      setLoadingMessageIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [isAnalyzingConsistency]);
+
+  const detectLinkType = (url = '') => {
+    const lower = url.toLowerCase().trim();
+    if (!lower) return 'other';
+    if (lower.includes('instagram.com') || lower.startsWith('@') || (/^[a-z0-9_.]+$/i.test(lower) && !lower.includes('.'))) {
+      return 'instagram';
+    }
+    if (lower.includes('tiktok.com')) return 'tiktok';
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
+    if (lower.includes('linkedin.com')) return 'linkedin';
+    if (lower.includes('facebook.com') || lower.includes('fb.com')) return 'facebook';
+    if (lower.includes('drive.google.com')) return 'drive';
+    return 'website';
+  };
   
-  // Pestañas / Pasos del Wizard: 'adn' | 'canales' | 'pilares'
   const [activeTab, setActiveTab] = useState('adn');
 
   // Estados para el panel de autocompletado con IA
@@ -95,15 +145,31 @@ export const BrandIdentitySection = ({ clientId }) => {
   const [brandAssets, setBrandAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [uploadingAssets, setUploadingAssets] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Carga inicial de datos
   const loadProfile = async () => {
     try {
       setLoading(true);
       const response = await getClientBrandProfile(clientId);
+      const data = response?.data || {};
+
+      // Mapear de source_links antiguos si no existen inputs dedicados
+      const mapped = { ...data };
+      if (Array.isArray(data.source_links) && data.source_links.length > 0) {
+        data.source_links.forEach(link => {
+          if (link.type === 'instagram' && !data.instagram_url) mapped.instagram_url = link.url;
+          if (link.type === 'website' && !data.website_url) mapped.website_url = link.url;
+          if (link.type === 'tiktok' && !data.tiktok_url) mapped.tiktok_url = link.url;
+          if (link.type === 'youtube' && !data.youtube_url) mapped.youtube_url = link.url;
+          if (link.type === 'facebook' && !data.facebook_url) mapped.facebook_url = link.url;
+          if (link.type === 'linkedin' && !data.linkedin_url) mapped.linkedin_url = link.url;
+        });
+      }
+
       setFormData({
         ...DEFAULT_PROFILE,
-        ...(response?.data || {}),
+        ...mapped,
       });
     } catch (error) {
       toast.error('No se pudo cargar la identidad del cliente.');
@@ -149,16 +215,17 @@ export const BrandIdentitySection = ({ clientId }) => {
       formData.target_audience,
       formData.brand_voice,
       formData.reference_style,
-      ...(formData.content_pillars || []),
-      ...(formData.content_goals || []),
-      ...(formData.products_services || []),
-      ...(formData.preferred_platforms || []),
-      ...(formData.preferred_formats || []),
-      ...(formData.avoid_topics || []),
+      formData.brand_values,
+      formData.competitors,
+      formData.instagram_url,
+      formData.website_url,
+      formData.tiktok_url,
+      formData.youtube_url,
+      formData.facebook_url,
+      formData.linkedin_url,
     ];
     const filled = fields.filter(value => String(value || '').trim().length > 0).length;
-    // Total de campos a evaluar = 10
-    const totalFields = 10;
+    const totalFields = fields.length;
     return Math.min(100, Math.round((filled / totalFields) * 100));
   }, [formData]);
 
@@ -186,10 +253,110 @@ export const BrandIdentitySection = ({ clientId }) => {
   const handleUpdateSourceLink = (linkId, field, value) => {
     setFormData(prev => ({
       ...prev,
-      source_links: (prev.source_links || []).map(link =>
-        link.id === linkId ? { ...link, [field]: value } : link
-      ),
+      source_links: (prev.source_links || []).map(link => {
+        if (link.id === linkId) {
+          const updated = { ...link, [field]: value };
+          if (field === 'url') {
+            updated.type = detectLinkType(value);
+          }
+          return updated;
+        }
+        return link;
+      }),
     }));
+  };
+
+  const handleConsistencyCheck = async () => {
+    setIsAnalyzingConsistency(true);
+    setConsistencyReport(null);
+    setResolvedConflicts(new Set());
+    
+    try {
+      const reconstructedSourceLinks = [
+        { type: 'instagram', url: formData.instagram_url },
+        { type: 'website', url: formData.website_url },
+        { type: 'tiktok', url: formData.tiktok_url },
+        { type: 'youtube', url: formData.youtube_url },
+        { type: 'facebook', url: formData.facebook_url },
+        { type: 'linkedin', url: formData.linkedin_url },
+      ]
+      .filter(l => l.url && l.url.trim())
+      .map((l, i) => ({
+        id: `source-link-${l.type}-${i}`,
+        type: l.type,
+        url: ensureHttpProtocol(l.url),
+        notes: ''
+      }));
+
+      if (reconstructedSourceLinks.length === 0) {
+        toast.error("Por favor agrega al menos un enlace de referencia antes de auditar.");
+        setIsAnalyzingConsistency(false);
+        return;
+      }
+
+      const response = await analyzeBrandConsistency(clientId, formData, reconstructedSourceLinks);
+      
+      if (response?.success && response?.data) {
+        setConsistencyReport(response.data);
+        if (response.data.is_consistent) {
+          toast.success("✨ ¡Análisis completado! Tu identidad de marca está alineada.");
+        } else {
+          toast.success(`⚠️ Auditoría completa: ${response.data.consistency_score}% de alineación.`);
+        }
+      } else {
+        throw new Error("No se pudo procesar el diagnóstico de consistencia.");
+      }
+    } catch (error) {
+      toast.error(error.message || "Error al realizar la auditoría.");
+    } finally {
+      setIsAnalyzingConsistency(false);
+    }
+  };
+
+  const resolveConflict = (conflictId, field, value) => {
+    handleChange(field, value);
+    
+    setResolvedConflicts(prev => {
+      const next = new Set(prev);
+      next.add(conflictId);
+      return next;
+    });
+
+    setHighlightedField(field);
+    setTimeout(() => setHighlightedField(null), 2500);
+
+    toast.success(`✨ ¡Campo [${getFieldLabel(field)}] inyectado e integrado con éxito!`);
+  };
+
+  // Inyectar perfil completo detectado en 1-Clic
+  const handleAdoptEntireProfile = () => {
+    if (!consistencyReport?.detected_profile) return;
+    const dp = consistencyReport.detected_profile;
+    setFormData(prev => ({
+      ...prev,
+      business_description: dp.business_description || prev.business_description,
+      target_audience: dp.target_audience || prev.target_audience,
+      brand_voice: dp.brand_voice || prev.brand_voice,
+      reference_style: dp.reference_style || prev.reference_style,
+      brand_values: dp.brand_values || prev.brand_values,
+      competitors: dp.competitors || prev.competitors,
+    }));
+    toast.success("🧬 ¡Perfil de marca completo inyectado en el formulario con éxito!");
+    
+    setAiHighlightFields(true);
+    setTimeout(() => setAiHighlightFields(false), 3500);
+  };
+
+  const getFieldLabel = (field) => {
+    const labels = {
+      business_description: 'Negocio y Propuesta',
+      target_audience: 'Audiencia Objetivo',
+      brand_voice: 'Tono de Voz',
+      reference_style: 'Estilo Visual',
+      brand_values: 'Valores y Filosofía',
+      competitors: 'Competidores'
+    };
+    return labels[field] || field;
   };
 
   const handleRemoveSourceLink = linkId => {
@@ -232,18 +399,26 @@ export const BrandIdentitySection = ({ clientId }) => {
     if (e) e.preventDefault();
     setSaving(true);
     try {
-      const normalizedSourceLinks = (formData.source_links || [])
-        .map(link => ({
-          id: link.id,
-          type: link.type || 'other',
-          url: ensureHttpProtocol(link.url),
-          notes: String(link.notes || '').trim(),
-        }))
-        .filter(link => link.url);
+      // Reconstruir source_links para retrocompatibilidad con el motor de IA
+      const reconstructedSourceLinks = [
+        { type: 'instagram', url: formData.instagram_url },
+        { type: 'website', url: formData.website_url },
+        { type: 'tiktok', url: formData.tiktok_url },
+        { type: 'youtube', url: formData.youtube_url },
+        { type: 'facebook', url: formData.facebook_url },
+        { type: 'linkedin', url: formData.linkedin_url },
+      ]
+      .filter(l => l.url && l.url.trim())
+      .map((l, i) => ({
+        id: `source-link-${l.type}-${i}`,
+        type: l.type,
+        url: ensureHttpProtocol(l.url),
+        notes: ''
+      }));
 
       const payload = {
         ...formData,
-        source_links: normalizedSourceLinks,
+        source_links: reconstructedSourceLinks,
         source_notes: String(formData.source_notes || '').trim(),
       };
 
@@ -251,7 +426,7 @@ export const BrandIdentitySection = ({ clientId }) => {
       toast.success('Identidad guardada con éxito.');
       setFormData(prev => ({
         ...prev,
-        source_links: normalizedSourceLinks,
+        source_links: reconstructedSourceLinks,
       }));
     } catch (error) {
       toast.error(error.message || 'No se pudo guardar la identidad.');
@@ -276,15 +451,11 @@ export const BrandIdentitySection = ({ clientId }) => {
           business_description: generated.business_description || prev.business_description,
           target_audience: generated.target_audience || prev.target_audience,
           brand_voice: generated.brand_voice || prev.brand_voice,
-          content_pillars: Array.isArray(generated.content_pillars) && generated.content_pillars.length > 0 ? generated.content_pillars : prev.content_pillars,
-          content_goals: Array.isArray(generated.content_goals) && generated.content_goals.length > 0 ? generated.content_goals : prev.content_goals,
-          products_services: Array.isArray(generated.products_services) && generated.products_services.length > 0 ? generated.products_services : prev.products_services,
-          preferred_platforms: Array.isArray(generated.preferred_platforms) && generated.preferred_platforms.length > 0 ? generated.preferred_platforms : prev.preferred_platforms,
-          preferred_formats: Array.isArray(generated.preferred_formats) && generated.preferred_formats.length > 0 ? generated.preferred_formats : prev.preferred_formats,
-          avoid_topics: Array.isArray(generated.avoid_topics) && generated.avoid_topics.length > 0 ? generated.avoid_topics : prev.avoid_topics,
+          brand_values: generated.brand_values || prev.brand_values || '',
+          competitors: generated.competitors || prev.competitors || '',
           reference_style: generated.reference_style || prev.reference_style,
         }));
-        toast.success(`✅ Identidad de "${companySearchQuery}" cargada. Revisá y ajustá los campos.`);
+        toast.success(`✅ Identidad cargada exitosamente.`);
         setAiHighlightFields(true);
         setTimeout(() => setAiHighlightFields(false), 3500);
       } else {
@@ -318,19 +489,14 @@ export const BrandIdentitySection = ({ clientId }) => {
       const response = await autoFillBrandProfile(clientId, payload);
       
       if (response?.success && response?.data) {
-        // Combinar datos generados con el formData actual
         const generated = response.data;
         setFormData(prev => ({
           ...prev,
           business_description: generated.business_description || prev.business_description,
           target_audience: generated.target_audience || prev.target_audience,
           brand_voice: generated.brand_voice || prev.brand_voice,
-          content_pillars: Array.isArray(generated.content_pillars) ? generated.content_pillars : prev.content_pillars,
-          content_goals: Array.isArray(generated.content_goals) ? generated.content_goals : prev.content_goals,
-          products_services: Array.isArray(generated.products_services) ? generated.products_services : prev.products_services,
-          preferred_platforms: Array.isArray(generated.preferred_platforms) ? generated.preferred_platforms : prev.preferred_platforms,
-          preferred_formats: Array.isArray(generated.preferred_formats) ? generated.preferred_formats : prev.preferred_formats,
-          avoid_topics: Array.isArray(generated.avoid_topics) ? generated.avoid_topics : prev.avoid_topics,
+          brand_values: generated.brand_values || prev.brand_values || '',
+          competitors: generated.competitors || prev.competitors || '',
           reference_style: generated.reference_style || prev.reference_style,
         }));
 
@@ -338,7 +504,6 @@ export const BrandIdentitySection = ({ clientId }) => {
         setShowAiPanel(false);
         setAiTextPrompt('');
         
-        // Destacar visualmente los campos modificados
         setAiHighlightFields(true);
         setTimeout(() => setAiHighlightFields(false), 3500);
       } else {
@@ -351,571 +516,565 @@ export const BrandIdentitySection = ({ clientId }) => {
     }
   };
 
-  // Renderizar chips de sugerencias rápidas debajo de TagInput
-  const renderSuggestions = (suggestions, field) => {
-    const currentList = formData[field] || [];
-    const filtered = suggestions.filter(s => !currentList.includes(s));
-    
-    if (filtered.length === 0) return null;
-    
+  if (loading) {
     return (
-      <div className="flex flex-wrap gap-1 mt-1.5">
-        <span className="text-[10px] text-gray-500 mr-1 self-center">Sugeridos:</span>
-        {filtered.map(item => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => {
-              handleChange(field, [...currentList, item]);
-            }}
-            className="rounded bg-[#222024] hover:bg-white hover:text-black border border-[#2B282F] px-1.5 py-0.5 text-[10px] text-gray-400 transition-all"
-          >
-            + {item}
-          </button>
-        ))}
+      <div className="max-w-4xl mx-auto rounded-2xl border border-white/5 bg-surface-strong/30 p-12 text-center text-text-muted flex flex-col items-center justify-center gap-4">
+        <div className="h-8 w-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm font-semibold animate-pulse">Cargando identidad del cliente...</p>
       </div>
     );
-  };
-
-  if (loading) {
-    return <div className="rounded-lg border border-[#2B282F] bg-[#161517] p-6 text-center text-gray-400">Cargando identidad de marca...</div>;
   }
 
+  const handleDragOver = e => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = async e => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await handleUploadAssets(files);
+    }
+  };
+
   return (
-    <section className="space-y-6">
-      {/* Encabezado e indicador visual de completado */}
-      <div className="rounded-xl border border-[#2B282F] bg-[#222024] p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1.5 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-white">Identidad de Contenido</h2>
-            <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5 text-[11px] font-semibold text-gray-300">
-              Onboarding
-            </span>
-          </div>
-          <p className="text-xs text-gray-400">
-            Define la voz, pilares y catálogo para que la IA genere ideas completamente personalizadas.
+    <section className="max-w-6xl mx-auto space-y-6 px-4 pt-2 pb-32">
+      
+      {/* Encabezado Principal Minimalista (Zen) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+        <div className="space-y-0.5">
+          <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            Identidad de Contenido: ADN y Tono
+          </h2>
+          <p className="text-xs text-text-muted leading-relaxed">
+            Estructura el ADN y tono del cliente para alimentar la IA de forma práctica y limpia.
           </p>
         </div>
         
-        <div className="w-full md:w-64 space-y-1.5">
-          <div className="flex justify-between text-xs font-semibold">
-            <span className="text-gray-400">Completado del Perfil</span>
-            <span className="text-white">{completion}%</span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-[#161517] border border-[#2B282F]">
+        <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 px-3 py-1.5 rounded-xl">
+          <span className="text-[10px] text-text-muted font-medium">Completado:</span>
+          <span className="text-xs font-bold text-white">{completion}%</span>
+          <div className="h-1.5 w-20 rounded-full bg-[#0e0d0f] border border-white/5 overflow-hidden">
             <div 
-              className="h-full rounded-full bg-white transition-all duration-500 ease-out" 
+              className="h-full bg-primary-500 transition-all duration-500" 
               style={{ width: `${completion}%` }} 
             />
           </div>
         </div>
       </div>
 
-      {/* Bloque Búsqueda de empresa en internet */}
-      <div className="rounded-xl border border-[#2B282F] bg-[#161517] p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm">🔍</span>
-              <h3 className="text-sm font-bold text-white">Buscar empresa en internet</h3>
-            </div>
-            <p className="text-[11px] text-gray-400">
-              Escribí el nombre de la empresa y Gemini busca información pública para pre-rellenar la identidad automáticamente.
-            </p>
+      {/* 🪄 Asistente Inteligente Unificado y Sleek */}
+      <div className="rounded-2xl border border-white/5 bg-[#121113]/40 p-5 space-y-4 shadow-md">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <span>✨</span> Rellenar Ficha con IA
+          </h3>
+          <div className="flex gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5">
+            <button
+              type="button"
+              onClick={() => setAiInputMode('text')}
+              className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${
+                aiInputMode === 'text' ? 'bg-white/10 text-white' : 'text-text-muted hover:text-white'
+              }`}
+            >
+              Buscar Empresa
+            </button>
+            <button
+              type="button"
+              onClick={() => setAiInputMode('doc')}
+              className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${
+                aiInputMode === 'doc' ? 'bg-white/10 text-white' : 'text-text-muted hover:text-white'
+              }`}
+            >
+              Pegar Brief / Notas
+            </button>
           </div>
-          <div className="flex gap-2 sm:w-auto w-full">
+        </div>
+
+        {aiInputMode === 'text' ? (
+          <div className="flex gap-2">
             <input
               type="text"
               value={companySearchQuery}
               onChange={e => setCompanySearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !isSearching && handleCompanySearch()}
               disabled={isSearching}
-              placeholder="Ej: Apple, Nike Argentina, Starbucks..."
-              className="flex-1 sm:w-56 rounded-lg border border-[#2B282F] bg-[#222024] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-gray-500 focus:outline-none transition-all disabled:opacity-50"
+              placeholder="Escribe el nombre de la empresa (ej: Nike, Starbucks)..."
+              className="flex-1 rounded-xl border border-white/5 bg-black/40 px-3.5 py-2.5 text-xs text-white placeholder-text-muted/40 focus:outline-none focus:border-primary-500/40"
             />
             <button
               type="button"
               onClick={handleCompanySearch}
               disabled={isSearching}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-bold text-white transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl bg-white hover:bg-gray-100 px-4 py-2.5 text-xs font-bold text-black transition-all whitespace-nowrap disabled:opacity-50 shadow-md"
             >
-              {isSearching ? (
-                <>
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Buscando...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                  </svg>
-                  <span>Buscar</span>
-                </>
-              )}
+              {isSearching ? 'Buscando...' : 'Buscar y Rellenar'}
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Bloque AI Autocomplete / Asistente Inteligente */}
-      <div className="rounded-xl border border-[#2B282F] bg-[#161517] overflow-hidden">
-        <div className="px-5 py-4 flex items-center justify-between bg-[#222024]/40 border-b border-[#2B282F]">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🪄</span>
-            <div>
-              <h3 className="text-sm font-bold text-white">¿Quieres ahorrar tiempo? Autocompletar con IA</h3>
-              <p className="text-[11px] text-gray-400">Extrae toda la identidad del cliente a partir de su brief o notas con un solo clic.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAiPanel(!showAiPanel)}
-            className="px-3 py-1.5 text-xs font-semibold border border-gray-600 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            {showAiPanel ? 'Cerrar Asistente' : 'Iniciar Asistente IA'}
-          </button>
-        </div>
-
-        {showAiPanel && (
-          <div className="p-5 border-t border-[#2B282F] bg-[#222024]/10 space-y-5">
-            <div className="flex border-b border-[#2B282F] pb-3 gap-6 text-sm">
-              <button
-                type="button"
-                onClick={() => setAiInputMode('text')}
-                className={`font-semibold pb-1 border-b-2 transition-all ${
-                  aiInputMode === 'text' ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                Escribir / Pegar Resumen informal
-              </button>
-              <button
-                type="button"
-                onClick={() => setAiInputMode('doc')}
-                className={`font-semibold pb-1 border-b-2 transition-all ${
-                  aiInputMode === 'doc' ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                Extraer desde Brief o Documento Cargado
-              </button>
-            </div>
-
-            {aiInputMode === 'text' ? (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-gray-400">Escribe o pega información del cliente</label>
-                <textarea
-                  rows={4}
-                  value={aiTextPrompt}
-                  onChange={(e) => setAiTextPrompt(e.target.value)}
-                  className="w-full rounded-lg border border-[#2B282F] bg-[#161517] p-3 text-sm text-white placeholder-gray-600 focus:border-gray-500 focus:outline-none transition-all resize-none"
-                  placeholder="Ej: 'Es una cafetería de especialidad llamada Cafe Store. Venden café tostado en origen, pastelería artesanal y cursos de barismo. Su público ideal son amantes del café premium, baristas novatos de 20 a 45 años. Su tono es cálido, moderno y educativo. Queremos publicar en Instagram y TikTok usando Reels e infografías...'"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <label className="block text-xs font-semibold text-gray-400">Selecciona el documento de brief</label>
-                {loadingDocs ? (
-                  <div className="text-xs text-gray-400">Cargando biblioteca de documentos del cliente...</div>
-                ) : documents.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[#2B282F] p-4 text-center text-xs text-gray-400 space-y-2">
-                    <p>No hay documentos cargados en la biblioteca de este cliente.</p>
-                    <p className="text-[10px] text-gray-500">Puedes cargar PDFs o Word en la pestaña de documentos del cliente antes de usar este asistente.</p>
-                  </div>
-                ) : (
-                  <select
-                    value={selectedDocId}
-                    onChange={(e) => setSelectedDocId(e.target.value)}
-                    className="w-full rounded-lg border border-[#2B282F] bg-[#161517] px-3 py-2.5 text-sm text-white focus:border-gray-500 focus:outline-none transition-all"
-                  >
-                    <option value="">-- Seleccionar un archivo de brief --</option>
-                    {documents.map((doc) => (
-                      <option key={doc.id} value={doc.id}>
-                        {doc.file_name} ({doc.file_type?.split('/').pop()?.toUpperCase()})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-end pt-2 border-t border-[#2B282F]/50">
+        ) : (
+          <div className="space-y-3">
+            <textarea
+              rows={2}
+              value={aiTextPrompt}
+              onChange={(e) => setAiTextPrompt(e.target.value)}
+              className="w-full rounded-xl border border-white/5 bg-black/40 p-3.5 text-xs text-white placeholder-text-muted/40 focus:outline-none focus:border-purple-500/40 resize-none"
+              placeholder="Pega notas rápidas, apuntes de reuniones o breves resúmenes de la marca aquí..."
+            />
+            <div className="flex justify-end">
               <button
                 type="button"
                 disabled={isAutoFilling}
                 onClick={handleAiAutoFill}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-gray-100 text-black px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 text-xs font-bold shadow-md transition-all duration-300"
               >
-                {isAutoFilling ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                    <span>Gemini analizando brief...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>✨ Iniciar Extracción Inteligente</span>
-                  </>
-                )}
+                {isAutoFilling ? 'Analizando...' : '✨ Estructurar con IA'}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Wizard / Pestañas de Navegación del Formulario */}
-      <div className="flex border-b border-[#2B282F] gap-2 md:gap-4 overflow-x-auto pb-px">
-        {[
-          { id: 'adn', label: '1. ADN y Tono 🧬' },
-          { id: 'canales', label: '2. Canales y Formato 📱' },
-          { id: 'pilares', label: '3. Pilares y Catálogo 📦' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap px-4 py-2.5 text-sm font-bold border-b-2 transition-all -mb-px ${
-              activeTab === tab.id
-                ? 'border-white text-white'
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Contenido del Formulario por Pasos */}
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-        {/* PASO 1: ADN y TONO */}
-        {activeTab === 'adn' && (
-          <div className="space-y-5 animate-fadeIn">
-            <div className="grid grid-cols-1 gap-5">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase">Negocio y propuesta de valor</label>
-                <textarea
-                  value={formData.business_description}
-                  onChange={e => handleChange('business_description', e.target.value)}
-                  rows={4}
-                  className={`w-full rounded-lg border bg-[#222024] p-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/5 transition-all ${
-                    aiHighlightFields && formData.business_description ? 'border-emerald-500 animate-pulse' : 'border-[#2B282F]'
-                  }`}
-                  placeholder="Describe a qué se dedica el negocio, qué vende y cuál es su propuesta única..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 tracking-wider uppercase">Audiencia objetivo</label>
-                  <textarea
-                    value={formData.target_audience}
-                    onChange={e => handleChange('target_audience', e.target.value)}
-                    rows={4}
-                    className={`w-full rounded-lg border bg-[#222024] p-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/5 transition-all ${
-                      aiHighlightFields && formData.target_audience ? 'border-emerald-500 animate-pulse' : 'border-[#2B282F]'
-                    }`}
-                    placeholder="¿A quién le habla la marca? Rango de edad, intereses, motivaciones..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 tracking-wider uppercase">Tono de voz</label>
-                  <textarea
-                    value={formData.brand_voice}
-                    onChange={e => handleChange('brand_voice', e.target.value)}
-                    rows={4}
-                    className={`w-full rounded-lg border bg-[#222024] p-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/5 transition-all ${
-                      aiHighlightFields && formData.brand_voice ? 'border-emerald-500 animate-pulse' : 'border-[#2B282F]'
-                    }`}
-                    placeholder="Ej: Cercano, educativo, experto, divertido, formal, etc..."
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase">Referencias de estilo estético/visual</label>
-                <textarea
-                  value={formData.reference_style}
-                  onChange={e => handleChange('reference_style', e.target.value)}
-                  rows={3}
-                  className={`w-full rounded-lg border bg-[#222024] p-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/5 transition-all ${
-                    aiHighlightFields && formData.reference_style ? 'border-emerald-500 animate-pulse' : 'border-[#2B282F]'
-                  }`}
-                  placeholder="Detalles sobre colores, estilo minimalista, tipografías o vibras estéticas deseadas..."
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PASO 2: CANALES Y FORMATO */}
-        {activeTab === 'canales' && (
-          <div className="space-y-5 animate-fadeIn">
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Redes Sociales Prioritarias</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {SOCIAL_PLATFORMS.map((platform) => {
-                  const isSelected = (formData.preferred_platforms || []).includes(platform.id);
-                  return (
-                    <button
-                      key={platform.id}
-                      type="button"
-                      onClick={() => togglePlatform(platform.id)}
-                      className={`rounded-xl border p-4 text-center transition-all ${
-                        isSelected
-                          ? 'border-white bg-white text-black font-bold shadow-md'
-                          : 'border-[#2B282F] bg-[#222024] text-gray-300 hover:border-gray-500'
-                      }`}
-                    >
-                      <div className="text-xl mb-1">{platform.icon}</div>
-                      <div className="text-xs">{platform.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* ==================== COLUMNA IZQUIERDA: INPUTS DEL USUARIO (7/12) ==================== */}
+        <div className="lg:col-span-7 space-y-6">
+          
+          {/* 🔌 Conectar Canales y Fuentes */}
+          <div className="rounded-2xl border border-white/5 bg-surface-strong/20 p-5 space-y-5 shadow-md relative overflow-hidden">
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                🔌 Canales del Cliente
+              </h3>
+              <p className="text-[10px] text-text-muted mt-0.5">Ingresa los enlaces principales de tu cliente.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Formatos preferidos</label>
-                <TagInput
-                  tags={formData.preferred_formats}
-                  onChange={(tags) => handleChange('preferred_formats', tags)}
-                  placeholder="Escribe un formato y presiona Enter..."
-                />
-                {renderSuggestions(SUGGESTIONS.preferred_formats, 'preferred_formats')}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Temas a evitar</label>
-                <TagInput
-                  tags={formData.avoid_topics}
-                  onChange={(tags) => handleChange('avoid_topics', tags)}
-                  placeholder="Escribe un tema y presiona Enter..."
-                />
-                {renderSuggestions(SUGGESTIONS.avoid_topics, 'avoid_topics')}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PASO 3: PILARES Y CATÁLOGO */}
-        {activeTab === 'pilares' && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Pilares de Contenido</label>
-                <TagInput
-                  tags={formData.content_pillars}
-                  onChange={(tags) => handleChange('content_pillars', tags)}
-                  placeholder="Escribe un pilar de contenido..."
-                />
-                {renderSuggestions(SUGGESTIONS.content_pillars, 'content_pillars')}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Objetivos Editoriales</label>
-                <TagInput
-                  tags={formData.content_goals}
-                  onChange={(tags) => handleChange('content_goals', tags)}
-                  placeholder="Escribe un objetivo de contenido..."
-                />
-                {renderSuggestions(SUGGESTIONS.content_goals, 'content_goals')}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-300 tracking-wider uppercase block">Servicios y Productos clave</label>
-              <TagInput
-                tags={formData.products_services}
-                onChange={(tags) => handleChange('products_services', tags)}
-                placeholder="Escribe un producto o servicio de tu catálogo y presiona Enter..."
-              />
-            </div>
-
-            {/* Fuentes / Links de referencia */}
-            <div className="space-y-4 rounded-xl border border-[#2B282F] bg-[#161517] p-5">
-              <div className="flex items-center justify-between border-b border-[#2B282F] pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-white">Enlaces de Identidad de Marca</h3>
-                  <p className="text-[11px] text-gray-400">Configura links a perfiles activos para nutrir al modelo.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddSourceLink}
-                  className="rounded-lg border border-[#2B282F] bg-[#222024] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2B282F] transition-all"
-                >
-                  Agregar enlace
-                </button>
-              </div>
-
-              {(formData.source_links || []).length === 0 ? (
-                <div className="rounded-lg border border-dashed border-[#2B282F] p-4 text-center text-xs text-gray-400">
-                  Aún no has agregado enlaces. Puedes añadir webs de referencia o perfiles sociales de la marca.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {(formData.source_links || []).map(link => (
-                    <div key={link.id} className="grid grid-cols-1 gap-2.5 rounded-lg border border-[#2B282F] bg-[#222024]/40 p-4 md:grid-cols-[160px_1fr_auto]">
-                      <select
-                        value={link.type || 'other'}
-                        onChange={e => handleUpdateSourceLink(link.id, 'type', e.target.value)}
-                        className="rounded-lg border border-[#2B282F] bg-[#161517] px-3 py-2 text-xs text-white focus:outline-none focus:border-gray-500"
-                      >
-                        {SOURCE_TYPES.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
-                      
-                      <input
-                        value={link.url || ''}
-                        onChange={e => handleUpdateSourceLink(link.id, 'url', e.target.value)}
-                        placeholder="https://instagram.com/nombreclient"
-                        className="rounded-lg border border-[#2B282F] bg-[#161517] px-3 py-2 text-xs text-white placeholder-gray-700 focus:outline-none focus:border-gray-500"
-                      />
-                      
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSourceLink(link.id)}
-                        className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
-                      >
-                        Eliminar
-                      </button>
-                      
-                      <textarea
-                        value={link.notes || ''}
-                        onChange={e => handleUpdateSourceLink(link.id, 'notes', e.target.value)}
-                        rows={2}
-                        placeholder="Nota opcional para la IA: observar tono, productos, estilo visual..."
-                        className="rounded-lg border border-[#2B282F] bg-[#161517] px-3 py-2 text-xs text-white placeholder-gray-700 focus:outline-none focus:border-gray-500 md:col-span-3 resize-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-1.5 pt-2 border-t border-[#2B282F]/50">
-                <label className="text-[11px] font-semibold text-gray-400">Instrucciones de enlaces generales</label>
-                <textarea
-                  value={formData.source_notes || ''}
-                  onChange={e => handleChange('source_notes', e.target.value)}
-                  rows={2}
-                  placeholder="Instrucciones sobre cómo debe la IA procesar u observar estos enlaces..."
-                  className="w-full rounded-lg border border-[#2B282F] bg-[#222024] p-3 text-xs text-white focus:outline-none resize-none"
+            {/* Cuadrícula compacta de Redes Sociales y Web */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">Instagram</label>
+                <input
+                  type="text"
+                  value={formData.instagram_url || ''}
+                  onChange={e => handleChange('instagram_url', e.target.value)}
+                  placeholder="instagram.com/usuario"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
                 />
               </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">Sitio Web</label>
+                <input
+                  type="text"
+                  value={formData.website_url || ''}
+                  onChange={e => handleChange('website_url', e.target.value)}
+                  placeholder="https://ejemplo.com"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">TikTok</label>
+                <input
+                  type="text"
+                  value={formData.tiktok_url || ''}
+                  onChange={e => handleChange('tiktok_url', e.target.value)}
+                  placeholder="tiktok.com/@usuario"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">YouTube</label>
+                <input
+                  type="text"
+                  value={formData.youtube_url || ''}
+                  onChange={e => handleChange('youtube_url', e.target.value)}
+                  placeholder="youtube.com/@canal"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">Facebook</label>
+                <input
+                  type="text"
+                  value={formData.facebook_url || ''}
+                  onChange={e => handleChange('facebook_url', e.target.value)}
+                  placeholder="facebook.com/pagina"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">LinkedIn</label>
+                <input
+                  type="text"
+                  value={formData.linkedin_url || ''}
+                  onChange={e => handleChange('linkedin_url', e.target.value)}
+                  placeholder="linkedin.com/company/nombre"
+                  className="w-full rounded-xl border border-white/5 bg-black/30 px-3.5 py-1.5 text-xs text-white placeholder-gray-800 focus:outline-none focus:border-primary-500/40"
+                />
+              </div>
+
             </div>
 
-            {/* Material de referencia / Archivos cargados */}
-            <div className="space-y-4 rounded-xl border border-[#2B282F] bg-[#161517] p-5">
+            {/* Zona Drag & Drop de Documentos (Compacta) */}
+            <div className="space-y-3 pt-4 border-t border-white/5">
               <div>
-                <h3 className="text-sm font-bold text-white">Archivos y Capturas de Referencia</h3>
-                <p className="text-[11px] text-gray-400">
-                  Sube capturas de pantalla, manuales de marca o paletas para enriquecer el contexto.
-                </p>
+                <h4 className="text-[10px] font-bold text-white uppercase tracking-wider">Subir Manual o Brief</h4>
+                <p className="text-[9px] text-text-muted">Arrastra cualquier documento o imagen para alimentar la IA.</p>
               </div>
 
-              <label className="block cursor-pointer rounded-lg border border-dashed border-[#2B282F] bg-[#222024]/40 hover:bg-[#222024] p-4 text-center text-xs text-gray-400 transition-all">
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`cursor-pointer rounded-xl border border-dashed p-4 text-center text-xs transition-all duration-200 ${
+                  isDragging 
+                    ? 'border-primary-500 bg-primary-500/10 text-primary-400' 
+                    : 'border-white/10 bg-black/20 hover:bg-black/40 hover:border-white/20'
+                }`}
+              >
                 <input
                   type="file"
                   multiple
+                  id="brand-file-uploader"
                   className="hidden"
                   accept="image/*,application/pdf,.doc,.docx,.ppt,.pptx,.txt"
                   onChange={e => handleUploadAssets(e.target.files)}
                   disabled={uploadingAssets}
                 />
-                {uploadingAssets ? 'Subiendo material...' : '📎 Arrastra o selecciona archivos para subir'}
-              </label>
+                <label htmlFor="brand-file-uploader" className="cursor-pointer w-full flex flex-col items-center justify-center gap-1 text-text-muted">
+                  {uploadingAssets ? (
+                    <span className="flex items-center justify-center gap-2 text-[10px]">
+                      <span className="h-3 w-3 border-2 border-text-muted border-t-transparent rounded-full animate-spin"></span>
+                      Subiendo archivos...
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-lg">📎</span>
+                      <span className="text-[10px] font-semibold text-white/80">Arrastra archivos aquí o haz clic para subir</span>
+                      <span className="text-[8px] text-text-muted/60">PDF, DOCX, TXT o Imágenes</span>
+                    </>
+                  )}
+                </label>
+              </div>
 
-              {loadingAssets ? (
-                <div className="text-xs text-gray-400">Cargando material...</div>
-              ) : brandAssets.length === 0 ? (
-                <div className="text-xs text-gray-400">No hay material cargado.</div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {brandAssets.map(asset => {
-                    const mime = asset.mime_type || '';
-                    const isImage = mime.startsWith('image/');
-                    return (
-                      <div key={asset.id} className="overflow-hidden rounded-lg border border-[#2B282F] bg-[#222024]">
-                        <div className="aspect-square w-full bg-black/20">
-                          {isImage && asset.preview_url ? (
-                            <img src={asset.preview_url} alt={asset.file_name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center px-2 text-center text-[10px] text-gray-400">
-                              Archivo
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-2 space-y-1.5">
-                          <p className="truncate text-[10px] text-white" title={asset.file_name}>{asset.file_name}</p>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAsset(asset)}
-                            className="w-full rounded border border-red-500/20 bg-red-500/5 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Lista compacta de archivos cargados */}
+              {brandAssets.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-3">
+                  {brandAssets.map(asset => (
+                    <div key={asset.id} className="overflow-hidden rounded-lg border border-white/5 bg-[#121113] p-1.5 flex items-center justify-between gap-2">
+                      <p className="truncate text-[9px] text-white/80 font-medium flex-1">
+                        {asset.file_name || asset.name}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAsset(asset)}
+                        className="text-red-400 hover:text-red-300 text-[10px] px-1 font-bold transition-all"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
-        )}
 
-        {/* Botones de navegación del Wizard / Guardar */}
-        <div className="flex items-center justify-between border-t border-[#2B282F] pt-5">
-          <div>
-            {activeTab === 'canales' && (
+            {/* Acción de Refuerzo */}
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-white/5 gap-3">
+              <p className="text-[9px] text-text-muted max-w-sm leading-normal">
+                Compara y audita la coherencia entre lo escrito y la información real del cliente.
+              </p>
               <button
                 type="button"
-                onClick={() => setActiveTab('adn')}
-                className="px-4 py-2 border border-[#2B282F] hover:bg-[#222024] text-xs font-bold text-white rounded-lg transition-colors"
+                disabled={isAnalyzingConsistency}
+                onClick={handleConsistencyCheck}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-400 hover:to-indigo-500 text-white px-5 py-2 text-xs font-bold transition-all disabled:opacity-50"
               >
-                Volver
+                {isAnalyzingConsistency ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Analizando...</span>
+                  </span>
+                ) : (
+                  <span>🧠 Reforzar con IA</span>
+                )}
               </button>
-            )}
-            {activeTab === 'pilares' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('canales')}
-                className="px-4 py-2 border border-[#2B282F] hover:bg-[#222024] text-xs font-bold text-white rounded-lg transition-colors"
-              >
-                Volver
-              </button>
-            )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {activeTab === 'adn' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('canales')}
-                className="px-5 py-2.5 bg-white text-black hover:bg-gray-100 text-xs font-bold rounded-lg transition-colors"
-              >
-                Siguiente Paso
-              </button>
-            )}
-            {activeTab === 'canales' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('pilares')}
-                className="px-5 py-2.5 bg-white text-black hover:bg-gray-100 text-xs font-bold rounded-lg transition-colors"
-              >
-                Siguiente Paso
-              </button>
-            )}
-            
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleSubmit}
-              className="px-5 py-2.5 border border-[#2B282F] bg-[#222024] hover:bg-[#2B282F] text-xs font-bold text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Guardando...' : 'Guardar Identidad'}
-            </button>
+          {/* 🧬 ADN, Tono y Filosofía (Formulario de Precisión) */}
+          <div className="rounded-2xl border border-white/5 bg-surface-strong/20 p-5 space-y-5 shadow-md relative overflow-hidden">
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                🧬 ADN, Tono y Filosofía de Marca
+              </h3>
+              <p className="text-[10px] text-text-muted mt-0.5">Describe la propuesta estratégica de la marca.</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Descripción del Negocio */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">🏢 Descripción del Negocio</label>
+                <textarea
+                  rows={3}
+                  value={formData.business_description || ''}
+                  onChange={e => handleChange('business_description', e.target.value)}
+                  placeholder="A qué se dedica, propuesta de valor, productos principales..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'business_description'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+
+              {/* Público Objetivo */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">👥 Público Objetivo</label>
+                <textarea
+                  rows={3}
+                  value={formData.target_audience || ''}
+                  onChange={e => handleChange('target_audience', e.target.value)}
+                  placeholder="Cliente ideal, demografía, intereses, dolores..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'target_audience'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+
+              {/* Tono de Voz y Personalidad */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">📢 Tono de Voz y Personalidad</label>
+                <textarea
+                  rows={3}
+                  value={formData.brand_voice || ''}
+                  onChange={e => handleChange('brand_voice', e.target.value)}
+                  placeholder="Estilo de redacción, personalidad, adjetivos..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'brand_voice'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+
+              {/* Estilo Visual y Estética */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">🎨 Estilo Visual y Estética</label>
+                <textarea
+                  rows={3}
+                  value={formData.reference_style || ''}
+                  onChange={e => handleChange('reference_style', e.target.value)}
+                  placeholder="Dirección visual, paleta sugerida, vibra general..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'reference_style'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+
+              {/* Valores y Filosofía de Marca */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">🧬 Valores y Filosofía de Marca</label>
+                <textarea
+                  rows={3}
+                  value={formData.brand_values || ''}
+                  onChange={e => handleChange('brand_values', e.target.value)}
+                  placeholder="Principios centrales, cultura, misión de la marca..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'brand_values'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+
+              {/* Competidores de Referencia */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">🔍 Competidores de Referencia</label>
+                <textarea
+                  rows={3}
+                  value={formData.competitors || ''}
+                  onChange={e => handleChange('competitors', e.target.value)}
+                  placeholder="Marcas de referencia, cuentas de inspiración, benchmarks..."
+                  className={`w-full rounded-xl border bg-black/40 px-3 py-2 text-xs text-white placeholder-text-muted/40 focus:outline-none min-h-[80px] transition-all duration-300 ${
+                    highlightedField === 'competitors'
+                      ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-md'
+                      : aiHighlightFields
+                      ? 'border-purple-500/80'
+                      : 'border-white/5 focus:border-primary-500/40'
+                  }`}
+                />
+              </div>
+            </div>
           </div>
+          
         </div>
+
+        {/* ==================== COLUMNA DERECHA: CAPTADO POR IA Y DIAGNÓSTICO (5/12) ==================== */}
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+          
+          {/* Card: Conocimiento captado y Resoluciones de forma limpia */}
+          <div className="rounded-2xl border border-white/5 bg-surface-strong/20 p-5 space-y-5 shadow-xl relative overflow-hidden">
+            
+            {/* Banner de Notificación de Análisis Completo y Notorio */}
+            {consistencyReport && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 flex items-center gap-2.5 shadow-md animate-fadeIn border-l-4 border-l-emerald-500">
+                <span className="text-base animate-pulse">✨</span>
+                <div className="text-left space-y-0.5">
+                  <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest">¡Análisis Completado!</h4>
+                  <p className="text-[9.5px] text-text-muted">Gemini analizó con éxito tus fuentes y extrajo el perfil detallado abajo.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="space-y-0.5">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  📡 Análisis de Canales
+                </h3>
+                <p className="text-[10px] text-text-muted">Lo que la IA captó y sugiere del cliente en la web.</p>
+              </div>
+              
+              {consistencyReport && (
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                  consistencyReport.consistency_score >= 90
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                }`}>
+                  {consistencyReport.consistency_score}% Alineado
+                </span>
+              )}
+            </div>
+
+            {/* Listado de lo que la IA detectó de forma zen */}
+            <div className="space-y-4">
+              
+              {!consistencyReport ? (
+                <div className="text-center py-8 space-y-2">
+                  <span className="text-xl block">🛰️</span>
+                  <p className="text-[11px] text-text-muted leading-relaxed max-w-[220px] mx-auto">
+                    Introduce los enlaces a la izquierda y haz clic en <strong>"Reforzar con IA"</strong> para auditar tu ADN en tiempo real.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  
+                  {/* Botón de Adoptar Perfil Completo en 1-Clic */}
+                  {consistencyReport.detected_profile && (
+                    <button
+                      type="button"
+                      onClick={handleAdoptEntireProfile}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-600/20 hover:from-emerald-500/30 hover:to-teal-600/30 border border-emerald-500/30 text-emerald-400 py-2.5 text-xs font-bold transition-all shadow-md active:scale-95"
+                    >
+                      🧬 Adoptar Perfil Completo IA (1-Clic)
+                    </button>
+                  )}
+
+                  <div className="space-y-3.5 max-h-[550px] overflow-y-auto pr-1">
+                    {/* Renderizamos las 6 áreas estratégicas detalladas captadas por la IA */}
+                    {['business_description', 'target_audience', 'brand_voice', 'reference_style', 'brand_values', 'competitors'].map(field => {
+                      const detectedText = consistencyReport.detected_profile?.[field] || '';
+                      if (!detectedText) return null;
+
+                      // Buscar si este campo tiene un conflicto activo
+                      const conflict = consistencyReport.conflicts?.find(c => c.field === field);
+                      const isResolved = conflict ? resolvedConflicts.has(conflict.id) : true;
+
+                      return (
+                        <div key={field} className="bg-black/30 rounded-xl p-3.5 border border-white/5 space-y-2 transition-all hover:border-white/10">
+                          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                            <span className="text-[9px] text-primary-400 font-bold uppercase tracking-wider block">
+                              {field === 'business_description' ? '🏢 Negocio y Propuesta' : 
+                               field === 'target_audience' ? '👥 Público Objetivo' : 
+                               field === 'brand_voice' ? '📢 Tono de Voz' : 
+                               field === 'reference_style' ? '🎨 Estilo Visual' : 
+                               field === 'brand_values' ? '🧬 Valores y Filosofía' : '🔍 Competidores'}
+                            </span>
+                            
+                            {conflict && !isResolved ? (
+                              <span className="text-[7.5px] font-bold uppercase px-1.5 py-0.2 rounded border bg-amber-500/10 border-amber-500/20 text-amber-400">
+                                Discrepancia
+                              </span>
+                            ) : (
+                              <span className="text-[7.5px] font-bold uppercase px-1.5 py-0.2 rounded border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                                ✓ Alineado
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p className="text-[10.5px] text-white/90 italic leading-relaxed text-left whitespace-pre-line">
+                            "{detectedText}"
+                          </p>
+                          
+                          {conflict && !isResolved && (
+                            <div className="pt-2 border-t border-white/5 space-y-1.5">
+                              <span className="text-[9px] text-text-muted block">La IA sugiere actualizar este campo en tu ADN:</span>
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => resolveConflict(conflict.id, conflict.field, conflict.suggested_actions.find(a => a.type === 'merge_both')?.value || detectedText)}
+                                  className="inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all shadow-sm"
+                                >
+                                  🧬 Adoptar / Fusionar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ==================== PIE DE PÁGINA: BOTÓN DE GUARDAR GLOBAL ==================== */}
+        <div className="col-span-1 lg:col-span-12 flex justify-end pt-4 border-t border-white/5">
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white px-7 py-3 text-xs font-bold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50"
+          >
+            {saving ? (
+              <span className="flex items-center gap-1.5">
+                <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Guardando...</span>
+              </span>
+            ) : (
+              <span>💾 Guardar Identidad de Marca</span>
+            )}
+          </button>
+        </div>
+
       </form>
     </section>
   );

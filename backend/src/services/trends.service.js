@@ -146,6 +146,7 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
     resultados_de_busqueda: tavilyBlock,
     fecha_de_hoy: new Date().toISOString().slice(0, 10),
     estructura_esperada: {
+      title: 'Un título corto, altamente profesional y corporativo del reporte (de 3 a 5 palabras, ej: "Auge de E-commerce Sostenible" o "Tendencias en IA y Marketing")',
       summary: 'Párrafo de 2-3 oraciones resumiendo el estado de las tendencias. Si no hay nada nuevo, escribe: "No se encontraron nuevas tendencias hoy respecto al análisis anterior."',
       insights: [
         {
@@ -159,6 +160,7 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
       ],
     },
     instrucciones: [
+      'Crea un título muy profesional y descriptivo para el reporte y colócalo en el campo "title". Evita términos fantasiosos u ostentosos.',
       'Genera entre 3 y 6 insights SOLO si hay tendencias de este mes que sean genuinamente nuevas o presenten un ángulo diferente a las tendencias_ya_reportadas.',
       'Si las tendencias web obtenidas hoy son sustancialmente iguales o repetitivas comparadas con las tendencias_ya_reportadas, debes devolver el array de "insights" vacío: [].',
       'Prioriza tendencias con relevance alta.',
@@ -193,6 +195,7 @@ const analyzeTrendsWithGPT = async (client, tavilyData, previousInsights = []) =
   const parsed = JSON.parse(content);
 
   return {
+    title: cleanText(parsed.title) || '',
     summary: cleanText(parsed.summary) || 'Sin resumen disponible.',
     insights: (parsed.insights || []).map((ins, i) => ({
       id: ins.id || `insight-${i + 1}`,
@@ -259,12 +262,27 @@ export const runTrendsForClient = async (client, customKeywords = null) => {
   const tavilyData = await searchWithTavily(keywords);
   const analysis = await analyzeTrendsWithGPT(client, tavilyData, previousInsights);
 
+  if (!analysis.insights || analysis.insights.length === 0) {
+    logger.info?.(`[trends] ℹ️ No se encontraron nuevas tendencias para "${client.name}". Saltando guardado en Base de Datos.`);
+    return null;
+  }
+
+  let title = analysis.title || '';
+  if (!title) {
+    if (keywords.length > 0) {
+      title = `Análisis: ${keywords.slice(0, 3).join(', ')}`;
+    } else {
+      title = `Análisis de Tendencias (${new Date().toLocaleDateString('es-AR')})`;
+    }
+  }
+
   const { data: report, error } = await supabaseAdmin
     .from('trend_reports')
     .insert({
       client_id: client.id,
       agency_id: client.agency_id,
       keywords,
+      title,
       raw_results: tavilyData,
       summary: analysis.summary,
       insights: analysis.insights,
@@ -345,7 +363,9 @@ export const getTrendReports = async ({ clientId, limit = 7, token }) => {
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return data || [];
+  
+  // Filtrar reportes que tengan al menos 1 insight (no vacíos)
+  return (data || []).filter(r => Array.isArray(r.insights) && r.insights.length > 0);
 };
 
 /**
@@ -375,11 +395,13 @@ export const getLatestTrendReports = async ({ token }) => {
 
   if (error) throw new Error(error.message);
 
-  // Deduplicar — quedarse con el más reciente por cliente
+  // Filtrar reportes que tengan al menos 1 insight (no vacíos) y deduplicar
   const seen = new Set();
-  return (data || []).filter(r => {
-    if (seen.has(r.client_id)) return false;
-    seen.add(r.client_id);
-    return true;
-  });
+  return (data || [])
+    .filter(r => Array.isArray(r.insights) && r.insights.length > 0)
+    .filter(r => {
+      if (seen.has(r.client_id)) return false;
+      seen.add(r.client_id);
+      return true;
+    });
 };

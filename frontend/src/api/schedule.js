@@ -270,3 +270,49 @@ export const clearAllSchedule = async (clientId) => {
   });
   return resp?.data ?? resp;
 };
+
+/**
+ * Obtiene todos los assets del cronograma para un cliente.
+ */
+export const getClientScheduleAssets = async (clientId) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/assets`);
+  return resp?.data ?? [];
+};
+
+/**
+ * Obtiene todos los assets del cronograma con sus URLs firmadas para vista previa.
+ */
+export const getClientScheduleAssetsWithPreview = async (clientId) => {
+  const assets = await getClientScheduleAssets(clientId);
+  const enriched = await Promise.all(
+    assets.map(async asset => {
+      const mime = asset.mime_type || '';
+      const isVisual = mime.startsWith('image/') || mime.startsWith('video/');
+      if (!isVisual || !asset.storage_path) {
+        return { ...asset, preview_url: null };
+      }
+
+      const { data, error } = await supabase.storage
+        .from('content-assets')
+        .createSignedUrl(asset.storage_path, 60 * 30);
+
+      if (error || !data?.signedUrl) {
+        return { ...asset, preview_url: null };
+      }
+
+      return { ...asset, preview_url: data.signedUrl };
+    })
+  );
+
+  return enriched;
+};
+
+/**
+ * Elimina un asset individual del cronograma.
+ */
+export const deleteScheduleItemAsset = async (clientId, assetId) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/assets/${assetId}`, {
+    method: 'DELETE',
+  });
+  return resp?.data ?? resp ?? { success: true };
+};

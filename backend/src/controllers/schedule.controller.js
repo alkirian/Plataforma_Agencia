@@ -8,6 +8,8 @@ import {
   createScheduleItemAsset,
   clearScheduleItemsByMonth,
   clearAllScheduleItems,
+  getScheduleAssetsByClient,
+  deleteScheduleItemAsset,
 } from '../services/schedule.service.js';
 import { validateData, scheduleItemSchema, scheduleItemUpdateSchema, contentAssetSchema } from '../schemas/validation.js';
 
@@ -167,6 +169,28 @@ export const handleClearSchedule = async (req, res, next) => {
       message: `Se eliminaron ${result.count} tareas exitosamente del cronograma.`, 
       data: result 
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleGetClientScheduleAssets = async (req, res, next) => {
+  try {
+    const token = req.token || (req.headers.authorization?.split(' ')[1]);
+    const { clientId } = req.params;
+    const assets = await getScheduleAssetsByClient(clientId, token);
+    res.status(200).json({ success: true, data: assets });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleDeleteScheduleItemAsset = async (req, res, next) => {
+  try {
+    const token = req.token || (req.headers.authorization?.split(' ')[1]);
+    const { clientId, assetId } = req.params;
+    await deleteScheduleItemAsset(assetId, clientId, token, req.user?.id);
+    res.status(200).json({ success: true, message: 'Asset del cronograma eliminado correctamente' });
   } catch (error) {
     next(error);
   }

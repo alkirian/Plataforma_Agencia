@@ -1,4 +1,4 @@
-import { extractBrandProfileFromContext, searchAndExtractCompanyBrand } from '../services/aiBrand.service.js';
+import { extractBrandProfileFromContext, searchAndExtractCompanyBrand, analyzeBrandConsistency } from '../services/aiBrand.service.js';
 import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
@@ -151,6 +151,57 @@ export const handleSearchCompanyBrandProfile = async (req, res, next) => {
 
   } catch (error) {
     console.error('❌ Error general en handleSearchCompanyBrandProfile:', error);
+    next(error);
+  }
+};
+
+/**
+ * Endpoint para analizar la coherencia e inconsistencias de marca cruzando
+ * el formulario manual y las redes sociales de referencia.
+ * POST /api/v1/clients/:clientId/brand-profile/analyze-consistency
+ */
+export const handleAnalyzeBrandConsistency = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, error: 'Token de autenticación requerido.' });
+    }
+
+    const { clientId } = req.params;
+    const { currentProfile, sourceLinks } = req.body;
+
+    if (!clientId) {
+      return res.status(400).json({ success: false, error: 'clientId es requerido.' });
+    }
+
+    if (!currentProfile) {
+      return res.status(400).json({ success: false, error: 'Los datos actuales del perfil (currentProfile) son requeridos.' });
+    }
+
+    // Validar acceso al cliente
+    const supabaseAuth = createAuthenticatedClient(token);
+    const { data: client, error: clientErr } = await supabaseAuth
+      .from('clients')
+      .select('id, name')
+      .eq('id', clientId)
+      .single();
+
+    if (clientErr || !client) {
+      console.error('❌ [Brand Consistency] Error al validar cliente:', clientErr);
+      return res.status(404).json({ success: false, error: 'Cliente no encontrado o sin permisos.' });
+    }
+
+    console.log(`🔍 [Brand Consistency] Realizando diagnóstico de coherencia para cliente: "${client.name}"`);
+    const consistencyReport = await analyzeBrandConsistency(currentProfile, sourceLinks);
+
+    return res.status(200).json({
+      success: true,
+      data: consistencyReport,
+      message: 'Análisis de consistencia realizado con éxito.'
+    });
+
+  } catch (error) {
+    console.error('❌ Error general en handleAnalyzeBrandConsistency:', error);
     next(error);
   }
 };
