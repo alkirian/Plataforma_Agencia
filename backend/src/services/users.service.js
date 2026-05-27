@@ -7,7 +7,7 @@ import { getPendingInvitationForEmail, acceptInvitation, acceptInviteLink, resol
  * @param {object} userData - Los datos del usuario y la agencia.
  * @returns {Promise<object>} El perfil del nuevo usuario y los datos de la agencia.
  */
-export const registerNewAgency = async ({ email, password, fullName, agencyName, inviteCode }) => {
+export const registerNewAgency = async ({ email, password, fullName, agencyName, inviteCode, agencyType = 'agency' }) => {
   // Paso 1: Registrar al usuario en el sistema de autenticación de Supabase.
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -53,12 +53,27 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName,
       user_id: userId,
       agency_name: agencyName,
       user_full_name: fullName,
+      agency_type: agencyType,
     });
 
     if (rpcError) {
       throw new Error(rpcError.message);
     }
     agencyId = agencyData;
+
+    // Si es un negocio propio, auto-creamos el primer cliente (su marca)
+    if (agencyType === 'own_business') {
+      try {
+        await supabaseAdmin.from('clients').insert({
+          agency_id: agencyId,
+          name: agencyName,
+          industry: 'Mi Negocio',
+          brand_info: { card_color: '#7C5CFC' },
+        });
+      } catch (clientErr) {
+        console.error('[registerNewAgency] Error al auto-crear marca para negocio propio:', clientErr.message);
+      }
+    }
   }
 
   return {
@@ -79,7 +94,7 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName,
  * @param {string} [profileData.inviteCode] - El código de invitación opcional.
  * @returns {Promise<object>} Los datos de la nueva agencia.
  */
-export const completeUserProfile = async ({ userId, fullName, agencyName, inviteCode }) => {
+export const completeUserProfile = async ({ userId, fullName, agencyName, inviteCode, agencyType = 'agency' }) => {
   // 1) Obtener el correo del usuario desde Auth
   const { data: authUser, error: authUserError } = await supabaseAdmin.auth.admin.getUser(userId);
   if (authUserError) {
@@ -117,12 +132,27 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, invite
       user_id: userId,
       agency_name: agencyName,
       user_full_name: fullName,
+      agency_type: agencyType,
     });
 
     if (error) {
       throw new Error(`Error al completar el perfil: ${error.message}`);
     }
     agencyId = data;
+
+    // Si es un negocio propio, auto-creamos el primer cliente (su marca)
+    if (agencyType === 'own_business') {
+      try {
+        await supabaseAdmin.from('clients').insert({
+          agency_id: agencyId,
+          name: agencyName,
+          industry: 'Mi Negocio',
+          brand_info: { card_color: '#7C5CFC' },
+        });
+      } catch (clientErr) {
+        console.error('[completeUserProfile] Error al auto-crear marca para negocio propio:', clientErr.message);
+      }
+    }
   }
 
   return {
@@ -139,28 +169,65 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, invite
 export const checkUserExistsByEmail = async (email) => {
   try {
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    if (!normalizedEmail) return false;
+    if (!normalizedEmail) return { exists: false, hasAgency: false };
 
-    // Buscamos directamente en Supabase Auth con paginación optimizada de 200 usuarios por página
-    const perPage = 200;
-    let page = 1;
+    let authUser = null;
 
-    while (true) {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-
-      if (error) {
-        throw new Error(`Error al verificar usuario en auth: ${error.message}`);
+    // 1. Intentar buscar directamente en Supabase Auth por email (mucho más rápido y eficiente)
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.getUserByEmail(normalizedEmail);
+      if (!error && data?.user) {
+        authUser = data.user;
       }
-
-      const users = data?.users || [];
-      const found = users.some((user) => (user.email || '').toLowerCase() === normalizedEmail);
-      if (found) return true;
-
-      if (users.length < perPage) break;
-      page += 1;
+    } catch (err) {
+      console.warn('[checkUserExistsByEmail] getUserByEmail falló, usando listUsers como fallback:', err.message);
     }
 
-    return false;
+    // 2. Fallback: Paginación si getUserByEmail no está disponible o falla
+    if (!authUser) {
+      const perPage = 200;
+      let page = 1;
+
+      while (true) {
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+
+        if (error) {
+          throw new Error(`Error al verificar usuario en auth: ${error.message}`);
+        }
+
+        const users = data?.users || [];
+        const found = users.find((user) => (user.email || '').toLowerCase() === normalizedEmail);
+        if (found) {
+          authUser = found;
+          break;
+        }
+
+        if (users.length < perPage) break;
+        page += 1;
+      }
+    }
+
+    if (!authUser) {
+      return { exists: false, hasAgency: false };
+    }
+
+    // 3. Si el usuario existe en Auth, verificar si tiene un perfil con agencia en public.profiles
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('agency_id')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('[checkUserExistsByEmail] Error al verificar perfil:', profileError.message);
+    }
+
+    const hasAgency = !!(profile && profile.agency_id);
+
+    return {
+      exists: true,
+      hasAgency
+    };
   } catch (error) {
     console.error('Error en checkUserExistsByEmail:', error);
     throw new Error('Error al verificar el email en el sistema');

@@ -356,3 +356,13 @@ export const deleteScheduleItemAsset = async (clientId, assetId) => {
   });
   return resp?.data ?? resp ?? { success: true };
 };
+
+/**
+ * Publica una tarea del cronograma directamente en redes de Meta (Facebook/Instagram).
+ */
+export const publishScheduleItem = async (clientId, itemId) => {
+  const resp = await apiFetch(`/clients/${clientId}/schedule/${itemId}/publish`, {
+    method: 'POST',
+  });
+  return resp?.data ?? resp;
+};

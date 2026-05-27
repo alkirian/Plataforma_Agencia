@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getClients } from '../../api/clients';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getClients, getClientById } from '../../api/clients';
 import { PlusIcon, Cog6ToothIcon, BellIcon } from '@heroicons/react/24/outline';
 import { ClientSearchModal } from '../ui/ClientSearchModal';
 import { NotificationPanel } from '../notifications/NotificationPanel';
@@ -13,6 +13,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [avatar, setAvatar] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (profile) {
@@ -28,6 +29,15 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
   });
 
   const clients = response?.data || [];
+
+  const prefetchClientData = (clientId) => {
+    if (!clientId) return;
+    queryClient.prefetchQuery({
+      queryKey: ['client', clientId],
+      queryFn: () => getClientById(clientId).then(res => res.data),
+      staleTime: 1000 * 60 * 5, // Considerar frescos por 5 minutos
+    });
+  };
 
   // Notificaciones
   const {
@@ -105,6 +115,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
               <Link
                 key={client.id}
                 to={`/clients/${client.id}`}
+                onMouseEnter={() => prefetchClientData(client.id)}
                 className={`client-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 border border-transparent ${
                   isActive
                     ? 'bg-surface border-border-strong text-text-primary font-bold shadow-sm'

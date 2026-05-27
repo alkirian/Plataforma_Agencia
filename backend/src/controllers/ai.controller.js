@@ -34,7 +34,7 @@ export const handleChat = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const { clientId } = req.params;
-    const { userPrompt, chatHistory } = req.body;
+    const { userPrompt, chatHistory, agentId } = req.body;
 
     if (!clientId) {
       console.error('❌ clientId faltante');
@@ -52,10 +52,11 @@ export const handleChat = async (req, res, next) => {
     console.log('✅ Validaciones pasadas:', {
       clientId,
       userId: req.user.id,
-      userPromptLength: userPrompt.trim().length
+      userPromptLength: userPrompt.trim().length,
+      agentId
     });
 
-    // Guardar mensaje del usuario
+    // Guardar mensaje del usuario con metadatos del agente
     let userMessageId = null;
     try {
       console.log('💾 Intentando guardar mensaje de usuario...');
@@ -65,27 +66,24 @@ export const handleChat = async (req, res, next) => {
         clientId,
         role: 'user',
         content: userPrompt.trim(),
-        metadata: { chatHistory }
+        metadata: { chatHistory, agentId }
       });
       userMessageId = userMessage.id;
       console.log('✅ Mensaje de usuario guardado:', userMessage);
     } catch (saveError) {
-      console.error('❌ Error al guardar mensaje de usuario:', {
-        error: saveError.message,
-        stack: saveError.stack,
-        details: saveError
-      });
+      console.error('❌ Error al guardar mensaje de usuario:', saveError);
     }
 
-    // Generar respuesta con AI
-    console.log('🤖 Generando respuesta AI...');
-    const response = await handleChatConversation({ clientId, userPrompt, chatHistory, token });
+    // Generar respuesta con AI inyectando expertise
+    console.log('🤖 Generando respuesta AI con agentId:', agentId);
+    const response = await handleChatConversation({ clientId, userPrompt, chatHistory, token, agentId });
     console.log('✅ Respuesta AI generada:', {
       hasResponse: !!response?.response,
-      responseLength: response?.response?.length
+      responseLength: response?.response?.length,
+      hasCommand: !!response?.command
     });
 
-    // Guardar respuesta del asistente
+    // Guardar respuesta del asistente con metadatos del agente y comando en estado pendiente
     try {
       console.log('💾 Intentando guardar respuesta del asistente...');
       const assistantMessage = await saveChatMessage({
@@ -94,15 +92,16 @@ export const handleChat = async (req, res, next) => {
         clientId,
         role: 'assistant',
         content: response?.response || 'Lo siento, no pude generar una respuesta.',
-        metadata: { chatHistory, relatedToMessageId: userMessageId }
+        metadata: {
+          chatHistory,
+          relatedToMessageId: userMessageId,
+          agentId,
+          command: response?.command ? { ...response.command, status: 'pending' } : null
+        }
       });
       console.log('✅ Respuesta del asistente guardada:', assistantMessage);
     } catch (saveError) {
-      console.error('❌ Error al guardar respuesta del asistente:', {
-        error: saveError.message,
-        stack: saveError.stack,
-        details: saveError
-      });
+      console.error('❌ Error al guardar respuesta del asistente:', saveError);
     }
 
     // Responder al cliente
@@ -111,22 +110,20 @@ export const handleChat = async (req, res, next) => {
       data: {
         response: response?.response || 'Respuesta generada',
         messageId: userMessageId,
-        suggestions: response?.suggestions
+        suggestions: response?.suggestions,
+        command: response?.command ? { ...response.command, status: 'pending' } : null
       }
     };
 
     console.log('📤 Enviando respuesta al cliente:', {
       hasResponse: !!responseData.data.response,
-      hasMessageId: !!responseData.data.messageId
+      hasMessageId: !!responseData.data.messageId,
+      hasCommand: !!responseData.data.command
     });
 
     res.json(responseData);
   } catch (error) {
-    console.error('❌ Error general en handleChat:', {
-      error: error.message,
-      stack: error.stack,
-      details: error
-    });
+    console.error('❌ Error general en handleChat:', error);
     next(error);
   }
 };

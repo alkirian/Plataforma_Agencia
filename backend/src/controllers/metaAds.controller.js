@@ -115,13 +115,66 @@ export const handleExchangeOAuthToken = async (req, res) => {
   try {
     const longLivedToken = await metaAdsService.exchangeShortLivedToken(shortLivedToken);
     const accounts = await metaAdsService.getUserAdAccounts(longLivedToken);
+    const pages = await metaAdsService.getUserPagesAndInstagramAccounts(longLivedToken);
 
     res.status(200).json({
       status: 'success',
       data: {
         accessToken: longLivedToken,
-        accounts
+        accounts,
+        pages
       }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Recupera comentarios reales del cliente.
+ */
+export const handleGetClientComments = async (req, res) => {
+  const { clientId } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    const comments = await metaAdsService.getClientComments(clientId, token);
+    res.status(200).json({
+      status: 'success',
+      data: comments
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Publica una respuesta a un comentario específico.
+ */
+export const handleReplyToComment = async (req, res) => {
+  const { clientId, commentId } = req.params;
+  const { replyText, platform } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!replyText) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'El texto de la respuesta (replyText) es requerido.'
+    });
+  }
+
+  try {
+    const result = await metaAdsService.replyToComment(clientId, commentId, replyText, platform, token);
+    res.status(200).json({
+      status: 'success',
+      message: 'Respuesta publicada exitosamente.',
+      data: result
     });
   } catch (error) {
     res.status(500).json({

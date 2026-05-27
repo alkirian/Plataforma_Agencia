@@ -182,7 +182,7 @@ export const handleAnalyzeBrandConsistency = async (req, res, next) => {
     const supabaseAuth = createAuthenticatedClient(token);
     const { data: client, error: clientErr } = await supabaseAuth
       .from('clients')
-      .select('id, name')
+      .select('id, name, industry, brand_info')
       .eq('id', clientId)
       .single();
 
@@ -191,14 +191,150 @@ export const handleAnalyzeBrandConsistency = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Cliente no encontrado o sin permisos.' });
     }
 
-    console.log(`🔍 [Brand Consistency] Realizando diagnóstico de coherencia para cliente: "${client.name}"`);
-    const consistencyReport = await analyzeBrandConsistency(currentProfile, sourceLinks);
+    // A. Marcar de inmediato en la base de datos que el análisis de fondo ha iniciado
+    const initialBrandInfo = {
+      ...(client.brand_info || {}),
+      // Preservar los enlaces de redes cargados en el formulario
+      instagram_url: currentProfile.instagram_url || client.brand_info?.instagram_url || '',
+      website_url: currentProfile.website_url || client.brand_info?.website_url || '',
+      tiktok_url: currentProfile.tiktok_url || client.brand_info?.tiktok_url || '',
+      youtube_url: currentProfile.youtube_url || client.brand_info?.youtube_url || '',
+      facebook_url: currentProfile.facebook_url || client.brand_info?.facebook_url || '',
+      linkedin_url: currentProfile.linkedin_url || client.brand_info?.linkedin_url || '',
+      analysis_in_progress: true,
+      analysis_error: null
+    };
 
-    return res.status(200).json({
+    console.log(`🚀 [Brand Consistency] Marcando inicio de análisis de fondo para: "${client.name}"`);
+    await supabaseAdmin
+      .from('clients')
+      .update({ brand_info: initialBrandInfo })
+      .eq('id', clientId);
+
+    // B. Responder de inmediato al cliente (frontend) para liberar la conexión HTTP
+    res.status(200).json({
       success: true,
-      data: consistencyReport,
-      message: 'Análisis de consistencia realizado con éxito.'
+      message: '🧠 ¡Análisis de Co-Pilot iniciado de fondo! Tu estratega senior está auditando los canales, sitio web e industria en la web. Puedes navegar libremente o cerrar tu navegador; el lienzo se actualizará automáticamente cuando esté listo.'
     });
+
+    // C. Ejecutar todo el proceso pesado asíncronamente en segundo plano
+    (async () => {
+      try {
+        console.log(`📡 [Background Brand Analysis] Hilo asíncrono iniciado para: "${client.name}"`);
+
+        // 1. Obtener brand_assets del cliente
+        const { data: assets, error: assetsErr } = await supabaseAdmin
+          .from('brand_assets')
+          .select('*')
+          .eq('client_id', clientId);
+
+        let extractedTexts = [];
+        let imageAssets = [];
+
+        if (assetsErr) {
+          console.error('⚠️ [Brand Consistency] Error al cargar brand_assets:', assetsErr);
+        } else if (assets && assets.length > 0) {
+          for (const asset of assets) {
+            if (!asset.storage_path) continue;
+
+            try {
+              console.log(`📥 [Brand Analysis] Descargando asset de marca: ${asset.file_name} (${asset.storage_path})`);
+              
+              const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+                .from('brand-assets')
+                .download(asset.storage_path);
+
+              if (downloadError) {
+                console.error(`⚠️ Error al descargar asset ${asset.file_name}:`, downloadError);
+                continue;
+              }
+
+              const mimeType = asset.mime_type?.toLowerCase() || '';
+              const arrayBuffer = await fileData.arrayBuffer?.();
+              const buffer = arrayBuffer ? Buffer.from(arrayBuffer) : fileData;
+
+              if (mimeType.includes('pdf')) {
+                const parsedPdf = await pdf(buffer, { max: 150 });
+                if (parsedPdf.text?.trim()) {
+                  extractedTexts.push(`[Archivo PDF: ${asset.file_name}]\n${parsedPdf.text.trim()}`);
+                }
+              } else if (mimeType.includes('docx') || mimeType.includes('officedocument.wordprocessingml')) {
+                const { value } = await mammoth.extractRawText({ buffer });
+                if (value?.trim()) {
+                  extractedTexts.push(`[Archivo Word: ${asset.file_name}]\n${value.trim()}`);
+                }
+              } else if (mimeType.includes('text/') || mimeType.includes('txt') || asset.file_name?.endsWith('.txt')) {
+                const txt = buffer.toString('utf8') || '';
+                if (txt.trim()) {
+                  extractedTexts.push(`[Archivo de texto: ${asset.file_name}]\n${txt.trim()}`);
+                }
+              } else if (mimeType.startsWith('image/')) {
+                const base64 = buffer.toString('base64');
+                imageAssets.push({
+                  base64,
+                  mimeType,
+                  fileName: asset.file_name
+                });
+                console.log(`🖼️ [Brand Analysis] Imagen base64 extraída de ${asset.file_name}`);
+              }
+            } catch (assetErr) {
+              console.error(`❌ Error al procesar asset ${asset.file_name}:`, assetErr);
+            }
+          }
+        }
+
+        console.log(`🔍 [Background Brand Analysis] Realizando diagnóstico multimodal de coherencia para cliente: "${client.name}" con ${extractedTexts.length} textos y ${imageAssets.length} imágenes.`);
+        const consistencyReport = await analyzeBrandConsistency(currentProfile, sourceLinks, extractedTexts, imageAssets, client.name, client.industry);
+
+        // Volver a obtener el brand_info actual de la DB para no sobreescribir otros cambios del usuario
+        const { data: refreshedClient } = await supabaseAdmin
+          .from('clients')
+          .select('brand_info')
+          .eq('id', clientId)
+          .single();
+
+        const updatedBrandInfo = {
+          ...(refreshedClient?.brand_info || {}),
+          // Guardar el informe estratégico generado por la IA en la casilla de descripción comercial
+          business_description: consistencyReport.brand_profile_text,
+          consistency_report: consistencyReport,
+          analysis_in_progress: false,
+          analysis_error: null,
+          last_analyzed_at: new Date().toISOString()
+        };
+
+        await supabaseAdmin
+          .from('clients')
+          .update({ brand_info: updatedBrandInfo })
+          .eq('id', clientId);
+
+        console.log(`✅ [Background Brand Analysis] Completado y guardado exitosamente en DB para: "${client.name}"`);
+
+      } catch (backgroundError) {
+        console.error(`❌ [Background Brand Analysis] Error de fondo para ${client.name}:`, backgroundError);
+        
+        try {
+          const { data: refreshedClient } = await supabaseAdmin
+            .from('clients')
+            .select('brand_info')
+            .eq('id', clientId)
+            .single();
+
+          const errorBrandInfo = {
+            ...(refreshedClient?.brand_info || {}),
+            analysis_in_progress: false,
+            analysis_error: backgroundError.message
+          };
+
+          await supabaseAdmin
+            .from('clients')
+            .update({ brand_info: errorBrandInfo })
+            .eq('id', clientId);
+        } catch (innerErr) {
+          console.error('❌ Error al actualizar estado de fallo en DB:', innerErr);
+        }
+      }
+    })();
 
   } catch (error) {
     console.error('❌ Error general en handleAnalyzeBrandConsistency:', error);

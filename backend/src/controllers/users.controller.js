@@ -6,13 +6,20 @@ import { getPendingInvitationForEmail } from '../services/invitations.service.js
  */
 export const registerUser = async (req, res, next) => {
   try {
-    const { email, password, fullName, agencyName, inviteCode } = req.body;
+    const { email, password, fullName, agencyName, inviteCode, agencyType } = req.body;
 
     if (!email || !password || !fullName || !agencyName) {
       return res.status(400).json({ success: false, message: 'Todos los campos son requeridos.' });
     }
 
-    const newAgencyInfo = await registerNewAgency({ email, password, fullName, agencyName, inviteCode });
+    const newAgencyInfo = await registerNewAgency({ 
+      email, 
+      password, 
+      fullName, 
+      agencyName, 
+      inviteCode, 
+      agencyType: agencyType || 'agency' 
+    });
 
     res.status(201).json({
       success: true,
@@ -30,13 +37,19 @@ export const registerUser = async (req, res, next) => {
 export const handleCompleteProfile = async (req, res, next) => {
   try {
     const userId = req.user.id; // Obtenemos el ID del usuario desde el middleware
-    const { fullName, agencyName, inviteCode } = req.body;
+    const { fullName, agencyName, inviteCode, agencyType } = req.body;
 
     if (!fullName) {
       return res.status(400).json({ success: false, message: 'El nombre completo es requerido.' });
     }
 
-    const result = await completeUserProfile({ userId, fullName, agencyName, inviteCode });
+    const result = await completeUserProfile({ 
+      userId, 
+      fullName, 
+      agencyName, 
+      inviteCode, 
+      agencyType: agencyType || 'agency' 
+    });
 
     res.status(201).json({
       success: true,
@@ -72,12 +85,12 @@ export const handleCheckEmail = async (req, res, next) => {
       });
     }
 
-    // Verificar si el usuario existe
-    const exists = await checkUserExistsByEmail(email);
+    // Verificar si el usuario existe y si pertenece a una agencia
+    const { exists, hasAgency } = await checkUserExistsByEmail(email);
 
-    // Buscar si hay una invitación pendiente para este correo
+    // Buscar si hay una invitación pendiente para este correo si no tiene agencia activa
     let invitation = null;
-    if (!exists) {
+    if (!hasAgency) {
       invitation = await getPendingInvitationForEmail(email);
     }
 
@@ -85,6 +98,7 @@ export const handleCheckEmail = async (req, res, next) => {
       success: true,
       data: { 
         exists,
+        hasAgency,
         invitation: invitation ? {
           agencyId: invitation.agencyId,
           agencyName: invitation.agencyName,

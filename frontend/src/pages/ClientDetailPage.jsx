@@ -1,15 +1,30 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect, Fragment, Suspense, lazy } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getClientById } from '../api/clients';
-import { ScheduleSection } from '../components/schedule/ScheduleSection';
-import { DocumentsSection } from '../components/documents/DocumentsSection';
-import { BrandIdentitySection } from '../components/brand/BrandIdentitySection';
-import { TrendsSection } from '../components/trends/TrendsSection';
-import { InteractiveAvatar } from '../components/ui/InteractiveAvatar';
-import { MetaAdsSection } from '../components/meta/MetaAdsSection';
+import { useNotifications } from '../hooks/useNotifications';
+
+// Lazy loading de módulos pesados
+const ScheduleSection = lazy(() =>
+  import('../components/schedule/ScheduleSection').then(m => ({ default: m.ScheduleSection }))
+);
+const DocumentsSection = lazy(() =>
+  import('../components/documents/DocumentsSection').then(m => ({ default: m.DocumentsSection }))
+);
+const BrandIdentitySection = lazy(() =>
+  import('../components/brand/BrandIdentitySection').then(m => ({ default: m.BrandIdentitySection }))
+);
+const TrendsSection = lazy(() =>
+  import('../components/trends/TrendsSection').then(m => ({ default: m.TrendsSection }))
+);
+const MetaAdsSection = lazy(() =>
+  import('../components/meta/MetaAdsSection').then(m => ({ default: m.MetaAdsSection }))
+);
+const CMSection = lazy(() =>
+  import('../components/cm/CMSection').then(m => ({ default: m.CMSection }))
+);
 import {
   CalendarIcon,
   FolderIcon,
@@ -24,7 +39,9 @@ import {
   PlusIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
+import { InteractiveAvatar, AgentBentoCard, AgentChatPanel } from '../components/ui';
 
 // Caché global en memoria para persistir la información básica de clientes entre montajes
 const clientCache = new Map();
@@ -32,8 +49,16 @@ const clientCache = new Map();
 // Definición de las Tarjetas de Agentes Bento con iconos premium SVGs
 const agentCards = [
   {
+    id: 'cm',
+    name: 'CM',
+    icon: ChatBubbleLeftRightIcon,
+    grad: 'linear-gradient(140deg, #0b3c2c 0%, #11998e 55%, #38ef7d 100%)',
+    color: '#38ef7d',
+    stat: '0 pendientes',
+  },
+  {
     id: 'trends',
-    name: 'Tendencias',
+    name: 'Trends',
     icon: ArrowTrendingUpIcon,
     grad: 'linear-gradient(140deg, #0f0c29 0%, #302b63 55%, #24243e 100%)',
     color: '#4ECDC4',
@@ -65,7 +90,7 @@ const agentCards = [
   },
   {
     id: 'identity',
-    name: 'Identidad de Marca',
+    name: 'Identidad',
     icon: Cog6ToothIcon,
     grad: 'linear-gradient(140deg, #0d0d1a 0%, #1c2e40 50%, #1e4060 100%)',
     color: '#7C5CFC',
@@ -77,9 +102,13 @@ export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
+  
+  const [activeChatAgent, setActiveChatAgent] = useState(null);
 
-  // Si la pestaña no está definida o no es una de las 5 reales, mostramos el Panel Bento
-  const activeTab = ['schedule', 'documents', 'identity', 'trends', 'meta'].includes(requestedTab)
+  const { notifications, markTrendsAsReadForClient } = useNotifications();
+
+  // Si la pestaña no está definida o no es una de las reales, mostramos el Panel Bento
+  const activeTab = ['schedule', 'documents', 'identity', 'trends', 'meta', 'cm'].includes(requestedTab)
     ? requestedTab
     : null;
 
@@ -126,6 +155,7 @@ export const ClientDetailPage = () => {
     identity: false,
     trends: false,
     meta: false,
+    cm: false,
   });
 
   // Estado para las tarjetas ordenables
@@ -188,18 +218,23 @@ export const ClientDetailPage = () => {
       identity: false,
       trends: false,
       meta: false,
+      cm: false,
     });
   }, [clientId]);
 
-  // Mark current tab as visited
+  // Mark current tab as visited and trigger clear notifications side-effect
   useEffect(() => {
     if (activeTab) {
       setVisitedTabs(prev => ({
         ...prev,
         [activeTab]: true,
       }));
+
+      if (activeTab === 'trends') {
+        markTrendsAsReadForClient(clientId);
+      }
     }
-  }, [activeTab]);
+  }, [activeTab, clientId, markTrendsAsReadForClient]);
 
   // Trigger window resize event when switching back to schedule tab
   // to ensure FullCalendar recalculates its size beautifully.
@@ -231,7 +266,56 @@ export const ClientDetailPage = () => {
     run();
   }, [clientId]);
 
-  if (loading) return <div className='text-center py-20 text-text-muted'>Cargando...</div>;
+  if (loading) {
+    return (
+      <div className='h-full flex flex-col overflow-hidden p-6 md:p-8 flex-1 w-full max-w-full select-none'>
+        {/* Title Header Skeleton */}
+        <div className='mb-6 px-1 flex items-baseline justify-between gap-4 animate-pulse'>
+          <div>
+            <div className='flex items-center gap-2.5'>
+              <span className='w-1 h-6 rounded-full bg-white/10' />
+              <div className='h-7 w-48 rounded bg-white/15' />
+            </div>
+            <div className='h-3 w-32 rounded bg-white/5 mt-2.5 ml-3.5' />
+          </div>
+        </div>
+
+        {/* Section Label */}
+        <div className='h-3 w-28 rounded bg-white/10 animate-pulse mb-4 px-1' />
+
+        {/* Bento Grid Skeleton */}
+        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 grid-rows-3 sm:grid-rows-2 lg:grid-rows-2 gap-5 flex-1 w-full min-h-0 mb-2'>
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className='flex flex-col gap-3 w-full h-full relative overflow-hidden'>
+              <div className='flex-1 w-full rounded-[24px] border border-white/5 bg-white/[0.02] shadow-lg relative overflow-hidden flex flex-col p-5 justify-center items-center'>
+                {/* Shimmer sweep */}
+                <div className='absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent' />
+                {/* Noise overlay */}
+                <div
+                  className="absolute inset-0 rounded-inherit opacity-[0.05] mix-blend-overlay pointer-events-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence baseFrequency='0.72' type='fractalNoise' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23f)' opacity='1'/%3E%3C/svg%3E")`,
+                  }}
+                />
+                
+                {/* Avatar sphere */}
+                <div className='w-16 h-16 rounded-full bg-white/10 animate-pulse mb-auto mt-4' />
+                
+                {/* Title */}
+                <div className='h-3.5 w-2/3 rounded bg-white/15 animate-pulse mt-auto mb-2 self-start' />
+              </div>
+              
+              {/* Footer metadata skeleton */}
+              <div className='flex justify-between items-center px-2 w-full'>
+                <div className='h-3 w-1/3 rounded bg-white/10 animate-pulse' />
+                <div className='h-4 w-14 rounded-full bg-white/5 animate-pulse' />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className='text-center py-20 text-red-500'>Error: {error}</div>;
   if (!client)
     return <div className='text-center py-20 text-text-muted'>Cliente no encontrado.</div>;
@@ -258,127 +342,71 @@ export const ClientDetailPage = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3 }}
-            className='p-6 md:p-8 flex flex-col flex-1 overflow-y-auto w-full max-w-[1600px] mx-auto'
+            className='p-6 md:p-8 flex flex-col flex-1 h-full min-h-0 overflow-hidden w-full max-w-full'
           >
-            {/* Brand Header */}
-            <div
-              className='brand-header border border-border-subtle bg-surface mb-8 py-5 px-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4'
-              style={{
-                borderLeftColor: client.brand_info?.card_color || '#7C5CFC',
-                borderLeftWidth: '5px',
-              }}
-            >
-              <div className='flex items-center gap-4'>
-                <div
-                  className='brand-header-ini w-14 h-14 rounded-xl flex items-center justify-center font-black text-2xl text-text-primary shadow-sm flex-shrink-0'
-                  style={{
-                    backgroundColor: (client.brand_info?.card_color || '#7C5CFC') + '15',
-                    border: `1px solid ${client.brand_info?.card_color || '#7C5CFC'}40`,
-                    color: client.brand_info?.card_color || '#7C5CFC',
-                    minWidth: '56px',
-                    minHeight: '56px',
-                  }}
-                >
-                  {(client.name || 'CL').substring(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <h2 className='text-xl font-title font-extrabold text-text-primary leading-tight'>
-                    {client.name}
-                  </h2>
-                  <p className='text-xs text-text-muted mt-1'>
-                    {client.industry || 'Sin categoría/industria'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Stats Rápidos */}
-              <div className='flex items-center gap-6 self-end sm:self-center pr-2'>
-                <div className='text-center sm:text-left'>
-                  <div className='text-base font-black text-text-primary font-title'>Redes</div>
-                  <div className='text-[10px] text-text-secondary font-bold uppercase tracking-wider mt-0.5'>
-                    conectadas
-                  </div>
-                </div>
-                <div className='h-8 w-px bg-border-subtle' />
-                <div className='text-center sm:text-left'>
-                  <div className='text-base font-black text-text-primary font-title'>Activo</div>
-                  <div className='text-[10px] text-text-secondary font-bold uppercase tracking-wider mt-0.5'>
-                    estado
-                  </div>
-                </div>
+            {/* Sleek Professional Client Title Header */}
+            <div className='mb-4.5 px-1 flex items-baseline justify-between gap-4'>
+              <div>
+                <h1 className='text-2xl font-title font-extrabold text-white tracking-tight flex items-center gap-2.5'>
+                  <span 
+                    className='w-1 h-6 rounded-full' 
+                    style={{ backgroundColor: client.brand_info?.card_color || '#7C5CFC' }}
+                  />
+                  {client.name}
+                </h1>
+                <p className='text-[11px] text-text-muted mt-1.5 ml-3.5 font-medium'>
+                  {client.industry || 'Sin categoría/industria'}
+                </p>
               </div>
             </div>
 
             {/* Label de Sección */}
-            <div className='sec-lbl text-[9px] font-bold tracking-[0.12em] text-text-secondary uppercase mb-4 px-1'>
+            <div className='sec-lbl text-[9px] font-bold tracking-[0.12em] text-text-secondary uppercase mb-3 px-1'>
               Módulos del Cliente
             </div>
 
-            {/* Bento Grid - 4 Columns in a beautiful horizontal row spanning screen width */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-8 w-full'>
+            {/* Bento Grid - 4 Columns spanning screen width and height to fit perfectly in viewport */}
+            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 grid-rows-3 sm:grid-rows-2 lg:grid-rows-2 gap-5 flex-1 w-full min-h-0 mb-2'>
               {cards.map((card, index) => {
-                const isDraggingThis = draggedIndex === index;
+                // Calcular si esta tarjeta tiene notificaciones pendientes (ej. tendencias)
+                let hasNotification = false;
+                let badgeCount = 0;
+                let adjustedCard = card;
+
+                if (card.id === 'trends') {
+                  const unreadTrends = notifications.filter(
+                    n => n.type === 'trend' && n.clientId === clientId && !n.isRead
+                  );
+                  if (unreadTrends.length > 0) {
+                    hasNotification = true;
+                    badgeCount = unreadTrends.length;
+                    adjustedCard = {
+                      ...card,
+                      stat: `${badgeCount} nueva${badgeCount > 1 ? 's' : ''} tendencia${badgeCount > 1 ? 's' : ''}`
+                    };
+                  } else {
+                    adjustedCard = {
+                      ...card,
+                      stat: 'Monitoreo activo'
+                    };
+                  }
+                }
+
                 return (
-                  <motion.div
+                  <AgentBentoCard
                     key={card.id}
-                    layout
-                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                    draggable
-                    onDragStart={e => handleDragStart(e, index)}
-                    onDragOver={e => handleDragOverCard(e, index)}
-                    onDragEnd={handleDragEnd}
+                    card={adjustedCard}
+                    index={index}
+                    draggedIndex={draggedIndex}
+                    handleDragStart={handleDragStart}
+                    handleDragOverCard={handleDragOverCard}
+                    handleDragEnd={handleDragEnd}
                     onClick={() => selectTab(card.id)}
-                    className={`agent-card flex flex-col gap-3.5 group cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                      isDraggingThis ? 'opacity-40 scale-95' : 'opacity-100'
-                    }`}
-                  >
-                    <div
-                      className={`agent-card-inner aspect-square w-full rounded-[28px] relative overflow-hidden flex items-center justify-center border border-white/5 shadow-lg transition-all duration-300 transform group-hover:scale-[1.03] group-hover:shadow-2xl ${
-                        isDraggingThis
-                          ? 'border-accent-blue/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                          : ''
-                      }`}
-                      style={{ background: card.grad }}
-                    >
-                      {/* Noise Grain Overlay */}
-                      <div
-                        className='agent-grain absolute inset-0 rounded-inherit opacity-[0.08] mix-blend-overlay pointer-events-none'
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence baseFrequency='0.72' type='fractalNoise' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23f)' opacity='1'/%3E%3C/svg%3E")`,
-                        }}
-                      />
-
-                      {/* Glass Reflection Highlight */}
-                      <div className='absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none' />
-
-                      {/* Interactive 3D Avatar (Sigue el ratón) */}
-                      <div className='relative z-10 transition-all duration-300 group-hover:scale-110'>
-                        <InteractiveAvatar
-                          variant={card.id === 'identity' ? 'ai' : card.id}
-                          size='lg'
-                          interactive={!isDraggingThis}
-                        />
-                      </div>
-
-                      {/* Label */}
-                      <div className='agent-card-label absolute bottom-5 left-6 text-sm font-title font-bold text-white/95 select-none drop-shadow-md'>
-                        {card.name}
-                      </div>
-                    </div>
-
-                    {/* Card Footer (Metadata) */}
-                    <div className='agent-card-foot flex justify-between items-center px-2 select-none'>
-                      <span
-                        className='agent-stat text-[11px] font-bold'
-                        style={{ color: card.color }}
-                      >
-                        {card.stat}
-                      </span>
-                      <span className='agent-open text-[10px] font-bold text-text-secondary group-hover:text-accent-blue transition-colors flex items-center gap-0.5'>
-                        Abrir →
-                      </span>
-                    </div>
-                  </motion.div>
+                    onChatClick={(c) => setActiveChatAgent(c)}
+                    client={client}
+                    hasNotification={hasNotification}
+                    badgeCount={badgeCount}
+                  />
                 );
               })}
             </div>
@@ -419,7 +447,9 @@ export const ClientDetailPage = () => {
                           ? 'Tendencias'
                           : activeTab === 'meta'
                             ? 'Meta Ads'
-                            : 'Identidad'}
+                            : activeTab === 'cm'
+                              ? 'CM Inteligente'
+                              : 'Identidad'}
                   </span>
                 </div>
               </div>
@@ -530,34 +560,94 @@ export const ClientDetailPage = () => {
                   </Menu>
                 </div>
               ) : (
-                <div className='flex items-center gap-2'>
-                  <span className='h-2 w-2 rounded-full bg-green-500 animate-pulse-soft' />
-                  <span className='text-[10px] font-bold text-text-muted uppercase tracking-wider'>
-                    Agente Activo
-                  </span>
+                <div className='flex items-center gap-3'>
+                  <div className='flex items-center gap-1.5'>
+                    <span className='h-2 w-2 rounded-full bg-emerald-500 animate-pulse' />
+                    <span className='text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono'>
+                      Aura Online
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Contenedor del módulo real */}
-            <div className='flex-1 overflow-y-auto w-full relative'>
-              <div style={{ display: activeTab === 'schedule' ? 'block' : 'none' }}>
-                {visitedTabs.schedule && <ScheduleSection clientId={clientId} />}
-              </div>
-              <div style={{ display: activeTab === 'identity' ? 'block' : 'none' }}>
-                {visitedTabs.identity && <BrandIdentitySection clientId={clientId} />}
-              </div>
-              <div style={{ display: activeTab === 'trends' ? 'block' : 'none' }}>
-                {visitedTabs.trends && <TrendsSection clientId={clientId} />}
-              </div>
-              <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
-                {visitedTabs.documents && <DocumentsSection clientId={clientId} />}
-              </div>
-              <div style={{ display: activeTab === 'meta' ? 'block' : 'none' }}>
-                {visitedTabs.meta && <MetaAdsSection clientId={clientId} />}
-              </div>
+            <div className={`flex-1 w-full relative ${activeTab === 'identity' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+              <Suspense
+                fallback={
+                  <div className='flex-1 w-full h-full flex flex-col items-center justify-center select-none gap-4 p-8 min-h-[300px]'>
+                    <div className='relative w-12 h-12'>
+                      <div className='absolute inset-0 rounded-full bg-gradient-to-br from-[#7C5CFC]/20 to-[#4ECDC4]/10 blur-md animate-pulse' />
+                      <div className='w-full h-full rounded-full border-2 border-white/5 border-t-[#7C5CFC] animate-spin' />
+                    </div>
+                    <span className='text-[10px] tracking-[0.15em] text-text-muted uppercase font-bold animate-pulse'>
+                      Iniciando módulo de IA...
+                    </span>
+                  </div>
+                }
+              >
+                <div style={{ display: activeTab === 'schedule' ? 'block' : 'none' }}>
+                  {visitedTabs.schedule && <ScheduleSection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'identity' ? 'block' : 'none' }}>
+                  {visitedTabs.identity && <BrandIdentitySection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'trends' ? 'block' : 'none' }}>
+                  {visitedTabs.trends && <TrendsSection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
+                  {visitedTabs.documents && <DocumentsSection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'meta' ? 'block' : 'none' }}>
+                  {visitedTabs.meta && <MetaAdsSection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'cm' ? 'block' : 'none' }}>
+                  {visitedTabs.cm && <CMSection clientId={clientId} />}
+                </div>
+              </Suspense>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Botón flotante persistente de Aura (Mini Copiloto) */}
+      <div className="fixed bottom-6 right-6 z-40 pointer-events-auto">
+        <motion.button
+          onClick={() => setActiveChatAgent({ id: 'general', name: 'Aura' })}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+          className="relative group flex items-center gap-3 pl-3 pr-4.5 py-2.5 rounded-full bg-slate-900/90 border border-white/10 hover:border-[#7C5CFC]/30 text-white font-title font-bold text-xs shadow-2xl transition-all duration-300 backdrop-blur-md cursor-pointer"
+        >
+          {/* Glowing background blur */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#7C5CFC]/20 to-[#4ECDC4]/10 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300" />
+          
+          <div className="relative w-7 h-7 rounded-full overflow-hidden p-0.5 border border-white/10 bg-black/40">
+            <InteractiveAvatar 
+              variant="ai" 
+              state={activeChatAgent ? 'talking' : 'idle'} 
+              size="sm" 
+              className="w-full h-full" 
+              interactive={false} 
+            />
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-black animate-pulse" />
+          </div>
+          
+          <div className="text-left flex flex-col justify-center leading-none">
+            <span className="text-[9.5px] text-text-secondary font-medium tracking-wide uppercase">Copiloto</span>
+            <span className="text-[11px] font-black text-white mt-0.5">Consultar a Aura</span>
+          </div>
+        </motion.button>
+      </div>
+
+      {/* Panel de Chat Lateral Deslizable */}
+      <AnimatePresence>
+        {activeChatAgent && (
+          <AgentChatPanel
+            clientId={clientId}
+            agent={activeChatAgent}
+            onClose={() => setActiveChatAgent(null)}
+            client={client}
+          />
         )}
       </AnimatePresence>
     </div>

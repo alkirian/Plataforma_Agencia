@@ -60,7 +60,7 @@ export const scheduleItemSchema = z.object({
 export const scheduleItemUpdateSchema = scheduleItemSchema.partial().omit({ client_id: true });
 
 export const clientBrandProfileSchema = z.object({
-  business_description: z.string().max(2000).optional().nullable(),
+  business_description: z.string().max(30000).optional().nullable(),
   target_audience: z.string().max(2000).optional().nullable(),
   brand_voice: z.string().max(500).optional().nullable(),
   content_pillars: z.array(z.string().max(120)).max(12).optional(),

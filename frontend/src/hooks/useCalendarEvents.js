@@ -163,13 +163,44 @@ export const useCalendarEvents = clientId => {
     [clientId]
   );
 
-  // Actualizar evento
+  // Actualizar evento (Optimistic Update)
   const updateEvent = useCallback(
     async (eventId, updateData) => {
+      let previousEvents = null;
+      
+      setEvents(prev => {
+        previousEvents = [...prev];
+        const next = prev.map(event => {
+          if (event.id === eventId) {
+            const statusKey = (updateData.status || event.extendedProps?.status || 'en-diseño').toLowerCase();
+            const stateStyle = TASK_STATES[statusKey] || TASK_STATES['en-diseño'];
+            
+            return {
+              ...event,
+              title: updateData.title !== undefined ? updateData.title : event.title,
+              start: updateData.scheduled_at !== undefined ? new Date(updateData.scheduled_at) : event.start,
+              end: updateData.scheduled_at !== undefined ? new Date(updateData.scheduled_at) : event.end,
+              backgroundColor: stateStyle.color,
+              borderColor: stateStyle.color,
+              textColor: '#161517',
+              color: stateStyle.color,
+              extendedProps: {
+                ...event.extendedProps,
+                ...updateData,
+                status: updateData.status !== undefined ? updateData.status : event.extendedProps?.status,
+              }
+            };
+          }
+          return event;
+        });
+        calendarCache.set(clientId, next);
+        return next;
+      });
+
       try {
         const updatedEvent = await updateScheduleItem(clientId, eventId, updateData);
 
-        // Actualizar estado local
+        // Reemplazar con datos del backend para consistencia
         setEvents(prev => {
           const next = prev.map(event =>
             event.id === eventId ? transformToFullCalendarEvents([updatedEvent])[0] : event
@@ -184,6 +215,11 @@ export const useCalendarEvents = clientId => {
         if (process.env.NODE_ENV === 'development') {
           console.error('[updateEvent] Error:', err?.message || err, { eventId, updateData });
         }
+        // Revertir
+        if (previousEvents) {
+          setEvents(previousEvents);
+          calendarCache.set(clientId, previousEvents);
+        }
         toast.error('Error al actualizar evento');
         throw err;
       }
@@ -191,21 +227,30 @@ export const useCalendarEvents = clientId => {
     [clientId]
   );
 
-  // Eliminar evento
+  // Eliminar evento (Optimistic Update)
   const deleteEvent = useCallback(
     async eventId => {
+      let previousEvents = null;
+
+      setEvents(prev => {
+        previousEvents = [...prev];
+        const next = prev.filter(event => event.id !== eventId);
+        calendarCache.set(clientId, next);
+        return next;
+      });
+
       try {
         await deleteScheduleItem(clientId, eventId);
-
-        // Actualizar estado local
-        setEvents(prev => {
-          const next = prev.filter(event => event.id !== eventId);
-          calendarCache.set(clientId, next);
-          return next;
-        });
-
         toast.success('Evento eliminado');
       } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[deleteEvent] Error:', err);
+        }
+        // Revertir
+        if (previousEvents) {
+          setEvents(previousEvents);
+          calendarCache.set(clientId, previousEvents);
+        }
         toast.error('Error al eliminar evento');
         throw err;
       }
@@ -323,12 +368,3 @@ export const useCalendarEvents = clientId => {
   };
 };
 
-async function onCreateEvent(clientId, form) {
-  try {
-    await createScheduleItem(clientId, form);
-    // refrescar lista/calendario...
-  } catch (err) {
-    console.error('Crear evento falló:', err);
-    alert(err.message || 'No se pudo crear el evento. Verifique título, fecha y estado.');
-  }
-}

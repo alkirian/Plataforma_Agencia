@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
 import { ArrowUpTrayIcon, PlusIcon, SparklesIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
@@ -1129,15 +1129,13 @@ export const ScheduleSection = ({ clientId }) => {
       </motion.div>
 
       <div className='flex flex-col xl:flex-row gap-4 transition-all duration-300'>
-        {/* Izquierda: mini calendario */}
+        {/* Izquierda: Agenda del Mes como barra lateral única */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className='xl:w-64 xl:flex-shrink-0 max-h-[calc(100dvh-6.25rem)] xl:max-h-[calc(100dvh-6.5rem)] xl:overflow-y-auto'
+          className='xl:w-64 xl:flex-shrink-0 max-h-[calc(100dvh-6.25rem)] xl:max-h-[calc(100dvh-6.5rem)] xl:overflow-y-auto bg-[#1e1c20]/15 border border-white/5 rounded-2xl custom-scrollbar'
         >
-          <MiniMonth currentDate={currentDate} onNavigate={setCurrentDate} events={events} />
-          {/* Agenda mensual bajo el mini calendario */}
           <MonthAgenda
             events={events}
             currentDate={currentDate}
@@ -1165,45 +1163,6 @@ export const ScheduleSection = ({ clientId }) => {
             onDragLeave={handleCalendarDragLeave}
             onDrop={handleCalendarDrop}
           >
-            {/* Selector de vistas compacto y elegante */}
-            <div className='flex items-center justify-between mb-3 pb-2 border-b border-border-subtle bg-surface-strong/30 px-3 py-1.5 rounded-xl border border-border-subtle/50 flex-wrap gap-2'>
-              <div className='flex items-center gap-2 min-w-0'>
-                <span className='text-xs font-semibold text-text-muted uppercase tracking-wider'>
-                  {currentView === 'dayGridMonth' && 'Vista mensual'}
-                  {currentView === 'timeGridWeek' && 'Vista semanal'}
-                  {currentView === 'timeGridDay' && 'Vista diaria'}
-                  {currentView === 'listMonth' && 'Agenda mensual'}
-                </span>
-                {feedbackEventsCount > 0 && (
-                  <span className='inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#fe0979]/10 border border-[#fe0979]/30 text-[#fe0979] animate-pulse select-none'>
-                    💬 {feedbackEventsCount}{' '}
-                    {feedbackEventsCount === 1 ? 'Ajuste solicitado' : 'Ajustes solicitados'}
-                  </span>
-                )}
-              </div>
-              <div className='flex gap-0.5 rounded-lg border border-border-subtle bg-surface-soft/80 p-0.5 shadow-sm'>
-                {[
-                  ['dayGridMonth', 'Mes'],
-                  ['timeGridWeek', 'Semana'],
-                  ['timeGridDay', 'Día'],
-                  ['listMonth', 'Agenda'],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    onClick={() => setCurrentView(value)}
-                    type='button'
-                    className={`rounded-md px-2.5 py-1 text-xs font-semibold leading-none transition-all duration-200 ${
-                      currentView === value
-                        ? 'bg-surface border border-border-strong text-text-primary shadow-sm'
-                        : 'text-text-muted hover:text-text-primary border border-transparent'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {isCalendarDragOver && (
               <div className='mb-3 rounded-lg border border-[color:var(--color-accent-blue)] bg-[color:var(--color-accent-blue)]/10 px-3 py-2 text-sm text-text-primary'>
                 Suelta archivos para anclarlos a esta fecha del calendario.
@@ -1255,7 +1214,7 @@ export const ScheduleSection = ({ clientId }) => {
                 leaveFrom='opacity-100 scale-100'
                 leaveTo='opacity-0 scale-95'
               >
-                <Dialog.Panel className='w-full max-w-6xl bg-[#161517] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-md transition-all duration-300'>
+                <Dialog.Panel className='w-full max-w-2xl bg-[#161517] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-md transition-all duration-300'>
                   {/* Header */}
                   <div className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-white/5 pb-5'>
                     <div>
@@ -1336,57 +1295,78 @@ export const ScheduleSection = ({ clientId }) => {
                   </div>
 
                   <form onSubmit={handleFormSubmit}>
-                    {/* Dos Columnas Layout */}
-                    <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
-                      {/* Columna Izquierda: Formulario (col-span-7) */}
-                      <div className='lg:col-span-7 space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar'>
-                        {selectedEvent?.extendedProps?.client_feedback && (
-                          <div className='rounded-xl bg-[#fe0979]/10 border border-[#fe0979]/20 p-4 space-y-1'>
-                            <div className='flex items-center gap-2 text-xs font-bold text-[#fe0979] uppercase tracking-wider'>
-                              <svg
-                                className='h-4 w-4'
-                                fill='none'
-                                stroke='currentColor'
-                                viewBox='0 0 24 24'
-                              >
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth={2}
-                                  d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-                                />
-                              </svg>
-                              Ajustes Solicitados por el Cliente
-                            </div>
-                            <p className='text-xs text-gray-300 italic leading-relaxed pl-6'>
-                              "{selectedEvent.extendedProps.client_feedback}"
-                            </p>
+                    {/* Formulario de una sola columna, elegante y compacto */}
+                    <div className='space-y-5 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar'>
+                      {selectedEvent?.extendedProps?.client_feedback && (
+                        <div className='rounded-xl bg-[#fe0979]/10 border border-[#fe0979]/20 p-4 space-y-1'>
+                          <div className='flex items-center gap-2 text-xs font-bold text-[#fe0979] uppercase tracking-wider'>
+                            <svg
+                              className='h-4 w-4'
+                              fill='none'
+                              stroke='currentColor'
+                              viewBox='0 0 24 24'
+                            >
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                              />
+                            </svg>
+                            Ajustes Solicitados por el Cliente
                           </div>
-                        )}
-
-                        {/* 1. Título de la Publicación (Estilo Editor Premium) */}
-                        <div className='space-y-1'>
-                          <input
-                            type='text'
-                            value={formData.title}
-                            onChange={e =>
-                              setFormData(prev => ({ ...prev, title: e.target.value }))
-                            }
-                            className='w-full bg-transparent border-b border-white/10 focus:border-emerald-500/50 py-2 focus:outline-none focus:ring-0 text-xl md:text-2xl font-bold text-white placeholder-white/20 transition-colors tracking-tight'
-                            placeholder='Escribe el título de tu publicación...'
-                            required
-                          />
+                          <p className='text-xs text-gray-300 italic leading-relaxed pl-6'>
+                            "{selectedEvent.extendedProps.client_feedback}"
+                          </p>
                         </div>
+                      )}
 
-                        {/* 2. Zona Unificada de Contenido Visual (Media + IA) */}
+                      {/* 1. Título de la Publicación (Estilo Editor Premium) */}
+                      <div className='space-y-1'>
+                        <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                          Título del Posteo
+                        </label>
+                        <input
+                          type='text'
+                          value={formData.title}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, title: e.target.value }))
+                          }
+                          className='w-full bg-transparent border-b border-white/10 focus:border-rose-500/50 py-2 focus:outline-none focus:ring-0 text-xl md:text-2xl font-bold text-white placeholder-white/20 transition-colors tracking-tight'
+                          placeholder='Escribe el título de tu publicación...'
+                          required
+                        />
+                      </div>
+
+                      {/* 2. Idea Creativa */}
+                      <div className='space-y-1.5'>
+                        <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                          Idea Creativa (Concepto / Dirección)
+                        </label>
+                        <input
+                          type='text'
+                          value={formData.creative_idea || ''}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, creative_idea: e.target.value }))
+                          }
+                          className='w-full rounded-xl border border-white/10 bg-[#1e1c20]/25 focus:border-rose-500/40 focus:bg-[#1e1c20]/45 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all'
+                          placeholder='Ej: Video haciendo un unboxing, infografía de consejos, carrusel paso a paso...'
+                        />
+                      </div>
+
+                      {/* 3. Subir o Generar con IA */}
+                      <div className='space-y-1.5'>
+                        <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                          Foto / Video / Contenido Visual
+                        </label>
                         <div
                           onDragOver={handleModalDragOver}
                           onDragLeave={handleModalDragLeave}
                           onDrop={handleModalDrop}
-                          className={`relative rounded-2xl border border-dashed transition-all duration-300 overflow-hidden ${
+                          className={`relative rounded-xl border border-dashed transition-all duration-300 overflow-hidden ${
                             isModalDragOver
-                              ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]'
-                              : 'border-white/10 bg-[#1e1c20]/30 hover:border-white/25 hover:bg-[#1e1c20]/50'
+                              ? 'border-rose-500 bg-rose-500/5 shadow-[0_0_15px_rgba(244,63,94,0.05)]'
+                              : 'border-white/10 bg-[#1e1c20]/20 hover:border-white/25 hover:bg-[#1e1c20]/40'
                           }`}
                         >
                           <input
@@ -1400,11 +1380,11 @@ export const ScheduleSection = ({ clientId }) => {
 
                           {/* Modo Generador IA Inline Abierto */}
                           {isEventAIGenOpen ? (
-                            <div className='p-5 space-y-4 bg-gradient-to-b from-[#25221d] to-[#1e1b17] border-b border-amber-500/20'>
+                            <div className='p-4 space-y-4 bg-gradient-to-b from-[#251d1e] to-[#1e1718] border-b border-rose-500/20'>
                               <div className='flex items-center justify-between'>
-                                <span className='text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider'>
-                                  <SparklesIcon className='w-4 h-4 animate-pulse text-amber-400' />
-                                  <span>Generador Nano Banana</span>
+                                <span className='text-xs font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider'>
+                                  <SparklesIcon className='w-4 h-4 animate-pulse text-rose-400' />
+                                  <span>Generar Imagen con IA</span>
                                 </span>
                                 <button
                                   type='button'
@@ -1418,10 +1398,10 @@ export const ScheduleSection = ({ clientId }) => {
                               <div className='space-y-3'>
                                 <div>
                                   <textarea
-                                    rows={3}
+                                    rows={2}
                                     value={eventAIPrompt}
                                     onChange={e => setEventAIPrompt(e.target.value)}
-                                    className='w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none transition-all resize-none leading-relaxed'
+                                    className='w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-gray-500 focus:border-rose-400 focus:outline-none transition-all resize-none leading-relaxed'
                                     placeholder="Describe la imagen que quieres generar en detalle (e.g. 'Infografía moderna en tonos pastel sobre cómo cuidar la salud'...)"
                                   />
                                 </div>
@@ -1438,17 +1418,14 @@ export const ScheduleSection = ({ clientId }) => {
                                           key={ratio.id}
                                           type='button'
                                           onClick={() => setEventAIAspectRatio(ratio.id)}
-                                          className={`rounded-lg border py-1 px-1.5 text-center transition-all ${
+                                          className={`rounded-md border py-0.5 px-1 text-center transition-all ${
                                             eventAIAspectRatio === ratio.id
-                                              ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
+                                              ? 'border-rose-400 bg-rose-400/10 text-rose-300 font-semibold'
                                               : 'border-white/5 bg-black/20 text-gray-400 hover:bg-black/30'
                                           }`}
                                         >
-                                          <div className='text-[10px] font-bold leading-none'>
+                                          <div className='text-[9px] font-bold leading-none'>
                                             {ratio.label}
-                                          </div>
-                                          <div className='text-[8px] opacity-60 mt-0.5 leading-none'>
-                                            {ratio.desc}
                                           </div>
                                         </button>
                                       ))}
@@ -1512,7 +1489,7 @@ export const ScheduleSection = ({ clientId }) => {
                                         setIsGeneratingEventImage(false);
                                       }
                                     }}
-                                    className='flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md h-fit'
+                                    className='flex items-center justify-center gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-slate-950 px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md h-fit'
                                   >
                                     {isGeneratingEventImage ? (
                                       <>
@@ -1533,16 +1510,16 @@ export const ScheduleSection = ({ clientId }) => {
 
                           {/* Listado de archivos cargados y pendientes (Carrusel Horizontal Premium) */}
                           {eventAssets.length > 0 || pendingFiles.length > 0 ? (
-                            <div className='p-4 bg-black/10'>
-                              <div className='text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between'>
+                            <div className='p-3 bg-black/10'>
+                              <div className='text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between'>
                                 <span>
                                   Archivos Multimedia ({eventAssets.length + pendingFiles.length})
                                 </span>
-                                <span className='text-[9px] text-gray-500 lowercase font-normal'>
+                                <span className='text-[8px] text-gray-500 lowercase font-normal'>
                                   Arrastra más archivos aquí
                                 </span>
                               </div>
-                              <div className='flex gap-3 overflow-x-auto pb-2 custom-scrollbar'>
+                              <div className='flex gap-2 overflow-x-auto pb-1.5 custom-scrollbar'>
                                 {/* Assets de BD */}
                                 {eventAssets.map(asset => {
                                   const mime = asset.mime_type || '';
@@ -1551,7 +1528,7 @@ export const ScheduleSection = ({ clientId }) => {
                                   return (
                                     <div
                                       key={asset.id}
-                                      className='relative w-20 h-20 rounded-lg overflow-hidden border border-white/15 bg-white/5 flex-shrink-0 group'
+                                      className='relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex-shrink-0 group'
                                     >
                                       {isImage && asset.preview_url ? (
                                         <img
@@ -1566,14 +1543,14 @@ export const ScheduleSection = ({ clientId }) => {
                                           muted
                                         />
                                       ) : (
-                                        <div className='w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold uppercase p-1 text-center'>
+                                        <div className='w-full h-full flex items-center justify-center text-[8px] text-gray-400 font-bold uppercase p-1 text-center'>
                                           Doc
                                         </div>
                                       )}
                                       <button
                                         type='button'
                                         onClick={() => handleRemoveModalAsset(asset)}
-                                        className='absolute top-1 right-1 p-1 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg'
+                                        className='absolute top-1 right-1 p-0.5 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg'
                                         title='Eliminar archivo'
                                       >
                                         <svg
@@ -1602,7 +1579,7 @@ export const ScheduleSection = ({ clientId }) => {
                                   return (
                                     <div
                                       key={asset.id}
-                                      className='relative w-20 h-20 rounded-lg overflow-hidden border border-emerald-500/30 bg-emerald-500/5 flex-shrink-0 group'
+                                      className='relative w-16 h-16 rounded-lg overflow-hidden border border-emerald-500/30 bg-emerald-500/5 flex-shrink-0 group'
                                     >
                                       {isImage && asset.preview_url ? (
                                         <img
@@ -1617,17 +1594,17 @@ export const ScheduleSection = ({ clientId }) => {
                                           muted
                                         />
                                       ) : (
-                                        <div className='w-full h-full flex items-center justify-center text-[9px] text-emerald-400 font-bold uppercase p-1 text-center'>
+                                        <div className='w-full h-full flex items-center justify-center text-[8px] text-emerald-400 font-bold uppercase p-1 text-center'>
                                           Doc
                                         </div>
                                       )}
-                                      <span className='absolute bottom-1 left-1 bg-emerald-500/90 text-[7px] text-black font-extrabold uppercase px-1 rounded-sm shadow-sm tracking-wider'>
+                                      <span className='absolute bottom-1 left-1 bg-emerald-500/90 text-[6px] text-black font-extrabold uppercase px-1 rounded-sm shadow-sm tracking-wider'>
                                         Local
                                       </span>
                                       <button
                                         type='button'
                                         onClick={() => handleRemoveModalAsset(asset)}
-                                        className='absolute top-1 right-1 p-1 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg'
+                                        className='absolute top-1 right-1 p-0.5 bg-red-950/80 border border-red-500/20 text-red-300 rounded-full hover:bg-red-900 transition-all opacity-0 group-hover:opacity-100 shadow-lg'
                                         title='Remover archivo'
                                       >
                                         <svg
@@ -1654,9 +1631,9 @@ export const ScheduleSection = ({ clientId }) => {
                                   onClick={() =>
                                     document.getElementById('modal-media-input').click()
                                   }
-                                  className='w-20 h-20 rounded-lg border border-dashed border-white/10 hover:border-white/20 bg-white/5 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-all flex-shrink-0 group'
+                                  className='w-16 h-16 rounded-lg border border-dashed border-white/10 hover:border-white/20 bg-white/5 flex flex-col items-center justify-center gap-0.5 hover:bg-white/10 transition-all flex-shrink-0 group'
                                 >
-                                  <PlusIcon className='w-4 h-4 text-gray-400 group-hover:text-white group-hover:scale-110 transition-all' />
+                                  <PlusIcon className='w-3.5 h-3.5 text-gray-400 group-hover:text-white group-hover:scale-110 transition-all' />
                                   <span className='text-[8px] text-gray-400 font-bold'>Subir</span>
                                 </button>
 
@@ -1672,11 +1649,11 @@ export const ScheduleSection = ({ clientId }) => {
                                           .slice(0, 400);
                                       setEventAIPrompt(suggestedPrompt);
                                     }}
-                                    className='w-20 h-20 rounded-lg border border-dashed border-amber-500/20 hover:border-amber-500/40 bg-amber-500/5 flex flex-col items-center justify-center gap-1 hover:bg-amber-500/10 transition-all flex-shrink-0 group'
+                                    className='w-16 h-16 rounded-lg border border-dashed border-amber-500/20 hover:border-amber-500/40 bg-amber-500/5 flex flex-col items-center justify-center gap-0.5 hover:bg-amber-500/10 transition-all flex-shrink-0 group'
                                   >
-                                    <SparklesIcon className='w-4 h-4 text-amber-400 group-hover:scale-110 transition-all' />
+                                    <SparklesIcon className='w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-all' />
                                     <span className='text-[8px] text-amber-400 font-bold'>
-                                      Generar IA
+                                      IA
                                     </span>
                                   </button>
                                 )}
@@ -1685,20 +1662,17 @@ export const ScheduleSection = ({ clientId }) => {
                           ) : (
                             /* Estado Vacío (Sin assets y sin form de IA abierto) */
                             !isEventAIGenOpen && (
-                              <div className='flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/5'>
+                              <div className='flex divide-x divide-white/5'>
                                 {/* Lado Subir */}
                                 <div
                                   onClick={() =>
                                     document.getElementById('modal-media-input').click()
                                   }
-                                  className='flex-1 p-6 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all'
+                                  className='flex-1 p-4 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all'
                                 >
-                                  <ArrowUpTrayIcon className='w-7 h-7 text-gray-400 group-hover:text-emerald-400 group-hover:-translate-y-0.5 transition-all' />
-                                  <p className='mt-2 text-xs font-semibold text-gray-200'>
+                                  <ArrowUpTrayIcon className='w-5 h-5 text-gray-400 group-hover:text-emerald-400 group-hover:-translate-y-0.5 transition-all' />
+                                  <p className='mt-1 text-xs font-semibold text-gray-200'>
                                     Sube fotos o videos
-                                  </p>
-                                  <p className='text-[10px] text-gray-500 mt-1'>
-                                    Arrastra archivos aquí o haz clic
                                   </p>
                                 </div>
 
@@ -1712,527 +1686,198 @@ export const ScheduleSection = ({ clientId }) => {
                                         .slice(0, 400);
                                     setEventAIPrompt(suggestedPrompt);
                                   }}
-                                  className='flex-1 p-6 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all'
+                                  className='flex-1 p-4 flex flex-col items-center justify-center text-center cursor-pointer group hover:bg-white/5 transition-all'
                                 >
-                                  <SparklesIcon className='w-7 h-7 text-amber-400 group-hover:scale-110 transition-all' />
-                                  <p className='mt-2 text-xs font-semibold text-gray-200'>
+                                  <SparklesIcon className='w-5 h-5 text-amber-400 group-hover:scale-110 transition-all' />
+                                  <p className='mt-1 text-xs font-semibold text-gray-200'>
                                     Generar con IA
-                                  </p>
-                                  <p className='text-[10px] text-gray-500 mt-1'>
-                                    Crea una imagen premium con IA
                                   </p>
                                 </div>
                               </div>
                             )
                           )}
                         </div>
+                      </div>
 
-                        {/* Idea Creativa (Concepto / Dirección) */}
-                        <div className='space-y-1.5'>
-                          <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                            Idea Creativa (Concepto / Dirección)
-                          </label>
-                          <input
-                            type='text'
-                            value={formData.creative_idea || ''}
-                            onChange={e =>
-                              setFormData(prev => ({ ...prev, creative_idea: e.target.value }))
-                            }
-                            className='w-full rounded-xl border border-white/10 bg-[#1e1c20]/25 focus:border-emerald-500/40 focus:bg-[#1e1c20]/45 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all'
-                            placeholder='Ej: Video de influencer haciendo un unboxing, infografía explicando uso, carrusel paso a paso...'
-                          />
-                        </div>
-
-                        {/* 3. Copy de la Publicación (Textarea Minimalista) */}
-                        <div className='relative rounded-2xl border border-white/10 bg-[#1e1c20]/20 focus-within:border-emerald-500/40 focus-within:bg-[#1e1c20]/40 transition-all p-3'>
+                      {/* 4. Copy de la Publicación (Textarea Minimalista) */}
+                      <div className='space-y-1.5'>
+                        <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                          Copy de la Publicación
+                        </label>
+                        <div className='relative rounded-xl border border-white/10 bg-[#1e1c20]/15 focus-within:border-emerald-500/40 focus-within:bg-[#1e1c20]/30 transition-all p-2.5'>
                           <textarea
-                            rows={4}
+                            rows={3}
                             maxLength={2000}
                             value={formData.copy}
                             onChange={e => setFormData(prev => ({ ...prev, copy: e.target.value }))}
-                            className='w-full bg-transparent px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none transition-all resize-none min-h-[90px] pr-2 custom-scrollbar font-sans leading-relaxed border-none focus:ring-0'
+                            className='w-full bg-transparent px-1.5 py-0.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all resize-none min-h-[80px] pr-2 custom-scrollbar font-sans leading-relaxed border-none focus:ring-0'
                             placeholder='Escribe el copy con emojis y hashtags aquí...'
                           />
-                          <div className='absolute bottom-2 right-3 text-[9px] text-gray-500 font-mono'>
+                          <div className='absolute bottom-1 right-2 text-[8px] text-gray-500 font-mono'>
                             {(formData.copy || '').length}/2000
-                          </div>
-                        </div>
-
-                        {/* 4. Ajustes de Programación Simplificados (Grilla Limpia) */}
-                        <div className='space-y-4 bg-white/5 p-5 rounded-2xl border border-white/5'>
-                          {/* Canales (Plataformas Destino) */}
-                          <div>
-                            <label className='mb-2 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                              Plataformas Destino
-                            </label>
-                            <div className='flex flex-wrap gap-2'>
-                              {['Instagram', 'TikTok', 'YouTube', 'Facebook', 'LinkedIn'].map(p => {
-                                const active = formData.platforms
-                                  ? formData.platforms.split(', ').includes(p)
-                                  : p === 'Instagram';
-
-                                const colors = {
-                                  Instagram: active
-                                    ? 'bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-500 text-white border-transparent'
-                                    : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
-                                  TikTok: active
-                                    ? 'bg-white text-black border-transparent'
-                                    : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
-                                  YouTube: active
-                                    ? 'bg-red-600 text-white border-transparent'
-                                    : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
-                                  Facebook: active
-                                    ? 'bg-blue-600 text-white border-transparent'
-                                    : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
-                                  LinkedIn: active
-                                    ? 'bg-[#0077b5] text-white border-transparent'
-                                    : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
-                                };
-
-                                return (
-                                  <motion.button
-                                    key={p}
-                                    type='button'
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                    onClick={() => {
-                                      const activePlats = formData.platforms
-                                        ? formData.platforms.split(', ').filter(Boolean)
-                                        : ['Instagram'];
-                                      let newPlats;
-                                      if (activePlats.includes(p)) {
-                                        newPlats = activePlats.filter(item => item !== p);
-                                      } else {
-                                        newPlats = [...activePlats, p];
-                                      }
-                                      const resultStr = newPlats.join(', ') || 'Instagram';
-                                      setFormData(prev => ({ ...prev, platforms: resultStr }));
-                                      setMockupTab(p);
-                                    }}
-                                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition-all duration-200 flex items-center gap-1.5 ${colors[p]}`}
-                                  >
-                                    <span>{p}</span>
-                                  </motion.button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Fecha y Hora en paralelo */}
-                          <div className='grid grid-cols-2 gap-4'>
-                            <div>
-                              <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                                Fecha de Publicación
-                              </label>
-                              <input
-                                type='date'
-                                value={formData.date}
-                                onChange={e =>
-                                  setFormData(prev => ({ ...prev, date: e.target.value }))
-                                }
-                                className='w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all'
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                                Hora
-                              </label>
-                              <input
-                                type='time'
-                                value={formData.time}
-                                onChange={e =>
-                                  setFormData(prev => ({ ...prev, time: e.target.value }))
-                                }
-                                className='w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all'
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          {/* selectores en 3 columnas */}
-                          <div className='grid grid-cols-3 gap-3'>
-                            <div>
-                              <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                                Formato
-                              </label>
-                              <select
-                                value={formData.format || 'Carrusel'}
-                                onChange={e =>
-                                  setFormData(prev => ({ ...prev, format: e.target.value }))
-                                }
-                                className='w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all'
-                              >
-                                {[
-                                  'Historia',
-                                  'Carrusel',
-                                  'Reel / TikTok',
-                                  'Entrevista',
-                                  'Video Influencer',
-                                  'Cobertura de Evento',
-                                  'Post Estático',
-                                ].map(f => (
-                                  <option key={f} value={f} className='bg-[#161517] text-white'>
-                                    {f}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                                Prioridad
-                              </label>
-                              <select
-                                value={formData.priority || 'medium'}
-                                onChange={e =>
-                                  setFormData(prev => ({ ...prev, priority: e.target.value }))
-                                }
-                                className='w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all'
-                              >
-                                <option value='low' className='bg-[#161517] text-white'>
-                                  Baja
-                                </option>
-                                <option value='medium' className='bg-[#161517] text-white'>
-                                  Media
-                                </option>
-                                <option value='high' className='bg-[#161517] text-white'>
-                                  Alta
-                                </option>
-                                <option value='urgente' className='bg-[#161517] text-white'>
-                                  Urgente
-                                </option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                                Estado
-                              </label>
-                              <select
-                                value={formData.status}
-                                onChange={e =>
-                                  setFormData(prev => ({ ...prev, status: e.target.value }))
-                                }
-                                className='w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none transition-all'
-                              >
-                                <option value='en-diseño' className='bg-[#161517] text-white'>
-                                  En Diseño
-                                </option>
-                                <option value='en-progreso' className='bg-[#161517] text-white'>
-                                  En Producción
-                                </option>
-                                <option value='aprobado' className='bg-[#161517] text-white'>
-                                  Aprobado
-                                </option>
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* Objetivo de la publicación */}
-                          <div className='pt-3.5 border-t border-white/5'>
-                            <label className='mb-1.5 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                              Objetivo de la publicación
-                            </label>
-                            <input
-                              type='text'
-                              value={formData.goal || ''}
-                              onChange={e =>
-                                setFormData(prev => ({ ...prev, goal: e.target.value }))
-                              }
-                              className='w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-all'
-                              placeholder='Ej: Captar leads, posicionamiento de marca, generar engagement...'
-                            />
                           </div>
                         </div>
                       </div>
 
-                      {/* Columna Derecha: Vista Previa Mockup Móvil (col-span-5) */}
-                      <div className='lg:col-span-5 flex flex-col items-center justify-start py-2'>
-                        <div className='w-full max-w-[320px]'>
-                          {/* Selector de mockup social */}
-                          <div className='flex justify-center gap-1.5 mb-4 bg-white/5 p-1 rounded-xl border border-white/5 w-full'>
-                            {['Instagram', 'TikTok', 'YouTube'].map(platform => (
-                              <button
-                                key={platform}
-                                type='button'
-                                onClick={() => setMockupTab(platform)}
-                                className={`flex-1 text-[11px] font-bold py-1.5 px-2 rounded-lg transition-all ${
-                                  mockupTab === platform
-                                    ? 'bg-white text-black shadow-md'
-                                    : 'text-gray-400 hover:text-white'
-                                }`}
-                              >
-                                {platform}
-                              </button>
-                            ))}
+                      {/* 5. Ajustes y Programación (Visualmente simples, sin bloques separadores gruesos) */}
+                      <div className='pt-4 border-t border-white/5 space-y-4'>
+                        {/* Canales (Plataformas Destino) */}
+                        <div className='space-y-1.5'>
+                          <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                            Plataformas Destino
+                          </label>
+                          <div className='flex flex-wrap gap-1.5'>
+                            {['Instagram', 'TikTok', 'YouTube', 'Facebook', 'LinkedIn'].map(p => {
+                              const active = formData.platforms
+                                ? formData.platforms.split(', ').includes(p)
+                                : p === 'Instagram';
+
+                              const colors = {
+                                Instagram: active
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                TikTok: active
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                YouTube: active
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                Facebook: active
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                                LinkedIn: active
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : 'bg-black/20 hover:bg-white/5 text-gray-400 border-white/5',
+                              };
+
+                              return (
+                                <button
+                                  key={p}
+                                  type='button'
+                                  onClick={() => {
+                                    const activePlats = formData.platforms
+                                      ? formData.platforms.split(', ').filter(Boolean)
+                                      : ['Instagram'];
+                                    let newPlats;
+                                    if (activePlats.includes(p)) {
+                                      newPlats = activePlats.filter(item => item !== p);
+                                    } else {
+                                      newPlats = [...activePlats, p];
+                                    }
+                                    const resultStr = newPlats.join(', ') || 'Instagram';
+                                    setFormData(prev => ({ ...prev, platforms: resultStr }));
+                                    setMockupTab(p);
+                                  }}
+                                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition-all duration-200 ${colors[p]}`}
+                                >
+                                  {p}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Grilla de Datos de Publicación en paralelo */}
+                        <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+                          {/* Estado */}
+                          <div>
+                            <label className='mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                              Estado
+                            </label>
+                            <select
+                              value={formData.status}
+                              onChange={e =>
+                                setFormData(prev => ({ ...prev, status: e.target.value }))
+                              }
+                              className='w-full rounded-lg border border-white/10 bg-[#1e1c20]/20 px-2.5 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none transition-all'
+                            >
+                              <option value='en-diseño' className='bg-[#161517] text-white'>
+                                En Diseño
+                              </option>
+                              <option value='en-progreso' className='bg-[#161517] text-white'>
+                                En Producción
+                              </option>
+                              <option value='aprobado' className='bg-[#161517] text-white'>
+                                Aprobado
+                              </option>
+                            </select>
                           </div>
 
-                          {/* Contenedor del Móvil Virtual */}
-                          <div className='relative mx-auto w-[310px] h-[580px] rounded-[40px] border-[10px] border-gray-800 bg-[#161517] shadow-2xl overflow-hidden flex flex-col ring-4 ring-white/5'>
-                            {/* Notch de la cámara */}
-                            <div className='absolute top-2 left-1/2 -translate-x-1/2 w-28 h-5 bg-gray-800 rounded-full z-20 flex items-center justify-center'>
-                              <span className='w-2 h-2 rounded-full bg-black/60 mr-12'></span>
-                              <span className='w-1.5 h-1.5 rounded-full bg-blue-900/60'></span>
-                            </div>
-
-                            {/* Pantalla del Celular */}
-                            <div className='flex-1 flex flex-col overflow-hidden pt-7 relative text-white bg-black'>
-                              {/* Renderizar según la plataforma mockupTab */}
-                              {mockupTab === 'Instagram' ? (
-                                <div className='h-full flex flex-col justify-between text-xs select-none'>
-                                  {/* IG Header */}
-                                  <div className='flex items-center justify-between px-3 py-2 border-b border-white/5 bg-[#161517]'>
-                                    <div className='flex items-center gap-2'>
-                                      <div className='w-6 h-6 rounded-full bg-gradient-to-tr from-yellow-400 to-purple-600 flex items-center justify-center p-[1px]'>
-                                        <div className='w-full h-full rounded-full bg-[#161517] flex items-center justify-center font-bold text-[9px] text-white'>
-                                          {client?.name ? client.name.charAt(0) : 'M'}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <p className='font-bold text-[10px] leading-none text-white'>
-                                          {client?.name || 'mi_marca'}
-                                        </p>
-                                        <p className='text-[8px] text-gray-400'>Patrocinado</p>
-                                      </div>
-                                    </div>
-                                    <svg
-                                      className='w-4 h-4 text-gray-300'
-                                      fill='currentColor'
-                                      viewBox='0 0 24 24'
-                                    >
-                                      <path d='M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z' />
-                                    </svg>
-                                  </div>
-
-                                  {/* IG Post Image */}
-                                  <div className='aspect-square w-full bg-[#222024] relative flex items-center justify-center overflow-hidden border-b border-white/5'>
-                                    {activePreviewUrl ? (
-                                      <img
-                                        src={activePreviewUrl}
-                                        alt='Preview'
-                                        className='w-full h-full object-cover'
-                                      />
-                                    ) : (
-                                      <div className='w-full h-full bg-gradient-to-br from-purple-800/80 via-pink-700/70 to-indigo-900/80 flex flex-col items-center justify-center p-6 text-center text-white/90'>
-                                        <svg
-                                          className='w-10 h-10 mb-2 text-white/40 animate-pulse'
-                                          fill='none'
-                                          stroke='currentColor'
-                                          viewBox='0 0 24 24'
-                                        >
-                                          <path
-                                            strokeLinecap='round'
-                                            strokeLinejoin='round'
-                                            strokeWidth={1.5}
-                                            d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
-                                          />
-                                        </svg>
-                                        <p className='text-[10px] font-bold tracking-wide uppercase opacity-70'>
-                                          Multimedia
-                                        </p>
-                                        <p className='text-[8px] mt-1 opacity-50'>
-                                          Genera o sube un asset visual para verlo aquí
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* IG Actions */}
-                                  <div className='px-3 py-2 space-y-1 bg-[#161517] flex-1 flex flex-col justify-between'>
-                                    <div className='flex justify-between items-center'>
-                                      <div className='flex gap-3'>
-                                        <span className='text-lg'>❤️</span>
-                                        <span className='text-lg'>💬</span>
-                                        <span className='text-lg'>✈️</span>
-                                      </div>
-                                      <span className='text-lg'>🔖</span>
-                                    </div>
-
-                                    <div className='space-y-0.5 mt-1 overflow-hidden'>
-                                      <p className='font-bold text-[9px]'>1.242 Me gusta</p>
-                                      <p className='text-[9px] leading-relaxed text-gray-200'>
-                                        <span className='font-bold mr-1'>
-                                          {client?.name
-                                            ? client.name.toLowerCase().replace(/\s+/g, '')
-                                            : 'mi_marca'}
-                                        </span>
-                                        {formData.copy
-                                          ? formData.copy.length > 90
-                                            ? formData.copy.slice(0, 90) + '...'
-                                            : formData.copy
-                                          : 'Tu copy aparecerá aquí redactado con elegancia...'}
-                                      </p>
-                                      <p className='text-[7px] text-gray-500 uppercase tracking-widest mt-1'>
-                                        Hace 2 minutos
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : mockupTab === 'TikTok' ? (
-                                <div className='h-full flex flex-col justify-between text-xs relative select-none'>
-                                  {/* TikTok Background Video/Photo Mockup */}
-                                  <div className='absolute inset-0 bg-[#161517] z-0 flex items-center justify-center overflow-hidden'>
-                                    {activePreviewUrl ? (
-                                      <img
-                                        src={activePreviewUrl}
-                                        alt='Preview'
-                                        className='w-full h-full object-cover opacity-80'
-                                      />
-                                    ) : (
-                                      <div className='w-full h-full bg-gradient-to-tr from-[#121212] via-[#fe0979]/20 to-[#050505] flex flex-col items-center justify-center p-6 text-center'>
-                                        <span className='text-3xl mb-2 animate-bounce'>🎵</span>
-                                        <p className='text-[10px] font-bold text-white/70'>
-                                          TikTok Mockup
-                                        </p>
-                                        <p className='text-[8px] text-gray-500 mt-1'>
-                                          Sube un archivo para simular tu post de TikTok
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* TikTok Top Headers */}
-                                  <div className='flex justify-center gap-6 py-2 px-3 bg-gradient-to-b from-black/50 to-transparent z-10 font-semibold text-[10px]'>
-                                    <span className='opacity-70'>Siguiendo</span>
-                                    <span className='border-b-2 border-white pb-1 font-bold'>
-                                      Para ti
-                                    </span>
-                                  </div>
-
-                                  {/* TikTok Right Sidebar Action Icons */}
-                                  <div className='absolute right-2 bottom-20 z-10 flex flex-col items-center gap-3.5'>
-                                    <div className='w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center p-[1px] relative'>
-                                      <div className='w-full h-full rounded-full bg-[#fe0979] flex items-center justify-center font-bold text-[10px] text-white'>
-                                        {client?.name ? client.name.charAt(0) : 'M'}
-                                      </div>
-                                      <span className='absolute -bottom-1 bg-red-500 text-white rounded-full text-[8px] px-1 font-bold'>
-                                        +
-                                      </span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-2xl'>❤️</span>
-                                      <span className='text-[8px] font-bold mt-0.5'>85.4K</span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-2xl'>💬</span>
-                                      <span className='text-[8px] font-bold mt-0.5'>924</span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-2xl'>⚡</span>
-                                      <span className='text-[8px] font-bold mt-0.5'>2.5K</span>
-                                    </div>
-                                  </div>
-
-                                  {/* TikTok Bottom Caption */}
-                                  <div className='p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 space-y-1'>
-                                    <p className='font-bold text-[10px]'>
-                                      @
-                                      {client?.name
-                                        ? client.name.toLowerCase().replace(/\s+/g, '')
-                                        : 'mi_marca'}
-                                    </p>
-                                    <p className='text-[9px] leading-relaxed text-gray-200'>
-                                      {formData.copy
-                                        ? formData.copy.length > 70
-                                          ? formData.copy.slice(0, 70) + '...'
-                                          : formData.copy
-                                        : 'Tu descripción de TikTok aparecerá en esta sección...'}
-                                    </p>
-                                    <div className='flex items-center gap-1.5 text-[8px] text-gray-300 mt-1'>
-                                      <span>🎵</span>
-                                      <span className='truncate w-36'>
-                                        Sonido original - {client?.name || 'mi_marca'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                // YouTube Shorts Mockup
-                                <div className='h-full flex flex-col justify-between text-xs relative select-none'>
-                                  <div className='absolute inset-0 bg-[#161517] z-0 flex items-center justify-center overflow-hidden'>
-                                    {activePreviewUrl ? (
-                                      <img
-                                        src={activePreviewUrl}
-                                        alt='Preview'
-                                        className='w-full h-full object-cover opacity-85'
-                                      />
-                                    ) : (
-                                      <div className='w-full h-full bg-gradient-to-tr from-[#ff0000]/10 via-[#121212] to-[#000000] flex flex-col items-center justify-center p-6 text-center'>
-                                        <span className='text-3xl mb-2'>🎥</span>
-                                        <p className='text-[10px] font-bold text-white/70'>
-                                          YouTube Shorts
-                                        </p>
-                                        <p className='text-[8px] text-gray-500 mt-1'>
-                                          Sube un archivo para previsualizar como Short
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Shorts Header */}
-                                  <div className='flex justify-between items-center py-2 px-3 bg-gradient-to-b from-black/50 to-transparent z-10'>
-                                    <span className='font-bold text-white text-[11px]'>Shorts</span>
-                                    <span className='text-base'>🔍</span>
-                                  </div>
-
-                                  {/* Shorts Icons */}
-                                  <div className='absolute right-2 bottom-20 z-10 flex flex-col items-center gap-4'>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-lg bg-black/45 p-2 rounded-full'>
-                                        👍
-                                      </span>
-                                      <span className='text-[8px] font-semibold mt-1'>12K</span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-lg bg-black/45 p-2 rounded-full'>
-                                        👎
-                                      </span>
-                                      <span className='text-[8px] font-semibold mt-1'>
-                                        No me gusta
-                                      </span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-lg bg-black/45 p-2 rounded-full'>
-                                        💬
-                                      </span>
-                                      <span className='text-[8px] font-semibold mt-1'>456</span>
-                                    </div>
-                                    <div className='flex flex-col items-center'>
-                                      <span className='text-lg bg-black/45 p-2 rounded-full'>
-                                        ➡️
-                                      </span>
-                                      <span className='text-[8px] font-semibold mt-1'>
-                                        Compartir
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Shorts Caption */}
-                                  <div className='p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10 space-y-2'>
-                                    <p className='text-[9px] leading-relaxed text-white'>
-                                      {formData.copy
-                                        ? formData.copy.length > 60
-                                          ? formData.copy.slice(0, 60) + '...'
-                                          : formData.copy
-                                        : 'El título del Short se mostrará aquí...'}
-                                    </p>
-                                    <div className='flex items-center gap-2'>
-                                      <div className='w-5 h-5 rounded-full bg-red-600 flex items-center justify-center font-bold text-[8px]'>
-                                        {client?.name ? client.name.charAt(0) : 'M'}
-                                      </div>
-                                      <span className='font-bold text-[9px]'>
-                                        {client?.name || 'mi_marca'}
-                                      </span>
-                                      <button className='bg-white text-black rounded-full px-2 py-0.5 text-[8px] font-bold'>
-                                        Suscribirse
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                          {/* Fecha */}
+                          <div>
+                            <label className='mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                              Fecha
+                            </label>
+                            <input
+                              type='date'
+                              value={formData.date}
+                              onChange={e =>
+                                setFormData(prev => ({ ...prev, date: e.target.value }))
+                              }
+                              className='w-full rounded-lg border border-white/10 bg-[#1e1c20]/20 px-2.5 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none transition-all'
+                              required
+                            />
                           </div>
+
+                          {/* Hora */}
+                          <div>
+                            <label className='mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                              Hora
+                            </label>
+                            <input
+                              type='time'
+                              value={formData.time}
+                              onChange={e =>
+                                setFormData(prev => ({ ...prev, time: e.target.value }))
+                              }
+                              className='w-full rounded-lg border border-white/10 bg-[#1e1c20]/20 px-2.5 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none transition-all'
+                              required
+                            />
+                          </div>
+
+                          {/* Formato */}
+                          <div>
+                            <label className='mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                              Formato
+                            </label>
+                            <select
+                              value={formData.format || 'Carrusel'}
+                              onChange={e =>
+                                setFormData(prev => ({ ...prev, format: e.target.value }))
+                              }
+                              className='w-full rounded-lg border border-white/10 bg-[#1e1c20]/20 px-2.5 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none transition-all'
+                            >
+                              {[
+                                'Historia',
+                                'Carrusel',
+                                'Reel / TikTok',
+                                'Entrevista',
+                                'Video Influencer',
+                                'Cobertura de Evento',
+                                'Post Estático',
+                              ].map(f => (
+                                <option key={f} value={f} className='bg-[#161517] text-white'>
+                                  {f}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Objetivo de la publicación */}
+                        <div className='pt-1'>
+                          <label className='mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                            Objetivo del Contenido
+                          </label>
+                          <input
+                            type='text'
+                            value={formData.goal || ''}
+                            onChange={e =>
+                              setFormData(prev => ({ ...prev, goal: e.target.value }))
+                            }
+                            className='w-full bg-transparent border-b border-white/10 focus:border-rose-500/50 py-1 focus:outline-none focus:ring-0 text-xs text-white placeholder-gray-500 transition-colors'
+                            placeholder='Ej: Captar leads, posicionamiento de marca, generar engagement...'
+                          />
                         </div>
                       </div>
                     </div>
@@ -2331,6 +1976,39 @@ export const ScheduleSection = ({ clientId }) => {
         clientId={clientId}
         clientName={client?.name || ''}
       />
+
+      {/* Notificación flotante de Ajustes del Cliente */}
+      <AnimatePresence>
+        {feedbackEventsCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className='fixed bottom-6 left-6 z-50 max-w-sm rounded-2xl border border-[#fe0979]/30 bg-[#161517]/95 p-4 shadow-[0_8px_32px_rgba(254,9,121,0.2)] backdrop-blur-md flex items-start gap-3.5'
+          >
+            <div className='flex-shrink-0 w-8 h-8 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center text-[#fe0979] animate-pulse'>
+              💬
+            </div>
+            <div className='flex-1 min-w-0'>
+              <h4 className='text-xs font-bold text-white uppercase tracking-wider'>
+                Ajustes Solicitados
+              </h4>
+              <p className='text-xs text-gray-300 mt-1 leading-relaxed font-sans'>
+                El cliente ha solicitado {feedbackEventsCount} ajuste{feedbackEventsCount > 1 ? 's' : ''} en las publicaciones de este mes.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                toast.success('Los ajustes están destacados con la etiqueta "Ajuste Solicitado" en rojo.');
+              }}
+              className='text-[10px] font-bold text-[#fe0979] hover:underline self-center px-1 py-0.5'
+            >
+              Ver
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

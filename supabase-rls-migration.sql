@@ -50,7 +50,7 @@ BEGIN
         EXECUTE 'DROP POLICY IF EXISTS "profiles_select_policy" ON public.profiles';
         EXECUTE 'DROP POLICY IF EXISTS "profiles_update_policy" ON public.profiles';
         
-        EXECUTE 'CREATE POLICY "profiles_select_policy" ON public.profiles FOR SELECT TO authenticated USING (agency_id = public.get_user_agency_id())';
+        EXECUTE 'CREATE POLICY "profiles_select_policy" ON public.profiles FOR SELECT TO authenticated USING (id = auth.uid() OR agency_id = public.get_user_agency_id())';
         EXECUTE 'CREATE POLICY "profiles_update_policy" ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK (id = auth.uid())';
     END IF;
 

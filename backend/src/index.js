@@ -36,7 +36,7 @@ app.listen(PORT, () => {
     // Cron job diario de tendencias — se ejecuta a las 7:00 AM (hora del servidor)
     // ────────────────────────────────────────────────────
     if (process.env.TAVILY_API_KEY) {
-        cron.schedule('0 7 * * *', async () => {
+        cron.schedule('0 8 * * *', async () => {
             logger.server('⏰ [cron] Ejecutando job diario de tendencias...');
             try {
                 const result = await runDailyTrendsJob();
@@ -48,7 +48,7 @@ app.listen(PORT, () => {
             timezone: 'America/Argentina/Buenos_Aires',
         });
 
-        logger.server('📅 [cron] Job de tendencias programado para las 7:00 AM (America/Argentina/Buenos_Aires).');
+        logger.server('📅 [cron] Job de tendencias programado para las 8:00 AM (America/Argentina/Buenos_Aires).');
     } else {
         logger.server('⚠️  TAVILY_API_KEY no configurada — job de tendencias desactivado.');
     }

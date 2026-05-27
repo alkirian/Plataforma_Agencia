@@ -7,6 +7,7 @@ import scheduleRoutes from './schedule.routes.js';
 import invitationRoutes from './invitations.routes.js';
 import trendsRoutes from './trends.routes.js';
 import sharedRoutes from './shared.routes.js';
+import webhooksRoutes from './webhooks.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { handleGetAgencyActivityFeed } from '../controllers/activity.controller.js';
 
@@ -27,6 +28,9 @@ router.use('/trends', protect, trendsRoutes);
 
 // Ruta pública compartida para el portal de aprobación
 router.use('/shared', sharedRoutes);
+
+// Ruta pública para webhooks externos (Meta Ads Webhooks)
+router.use('/webhooks', webhooksRoutes);
 
 // Feed global de actividad de la agencia
 router.get('/activity-feed', protect, handleGetAgencyActivityFeed);

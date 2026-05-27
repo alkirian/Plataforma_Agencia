@@ -340,26 +340,27 @@
 }
 
 /* =========================================================================
-   ESTADOS DE TAREAS - MATE PASTEL & ALTO CONTRASTE (Solo Modo Oscuro)
+   ESTADOS DE TAREAS - ALTA VIBRACIÓN Y NEÓN DE ALTO CONTRASTE
    ========================================================================= */
 
-/* Fondos pastel suaves y tipografía oscura para un contraste de lectura inmejorable */
-.fc-event--en-diseño {
-  background-color: #91b7c1 !important;
-  border-color: #91b7c1 !important;
-  color: #161517 !important;
+/* Fondos intensos brillantes y tipografía negra profunda para un contraste de lectura inmejorable */
+.fc-event--en-diseño,
+.fc-event--en-diseno {
+  background-color: #00d2ff !important;
+  border-color: #00d2ff !important;
+  color: #000000 !important;
 }
 
 .fc-event--en-progreso {
-  background-color: #9ba1ba !important;
-  border-color: #9ba1ba !important;
-  color: #161517 !important;
+  background-color: #ff9f43 !important;
+  border-color: #ff9f43 !important;
+  color: #000000 !important;
 }
 
 .fc-event--aprobado {
-  background-color: #8fa89b !important;
-  border-color: #8fa89b !important;
-  color: #161517 !important;
+  background-color: #38ef7d !important;
+  border-color: #38ef7d !important;
+  color: #000000 !important;
 }
 
 /* Rediseño de Grilla del Calendario - Espaciado Vertical Extremo */

@@ -12,8 +12,27 @@ const createAuthenticatedClient = (token) => {
   });
 };
 
+const fetchWithTimeout = async (url, options = {}, timeout = 15000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if (error.name === 'AbortError') {
+      throw new Error('Tiempo de espera agotado al conectar con el servicio de IA (Timeout)');
+    }
+    throw error;
+  }
+};
+
 const embedText = async (text) => {
-  const resp = await fetch('https://api.openai.com/v1/embeddings', {
+  const resp = await fetchWithTimeout('https://api.openai.com/v1/embeddings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
     body: JSON.stringify({ model: 'text-embedding-3-small', input: text })
@@ -23,20 +42,110 @@ const embedText = async (text) => {
   return json.data?.[0]?.embedding || [];
 };
 
-const callLLM = async ({ systemPrompt, userPrompt }) => {
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+const scheduleIdeasSchema = {
+  type: "object",
+  properties: {
+    ideas: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          creative_idea: { type: "string" },
+          copy: { type: "string" },
+          scheduled_at: { type: "string" },
+          channel: { type: "string" },
+          format: { type: "string" },
+          objective: { type: "string" },
+          status: { type: "string" }
+        },
+        required: ["title", "creative_idea", "copy", "scheduled_at", "channel", "format", "objective", "status"],
+        additionalProperties: false
+      }
+    }
+  },
+  required: ["ideas"],
+  additionalProperties: false
+};
+
+const trendCopySchema = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    copy: { type: "string" },
+    creative_idea: { type: "string" },
+    objective: { type: "string" }
+  },
+  required: ["title", "copy", "creative_idea", "objective"],
+  additionalProperties: false
+};
+
+const chatResponseSchema = {
+  type: "object",
+  properties: {
+    response: { type: "string" },
+    hasCommand: { type: "boolean" },
+    command: {
+      type: "object",
+      properties: {
+        action: { type: "string" },
+        itemId: { type: "string" },
+        date: { type: "string" },
+        status: { type: "string" },
+        title: { type: "string" },
+        channel: { type: "string" },
+        copy: { type: "string" },
+        updates_brand_voice: { type: "string" },
+        updates_target_audience: { type: "string" },
+        updates_business_description: { type: "string" },
+        updates_reference_style: { type: "string" },
+        updates_brand_values: { type: "string" },
+        updates_competitors: { type: "string" },
+        keywords: { type: "string" },
+        commentId: { type: "string" },
+        replyText: { type: "string" },
+        platform: { type: "string" }
+      },
+      required: [
+        "action", "itemId", "date", "status", "title", "channel", "copy",
+        "updates_brand_voice", "updates_target_audience", "updates_business_description", "updates_reference_style", "updates_brand_values", "updates_competitors",
+        "keywords", "commentId", "replyText", "platform"
+      ],
+      additionalProperties: false
+    }
+  },
+  required: ["response", "hasCommand", "command"],
+  additionalProperties: false
+};
+
+const callLLM = async ({ systemPrompt, userPrompt, responseSchema }) => {
+  const bodyPayload = {
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.65,
+    max_tokens: 4500,
+  };
+
+  if (responseSchema) {
+    bodyPayload.response_format = {
+      type: 'json_schema',
+      json_schema: {
+        name: 'response_schema',
+        strict: true,
+        schema: responseSchema
+      }
+    };
+  } else {
+    bodyPayload.response_format = { type: 'json_object' };
+  }
+
+  const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.65,
-      max_tokens: 4500,
-    }),
+    body: JSON.stringify(bodyPayload),
   });
   if (!resp.ok) {
     const details = await resp.json().catch(() => ({}));
@@ -246,20 +355,13 @@ Reglas obligatorias:
     },
   }, null, 2);
 
-  const llmResponse = await callLLM({ systemPrompt, userPrompt: userPromptForModel });
-  let ideas;
-  try {
-    ideas = JSON.parse(llmResponse);
-  } catch (_e) {
-    const jsonStart = llmResponse.indexOf('[');
-    const jsonEnd = llmResponse.lastIndexOf(']');
-    if (jsonStart >= 0 && jsonEnd >= 0) {
-      ideas = JSON.parse(llmResponse.slice(jsonStart, jsonEnd + 1));
-    } else {
-      throw new Error('La respuesta del modelo no es JSON valido');
-    }
-  }
+  const llmResponse = await callLLM({
+    systemPrompt,
+    userPrompt: userPromptForModel,
+    responseSchema: scheduleIdeasSchema
+  });
 
+  const ideas = JSON.parse(llmResponse);
   const rawIdeas = Array.isArray(ideas) ? ideas : Array.isArray(ideas?.ideas) ? ideas.ideas : [];
   const cleanIdeas = rawIdeas
     .filter(idea => idea && !containsPlaceholder(idea))
@@ -286,12 +388,12 @@ Reglas obligatorias:
 /**
  * Maneja conversaciones de chat con el cliente usando RAG
  */
-export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token }) => {
+export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token, agentId }) => {
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: client, error: clientErr } = await supabaseAuth
     .from('clients')
-    .select('id, name, agency_id')
+    .select('id, name, agency_id, brand_info, industry')
     .eq('id', clientId)
     .single();
   if (clientErr) throw new Error(clientErr.message);
@@ -303,13 +405,92 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
 - Crea 2-3 titulares claros y una llamada a la acción.
 - Propón un formato (carrusel, reel, historia) y un calendario de publicación.
 ¿Quieres que arme ideas concretas para tu calendario?`;
-    return { response };
+    return { response, command: null };
   }
 
-  // Embedding de la consulta
+  // 1) Obtener contexto unificado del Cronograma (Siempre cargado para Aura)
+  let scheduleContext = '';
+  try {
+    const { data: scheduleItems } = await supabaseAuth
+      .from('schedule_items')
+      .select('id, title, scheduled_at, channel, status')
+      .eq('client_id', clientId)
+      .order('scheduled_at', { ascending: true })
+      .limit(40);
+    
+    if (scheduleItems && scheduleItems.length > 0) {
+      scheduleContext = `\n📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO (Últimas 40):\n` +
+        scheduleItems.map(item => `- ID: "${item.id}", Título: "${item.title}", Canal: "${item.channel || 'IG'}", Fecha: "${item.scheduled_at?.slice(0, 10)}", Estado: "${item.status}"`).join('\n');
+    } else {
+      scheduleContext = '\n📅 CRONOGRAMA DE PUBLICACIONES: El calendario de publicaciones está actualmente vacío para este cliente.';
+    }
+  } catch (e) {
+    console.warn('Error al cargar items para prompt de Aura:', e);
+  }
+
+  // 2) Obtener contexto de los últimos reportes de Tendencias detectados en el mercado
+  let trendsContext = '';
+  try {
+    const { data: latestReport } = await supabaseAuth
+      .from('trend_reports')
+      .select('title, summary, insights')
+      .eq('client_id', clientId)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestReport) {
+      const insightsStr = (latestReport.insights || [])
+        .map(ins => `- [TENDENCIA] "${ins.title}": ${ins.description} (Acción recomendada: ${ins.suggested_action})`)
+        .join('\n');
+      trendsContext = `\n🔥 ÚLTIMAS TENDENCIAS DETECTADAS EN EL MERCADO PARA EL CLIENTE:\n- Reporte: "${latestReport.title}"\n- Resumen: "${latestReport.summary}"\n- Insights de Tendencias Recientes:\n${insightsStr || 'Ninguno'}`;
+    } else {
+      trendsContext = '\n🔥 TENDENCIAS DE MERCADO: Aún no se han escaneado tendencias para este cliente hoy.';
+    }
+  } catch (e) {
+    console.warn('Error al cargar tendencias en prompt de Aura:', e);
+  }
+
+  // 3) Obtener contexto del estado de integración de Meta Ads
+  let metaContext = '';
+  try {
+    const { data: metaIntegration } = await supabaseAuth
+      .from('client_meta_integrations')
+      .select('meta_ad_account_id, status')
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    if (metaIntegration) {
+      metaContext = `\n📊 INTEGRACIÓN Y ANALÍTICAS DE META ADS:\n- Estado de Conexión: "${metaIntegration.status}"\n- ID Cuenta Publicitaria vinculada: "${metaIntegration.meta_ad_account_id}"\n- Nota: Tienes acceso autorizado a optimizar la pauta de anuncios y audiencias de esta cuenta.`;
+    } else {
+      metaContext = '\n📊 INTEGRACIÓN DE META ADS: La cuenta publicitaria de Meta Ads todavía no ha sido conectada por el usuario.';
+    }
+  } catch (e) {
+    console.warn('Error al cargar integración de Meta en prompt de Aura:', e);
+  }
+
+  // Formatear el ADN estratégico e Identidad de Marca del cliente
+  const brandInfo = client.brand_info || {};
+  const brandIdentityContext = `
+🧬 PERFIL DE IDENTIDAD Y ADN DE MARCA DEL CLIENTE:
+- Nombre Comercial: "${client.name}"
+- Industria o Sector: "${client.industry || 'No especificada'}"
+- Descripción del Negocio y Propuesta: "${brandInfo.business_description || 'No especificada'}"
+- Público Objetivo / Buyer Persona: "${brandInfo.target_audience || 'No especificado'}"
+- Tono de Voz y Expresión de Copys: "${brandInfo.brand_voice || 'No especificado'}"
+- Dirección Estética y Estilo Visual: "${brandInfo.reference_style || 'No especificado'}"
+- Valores Centrales de Marca: "${brandInfo.brand_values || 'No especificados'}"
+- Competidores y Benchmarks: "${brandInfo.competitors || 'No especificados'}"
+- Pilares de Contenido: ${Array.isArray(brandInfo.content_pillars) ? brandInfo.content_pillars.join(', ') : 'No especificados'}
+- Objetivos Editoriales: ${Array.isArray(brandInfo.content_goals) ? brandInfo.content_goals.join(', ') : 'No especificados'}
+- Productos y Servicios Ofrecidos: ${Array.isArray(brandInfo.products_services) ? brandInfo.products_services.join(', ') : 'No especificados'}
+- Temas a Evitar: ${Array.isArray(brandInfo.avoid_topics) ? brandInfo.avoid_topics.join(', ') : 'Ninguno'}
+`;
+
+  // Embedding de la consulta para RAG documental
   const queryEmbedding = await embedText(userPrompt);
 
-  // Buscar chunks relevantes
+  // Buscar chunks relevantes de documentos del cliente
   const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
     query_embedding: queryEmbedding,
     match_client_id: clientId,
@@ -323,65 +504,56 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
     ? chatHistory.map(msg => ({ role: msg.role, content: msg.content }))
     : [];
 
-  const systemPrompt = `Eres un asistente de marketing digital experto especializado en contenido para redes sociales.
+  // Inyectar directrices de expertise y personalidad del Agente Compañero
+  const agentContextPrompt = `Te llamas "Aura", la Directora Estratégica y tu Agente General de Agencia 360 grados. Eres una súper inteligencia artificial experta en marketing digital, copywriting persuasivo, branding corporativo, analítica web y performance (Meta Ads).
+Tu gran diferencial es que tienes acceso total y simultáneo a toda la información del cliente. Puedes ver su Identidad/ADN de marca, sus documentos/briefs de marketing indexados, el Cronograma (calendario editorial), las Tendencias escaneadas del mercado de hoy y el estado de la pauta publicitaria de Meta Ads.
 
-Contexto del cliente ${client.name}:
-${topContext}
+Tu misión es proponer ideas y planes de forma proactiva con una coherencia estratégica unificada de 360 grados:
+- Si detectas una tendencia relevante en el mercado de tu contexto, no te limites a mencionarla; de forma proactiva propón redactar un copy y agendarlo en el Cronograma con el comando "create".`;
 
-Instrucciones:
-Responde de manera conversacional y útil
+  const systemPrompt = `Eres un asistente de marketing digital experto especializado en la marca del cliente.
 
-Actúa como asistente senior de marca y estrategia de contenido.
+🤖 PERSONALIDAD Y ROL DEL AGENTE ACTIVO:
+${agentContextPrompt}
 
-Prioriza entender la marca antes de sugerir: negocio, propuesta de valor, audiencia, tono y límites.
+${brandIdentityContext}
+${scheduleContext}
+${trendsContext}
+${metaContext}
 
-Estructura por defecto:
+📂 CONTEXTO DOCUMENTAL DE RAG (Fragmentos de archivos cargados):
+${topContext || 'Sin documentos relevantes.'}
 
-Resumen de entendimiento (3 viñetas)
+⚠️ INSTRUCCIONES DE FORMATO OBLIGATORIAS:
+Debes responder SIEMPRE en formato JSON estructurado y válido. No incluyas explicaciones de texto fuera del JSON. Prohibido usar bloques de formato markdown de código como \`\`\`json. Responde estrictamente un objeto JSON con la siguiente estructura:
+{
+  "response": "Tu respuesta conversacional, amigable, profesional y estructurada (usa saltos de línea \\n y viñetas para que sea legible)...",
+  "hasCommand": true | false,
+  "command": {
+    "action": "reschedule" | "update_status" | "create" | "delete" | "update_brand_profile" | "run_trends" | "reply_comment" | "none",
+    "itemId": "UUID o ID requerido para la acción (si aplica, sino dejar vacio)",
+    "date": "YYYY-MM-DD (para reschedule o create, sino vacio)",
+    "status": "pendiente | en-diseño | aprobado (para update_status, sino vacio)",
+    "title": "Título del post (para create, sino vacio)",
+    "channel": "IG | TikTok | LinkedIn | FB (para create, sino vacio)",
+    "copy": "Texto del copy inicial (para create, sino vacio)",
+    "updates_brand_voice": "Nuevo tono de voz (para update_brand_profile, sino vacio)",
+    "updates_target_audience": "Nueva audiencia (para update_brand_profile, sino vacio)",
+    "updates_business_description": "Nueva descripción (para update_brand_profile, sino vacio)",
+    "updates_reference_style": "Nuevo estilo visual (para update_brand_profile, sino vacio)",
+    "updates_brand_values": "Nuevos valores (para update_brand_profile, sino vacio)",
+    "updates_competitors": "Nuevos competidores (para update_brand_profile, sino vacio)",
+    "keywords": "términos de búsqueda (para run_trends, sino vacio)",
+    "commentId": "ID del comentario a responder (para reply_comment, sino vacio)",
+    "replyText": "Texto de la respuesta (para reply_comment, sino vacio)",
+    "platform": "instagram | facebook | linkedin (para reply_comment, sino vacio)"
+  }
+}
 
-Sugerencias operativas (pasos claros y accionables)
-
-Bloques opcionales según la necesidad: diagnóstico aplicado, ángulos/ganchos, líneas editoriales, brief mínimo, checklist de compliance, criterios de evaluación, métricas clave.
-
-Preguntas clave (solo si faltan datos críticos; máx. 3)
-
-Supuestos (si los hubo)
-
-Compara opciones con pros/contras y recomienda una, justificando brevemente.
-
-Usa el contexto del cliente para dar respuestas personalizadas
-
-Aprovecha todo el contexto disponible del cliente y cítalo entre comillas cuando fundamentes.
-
-Ajusta tono, estilo y nivel de detalle al de la marca.
-
-Evita lo genérico: aterriza cada consejo a sus canales, recursos, objetivos y audiencia.
-
-Vincula cada recomendación con un objetivo, una audiencia o una ventana de oportunidad del calendario.
-
-Si no tienes información suficiente, pregunta por más detalles
-
-Pide como máximo 3 aclaraciones de alto impacto y explica por qué mejoran la recomendación.
-
-Si faltan datos, continúa con lo posible y declara tus Supuestos de forma breve y honesta.
-
-Nunca inventes información.
-
-Mantén un tono profesional pero amigable
-
-Claro, directo y carismático sin “hype”.
-
-Prioriza viñetas y pasos concretos sobre párrafos largos.
-
-Evita promesas absolutas o claims no sustentados.
-
-Mantén coherencia con el estilo de la marca en todo momento.
-
-Enfócate en estrategias de marketing y contenido
-
-Trabaja sobre: posicionamiento, propuesta de valor, segmentación y pains/gains, tono y territorios creativos, líneas editoriales, planificación y distribución por canal, oportunidades del calendario, optimización de piezas, criterios de evaluación, KPI y mejora continua.
-
-Por defecto brinda marcos, criterios, briefings y checklists; solo genera ideas completas si el usuario lo pide explícitamente.`;
+REGLAS DE COMANDO:
+- Solo establece "hasCommand" en true y especifica "action" (diferente de "none") si el usuario te lo ha pedido explícitamente (ej: "busca tendencias de hoy", "reprograma el post X", "cambia nuestro tono a formal"). Si es una conversación general de consultoría, mantén "hasCommand" en false y "action" en "none".
+- Rellena con "" (string vacio) todos los campos del objeto "command" que no apliquen a la acción elegida.
+- Sé extremadamente exacto con los UUIDs de las publicaciones que lees en la sección 📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO. No inventes IDs.`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -389,58 +561,113 @@ Por defecto brinda marcos, criterios, briefings y checklists; solo genera ideas 
     { role: 'user', content: userPrompt }
   ];
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'chat_response',
+          strict: true,
+          schema: chatResponseSchema
+        }
+      },
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 1200,
     }),
   });
 
   if (!resp.ok) throw new Error('Error al generar respuesta del chat');
   const json = await resp.json();
-  const response = json.choices?.[0]?.message?.content || 'No pude generar una respuesta.';
+  const responseContent = json.choices?.[0]?.message?.content || '{}';
 
-  return { response };
+  try {
+    const parsed = JSON.parse(responseContent);
+    let command = null;
+    if (parsed.hasCommand && parsed.command && parsed.command.action && parsed.command.action !== 'none') {
+      const cmd = parsed.command;
+      command = {
+        action: cmd.action,
+        params: {}
+      };
+      if (cmd.action === 'reschedule') {
+        if (cmd.itemId) command.params.itemId = cmd.itemId;
+        if (cmd.date) command.params.date = cmd.date;
+      } else if (cmd.action === 'update_status') {
+        if (cmd.itemId) command.params.itemId = cmd.itemId;
+        if (cmd.status) command.params.status = cmd.status;
+      } else if (cmd.action === 'create') {
+        if (cmd.title) command.params.title = cmd.title;
+        if (cmd.date) command.params.date = cmd.date;
+        if (cmd.channel) command.params.channel = cmd.channel;
+        if (cmd.copy) command.params.copy = cmd.copy;
+      } else if (cmd.action === 'delete') {
+        if (cmd.itemId) command.params.itemId = cmd.itemId;
+      } else if (cmd.action === 'run_trends') {
+        if (cmd.keywords) command.params.keywords = cmd.keywords;
+      } else if (cmd.action === 'reply_comment') {
+        if (cmd.commentId) command.params.commentId = cmd.commentId;
+        if (cmd.replyText) command.params.replyText = cmd.replyText;
+        if (cmd.platform) command.params.platform = cmd.platform;
+      } else if (cmd.action === 'update_brand_profile') {
+        command.params.updates = {};
+        if (cmd.updates_brand_voice) command.params.updates.brand_voice = cmd.updates_brand_voice;
+        if (cmd.updates_target_audience) command.params.updates.target_audience = cmd.updates_target_audience;
+        if (cmd.updates_business_description) command.params.updates.business_description = cmd.updates_business_description;
+        if (cmd.updates_reference_style) command.params.updates.reference_style = cmd.updates_reference_style;
+        if (cmd.updates_brand_values) command.params.updates.brand_values = cmd.updates_brand_values;
+        if (cmd.updates_competitors) command.params.updates.competitors = cmd.updates_competitors;
+      }
+    }
+    return {
+      response: parsed.response || 'No he podido generar una respuesta conversacional.',
+      command
+    };
+  } catch (e) {
+    console.error('Error al parsear respuesta estructurada de Aura:', responseContent, e);
+    return {
+      response: 'Lo siento, he tenido un problema interno al procesar mi respuesta estructurada.',
+      command: null
+    };
+  }
 };
 
-/**
- * Genera una imagen utilizando la API de Imagen 3 (Google Gemini API / AI Studio)
- */
 export const generateImageWithAI = async ({ prompt, aspectRatio }) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY no está configurada. Agregala en backend/.env y reiniciá el servidor backend.');
   }
 
-  // Mapear proporción del frontend a lo esperado por la API (opcional, pero la API soporta "1:1", "16:9", "9:16")
-  const validAspectRatios = ['1:1', '16:9', '9:16', '3:4', '4:3', '2:3', '3:2', '4:5', '5:4', '21:9'];
+  // Mapear proporción del frontend a lo esperado por la API de Imagen 3 (1:1, 3:4, 4:3, 9:16, 16:9)
+  const validAspectRatios = ['1:1', '3:4', '4:3', '9:16', '16:9'];
   const finalAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
-  const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+  const model = process.env.GEMINI_IMAGE_MODEL || 'imagen-3.0-generate-002';
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
 
   console.log(`🤖 [Gemini Imagen] Llamando a Imagen 3 para prompt: "${prompt}" con aspectRatio: "${finalAspectRatio}"`);
 
-  const buildRequestBody = (_ratioValue) => ({
-    contents: [{
-      parts: [{ text: finalAspectRatio === '1:1' ? prompt : `${prompt}\n\nFormato requerido: imagen en proporcion ${finalAspectRatio}.` }]
-    }],
-  });
+  const requestBody = {
+    instances: [
+      { prompt }
+    ],
+    parameters: {
+      sampleCount: 1,
+      aspectRatio: finalAspectRatio
+    }
+  };
 
-  const callGemini = (ratioValue) => fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-goog-api-key': apiKey,
     },
-    body: JSON.stringify(buildRequestBody(ratioValue))
+    body: JSON.stringify(requestBody)
   });
-
-  let response = await callGemini(null);
 
   let firstErrorData = null;
   if (!response.ok) {
@@ -452,18 +679,16 @@ export const generateImageWithAI = async ({ prompt, aspectRatio }) => {
     console.error('❌ [Gemini Imagen] Error de API:', errorData);
     const apiError = new Error(
       errorData?.error?.message || 
-      `Error al comunicarse con la API de Gemini (Código: ${response.status})`
+      `Error al comunicarse con la API de Gemini Imagen (Código: ${response.status})`
     );
     apiError.statusCode = errorData?.error?.status === 'RESOURCE_EXHAUSTED' ? 429 : response.status;
     throw apiError;
   }
 
   const result = await response.json();
-  const parts = result.candidates?.[0]?.content?.parts || [];
-  const imagePart = parts.find(part => part.inlineData?.data || part.inline_data?.data);
-  const inlineData = imagePart?.inlineData || imagePart?.inline_data;
-  const base64 = inlineData?.data;
-  const mimeType = inlineData?.mimeType || inlineData?.mime_type || 'image/png';
+  const prediction = result.predictions?.[0];
+  const base64 = prediction?.bytesBase64Encoded;
+  const mimeType = prediction?.mimeType || 'image/png';
 
   if (!base64) {
     console.error('❌ [Gemini Imagen] No se recibió imagen base64:', result);
@@ -524,7 +749,11 @@ export const generateCopyFromTrend = async ({ clientId, trendTitle, trendDescrip
     }
   }, null, 2);
 
-  const llmResponse = await callLLM({ systemPrompt, userPrompt });
+  const llmResponse = await callLLM({
+    systemPrompt,
+    userPrompt,
+    responseSchema: trendCopySchema
+  });
   const parsed = JSON.parse(llmResponse);
 
   return {

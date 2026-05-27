@@ -10,8 +10,10 @@ import {
   handleClearSchedule,
   handleGetClientScheduleAssets,
   handleDeleteScheduleItemAsset,
+  handlePublishScheduleItem,
 } from '../controllers/schedule.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
+import { validate, scheduleItemSchema, scheduleItemUpdateSchema } from '../schemas/validation.js';
 
 const router = Router({ mergeParams: true });
 
@@ -19,7 +21,7 @@ router.use(protect);
 
 router.route('/')
   .get(handleGetSchedule)
-  .post(handleCreateScheduleItem)
+  .post(validate(scheduleItemSchema), handleCreateScheduleItem)
   .delete(handleClearSchedule);
 
 // Obtener todos los assets de cronograma para el cliente
@@ -32,11 +34,15 @@ router.route('/assets/:assetId')
 
 router.route('/:itemId')
   .get(handleGetScheduleItem)
-  .put(handleUpdateScheduleItem)
+  .put(validate(scheduleItemUpdateSchema), handleUpdateScheduleItem)
   .delete(handleDeleteScheduleItem);
+
+router.route('/:itemId/publish')
+  .post(handlePublishScheduleItem);
 
 router.route('/:itemId/assets')
   .get(handleGetScheduleItemAssets)
   .post(handleCreateScheduleItemAsset);
 
 export default router;
+

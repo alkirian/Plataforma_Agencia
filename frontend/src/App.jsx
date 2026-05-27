@@ -1,10 +1,10 @@
 // src/App.jsx
 
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './supabaseClient.js';
 import { Onboarding } from '@components/Onboarding.jsx';
 import { MainLayout } from '@components/layout/MainLayout.jsx';
+import { useAuth } from './hooks/useAuth.jsx';
 import './App.css';
 
 // Lazy loading de páginas para mejor performance
@@ -39,24 +39,7 @@ const PageLoader = () => (
 
 // Componente Raíz que gestiona el estado de autenticación y navegación unificada
 function App() {
-  const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Obtener perfil del usuario
-  const getProfile = async user => {
-    try {
-      const { data, error } = await supabase.from('profiles').select(`*`).eq('id', user.id);
-      if (error) throw error;
-      setProfile(data?.[0] || null);
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error al obtener el perfil:', error);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { session, profile, loading, logout, getProfile } = useAuth();
 
   useEffect(() => {
     // Inicializar tema global
@@ -68,38 +51,31 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleSession = session => {
-      setSession(session);
-      if (session) {
-        localStorage.setItem('authToken', session.access_token);
-        getProfile(session.user);
-      } else {
-        localStorage.removeItem('authToken');
-        setProfile(null);
-        setLoading(false);
-      }
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   if (loading) {
-    return <div className='min-h-screen flex items-center justify-center'>Cargando...</div>;
+    return (
+      <div className='min-h-screen bg-[#07070E] flex flex-col items-center justify-center select-none gap-6'>
+        <div className='relative w-16 h-16'>
+          {/* Pulsing glow behind */}
+          <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7C5CFC] to-[#4ECDC4] blur-lg opacity-40 animate-pulse' />
+          {/* Spinning premium gradient ring */}
+          <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7C5CFC] to-[#4ECDC4] p-[1.5px] animate-spin' style={{ animationDuration: '3s' }}>
+            <div className='w-full h-full bg-[#07070E] rounded-[14px]' />
+          </div>
+          {/* Central Logo Letter R */}
+          <div className='absolute inset-0 flex items-center justify-center font-title font-black text-white text-xl'>
+            R
+          </div>
+        </div>
+        <div className='flex flex-col items-center gap-1.5'>
+          <span className='font-title font-black text-sm tracking-widest text-text-primary uppercase'>
+            Rambla Studio
+          </span>
+          <span className='text-[10px] tracking-[0.15em] text-text-muted uppercase font-semibold animate-pulse'>
+            Cargando entorno creativo...
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -117,10 +93,10 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <AuthPage />
               </Suspense>
-            ) : !profile ? (
+            ) : (!profile || !profile.agency_id) ? (
               <Onboarding session={session} onProfileComplete={() => getProfile(session.user)} />
             ) : (
-              <MainLayout userEmail={session.user.email} profile={profile} onLogout={handleLogout}>
+              <MainLayout userEmail={session.user.email} profile={profile} onLogout={logout}>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path='/dashboard' element={<DashboardPage />} />
@@ -150,3 +126,4 @@ function App() {
 }
 
 export default App;
+

@@ -5,6 +5,7 @@ import { getSchedule } from '../api/schedule';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
 import { getLatestTrendReports } from '../api/trends';
+import { useAuth } from './useAuth';
 
 /**
  * Hook para manejar notificaciones y recordatorios
@@ -12,7 +13,6 @@ import { getLatestTrendReports } from '../api/trends';
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [lastChecked, setLastChecked] = useState(Date.now());
-  const [session, setSession] = useState(null);
   const toastTimeoutRef = useRef(null);
   const [readNotifications, setReadNotifications] = useState(() => {
     const saved = localStorage.getItem('read-notifications');
@@ -30,27 +30,15 @@ export const useNotifications = () => {
     return localStorage.getItem('notifications-enabled') !== 'false';
   });
 
-  // Escuchar cambios de sesión
+  const { session } = useAuth();
+
+  // Limpiar notificaciones si se cierra la sesión
   useEffect(() => {
-    // Obtener sesión inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    if (!session) {
+      setNotifications([]);
+    }
+  }, [session]);
 
-    // Escuchar cambios de autenticación
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-
-      // Si no hay sesión, limpiar notificaciones
-      if (!session) {
-        setNotifications([]);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // Obtener todos los clientes
   const { data: clientsResponse } = useQuery({
@@ -202,6 +190,7 @@ export const useNotifications = () => {
               title: 'Nueva tendencia detectada',
               message: `Nuevas tendencias de mercado para ${report.clients?.name || 'tu marca'}`,
               taskId: null,
+              clientId: report.client_id,
               clientName: report.clients?.name,
               createdAt: new Date(report.generated_at),
             });
@@ -319,6 +308,27 @@ export const useNotifications = () => {
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     },
     [readNotifications]
+  );
+
+  // Función para marcar todas las tendencias de un cliente como leídas
+  const markTrendsAsReadForClient = useCallback(
+    clientId => {
+      const trendNotifs = notifications.filter(
+        n => n.type === 'trend' && n.clientId === clientId && !n.isRead
+      );
+      if (trendNotifs.length === 0) return;
+
+      const newReadNotifications = new Set(readNotifications);
+      trendNotifs.forEach(n => newReadNotifications.add(n.id));
+      setReadNotifications(newReadNotifications);
+      localStorage.setItem('read-notifications', JSON.stringify([...newReadNotifications]));
+      
+      // Actualizar el estado local marcándolas como leídas para feedback inmediato
+      setNotifications(prev =>
+        prev.map(n => (n.type === 'trend' && n.clientId === clientId ? { ...n, isRead: true } : n))
+      );
+    },
+    [notifications, readNotifications]
   );
 
   // Función para marcar todas como leídas
@@ -467,6 +477,7 @@ export const useNotifications = () => {
     stats,
     isEnabled,
     markAsRead,
+    markTrendsAsReadForClient,
     markAllAsRead,
     markAllAsViewed,
     deleteNotification,

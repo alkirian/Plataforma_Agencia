@@ -6,6 +6,8 @@ export { AnimatedText, useStaggerDelay } from './AnimatedText';
 export { ProgressIndicator, ProgressBadge } from './ProgressIndicator';
 export { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 export { InteractiveAvatar } from './InteractiveAvatar';
+export { AgentBentoCard } from './AgentBentoCard';
+export { AgentChatPanel } from './AgentChatPanel';
 
 // Componentes de estado y feedback
 export { LoadingSpinner, LoadingCard, LoadingPage, LoadingOverlay } from './LoadingSpinner';

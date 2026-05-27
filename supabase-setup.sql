@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS public.agencies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    agency_type TEXT DEFAULT 'agency' CHECK (agency_type IN ('agency', 'own_business')),
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -140,7 +141,7 @@ ALTER TABLE public.chat_summaries ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "agencies_select_policy" ON public.agencies FOR SELECT TO authenticated USING (id = public.get_user_agency_id());
 CREATE POLICY "agencies_update_policy" ON public.agencies FOR UPDATE TO authenticated USING (id = public.get_user_agency_id()) WITH CHECK (id = public.get_user_agency_id());
 
-CREATE POLICY "profiles_select_policy" ON public.profiles FOR SELECT TO authenticated USING (agency_id = public.get_user_agency_id());
+CREATE POLICY "profiles_select_policy" ON public.profiles FOR SELECT TO authenticated USING (id = auth.uid() OR agency_id = public.get_user_agency_id());
 CREATE POLICY "profiles_update_policy" ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 
 CREATE POLICY "clients_access_policy" ON public.clients FOR ALL TO authenticated USING (agency_id = public.get_user_agency_id()) WITH CHECK (agency_id = public.get_user_agency_id());
@@ -166,15 +167,16 @@ CREATE INDEX IF NOT EXISTS document_chunks_doc_idx ON public.document_chunks (do
 CREATE OR REPLACE FUNCTION public.create_new_agency_and_admin(
     user_id UUID,
     agency_name TEXT,
-    user_full_name TEXT
+    user_full_name TEXT,
+    agency_type TEXT DEFAULT 'agency'
 )
 RETURNS UUID AS $$
 DECLARE
     new_agency_id UUID;
 BEGIN
     -- Crear agencia
-    INSERT INTO public.agencies (name)
-    VALUES (agency_name)
+    INSERT INTO public.agencies (name, agency_type)
+    VALUES (agency_name, agency_type)
     RETURNING id INTO new_agency_id;
 
     -- Crear perfil enlazado a la agencia

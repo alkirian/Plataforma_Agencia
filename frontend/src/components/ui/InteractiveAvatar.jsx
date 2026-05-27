@@ -19,10 +19,47 @@ export const InteractiveAvatar = ({
   size = 'lg',
   className = '',
   interactive = true,
+  hovered = false,
 }) => {
   const containerRef = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [localHovered, setLocalHovered] = useState(false);
+  const isHovered = localHovered || hovered;
   const [isBlinking, setIsBlinking] = useState(false);
+
+  // Estados locales para el Cronograma (Fecha, Hora, Día de la Semana en tiempo real)
+  const [timeStr, setTimeStr] = useState('12:00');
+  const [dateInfo, setDateInfo] = useState({ month: 'MAY', day: '27', todayIndex: 2 });
+
+  useEffect(() => {
+    if (variant !== 'schedule') return;
+    const updateDateTime = () => {
+      const now = new Date();
+      // Hora: HH:MM
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      setTimeStr(`${hh}:${mm}`);
+      
+      // Fecha: MES y DÍA
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const currentMonth = months[now.getMonth()];
+      const currentDayStr = String(now.getDate()).padStart(2, '0');
+      
+      // Día de la semana (0 = SUN, 1 = MON, ... 6 = SAT)
+      // En nuestro orden: MON=0, TUE=1, WED=2, THU=3, FRI=4, SAT=5, SUN=6
+      const currentDayIndex = now.getDay();
+      const todayIndexInOrder = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+
+      setDateInfo({
+        month: currentMonth,
+        day: currentDayStr,
+        todayIndex: todayIndexInOrder
+      });
+    };
+
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, [variant]);
 
   // Valores de movimiento del mouse (normalizados de -0.5 a 0.5)
   const mouseX = useMotionValue(0);
@@ -138,6 +175,9 @@ export const InteractiveAvatar = ({
     if (variant === 'meta') {
       return 'bg-purple-600/50 shadow-[0_0_40px_rgba(168,85,247,0.4)]';
     }
+    if (variant === 'cm') {
+      return 'bg-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]';
+    }
     // Variant AI (Identidad)
     if (state === 'thinking') return 'bg-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.4)]';
     if (state === 'talking') return 'bg-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]';
@@ -153,9 +193,9 @@ export const InteractiveAvatar = ({
         sizeClasses[size] || sizeClasses.lg,
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => setLocalHovered(true)}
       onMouseLeave={() => {
-        setIsHovered(false);
+        setLocalHovered(false);
         if (!interactive) {
           mouseX.set(0);
           mouseY.set(0);
@@ -234,23 +274,36 @@ export const InteractiveAvatar = ({
 
       {variant === 'schedule' && (
         <>
-          {/* Engranajes o Cruz táctica para Planificación */}
+          {/* Dial de Reloj Táctico / Cronómetro */}
           <motion.div
-            className='absolute -inset-5 rounded-lg border border-dashed border-rose-500/20 pointer-events-none'
+            className='absolute -inset-6 rounded-full border border-rose-500/20 pointer-events-none'
             style={{
               rotateX: ringRotateX,
               rotateY: ringRotateY,
-              rotateZ: isHovered ? -45 : 0,
+              rotateZ: isHovered ? 360 : 0,
             }}
-            transition={{ type: 'spring', stiffness: 50 }}
-          />
+            transition={{ type: 'spring', stiffness: 30, damping: 15 }}
+          >
+            {/* Marcas de tiempo en el borde del dial */}
+            <div className='absolute inset-0 rounded-full border-t-2 border-b-2 border-dashed border-rose-500/40 opacity-40 animate-spin-slow' />
+          </motion.div>
           <motion.div
-            className='absolute -inset-8 rounded-full border border-rose-500/10 pointer-events-none'
+            className='absolute -inset-9 rounded-full border border-rose-500/10 pointer-events-none flex items-center justify-center'
             style={{
-              scale: isHovered ? 1.08 : 0.96,
+              scale: isHovered ? 1.05 : 0.95,
+              rotateX: ringRotateY,
+              rotateY: ringRotateX,
             }}
-            transition={{ duration: 0.4 }}
-          />
+            transition={{ duration: 0.5 }}
+          >
+            {/* Cuadrante circular de reloj */}
+            <div className='w-full h-full rounded-full border border-double border-rose-500/5 relative'>
+              <div className='absolute top-1 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-rose-500/30' />
+              <div className='absolute bottom-1 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-rose-500/30' />
+              <div className='absolute left-1 top-1/2 -translate-y-1/2 h-0.5 w-1.5 bg-rose-500/30' />
+              <div className='absolute right-1 top-1/2 -translate-y-1/2 h-0.5 w-1.5 bg-rose-500/30' />
+            </div>
+          </motion.div>
         </>
       )}
 
@@ -277,6 +330,26 @@ export const InteractiveAvatar = ({
         </>
       )}
 
+      {variant === 'cm' && (
+        <>
+          {/* Ondas concéntricas de comunicación/chat */}
+          <motion.div
+            className='absolute -inset-6 rounded-full border border-emerald-500/20 pointer-events-none'
+            style={{
+              rotateX: ringRotateX,
+              rotateY: ringRotateY,
+              scale: isHovered ? [1, 1.1, 1] : 1,
+            }}
+            transition={{ repeat: Infinity, duration: 4.5, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className='absolute -inset-3 rounded-full border border-dashed border-emerald-400/30 pointer-events-none'
+            animate={{ rotate: -360 }}
+            transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+          />
+        </>
+      )}
+
       {/* 3. CABEZA DEL AVATAR (Giro 3D y perspectiva) */}
       <motion.div
         className={cn(
@@ -289,7 +362,9 @@ export const InteractiveAvatar = ({
                 ? 'rounded-[2rem] bg-slate-950/90 border-rose-900/40'
                 : variant === 'documents'
                   ? 'rounded-[2.2rem] bg-slate-950/85 border-sky-900/40'
-                  : 'rounded-[2.8rem] bg-slate-950/85 border-purple-900/40', // variant === 'meta'
+                  : variant === 'cm'
+                    ? 'rounded-[2.4rem] bg-slate-950/85 border-emerald-900/40'
+                    : 'rounded-[2.8rem] bg-slate-950/85 border-purple-900/40', // variant === 'meta'
           isHovered &&
             (variant === 'ai'
               ? 'border-violet-500/40 shadow-[0_0_25px_rgba(139,92,246,0.15)]'
@@ -299,7 +374,9 @@ export const InteractiveAvatar = ({
                   ? 'border-rose-400/40 shadow-[0_0_25px_rgba(255,107,107,0.15)]'
                   : variant === 'documents'
                     ? 'border-sky-400/40 shadow-[0_0_25px_rgba(0,180,219,0.15)]'
-                    : 'border-purple-400/40 shadow-[0_0_25px_rgba(168,85,247,0.15)]') // variant === 'meta'
+                    : variant === 'cm'
+                      ? 'border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.15)]'
+                      : 'border-purple-400/40 shadow-[0_0_25px_rgba(168,85,247,0.15)]') // variant === 'meta'
         )}
         style={{
           rotateX,
@@ -486,58 +563,185 @@ export const InteractiveAvatar = ({
           {/* ======================================================== */}
           {variant === 'schedule' && (
             <div
-              className='flex flex-col items-center justify-center w-full'
+              className='flex flex-col items-center justify-center w-full h-full relative px-6 select-none'
               style={{ transformStyle: 'preserve-3d' }}
             >
-              {/* Visor Táctico LED Horizontal */}
-              <div className='w-[85%] h-8 bg-slate-950 border border-rose-500/30 rounded-xl overflow-hidden relative flex items-center justify-center px-2'>
-                {/* Cuadrícula de fondo táctico */}
-                <div
-                  className='absolute inset-0 opacity-10'
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, #FF6B6B 1px, transparent 1px)',
-                    backgroundSize: '8px 8px',
-                  }}
-                />
-
-                {/* Dos barras oculares LED que se deslizan a los lados siguiendo el mouse */}
-                <motion.div
-                  className='flex justify-between w-full relative z-10'
-                  style={{
-                    x: useTransform(smoothX, [-0.5, 0.5], [-14, 14]),
-                  }}
-                >
-                  {/* Visor Izquierdo */}
-                  <motion.div
-                    className='w-3.5 h-2 bg-rose-500 rounded-sm shadow-[0_0_8px_rgba(255,107,107,0.9)]'
-                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
-                    transition={{ duration: 0.1 }}
-                  />
-                  {/* Visor Derecho */}
-                  <motion.div
-                    className='w-3.5 h-2 bg-rose-500 rounded-sm shadow-[0_0_8px_rgba(255,107,107,0.9)]'
-                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
-                    transition={{ duration: 0.1 }}
-                  />
-                </motion.div>
+              {/* Grid Digital de Fondo del Calendario */}
+              <div className='absolute inset-4 grid grid-cols-4 grid-rows-3 gap-1 opacity-10 pointer-events-none'>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className='rounded-xs bg-rose-500/10 border border-rose-500/5' />
+                ))}
               </div>
 
-              {/* Barra de progreso de Tareas */}
-              <div className='w-3/5 mt-3 flex flex-col gap-1 items-center'>
-                <div className='flex justify-between w-full text-[8px] text-rose-400/60 font-mono tracking-widest'>
-                  <span>TIME</span>
-                  <span className='animate-pulse'>LOCK</span>
-                </div>
-                <div className='w-full h-1 bg-slate-900 rounded-full overflow-hidden border border-rose-500/20 flex gap-0.5 p-0.5'>
-                  {[0, 1, 2, 3, 4].map(i => (
-                    <motion.div
-                      key={i}
-                      className='h-full flex-1 bg-rose-500 rounded-xs'
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }}
-                    />
-                  ))}
-                </div>
+              {/* Contenedor de Ojos y Rostro Superior */}
+              <div className='relative w-[85%] flex justify-between items-center mb-5 z-10' style={{ transformStyle: 'preserve-3d' }}>
+                
+                {/* Ojo Izquierdo Expresivo */}
+                <motion.div
+                  className='relative w-12 h-12 rounded-full bg-slate-900 border border-rose-500/25 flex items-center justify-center shadow-[inset_0_0_8px_rgba(244,63,94,0.15)]'
+                  animate={
+                    state === 'thinking'
+                      ? { scaleX: 0.9, scaleY: 0.9 }
+                      : state === 'talking'
+                        ? { scaleY: 0.9, scaleX: 1.05 }
+                        : isHovered
+                          ? { scaleY: 0.8, rotate: 10 } // Guiño/Sonrisa con el ojo
+                          : { scaleY: 1, scaleX: 1, rotate: 0 }
+                  }
+                  transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+                >
+                  {/* Pupila con Física de mirada */}
+                  <motion.div
+                    className={cn(
+                      'rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.85)] transition-all duration-300 relative',
+                      isHovered ? 'w-6 h-3 rounded-t-full rounded-b-none' : 'w-4 h-4'
+                    )}
+                    style={{
+                      x: useTransform(smoothX, [-0.5, 0.5], [-6, 6]),
+                      y: useTransform(smoothY, [-0.5, 0.5], [-5, 5]),
+                    }}
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  >
+                    {/* Brillo tierno en la pupila */}
+                    {!isHovered && <div className='w-1 h-1 rounded-full bg-white absolute top-1 left-1 opacity-80' />}
+                  </motion.div>
+                </motion.div>
+
+                {/* Ojo Derecho Expresivo */}
+                <motion.div
+                  className='relative w-12 h-12 rounded-full bg-slate-900 border border-rose-500/25 flex items-center justify-center shadow-[inset_0_0_8px_rgba(244,63,94,0.15)]'
+                  animate={
+                    state === 'thinking'
+                      ? { scaleX: 0.9, scaleY: 0.9 }
+                      : state === 'talking'
+                        ? { scaleY: 0.9, scaleX: 1.05 }
+                        : isHovered
+                          ? { scaleY: 0.8, rotate: -10 } // Guiño/Sonrisa con el ojo
+                          : { scaleY: 1, scaleX: 1, rotate: 0 }
+                  }
+                  transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+                >
+                  {/* Pupila con Física de mirada */}
+                  <motion.div
+                    className={cn(
+                      'rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.85)] transition-all duration-300 relative',
+                      isHovered ? 'w-6 h-3 rounded-t-full rounded-b-none' : 'w-4 h-4'
+                    )}
+                    style={{
+                      x: useTransform(smoothX, [-0.5, 0.5], [-6, 6]),
+                      y: useTransform(smoothY, [-0.5, 0.5], [-5, 5]),
+                    }}
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  >
+                    {/* Brillo tierno en la pupila */}
+                    {!isHovered && <div className='w-1 h-1 rounded-full bg-white absolute top-1 left-1 opacity-80' />}
+                  </motion.div>
+                </motion.div>
+
+                {/* Mejillas LED Adorables */}
+                <motion.div
+                  className='w-4 h-1.5 rounded-full bg-rose-500/20 filter blur-[1px] absolute'
+                  style={{ left: '-2px', bottom: '-4px' }}
+                  animate={isHovered ? { scale: 1.25, opacity: 0.8 } : { scale: 1, opacity: 0.3 }}
+                  transition={{ type: 'spring', stiffness: 100 }}
+                />
+                <motion.div
+                  className='w-4 h-1.5 rounded-full bg-rose-500/20 filter blur-[1px] absolute'
+                  style={{ right: '-2px', bottom: '-4px' }}
+                  animate={isHovered ? { scale: 1.25, opacity: 0.8 } : { scale: 1, opacity: 0.3 }}
+                  transition={{ type: 'spring', stiffness: 100 }}
+                />
+              </div>
+
+              {/* Boca Expresiva (Sonrisa / Línea de Tiempo interactiva) */}
+              <div className='relative w-[65%] h-8 flex items-center justify-center z-10' style={{ transformStyle: 'preserve-3d' }}>
+                {state === 'talking' ? (
+                  /* Boca Parlante (Elipse que vibra elásticamente con la voz) */
+                  <motion.div
+                    className='w-7 h-5 rounded-full bg-slate-900 border-2 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.65)]'
+                    animate={{
+                      scaleY: [1, 1.3, 0.8, 1.2, 1],
+                      scaleX: [1, 0.9, 1.1, 0.95, 1],
+                      y: [0, -2, 1, -1, 0]
+                    }}
+                    transition={{
+                      type: 'tween',
+                      repeat: Infinity,
+                      duration: 0.35,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                ) : state === 'thinking' ? (
+                  /* Boca Pensativa / Dudosa (Pequeña 'o' flotando de lado a lado) */
+                  <motion.div
+                    className='w-4 h-4 rounded-full bg-slate-900 border-2 border-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                    animate={{
+                      x: [-3, 3, -3],
+                      scale: [1, 0.9, 1],
+                    }}
+                    transition={{
+                      type: 'tween',
+                      repeat: Infinity,
+                      duration: 1.5,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                ) : (
+                  /* Boca de Sonrisa Feliz / Línea de Tiempo Curva */
+                  <div className='relative w-full h-full flex flex-col items-center justify-center'>
+                    {/* El arco de la sonrisa */}
+                    <motion.svg
+                      width='60'
+                      height='24'
+                      viewBox='0 0 60 24'
+                      fill='none'
+                      className='filter drop-shadow-[0_0_4px_rgba(244,63,94,0.7)]'
+                    >
+                      <motion.path
+                        d='M10 4C20 18 40 18 50 4'
+                        stroke='#f43f5e'
+                        strokeWidth='3.5'
+                        strokeLinecap='round'
+                        animate={isHovered ? { d: 'M6 2C18 22 42 22 54 2' } : { d: 'M10 4C20 18 40 18 50 4' }}
+                        transition={{ type: 'tween', ease: 'easeInOut', duration: 0.35 }}
+                      />
+                    </motion.svg>
+
+                    {/* Nodos de posteo en la sonrisa (Simbolizando cronograma) */}
+                    <div className='absolute inset-x-2 top-0 flex justify-between px-2.5 pointer-events-none'>
+                      {[0, 1, 2].map(i => (
+                        <motion.div
+                          key={i}
+                          className='w-2 h-2 rounded-full bg-rose-400 border border-rose-600 shadow-[0_0_4px_rgba(244,63,94,0.5)]'
+                          animate={isHovered ? { y: -3, scale: 1.2 } : { y: 0, scale: 1 }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 100,
+                            damping: 8,
+                            y: {
+                              type: 'spring',
+                              stiffness: 80,
+                              damping: 5,
+                              repeat: isHovered ? Infinity : 0,
+                              repeatType: 'reverse',
+                              delay: i * 0.15
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Firma de Estatus del Asistente */}
+              <div className='mt-4 flex items-center gap-1.5 z-10 select-none'>
+                <span className='w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping shadow-[0_0_6px_rgba(244,63,94,0.6)]' />
+                <span className='text-[8px] text-rose-400/80 font-mono tracking-[0.2em] uppercase font-bold filter drop-shadow-[0_0_2px_rgba(244,63,94,0.25)]'>
+                  ARES PLANNER
+                </span>
               </div>
             </div>
           )}
@@ -664,6 +868,74 @@ export const InteractiveAvatar = ({
               </div>
             </div>
           )}
+
+          {/* ======================================================== */}
+          {/* VARIANTE F: ASISTENTE DE CM INTELIGENTE (BURBUJAS + CHAT) */}
+          {/* ======================================================== */}
+          {variant === 'cm' && (
+            <div
+              className='flex flex-col items-center justify-center w-full animate-fade-in'
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* Ojos - Burbujas de diálogo digitales */}
+              <div
+                className='flex justify-between w-[62%] mb-4'
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                {/* Ojo Izquierdo (Burbuja Chat) */}
+                <div className='w-7 h-7 bg-slate-900 border border-emerald-500/30 rounded-xl flex items-center justify-center relative shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'>
+                  <div className='absolute -bottom-1 -left-0.5 w-1.5 h-1.5 bg-slate-900 border-b border-l border-emerald-500/30 rotate-45 rounded-xs' />
+                  <motion.div
+                    className='w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(56,239,125,0.9)]'
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  />
+                </div>
+
+                {/* Ojo Derecho (Burbuja Chat) */}
+                <div className='w-7 h-7 bg-slate-900 border border-emerald-500/30 rounded-xl flex items-center justify-center relative shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'>
+                  <div className='absolute -bottom-1 -right-0.5 w-1.5 h-1.5 bg-slate-900 border-b border-r border-emerald-500/30 -rotate-45 rounded-xs' />
+                  <motion.div
+                    className='w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(56,239,125,0.9)]'
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  />
+                </div>
+              </div>
+
+              {/* Boca de Intercomunicador - Onda de Audio / Chat */}
+              <div className='w-[82%] h-8 bg-slate-950/80 border border-emerald-500/20 rounded-xl flex items-center justify-center px-3 gap-0.5 relative overflow-hidden'>
+                <div className='absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:6px_6px] opacity-[0.06]' />
+                
+                {[0, 1, 2, 3, 4, 5, 6].map(i => {
+                  const animHeights = [4, 18, 10, 22, 12, 16, 4];
+                  return (
+                    <motion.div
+                      key={i}
+                      className='bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.7)] rounded-full'
+                      style={{ width: '2.5px' }}
+                      animate={{
+                        height: isHovered ? [4, animHeights[i], 4] : [4, 7, 4],
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.4 + i * 0.08,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Estatus "ONLINE" */}
+              <div className='mt-2.5 flex items-center gap-1.5'>
+                <span className='w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping' />
+                <span className='text-[8px] text-emerald-400/80 font-mono tracking-widest uppercase'>
+                  CM ACTIVE
+                </span>
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
 
@@ -679,7 +951,9 @@ export const InteractiveAvatar = ({
                 ? 'bg-sky-950/60'
                 : variant === 'meta'
                   ? 'bg-purple-950/60'
-                  : 'bg-slate-950/40'
+                  : variant === 'cm'
+                    ? 'bg-emerald-950/60'
+                    : 'bg-slate-950/40'
         )}
       />
     </div>

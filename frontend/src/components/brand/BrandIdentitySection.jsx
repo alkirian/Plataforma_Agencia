@@ -67,10 +67,15 @@ export const BrandIdentitySection = ({ clientId }) => {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const CONSISTENCY_LOADER_MSGS = [
-    '🔌 Conectando con los canales públicos...',
-    '🧠 Analizando el ADN y estilo de marca...',
-    '📡 Evaluando coherencia estratégica...',
-    '✨ Consolidando reporte de Co-Pilot...',
+    '🔌 Conectando con canales públicos de la marca...',
+    '🌐 Analizando estructura de enlaces y redes sociales...',
+    '🔍 Realizando búsquedas profundas sobre el sector e industria...',
+    '🕷️ Extrayendo y limpiando contenido del sitio web oficial...',
+    '📂 Decodificando documentos de referencia y PDFs...',
+    '🖼️ Procesando elementos gráficos e imágenes...',
+    '🧠 Evaluando la consistencia y ADN de marca...',
+    '⚖️ Co-Pilot cruzando datos y buscando contradicciones...',
+    '✨ Consolidando informe estratégico en la Casilla Única...',
   ];
 
   // Rotador de mensajes de carga
@@ -126,10 +131,64 @@ export const BrandIdentitySection = ({ clientId }) => {
         ...DEFAULT_PROFILE,
         ...mapped,
       });
+
+      if (data.analysis_in_progress) {
+        setIsAnalyzingConsistency(true);
+      } else {
+        setIsAnalyzingConsistency(false);
+      }
+
+      if (data.consistency_report) {
+        setConsistencyReport(data.consistency_report);
+      } else {
+        setConsistencyReport(null);
+      }
     } catch (error) {
       toast.error('No se pudo cargar la identidad del cliente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Carga silenciosa periódica mientras se ejecuta el análisis en segundo plano
+  const loadProfileSilent = async () => {
+    try {
+      const response = await getClientBrandProfile(clientId);
+      const data = response?.data || {};
+
+      const mapped = { ...data };
+      if (Array.isArray(data.source_links) && data.source_links.length > 0) {
+        data.source_links.forEach(link => {
+          if (link.type === 'instagram' && !data.instagram_url) mapped.instagram_url = link.url;
+          if (link.type === 'website' && !data.website_url) mapped.website_url = link.url;
+          if (link.type === 'tiktok' && !data.tiktok_url) mapped.tiktok_url = link.url;
+          if (link.type === 'youtube' && !data.youtube_url) mapped.youtube_url = link.url;
+          if (link.type === 'facebook' && !data.facebook_url) mapped.facebook_url = link.url;
+          if (link.type === 'linkedin' && !data.linkedin_url) mapped.linkedin_url = link.url;
+        });
+      }
+
+      setFormData(prev => ({
+        ...DEFAULT_PROFILE,
+        ...mapped,
+        // No pisar la edición del usuario a menos que el análisis haya finalizado con nueva descripción
+        business_description: data.analysis_in_progress ? prev.business_description : (data.business_description || prev.business_description)
+      }));
+
+      if (data.consistency_report) {
+        setConsistencyReport(data.consistency_report);
+      }
+
+      if (!data.analysis_in_progress) {
+        setIsAnalyzingConsistency(false);
+        if (data.analysis_error) {
+          toast.error(`❌ El análisis falló: ${data.analysis_error}`, { duration: 6000 });
+        } else if (data.consistency_report) {
+          toast.success('✨ ¡Análisis de Co-Pilot completado en segundo plano y cargado con éxito!', { id: 'bg-analysis-success', duration: 5000 });
+        }
+      }
+    } catch (error) {
+      console.error('Silent profile load failed:', error);
     }
   };
 
@@ -150,20 +209,38 @@ export const BrandIdentitySection = ({ clientId }) => {
     loadAssets();
   }, [clientId]);
 
+  // Polling silencioso de fondo cada 4 segundos mientras se esté analizando
+  useEffect(() => {
+    let interval;
+    if (isAnalyzingConsistency) {
+      interval = setInterval(() => {
+        loadProfileSilent();
+      }, 4000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAnalyzingConsistency, clientId]);
+
+  // Event listener para recargar el ADN de marca en vivo cuando Nova aplique ajustes (chat)
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('⚡ Recargando ADN de identidad (Nova)...');
+      loadProfile();
+    };
+    window.addEventListener('cadence:refresh-brand-identity', handleRefresh);
+    return () => {
+      window.removeEventListener('cadence:refresh-brand-identity', handleRefresh);
+    };
+  }, [clientId]);
+
   // Cálculo del porcentaje de completado de identidad
   const completion = useMemo(() => {
-    const fields = [
-      formData.business_description,
-      formData.target_audience,
-      formData.brand_voice,
-      formData.reference_style,
-      formData.brand_values,
-      formData.competitors,
-    ];
-    const filled = fields.filter(value => String(value || '').trim().length > 0).length;
-    const totalFields = fields.length;
-    return Math.min(100, Math.round((filled / totalFields) * 100));
-  }, [formData]);
+    const text = String(formData.business_description || '').trim();
+    if (!text) return 0;
+    if (text.length > 500) return 100;
+    return Math.min(100, Math.round((text.length / 500) * 100));
+  }, [formData.business_description]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -192,74 +269,47 @@ export const BrandIdentitySection = ({ clientId }) => {
         }));
 
       if (reconstructedSourceLinks.length === 0) {
-        toast.error('Por favor agrega al menos un enlace de canal público antes de auditar.');
+        toast.error('Por favor agrega al menos un enlace de canal público antes de analizar.');
         setIsAnalyzingConsistency(false);
         return;
       }
 
       const response = await analyzeBrandConsistency(clientId, formData, reconstructedSourceLinks);
 
-      if (response?.success && response?.data) {
-        setConsistencyReport(response.data);
-        if (response.data.is_consistent) {
-          toast.success('✨ ¡Co-Pilot: Identidad perfectamente alineada con tus canales públicos!');
-        } else {
-          toast.success(
-            `⚠️ Co-Pilot: Auditoría completada. Consistencia al ${response.data.consistency_score}%.`
-          );
-        }
+      if (response?.success) {
+        toast.success(
+          response.message || '🧠 ¡Análisis de Co-Pilot iniciado de fondo!',
+          {
+            duration: 8000,
+            id: 'brand-analysis-started',
+          }
+        );
+        // NOTA: No desactivamos isAnalyzingConsistency aquí, ya que el análisis corre asíncronamente
+        // de fondo y el polling silencioso se encargará de consultar el estado y apagarlo cuando termine.
       } else {
-        throw new Error('No se pudo procesar el diagnóstico de consistencia.');
+        throw new Error(response?.error || 'No se pudo iniciar el diagnóstico de consistencia.');
       }
     } catch (error) {
-      toast.error(error.message || 'Error al realizar la auditoría.');
-    } finally {
+      toast.error(error.message || 'Error al realizar el análisis.');
       setIsAnalyzingConsistency(false);
     }
   };
 
-  const resolveConflict = (conflictId, field, value) => {
-    handleChange(field, value);
+  const handleApplySuggestedFix = (contraId, suggestedFixText) => {
+    handleChange('business_description', suggestedFixText);
 
     setResolvedConflicts(prev => {
       const next = new Set(prev);
-      next.add(conflictId);
+      next.add(contraId);
       return next;
     });
 
-    setHighlightedField(field);
-    setTimeout(() => setHighlightedField(null), 2500);
-
-    toast.success(`✨ ¡Sugerencia aplicada y fusionada en ${getFieldLabel(field)} con éxito!`);
-  };
-
-  // Inyectar perfil completo detectado en 1-Clic
-  const handleAdoptEntireProfile = () => {
-    if (!consistencyReport?.detected_profile) return;
-    const dp = consistencyReport.detected_profile;
-    setFormData(prev => ({
-      ...prev,
-      business_description: dp.business_description || prev.business_description,
-      target_audience: dp.target_audience || prev.target_audience,
-      brand_voice: dp.brand_voice || prev.brand_voice,
-      reference_style: dp.reference_style || prev.reference_style,
-      brand_values: dp.brand_values || prev.brand_values,
-      competitors: dp.competitors || prev.competitors,
-    }));
-    toast.success('🧬 ¡ADN de marca completo inyectado en el formulario con éxito!');
-
-    setAiHighlightFields(true);
-    setTimeout(() => setAiHighlightFields(false), 3500);
+    toast.success('✨ ¡Propuesta armonizada aplicada con éxito!');
   };
 
   const getFieldLabel = field => {
     const labels = {
-      business_description: 'Negocio y Propuesta',
-      target_audience: 'Público Objetivo',
-      brand_voice: 'Tono de Voz y Expresión',
-      reference_style: 'Estilo Visual y Estética',
-      brand_values: 'Valores y Filosofía',
-      competitors: 'Competidores',
+      business_description: 'Descripción de Identidad Unificada',
     };
     return labels[field] || field;
   };
@@ -595,90 +645,42 @@ export const BrandIdentitySection = ({ clientId }) => {
   }
 
   return (
-    <section className='w-full max-w-[1600px] mx-auto px-6 py-6 space-y-8 pb-32'>
-      {/* ================= HEADER CONTROL BAR ================= */}
-      <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-border-subtle pb-6'>
-        <div className='space-y-1'>
-          <h1 className='text-2xl font-title font-black text-text-primary tracking-tight flex items-center gap-2'>
-            🧬 Identidad de Marca
-          </h1>
-          <p className='text-xs text-text-muted'>
-            Configura y audita el ADN estratégico del cliente para asegurar coherencia absoluta con
-            el Co-Pilot de IA.
-          </p>
-        </div>
-
-        {/* Circular Gauge Completion */}
-        <div className='flex items-center gap-4 bg-surface-soft border border-border-subtle p-3 rounded-2xl shadow-sm'>
-          <div className='relative flex items-center justify-center w-14 h-14'>
-            <svg className='w-full h-full transform -rotate-90'>
-              <defs>
-                <linearGradient id='completion-grad' x1='0%' y1='0%' x2='100%' y2='100%'>
-                  <stop offset='0%' stopColor='#7C5CFC' />
-                  <stop offset='100%' stopColor='#4ECDC4' />
-                </linearGradient>
-              </defs>
-              <circle
-                cx='28'
-                cy='28'
-                r={radius}
-                className='stroke-white/[0.04]'
-                strokeWidth='4.5'
-                fill='transparent'
-              />
-              <circle
-                cx='28'
-                cy='28'
-                r={radius}
-                stroke='url(#completion-grad)'
-                strokeWidth='4.5'
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap='round'
-                fill='transparent'
-                className='transition-all duration-500'
-              />
-            </svg>
-            <span className='absolute text-xs font-black text-white'>{completion}%</span>
-          </div>
-
-          <div className='text-left'>
-            <div className='text-xs font-extrabold text-text-primary uppercase tracking-wider'>
-              ADN de Marca
-            </div>
-            <div className='text-[10px] text-text-muted mt-0.5'>
-              {completion === 100
-                ? '¡Ficha estratégica completada al 100%!'
-                : 'Completa los 6 pilares para optimizar la IA.'}
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <section className='w-full max-w-[1600px] mx-auto px-4 pt-1 pb-2 space-y-2 h-full overflow-hidden flex flex-col justify-start text-left'>
+      
       {/* ================= MAIN TWO-COLUMN WORKSPACE GRID ================= */}
-      <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
-        {/* ================= COLUMNA IZQUIERDA: SOCiAL DOCK & CO-PILOT (4/12) ================= */}
-        <div className='lg:col-span-4 space-y-6 lg:sticky lg:top-4'>
+      <div className='grid grid-cols-1 lg:grid-cols-12 gap-3 items-start flex-1 overflow-hidden h-full'>
+        
+        {/* ================= COLUMNA IZQUIERDA: DOCK, BIBLIOTECA Y BOTÓN (5/12) ================= */}
+        <div className='lg:col-span-5 space-y-2 overflow-y-auto max-h-full pr-1 pb-2 flex flex-col justify-start'>
+          
+          {/* GUÍA DE ONBOARDING */}
+          <div className='rounded-2xl border border-border-subtle bg-gradient-to-br from-[#121228] to-[#1a1a3b] p-2.5 space-y-1 relative overflow-hidden shadow-md border-l-[3.5px] border-l-[#7C5CFC] text-left flex-shrink-0'>
+            <div className='absolute top-0 right-0 p-2 text-2xl opacity-10 pointer-events-none'>🧬</div>
+            <h3 className='text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5'>
+              <span>ℹ️</span> Identidad de Marca
+            </h3>
+            <p className='text-[10.5px] text-text-muted leading-relaxed'>
+              Conecta los canales oficiales y sube manuales o capturas. Al pulsar <strong>Analizar</strong>, Co-Pilot asimilará el material y consolidará el ADN de marca en la Casilla Única.
+            </p>
+          </div>
+
           {/* CARD 1: CANALES PÚBLICOS (SOCIAL DOCK) */}
-          <div className='rounded-3xl border border-border-subtle bg-surface p-6 space-y-6 shadow-xl relative overflow-hidden'>
-            <div>
-              <h3 className='text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2'>
-                <span>🔌</span> Canales del Cliente
+          <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2 shadow-md relative overflow-hidden flex-shrink-0'>
+            <div className='text-left'>
+              <h3 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
+                <span>🔌</span> Canales de Marca
               </h3>
-              <p className='text-[10px] text-text-muted mt-1 leading-normal'>
-                Conecta enlaces públicos del cliente. La IA los usará para extraer su ADN real.
-              </p>
             </div>
 
-            {/* Social Grid Container */}
-            <div className='grid grid-cols-1 gap-3.5'>
+            {/* Social Grid Container - 2 columns grid for space saving */}
+            <div className='grid grid-cols-2 gap-1.5'>
               {[
                 {
                   id: 'instagram_url',
                   label: 'Instagram',
                   placeholder: 'instagram.com/usuario',
                   icon: (
-                    <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -702,7 +704,7 @@ export const BrandIdentitySection = ({ clientId }) => {
                   label: 'Sitio Web',
                   placeholder: 'https://ejemplo.com',
                   icon: (
-                    <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -720,7 +722,7 @@ export const BrandIdentitySection = ({ clientId }) => {
                   label: 'TikTok',
                   placeholder: 'tiktok.com/@usuario',
                   icon: (
-                    <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -738,7 +740,7 @@ export const BrandIdentitySection = ({ clientId }) => {
                   label: 'LinkedIn',
                   placeholder: 'linkedin.com/company/nombre',
                   icon: (
-                    <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -751,45 +753,80 @@ export const BrandIdentitySection = ({ clientId }) => {
                     'border-[#0A66C2]/40 bg-[#0A66C2]/5 shadow-[0_0_15px_rgba(10,102,194,0.05)]',
                   activeText: 'text-[#0A66C2]',
                 },
+                {
+                  id: 'facebook_url',
+                  label: 'Facebook',
+                  placeholder: 'facebook.com/pagina',
+                  icon: (
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={1.5}
+                        d='M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z'
+                      />
+                    </svg>
+                  ),
+                  activeStyle:
+                    'border-[#1877F2]/40 bg-[#1877F2]/5 shadow-[0_0_15px_rgba(24,119,242,0.05)]',
+                  activeText: 'text-[#1877F2]',
+                },
+                {
+                  id: 'youtube_url',
+                  label: 'YouTube',
+                  placeholder: 'youtube.com/@canal',
+                  icon: (
+                    <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={1.5}
+                        d='M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96A29 29 0 0023 12a29 29 0 00-.46-5.58z'
+                      />
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={1.5}
+                        d='M9.75 15.02l5.75-3.02-5.75-3.02v6.04z'
+                      />
+                    </svg>
+                  ),
+                  activeStyle:
+                    'border-[#FF0000]/40 bg-[#FF0000]/5 shadow-[0_0_15px_rgba(255,0,0,0.05)]',
+                  activeText: 'text-[#FF0000]',
+                },
               ].map(platform => {
                 const value = formData[platform.id] || '';
                 const isConnected = value.trim().length > 0;
                 return (
                   <div
                     key={platform.id}
-                    className={`rounded-2xl border transition-all duration-300 p-3.5 flex items-center gap-4 ${
+                    className={`rounded-xl border transition-all duration-200 p-1.5 flex items-center gap-1.5 ${
                       isConnected
                         ? platform.activeStyle
                         : 'border-border-subtle bg-surface-strong/30 hover:border-white/10'
                     }`}
                   >
                     <div
-                      className={`p-2 rounded-xl bg-black/40 ${isConnected ? platform.activeText : 'text-text-muted'}`}
+                      className={`p-1.5 rounded-lg bg-black/40 ${isConnected ? platform.activeText : 'text-text-muted'}`}
                     >
                       {platform.icon}
                     </div>
 
-                    <div className='flex-1 space-y-1'>
-                      <div className='flex items-center justify-between'>
-                        <span className='text-[10px] font-extrabold uppercase tracking-wider text-text-primary'>
+                    <div className='flex-1 space-y-0.5 text-left min-w-0'>
+                      <div className='flex items-center justify-between gap-1'>
+                        <span className='text-[9px] font-bold uppercase tracking-wider text-text-primary truncate'>
                           {platform.label}
                         </span>
-                        <span
-                          className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            isConnected
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-white/5 text-text-muted'
-                          }`}
-                        >
-                          {isConnected ? '🟢 Conectado' : '⚪ Vacío'}
-                        </span>
+                        <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-500 shadow-[0_0_8px_#10B981]' : 'bg-white/10'}`} />
                       </div>
                       <input
                         type='text'
                         value={value}
                         onChange={e => handleChange(platform.id, e.target.value)}
                         placeholder={platform.placeholder}
-                        className='w-full bg-transparent p-0 text-xs text-white placeholder-text-secondary border-none focus:ring-0 focus:outline-none'
+                        disabled={isAnalyzingConsistency}
+                        className='w-full bg-transparent p-0 text-[11px] text-white placeholder-text-secondary border-none focus:ring-0 focus:outline-none truncate disabled:opacity-50 disabled:cursor-not-allowed'
                       />
                     </div>
                   </div>
@@ -798,126 +835,25 @@ export const BrandIdentitySection = ({ clientId }) => {
             </div>
           </div>
 
-          {/* CARD 2: CO-PILOT AUDIT & IA CHECK */}
-          <div className='rounded-3xl border border-border-subtle bg-surface p-6 space-y-6 shadow-xl relative overflow-hidden'>
-            {/* Background glowing blur for premium effect */}
-            <div className='absolute -top-10 -right-10 w-24 h-24 rounded-full bg-accent-lavender/5 filter blur-2xl pointer-events-none' />
-
-            <div className='flex items-center justify-between border-b border-border-subtle pb-4'>
-              <div>
-                <h3 className='text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2'>
-                  <span>🧠</span> Co-Pilot de Consistencia
-                </h3>
-                <p className='text-[10px] text-text-muted mt-1 leading-normal'>
-                  Compara y audita la coherencia entre tu ADN interno y los canales activos.
-                </p>
-              </div>
-
-              {consistencyReport && (
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
-                    consistencyReport.consistency_score >= 90
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                      : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                  }`}
-                >
-                  {consistencyReport.consistency_score}%
-                </span>
-              )}
-            </div>
-
-            {/* Audit Status Graphic */}
-            <div className='space-y-4'>
-              {!consistencyReport ? (
-                <div className='text-center py-6 space-y-3 bg-surface-strong/30 rounded-2xl border border-border-subtle'>
-                  <span className='text-2xl block animate-bounce-slow'>🛰️</span>
-                  <p className='text-[10.5px] text-text-muted leading-relaxed max-w-[240px] mx-auto'>
-                    Conecta al menos un canal público y escanea con el Co-Pilot para verificar
-                    discrepancias.
-                  </p>
-                </div>
-              ) : (
-                <div className='space-y-4'>
-                  {/* High level status banner */}
-                  <div
-                    className={`p-4 rounded-2xl border ${
-                      consistencyReport.consistency_score >= 90
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                    }`}
-                  >
-                    <h4 className='text-[10px] font-black uppercase tracking-wider'>
-                      {consistencyReport.consistency_score >= 90
-                        ? '✨ Alineación Excelente'
-                        : '⚠️ Discrepancias Detectadas'}
-                    </h4>
-                    <p className='text-[9.5px] text-text-muted mt-1 leading-normal'>
-                      {consistencyReport.consistency_score >= 90
-                        ? 'La IA no detecta contradicciones importantes entre tu ADN y tus canales de comunicación públicos.'
-                        : 'Se encontraron inconsistencias entre tu ADN guardado y tus perfiles. Puedes revisarlas y fusionarlas a la derecha.'}
-                    </p>
-                  </div>
-
-                  {/* Adopt entire profile in one click */}
-                  {consistencyReport.detected_profile && (
-                    <button
-                      type='button'
-                      onClick={handleAdoptEntireProfile}
-                      className='w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500/15 to-teal-500/15 hover:from-emerald-500/25 hover:to-teal-500/25 border border-emerald-500/25 text-emerald-400 py-3 text-xs font-bold transition-all active:scale-[0.98] shadow-md'
-                    >
-                      🧬 Aplicar Diagnóstico Completo IA (1-Clic)
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Botón de Ejecutar Auditoría */}
-              <button
-                type='button'
-                disabled={isAnalyzingConsistency}
-                onClick={handleConsistencyCheck}
-                className='w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C5CFC] to-[#4ECDC4] hover:from-[#6b4dfc] hover:to-[#3ec3ba] text-white py-3.5 text-xs font-black shadow-lg shadow-accent-lavender/10 hover:shadow-accent-lavender/25 transition-all duration-300 disabled:opacity-50'
-              >
-                {isAnalyzingConsistency ? (
-                  <div className='flex flex-col items-center gap-2 py-0.5'>
-                    <div className='flex items-center justify-center gap-2'>
-                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                      <span>Analizando Canales...</span>
-                    </div>
-                    <span className='text-[9px] text-white/70 font-semibold animate-pulse'>
-                      {CONSISTENCY_LOADER_MSGS[loadingMessageIndex]}
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    <span>🧠 Auditar con Co-Pilot</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* CARD 3: BIBLIOTECA DE MATERIALES DE REFERENCIA */}
-          <div className='rounded-3xl border border-border-subtle bg-surface p-6 space-y-6 shadow-xl relative overflow-hidden'>
-            <div>
-              <h3 className='text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2'>
-                <span>📎</span> Materiales de Referencia
+          {/* CARD 2: BIBLIOTECA DE MATERIALES DE REFERENCIA */}
+          <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2 shadow-md relative overflow-hidden flex-shrink-0'>
+            <div className='text-left'>
+              <h3 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
+                <span>📎</span> Referencias y Gráficos
               </h3>
-              <p className='text-[10px] text-text-muted mt-1 leading-normal'>
-                Sube PDF, manuales de marca o imágenes. La IA asimilará el material para guiar las
-                propuestas.
-              </p>
             </div>
 
-            {/* Drag & Drop zone styled like a pro canvas */}
+            {/* Drag & Drop zone */}
             <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`cursor-pointer rounded-2xl border border-dashed p-6 text-center transition-all duration-300 relative ${
-                isDragging
-                  ? 'border-accent-lavender bg-accent-lavender/10 text-accent-lavender'
-                  : 'border-border-subtle bg-surface-strong/30 hover:bg-surface-strong/50 hover:border-white/15'
+              onDragOver={isAnalyzingConsistency ? undefined : handleDragOver}
+              onDragLeave={isAnalyzingConsistency ? undefined : handleDragLeave}
+              onDrop={isAnalyzingConsistency ? undefined : handleDrop}
+              className={`rounded-xl border border-dashed p-2.5 text-center transition-all duration-300 relative ${
+                isAnalyzingConsistency
+                  ? 'border-border-subtle bg-surface-strong/10 opacity-50 cursor-not-allowed'
+                  : isDragging
+                  ? 'cursor-pointer border-accent-lavender bg-accent-lavender/10 text-accent-lavender'
+                  : 'cursor-pointer border-border-subtle bg-surface-strong/30 hover:bg-surface-strong/50 hover:border-white/15'
               }`}
             >
               <input
@@ -927,33 +863,30 @@ export const BrandIdentitySection = ({ clientId }) => {
                 className='hidden'
                 accept='image/*,application/pdf,.doc,.docx,.ppt,.pptx,.txt'
                 onChange={e => handleUploadAssets(e.target.files)}
-                disabled={uploadingAssets}
+                disabled={uploadingAssets || isAnalyzingConsistency}
               />
               <label
-                htmlFor='brand-file-uploader'
-                className='cursor-pointer w-full flex flex-col items-center justify-center gap-2 text-text-muted'
+                htmlFor={isAnalyzingConsistency ? undefined : 'brand-file-uploader'}
+                className={`w-full flex flex-col items-center justify-center gap-1 text-text-muted ${isAnalyzingConsistency ? 'cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {uploadingAssets ? (
-                  <div className='flex flex-col items-center gap-2'>
-                    <div className='h-6 w-6 border-2 border-accent-lavender border-t-transparent rounded-full animate-spin'></div>
-                    <span className='text-[10px] font-bold text-white'>Subiendo archivos...</span>
+                  <div className='flex flex-col items-center gap-1.5'>
+                    <div className='h-4 w-4 border-2 border-accent-lavender border-t-transparent rounded-full animate-spin'></div>
+                    <span className='text-[9.5px] font-bold text-white'>Subiendo...</span>
                   </div>
                 ) : (
                   <>
-                    <div className='w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-lg border border-white/5 shadow-inner'>
+                    <div className='w-7 h-7 rounded-full bg-black/40 flex items-center justify-center text-xs border border-white/5 shadow-inner'>
                       📥
                     </div>
                     <div className='space-y-0.5'>
-                      <span className='text-[11px] font-black text-text-primary block'>
-                        Arrastra archivos aquí
+                      <span className='text-[9.5px] font-black text-text-primary block'>
+                        Arrastra PDFs o Capturas
                       </span>
-                      <span className='text-[9px] text-text-muted block'>
-                        o haz clic para buscar en el sistema
+                      <span className='text-[8px] text-text-muted block'>
+                        o haz clic para explorar
                       </span>
                     </div>
-                    <span className='text-[7.5px] font-bold uppercase tracking-wider text-text-secondary bg-black/40 px-2 py-0.5 rounded border border-white/5 mt-1'>
-                      PDF, DOCX, TXT o Imágenes
-                    </span>
                   </>
                 )}
               </label>
@@ -961,294 +894,237 @@ export const BrandIdentitySection = ({ clientId }) => {
 
             {/* Visual File Grid */}
             {brandAssets.length > 0 && (
-              <div className='grid grid-cols-2 gap-3 pt-1'>
+              <div className='grid grid-cols-2 gap-1.5 pt-0.5 max-h-[85px] overflow-y-auto pr-0.5'>
                 {brandAssets.map(asset => {
                   const isImage = asset.file_name?.match(/\.(jpeg|jpg|gif|png|webp)$/i);
                   return (
                     <div
                       key={asset.id}
-                      className='group overflow-hidden rounded-xl border border-border-subtle bg-surface-strong p-2 flex flex-col justify-between gap-3 relative shadow-md transition-all hover:border-white/15 hover:shadow-lg'
+                      className='group overflow-hidden rounded-lg border border-border-subtle bg-surface-strong p-1 flex items-center justify-between gap-1.5 relative shadow-sm transition-all hover:border-white/10'
                     >
-                      <div className='flex items-start justify-between gap-1'>
-                        <div className='flex items-center gap-2 max-w-[80%]'>
-                          <span className='text-sm flex-shrink-0'>{isImage ? '🖼️' : '📄'}</span>
-                          <p className='truncate text-[9.5px] text-white/90 font-bold leading-tight'>
-                            {asset.file_name || asset.name}
-                          </p>
-                        </div>
-                        <button
-                          type='button'
-                          onClick={() => handleDeleteAsset(asset)}
-                          className='opacity-60 hover:opacity-100 text-red-400 hover:text-red-300 text-[10.5px] p-0.5 font-bold transition-all transition-opacity duration-200'
-                        >
-                          ✕
-                        </button>
+                      <div className='flex items-center gap-1 min-w-0 text-left'>
+                        <span className='text-[10px] flex-shrink-0'>{isImage ? '🖼️' : '📄'}</span>
+                        <p className='truncate text-[8.5px] text-white/90 font-bold leading-tight'>
+                          {asset.file_name || asset.name}
+                        </p>
                       </div>
-
-                      {/* Display thumbnail preview for images */}
-                      {isImage && asset.preview_url && (
-                        <div className='h-16 w-full rounded-lg overflow-hidden border border-white/5 relative bg-black/60'>
-                          <img
-                            src={asset.preview_url}
-                            alt={asset.file_name}
-                            className='w-full h-full object-cover transition-all group-hover:scale-105 duration-300'
-                          />
-                        </div>
-                      )}
+                      <button
+                        type='button'
+                        onClick={() => handleDeleteAsset(asset)}
+                        className='opacity-60 hover:opacity-100 text-red-400 hover:text-red-300 text-[9px] p-0.5 font-bold transition-all'
+                      >
+                        ✕
+                      </button>
                     </div>
                   );
                 })}
               </div>
             )}
           </div>
-        </div>
 
-        {/* ================= COLUMNA DERECHA: LIENZO ESTRATÉGICO Y CO-PILOT (8/12) ================= */}
-        <div className='lg:col-span-8 space-y-8'>
-          {/* MAGIC PANEL: CENTRO DE COMANDO DE IA */}
-          <div className='rounded-3xl border border-border-subtle bg-surface p-6 space-y-6 shadow-xl relative overflow-hidden'>
-            {/* Glowing border top */}
-            <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-lavender via-accent-sage to-accent-sand' />
-
-            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4'>
-              <div>
-                <h3 className='text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2'>
-                  <span>✨</span> Rellenar Ficha con IA
-                </h3>
-                <p className='text-[10px] text-text-muted mt-1 leading-normal'>
-                  Estructura rápidamente el perfil comercial de tu cliente buscando en internet o
-                  analizando su brief.
-                </p>
-              </div>
-
-              {/* Toggle tabs */}
-              <div className='flex gap-1 bg-black/40 p-1 rounded-xl border border-border-subtle self-start'>
-                <button
-                  type='button'
-                  onClick={() => setAiInputMode('text')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
-                    aiInputMode === 'text'
-                      ? 'bg-surface text-white border border-border-subtle'
-                      : 'text-text-muted hover:text-white'
-                  }`}
-                >
-                  Buscar Empresa
-                </button>
-                <button
-                  type='button'
-                  onClick={() => setAiInputMode('doc')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
-                    aiInputMode === 'doc'
-                      ? 'bg-surface text-white border border-border-subtle'
-                      : 'text-text-muted hover:text-white'
-                  }`}
-                >
-                  Pegar Brief / Notas
-                </button>
-              </div>
-            </div>
-
-            {/* Input States */}
-            {aiInputMode === 'text' ? (
-              <div className='space-y-4'>
-                <div className='flex flex-col sm:flex-row gap-3'>
-                  <input
-                    type='text'
-                    value={companySearchQuery}
-                    onChange={e => setCompanySearchQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !isSearching && handleCompanySearch()}
-                    disabled={isSearching}
-                    placeholder='Escribe el nombre de la empresa (ej: Nike, Starbucks, Rambla Studio)...'
-                    className='flex-1 rounded-2xl border border-border-subtle bg-surface-strong px-4 py-3 text-xs text-white placeholder-text-secondary focus:outline-none focus:border-accent-lavender/50 focus:ring-1 focus:ring-accent-lavender/10'
-                  />
-                  <button
-                    type='button'
-                    onClick={handleCompanySearch}
-                    disabled={isSearching}
-                    className='rounded-2xl bg-white hover:bg-gray-100 text-black px-6 py-3 text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md whitespace-nowrap disabled:opacity-50 active:scale-[0.98]'
-                  >
-                    {isSearching ? 'Buscando con Co-Pilot...' : 'Buscar y Rellenar'}
-                  </button>
+          {/* BOTÓN "ANALIZAR" */}
+          <button
+            type='button'
+            disabled={isAnalyzingConsistency}
+            onClick={handleConsistencyCheck}
+            className='w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C5CFC] to-[#4ECDC4] hover:from-[#6b4dfc] hover:to-[#3ec3ba] text-white py-2.5 text-xs font-black uppercase tracking-widest shadow-md shadow-[#7C5CFC]/10 hover:shadow-[#7C5CFC]/20 transition-all duration-300 disabled:opacity-50 active:scale-[0.98] flex-shrink-0'
+          >
+            {isAnalyzingConsistency ? (
+              <div className='flex flex-col items-center gap-1 py-0.5'>
+                <div className='flex items-center justify-center gap-1.5'>
+                  <div className='h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent' />
+                  <span>Procesando referencias...</span>
                 </div>
-                <div className='flex flex-wrap items-center gap-2.5'>
-                  <span className='text-[8.5px] font-black text-text-secondary uppercase tracking-widest'>
-                    Empresas sugeridas para probar:
-                  </span>
-                  {['Rambla Studio', 'Nike', 'Starbucks', 'Nespresso'].map(brand => (
-                    <button
-                      type='button'
-                      key={brand}
-                      onClick={() => setCompanySearchQuery(brand)}
-                      className='text-[9.5px] font-extrabold text-accent-lavender hover:text-accent-sage bg-accent-lavender/5 border border-accent-lavender/10 hover:border-accent-sage/35 px-2.5 py-1 rounded-lg transition-all'
-                    >
-                      {brand}
-                    </button>
-                  ))}
-                </div>
+                <span className='text-[8.5px] text-white/70 font-semibold animate-pulse'>
+                  {CONSISTENCY_LOADER_MSGS[loadingMessageIndex]}
+                </span>
               </div>
             ) : (
-              <div className='space-y-4'>
-                <textarea
-                  rows={4}
-                  value={aiTextPrompt}
-                  onChange={e => setAiTextPrompt(e.target.value)}
-                  className='w-full rounded-2xl border border-border-subtle bg-surface-strong p-4 text-xs text-white placeholder-text-secondary focus:outline-none focus:border-accent-lavender/50 focus:ring-1 focus:ring-accent-lavender/10 resize-none'
-                  placeholder='Pega notas rápidas, apuntes de reuniones, correos comerciales o breves resúmenes del negocio aquí...'
-                />
-                <div className='flex justify-end'>
-                  <button
-                    type='button'
-                    disabled={isAutoFilling}
-                    onClick={handleAiAutoFill}
-                    className='rounded-2xl bg-gradient-to-r from-accent-lavender to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white px-6 py-3 text-xs font-black uppercase tracking-wider shadow-lg transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
-                  >
-                    {isAutoFilling ? 'Analizando Brief...' : '✨ Procesar con IA'}
-                  </button>
-                </div>
-              </div>
+              <>
+                <span>🧠 Analizar</span>
+              </>
             )}
-          </div>
+          </button>
+        </div>
 
-          {/* EL LIENZO DE ADN DE MARCA (LOS 6 PILARES ESTRATÉGICOS) */}
-          <form onSubmit={handleSubmit} className='space-y-8'>
-            <div className='space-y-6'>
-              {dnaFields.map(field => {
-                const value = formData[field.id] || '';
-
-                // Buscar discrepancias contextuales de IA
-                const detectedText = consistencyReport?.detected_profile?.[field.id] || '';
-                const conflict = consistencyReport?.conflicts?.find(c => c.field === field.id);
-                const isResolved = conflict ? resolvedConflicts.has(conflict.id) : true;
-                const isHighlight = highlightedField === field.id;
-
-                return (
-                  <div
-                    key={field.id}
-                    className={`rounded-3xl border bg-surface p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl ${
-                      isHighlight
-                        ? 'border-emerald-500/80 ring-1 ring-emerald-500/20 shadow-emerald-500/10 scale-[1.005]'
-                        : aiHighlightFields
-                          ? 'border-accent-lavender/80 scale-[1.005]'
-                          : 'border-border-subtle hover:border-white/10'
-                    }`}
-                  >
-                    {/* Glowing vertical line matching section color */}
-                    <div
-                      className='absolute top-0 bottom-0 left-0 w-[4.5px] rounded-r-md pointer-events-none'
-                      style={{ backgroundColor: field.accentColor }}
-                    />
-
-                    {/* Card Header */}
-                    <div className='flex items-center justify-between border-b border-border-subtle pb-4 mb-4 gap-4'>
-                      <div className='flex items-center gap-3.5'>
-                        <div className='p-2.5 rounded-xl bg-black/40 shadow-inner flex items-center justify-center flex-shrink-0'>
-                          {field.icon}
-                        </div>
-                        <div className='space-y-0.5'>
-                          <h4 className='text-sm font-black text-text-primary'>{field.title}</h4>
-                          <p className='text-[10px] text-text-muted'>{field.description}</p>
-                        </div>
-                      </div>
-
-                      {/* Align Status */}
-                      {consistencyReport && (
-                        <span
-                          className={`text-[8.5px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                            conflict && !isResolved
-                              ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
-                              : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                          }`}
-                        >
-                          {conflict && !isResolved ? '⚠️ Discrepancia' : '✓ Alineado'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Form Input Textarea */}
-                    <textarea
-                      rows={5}
-                      value={value}
-                      onChange={e => handleChange(field.id, e.target.value)}
-                      placeholder={field.placeholder}
-                      className='w-full rounded-2xl border border-border-subtle bg-surface-strong px-4 py-3 text-xs text-white placeholder-text-secondary focus:outline-none focus:border-accent-lavender/50 focus:ring-1 focus:ring-accent-lavender/10 min-h-[100px] transition-all duration-300'
-                    />
-
-                    {/* CONTEXTUAL AI SUGGESTION DRAWER INLINE */}
-                    {detectedText && conflict && !isResolved && (
-                      <div className='mt-4 p-4.5 rounded-2xl border border-accent-lavender/25 bg-accent-lavender/5 space-y-3 shadow-inner relative overflow-hidden animate-fadeIn'>
-                        {/* Glow ornament */}
-                        <div className='absolute top-0 right-0 p-1 bg-accent-lavender/20 rounded-bl-xl text-[9px] font-black text-accent-lavender uppercase tracking-widest'>
-                          Sugerencia Co-Pilot
-                        </div>
-
-                        <div className='space-y-1 pr-16 text-left'>
-                          <span className='text-[9px] font-black text-accent-lavender uppercase tracking-wider block'>
-                            📡 Extraído de los canales activos del cliente:
-                          </span>
-                          <p className='text-[10.5px] text-white/90 italic leading-relaxed whitespace-pre-line border-l-2 border-accent-lavender/35 pl-3.5 mt-2'>
-                            "{detectedText}"
-                          </p>
-                        </div>
-
-                        <div className='flex items-center justify-between pt-3 border-t border-white/5'>
-                          <p className='text-[8.5px] text-text-muted leading-tight max-w-[70%]'>
-                            La IA sugiere fusionar o sustituir tu descripción interna con esta
-                            información real recolectada.
-                          </p>
-                          <button
-                            type='button'
-                            onClick={() =>
-                              resolveConflict(
-                                conflict.id,
-                                conflict.field,
-                                conflict.suggested_actions.find(a => a.type === 'merge_both')
-                                  ?.value || detectedText
-                              )
-                            }
-                            className='inline-flex items-center gap-1.5 bg-accent-lavender hover:bg-accent-lavender/90 text-white rounded-xl px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all duration-200 shadow-md active:scale-95 whitespace-nowrap'
-                          >
-                            🧬 Fusionar con ADN
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ================= PIE DE PÁGINA: ACCIONES DE GUARDADO GLOBAL ================= */}
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-3xl border border-border-subtle bg-surface shadow-xl'>
+        {/* ================= COLUMNA DERECHA: LIENZO ESTRATÉGICO Y CONTRADICCIONES (7/12) ================= */}
+        <div className='lg:col-span-7 space-y-2 h-full flex flex-col justify-start overflow-hidden'>
+          
+          {/* LIENZO DE ADN DE MARCA (CASILLA ÚNICA) */}
+          <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2 shadow-md relative overflow-hidden flex flex-col flex-1 min-h-0'>
+            <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-lavender via-accent-sage to-accent-sand' />
+            
+            <div className='flex items-center justify-between border-b border-border-subtle pb-1.5 flex-shrink-0'>
               <div className='text-left'>
-                <span className='text-[10px] font-black text-text-secondary uppercase tracking-widest block'>
-                  Cambios Pendientes
-                </span>
-                <p className='text-[9.5px] text-text-muted leading-normal mt-0.5'>
-                  Una vez conforme con la ficha estratégica de ADN de marca, guarda para actualizar
-                  la memoria de Gemini.
-                </p>
+                <h4 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
+                  <span>📝</span> Casilla Única: Identidad Estratégica
+                </h4>
               </div>
 
               <button
-                type='submit'
+                type='button'
+                onClick={handleSubmit}
                 disabled={saving}
-                className='w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-8 py-4 text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
+                className='inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-4 py-1.5 text-[9.5px] font-black uppercase tracking-wider shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
               >
                 {saving ? (
-                  <div className='flex items-center gap-2'>
-                    <div className='h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-                    <span>Guardando ADN...</span>
+                  <div className='flex items-center gap-1'>
+                    <div className='h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                    <span>Guardando...</span>
                   </div>
                 ) : (
                   <>
-                    <span>💾 Guardar Identidad de Marca</span>
+                    <span>💾 Guardar Identidad</span>
                   </>
                 )}
               </button>
             </div>
-          </form>
+
+            {/* Main Textarea with dynamic sizing to avoid screen scroll */}
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              <textarea
+                value={formData.business_description || ''}
+                onChange={e => handleChange('business_description', e.target.value)}
+                placeholder='El perfil unificado de marca está vacío. Escribe el ADN de marca o presiona el botón "Analizar" para que la IA realice una extracción profunda de los canales y materiales provistos...'
+                disabled={isAnalyzingConsistency}
+                className='w-full rounded-xl border border-border-subtle bg-surface-strong p-3 text-xs text-white placeholder-text-secondary focus:outline-none focus:border-accent-lavender/50 focus:ring-1 focus:ring-accent-lavender/10 leading-relaxed transition-all duration-300 flex-1 resize-none min-h-0 disabled:opacity-30 disabled:cursor-not-allowed'
+              />
+
+              {isAnalyzingConsistency && (
+                <div className="absolute inset-0 bg-[#0d0d1e]/85 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center p-6 text-center z-10 border border-white/5 animate-fade-in overflow-y-auto">
+                  <div className="relative mb-4 flex items-center justify-center">
+                    {/* Pulsing premium glow effect */}
+                    <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-[#7C5CFC]/30 to-[#4ECDC4]/30 opacity-75 blur-xl animate-pulse"></div>
+                    <div className="relative h-14 w-14 rounded-full border-2 border-t-[#7C5CFC] border-r-[#4ECDC4] border-b-transparent border-l-transparent animate-spin flex items-center justify-center bg-black/60 shadow-inner">
+                      <span className="text-xl animate-bounce">🧬</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-w-sm">
+                    <h5 className="text-xs font-black uppercase tracking-widest text-white flex items-center justify-center gap-1.5">
+                      <span>⚙️</span> Co-Pilot de Marca Activo
+                    </h5>
+                    
+                    <p className="text-[10px] text-text-muted leading-relaxed font-medium">
+                      El estratega senior IA está auditando tus canales públicos, sitio web e industria en internet.
+                    </p>
+                    
+                    <div className="inline-flex items-center gap-1.5 bg-[#7C5CFC]/10 border border-[#7C5CFC]/20 rounded-lg px-2.5 py-1 text-[9px] text-[#9b82ff] font-bold">
+                      <span>⚡</span> Proceso en segundo plano
+                    </div>
+
+                    <div className="bg-surface-strong/60 rounded-xl p-2.5 border border-white/5 space-y-1.5 mt-2">
+                      <p className="text-[9px] text-text-secondary uppercase tracking-wider font-bold">
+                        Paso actual:
+                      </p>
+                      <p className="text-[10px] text-white font-bold animate-pulse">
+                        {CONSISTENCY_LOADER_MSGS[loadingMessageIndex]}
+                      </p>
+                    </div>
+
+                    <p className="text-[9px] text-text-muted/80 leading-normal border-t border-white/5 pt-2 mt-2">
+                      🔒 <strong className="text-white">Puedes cerrar esta pestaña o el navegador de forma segura.</strong> El análisis se procesa en segundo plano en nuestros servidores y el lienzo se actualizará automáticamente cuando esté listo.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* PANEL DE CONTRADICCIONES Y CONSULTAS CO-PILOT */}
+          {consistencyReport && (
+            <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2 shadow-md relative overflow-hidden text-left flex-shrink-0 max-h-[40%] flex flex-col min-h-0'>
+              <div className='flex items-center justify-between border-b border-border-subtle pb-1.5 flex-shrink-0'>
+                <div>
+                  <h4 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
+                    <span>⚖️</span> Coherencia de Marca
+                  </h4>
+                  <p className='text-[9.5px] text-text-muted mt-0.5 leading-normal'>
+                    Coherencia al <strong>{consistencyReport.consistency_score}%</strong>.
+                  </p>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${
+                  consistencyReport.consistency_score >= 90
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                }`}>
+                  {consistencyReport.is_consistent ? '✓ Alineado' : '⚠️ Contradicciones'}
+                </span>
+              </div>
+
+              {/* List of Contradictions */}
+              {consistencyReport.contradictions && consistencyReport.contradictions.length > 0 ? (
+                <div className='space-y-2 overflow-y-auto pr-0.5 flex-1 min-h-0'>
+                  {consistencyReport.contradictions.map(contra => {
+                    const isResolved = resolvedConflicts.has(contra.id);
+                    return (
+                      <div
+                        key={contra.id}
+                        className={`p-3 rounded-xl border transition-all duration-300 ${
+                          isResolved
+                            ? 'border-emerald-500/20 bg-emerald-500/5 opacity-60'
+                            : 'border-amber-500/20 bg-amber-500/5'
+                        }`}
+                      >
+                        <div className='flex items-center justify-between gap-4 mb-1.5'>
+                          <span className={`text-[9.5px] font-bold uppercase tracking-wide ${isResolved ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {isResolved ? '✓ Resuelto' : `⚠️ ${contra.title}`}
+                          </span>
+                          {isResolved && (
+                            <span className='text-[8px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20'>
+                              Aplicado
+                            </span>
+                          )}
+                        </div>
+
+                        <p className='text-[10.5px] text-white/90 leading-relaxed mb-2'>{contra.description}</p>
+                        
+                        {!isResolved && (
+                          <div className='mt-2 p-2.5 rounded-lg bg-black/35 border border-white/5 space-y-2 text-left'>
+                            <span className='text-[9px] font-black text-[#7C5CFC] uppercase tracking-wider block'>
+                              🤔 Consulta:
+                            </span>
+                            <p className='text-[10.5px] text-text-muted italic leading-relaxed'>
+                              "{contra.consultation_question}"
+                            </p>
+                            
+                            {contra.suggested_fix && (
+                              <div className='pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5'>
+                                <span className='text-[8px] text-text-secondary font-bold uppercase text-left'>
+                                  ¿Aplicar propuesta de la IA?
+                                </span>
+                                <button
+                                  type='button'
+                                  onClick={() => handleApplySuggestedFix(contra.id, contra.suggested_fix)}
+                                  className='inline-flex items-center gap-1.5 bg-[#7C5CFC] hover:bg-[#6b4dfc] text-white rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-wider transition-all duration-200 shadow-sm active:scale-95 whitespace-nowrap self-end sm:sm:self-auto'
+                                >
+                                  🧬 Aplicar Solución
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className='text-center py-3 bg-surface-strong/30 rounded-xl border border-border-subtle flex-1 flex flex-col items-center justify-center min-h-[80px]'>
+                  <span className='text-xl block mb-1'>✨</span>
+                  <p className='text-[10px] text-text-muted leading-relaxed max-w-[240px] mx-auto'>
+                    El Co-Pilot no detecta contradicciones en los canales analizados.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
 };
+
+
+
+
+

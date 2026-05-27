@@ -34,6 +34,8 @@ export const MetaAdsSection = ({ clientId }) => {
   const [oauthStep, setOauthStep] = useState('connect'); // 'connect' | 'select_account'
   const [adAccountsList, setAdAccountsList] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [pagesList, setPagesList] = useState([]);
+  const [selectedPageId, setSelectedPageId] = useState('');
   const [tempAccessToken, setTempAccessToken] = useState('');
 
   // Tooltip graph state
@@ -89,7 +91,7 @@ export const MetaAdsSection = ({ clientId }) => {
       if (appId) {
         // FLOW REAL: Abrir popup de Facebook OAuth oficial redireccionando al callback estático
         const redirectUri = window.location.origin + '/meta-callback.html';
-        const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=ads_read,ads_management,business_management`;
+        const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=ads_read,ads_management,business_management,pages_show_list,pages_read_engagement,pages_read_user_content,instagram_basic,instagram_manage_comments,pages_manage_posts,instagram_content_publish,pages_manage_engagement`;
 
         toast.loading('Esperando autorización en el popup de Facebook...', { id: 'oauth-toast' });
 
@@ -131,14 +133,18 @@ export const MetaAdsSection = ({ clientId }) => {
                   }
                 );
 
-                toast.success('¡Cuentas publicitarias reales vinculadas con éxito!', {
+                toast.success('¡Cuentas publicitarias y páginas vinculadas con éxito!', {
                   id: 'oauth-toast',
                 });
                 setTempAccessToken(exchangeRes.data.accessToken);
                 setAdAccountsList(exchangeRes.data.accounts || []);
+                setPagesList(exchangeRes.data.pages || []);
 
                 if (exchangeRes.data.accounts?.length > 0) {
                   setSelectedAccountId(exchangeRes.data.accounts[0].id);
+                }
+                if (exchangeRes.data.pages?.length > 0) {
+                  setSelectedPageId(exchangeRes.data.pages[0].id);
                 }
                 setOauthStep('select_account');
               } catch (err) {
@@ -181,9 +187,13 @@ export const MetaAdsSection = ({ clientId }) => {
         toast.success('¡Sesión autorizada por Meta Sandbox!', { id: 'oauth-toast' });
         setTempAccessToken(res.data.accessToken);
         setAdAccountsList(res.data.accounts || []);
+        setPagesList(res.data.pages || []);
 
         if (res.data.accounts?.length > 0) {
           setSelectedAccountId(res.data.accounts[0].id);
+        }
+        if (res.data.pages?.length > 0) {
+          setSelectedPageId(res.data.pages[0].id);
         }
         setOauthStep('select_account');
         setConnecting(false);
@@ -207,11 +217,11 @@ export const MetaAdsSection = ({ clientId }) => {
         method: 'POST',
         body: JSON.stringify({
           meta_ad_account_id: selectedAccountId,
-          meta_page_id: pageId.trim() || null,
+          meta_page_id: selectedPageId || null,
           access_token: tempAccessToken,
         }),
       });
-      toast.success('¡Integración de Meta Ads completada exitosamente!');
+      toast.success('¡Integración de Meta Ads y CM completada exitosamente!');
       setIntegration(res.data);
       setOauthStep('connect'); // resetear paso
       await loadInsights();
@@ -421,15 +431,19 @@ export const MetaAdsSection = ({ clientId }) => {
 
                 <div>
                   <label className='block text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1.5 px-1'>
-                    ID de Página del Cliente (Page ID - Opcional)
+                    Selecciona una Página y Cuenta de Instagram (CM):
                   </label>
-                  <input
-                    type='text'
-                    value={pageId}
-                    onChange={e => setPageId(e.target.value)}
-                    placeholder='Ej: 1092837482'
-                    className='w-full bg-surface border border-border-subtle rounded-xl px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-500 transition-colors'
-                  />
+                  <select
+                    value={selectedPageId}
+                    onChange={e => setSelectedPageId(e.target.value)}
+                    className='w-full bg-surface border border-border-subtle rounded-xl px-4 py-3 text-xs text-text-primary font-bold focus:outline-none focus:border-purple-500 transition-colors'
+                  >
+                    {pagesList.map(page => (
+                      <option key={page.id} value={page.id}>
+                        {page.name} {page.instagram ? `(@${page.instagram.username})` : '(Sin Instagram conectado)'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className='pt-2 flex gap-3'>

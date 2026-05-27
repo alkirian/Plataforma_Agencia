@@ -2,6 +2,7 @@
 
 import { createAuthenticatedClient } from '../config/supabaseClient.js';
 import { logActivity } from './activity.service.js';
+import { saveChatMessage } from './chat.service.js';
 
 /**
  * Obtiene todos los clientes de una agencia, usando los permisos del usuario.
@@ -40,6 +41,34 @@ export const createClient = async (clientData, token) => {
   });
 
   if (error) throw new Error(`Error al crear el cliente: ${error.message}`);
+
+  // Generar onboarding automático de Aura con su primer mensaje de bienvenida
+  try {
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (user) {
+      await saveChatMessage({
+        token,
+        userId: user.id,
+        clientId: data, // El ID de cliente retornado es el UUID del nuevo cliente
+        role: 'assistant',
+        content: `¡Hola! Soy Aura, la Directora Estratégica y tu Agente General de marketing digital para ${clientData.name}. 
+
+He indexado y configurado de forma proactiva todos los módulos de tu marca:
+• 🧬 **ADN de Marca:** Listo para que verifiquemos tu tono de voz y público objetivo.
+• 📅 **Cronograma:** Listo para estructurar tu plan editorial mensual.
+• 🔥 **Tendencias:** Activado para el monitoreo y detección de virales diarios en tu sector de *${clientData.industry || 'tu industria'}*.
+• 📊 **Meta Ads:** Preparado para conectar tus cuentas publicitarias y optimizar tu pauta.
+• 💬 **CM Inteligente:** Listo para automatizar y optimizar las respuestas en tus canales sociales.
+
+Estoy lista para proponerte ideas proactivas y optimizaciones con coherencia de 360 grados. ¿En qué empezamos a trabajar hoy?`,
+        metadata: { agentId: 'general' }
+      });
+      console.log(`[clients.service] ✅ Agente Aura aprovisionado e inicializado para el cliente: ${clientData.name}`);
+    }
+  } catch (chatError) {
+    console.error('[clients.service] Error al inicializar chat de Aura en onboarding:', chatError.message);
+  }
+
   return data;
 };
 

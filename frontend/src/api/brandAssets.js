@@ -1,5 +1,6 @@
 import { apiFetch } from './apiFetch.js';
 import { supabase } from '../supabaseClient.js';
+import { compressBrandLogo } from '../utils/imageCompressor.js';
 
 const BUCKET_NAME = 'brand-assets';
 
@@ -36,17 +37,28 @@ export const createBrandAsset = async (clientId, payload) => {
 };
 
 export const uploadBrandAsset = async (clientId, file, options = {}) => {
-  const safeName = file.name.replace(/\s+/g, '-');
+  let fileToUpload = file;
+
+  // Comprimir imagen automáticamente si es de tipo visual (jpg, png, etc.)
+  if (file && file.type && file.type.startsWith('image/')) {
+    try {
+      fileToUpload = await compressBrandLogo(file, 800, 0.85); // Ancho máximo 800px para balances de calidad/peso óptimos
+    } catch (e) {
+      console.warn('Fallo la compresión de la imagen, subiendo original:', e);
+    }
+  }
+
+  const safeName = fileToUpload.name.replace(/\s+/g, '-');
   const storagePath = `${clientId}/${Date.now()}-${safeName}`;
 
-  const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(storagePath, file);
+  const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(storagePath, fileToUpload);
   if (uploadError) throw uploadError;
 
   return createBrandAsset(clientId, {
-    file_name: file.name,
+    file_name: fileToUpload.name,
     storage_path: storagePath,
-    mime_type: file.type || null,
-    size_bytes: file.size || null,
+    mime_type: fileToUpload.type || null,
+    size_bytes: fileToUpload.size || null,
     asset_type: options.asset_type || 'reference',
     notes: options.notes || null,
   });

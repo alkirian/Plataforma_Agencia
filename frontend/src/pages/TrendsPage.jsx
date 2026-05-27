@@ -652,19 +652,9 @@ const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 const ReportView = ({ report, client, onCreateEvent }) => {
   if (!report) return null;
   const insights = report.insights || [];
-  const scrollRef = React.useRef(null);
 
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -464, behavior: 'smooth' }); // 440px width + 24px gap = 464px
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 464, behavior: 'smooth' });
-    }
-  };
+  const [selectedPlatform, setSelectedPlatform] = useState('Todas');
+  const [expandedCardId, setExpandedCardId] = useState(null);
 
   if (insights.length === 0) {
     return (
@@ -680,260 +670,253 @@ const ReportView = ({ report, client, onCreateEvent }) => {
     );
   }
 
-  const reportTitle =
-    report.title || `Análisis: ${(report.keywords || []).slice(0, 3).join(', ') || 'General'}`;
+  const getPlatformFromChannel = (insight) => {
+    const act = String(insight.suggested_action || '').toLowerCase();
+    if (act.includes('tiktok')) return 'TikTok';
+    if (act.includes('linkedin')) return 'LinkedIn';
+    if (act.includes('instagram') || act.includes('ig') || act.includes('reel') || act.includes('carrusel')) return 'Instagram';
+    if (act.includes('youtube') || act.includes('yt') || act.includes('short')) return 'YouTube';
+    if (act.includes('facebook') || act.includes('fb')) return 'Facebook';
+
+    // Fallback based on client preference if available
+    const preferred = (client?.brand_info?.preferred_platforms || []).map(p => String(p).toLowerCase());
+    if (preferred.includes('instagram')) return 'Instagram';
+    if (preferred.includes('tiktok')) return 'TikTok';
+    if (preferred.includes('linkedin')) return 'LinkedIn';
+    if (preferred.includes('youtube')) return 'YouTube';
+    if (preferred.includes('facebook')) return 'Facebook';
+    return 'Instagram'; // default fallback
+  };
+
+  const brandColor = client?.brand_info?.card_color || '#3B82F6';
+  const handle = `@${(client?.name || 'marca').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  
+  // Stable follower count simulation based on client name
+  const nameHash = (client?.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const followersCount = ((nameHash % 90) + 10).toFixed(1);
+  const followers = `${followersCount}k seguidores`;
+
+  const filteredInsights = insights.filter(insight => {
+    if (selectedPlatform === 'Todas') return true;
+    return getPlatformFromChannel(insight) === selectedPlatform;
+  });
 
   return (
     <div className='space-y-6'>
-      {/* CSS inyectado localmente para ocultar la barra de desplazamiento horizontal */}
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
-      {/* Title & Metadata */}
-      <div className='border-b border-white/[0.04] pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-        <div>
-          <h3 className='text-2xl font-black font-title text-white tracking-tight'>
-            {reportTitle}
-          </h3>
-
-          {/* Keywords */}
-          {report.keywords && report.keywords.length > 0 && (
-            <div className='flex flex-wrap gap-2 mt-3.5'>
-              {report.keywords.map((kw, idx) => (
-                <span
-                  key={idx}
-                  className='text-[11px] font-extrabold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-lg'
-                >
-                  #{kw}
-                </span>
-              ))}
-            </div>
-          )}
+      {/* Dynamic Brand/Client Banner (Screenshot-style) */}
+      <div 
+        className='rounded-xl border border-white/[0.05] bg-[#1E293B]/10 p-5 flex items-center justify-between'
+        style={{ borderLeft: `4px solid ${brandColor}` }}
+      >
+        <div className='flex items-center gap-2.5 text-slate-200 font-bold text-sm'>
+          <span style={{ color: brandColor }}>{client?.name || 'Cliente'}</span>
+          <span className='text-slate-400'>·</span>
+          <span className='text-slate-400 font-medium'>{handle}</span>
+          <span className='text-slate-400'>·</span>
+          <span className='text-slate-400 font-medium'>{followers}</span>
+        </div>
+        <div className='text-slate-400 text-[11px] font-bold bg-slate-955/40 border border-white/[0.05] px-3 py-1.5 rounded-lg'>
+          <span className='text-white font-extrabold mr-1'>{insights.length}</span> tendencias
         </div>
       </div>
 
-      {/* Scan Statistics Header Strip */}
-      <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
-          <div className='w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400'>
-            <ClockIcon className='h-5 w-5' />
-          </div>
-          <div>
-            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
-              Fecha de Escaneo
-            </p>
-            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
-              {formatDate(report.generated_at)}
-            </p>
-          </div>
-        </div>
-
-        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
-          <div className='w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400'>
-            <SignalIcon className='h-5 w-5' />
-          </div>
-          <div>
-            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
-              Análisis
-            </p>
-            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
-              {insights.length}{' '}
-              {insights.length === 1 ? 'tendencia detectada' : 'tendencias detectadas'}
-            </p>
-          </div>
-        </div>
-
-        <div className='bg-slate-950/40 border border-white/[0.05] rounded-xl p-4.5 flex items-center gap-3.5'>
-          <div className='w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400'>
-            <BoltIcon className='h-5 w-5' />
-          </div>
-          <div>
-            <p className='text-[10.5px] text-slate-500 font-extrabold uppercase tracking-wider'>
-              Impacto Promedio
-            </p>
-            <p className='text-[13px] text-slate-200 font-bold mt-0.5'>
-              {insights.some(i => i.relevance === 'alta') ? 'Muy Alto' : 'Estable / Moderado'}
-            </p>
-          </div>
-        </div>
+      {/* Platform filters */}
+      <div className='flex flex-wrap gap-2.5 py-1'>
+        {['Todas', 'Instagram', 'TikTok', 'Facebook', 'LinkedIn', 'YouTube'].map(p => {
+          const isSelected = selectedPlatform === p;
+          return (
+            <button
+              key={p}
+              onClick={() => setSelectedPlatform(p)}
+              className={`text-xs font-bold px-4 py-2 rounded-xl border transition-all ${
+                isSelected
+                  ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/10'
+                  : 'bg-[#1E293B]/30 border-white/[0.06] text-slate-400 hover:text-white hover:bg-[#1E293B]/50'
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
       </div>
 
-      {/* HORIZONTAL CAROUSEL OF PREMIUM TREND CARDS WITH programmatic arrows */}
-      <div className='relative w-full group/carousel'>
-        {/* Left Arrow Button */}
-        {insights.length > 1 && (
-          <button
-            onClick={scrollLeft}
-            className='absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
-            title='Anterior'
-          >
-            <span className='text-base font-black'>←</span>
-          </button>
-        )}
-
-        {/* Right Arrow Button */}
-        {insights.length > 1 && (
-          <button
-            onClick={scrollRight}
-            className='absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-955/90 hover:bg-slate-900 border border-white/10 hover:border-blue-500/30 flex items-center justify-center text-white hover:scale-105 shadow-2xl transition-all duration-200 backdrop-blur-md opacity-0 group-hover/carousel:opacity-100'
-            title='Siguiente'
-          >
-            <span className='text-base font-black'>→</span>
-          </button>
-        )}
-
-        <div
-          ref={scrollRef}
-          className='flex gap-6 overflow-x-auto pb-4 pt-2 snap-x snap-mandatory scroll-smooth w-full hide-scrollbar'
-        >
-          {insights.map((insight, idx) => {
+      {/* Grid of Trend Cards */}
+      {filteredInsights.length === 0 ? (
+        <div className='rounded-xl border border-dashed border-white/[0.08] bg-slate-900/20 p-8 text-center'>
+          <LightBulbIcon className='h-8 w-8 text-slate-500 mx-auto mb-3' />
+          <p className='text-sm text-white font-semibold mb-1'>No hay tendencias para este canal</p>
+          <p className='text-xs text-slate-400 max-w-md mx-auto leading-relaxed'>
+            No se encontraron tendencias recomendadas para {selectedPlatform} en este escaneo. ¡Prueba seleccionando otra plataforma!
+          </p>
+        </div>
+      ) : (
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          {filteredInsights.map((insight, idx) => {
             const metrics = computeStrategicMetrics(insight, client);
             const channel = getChannelInfo(insight.suggested_action, client);
-            const badge = relevanceBadge(insight.relevance);
+            const isExpanded = expandedCardId === (insight.id || idx);
+
+            // Circular progress badge metrics
+            const radiusBadge = 14;
+            const circBadge = 2 * Math.PI * radiusBadge;
+            const offsetBadge = circBadge - (metrics.impactScore / 100) * circBadge;
 
             return (
               <motion.div
                 key={insight.id || idx}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: idx * 0.05 }}
-                className='bg-slate-900/40 border border-white/[0.06] hover:border-blue-500/30 rounded-[24px] p-7 flex flex-col gap-5 shadow-xl hover:-translate-y-1 hover:shadow-blue-500/[0.02] transition-all relative overflow-hidden backdrop-blur-md group min-w-[440px] w-[440px] max-w-[440px] snap-start shrink-0'
+                layout
+                onClick={() => setExpandedCardId(isExpanded ? null : (insight.id || idx))}
+                className='bg-slate-900/40 border border-white/[0.06] hover:border-blue-500/20 rounded-[20px] p-5 flex flex-col gap-4 shadow-xl hover:shadow-blue-500/[0.01] transition-all relative overflow-hidden backdrop-blur-md cursor-pointer select-none group'
               >
-                {/* Decorative radial background glow */}
-                <div className='absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors' />
+                {/* Decorative glow */}
+                <div className='absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none' />
 
-                {/* Header: Recommended social channel & Relevance */}
-                <div className='flex items-center justify-between gap-3 border-b border-white/[0.04] pb-3.5'>
+                {/* Header row: Badge + Percentage Ring */}
+                <div className='flex items-center justify-between gap-3'>
                   <span
-                    className={`text-[10px] font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-lg ${channel.cls}`}
+                    className={`text-[9.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg ${channel.cls}`}
                   >
                     {channel.label}
                   </span>
 
-                  <span
-                    className={`text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${badge.cls}`}
-                  >
-                    <span className='w-1.5 h-1.5 rounded-full bg-current animate-pulse' />
-                    {badge.label}
-                  </span>
+                  <div className='relative w-9 h-9 flex items-center justify-center shrink-0' title={`Match score: ${metrics.impactScore}%`}>
+                    <svg className='w-full h-full transform -rotate-90'>
+                      <circle cx='18' cy='18' r={radiusBadge} className='stroke-white/[0.04]' strokeWidth='2' fill='transparent' />
+                      <circle cx='18' cy='18' r={radiusBadge} stroke='currentColor' className='text-purple-400' strokeWidth='2' strokeDasharray={circBadge} strokeDashoffset={offsetBadge} strokeLinecap='round' fill='transparent' />
+                    </svg>
+                    <span className='absolute text-[9px] font-black text-white'>{metrics.impactScore}%</span>
+                  </div>
                 </div>
 
-                {/* Title & Description */}
-                <div className='space-y-2'>
-                  <h4 className='text-[16px] font-black text-white leading-snug tracking-tight group-hover:text-blue-400 transition-colors'>
+                {/* Title & Short Description */}
+                <div className='space-y-1.5'>
+                  <h4 className='text-[14px] font-bold text-white leading-snug tracking-tight group-hover:text-blue-400 transition-colors'>
                     {insight.title}
                   </h4>
-                  <p className='text-[13px] text-slate-300 leading-relaxed font-medium'>
+                  <p className={`text-[12px] text-slate-400 leading-relaxed font-medium transition-all ${isExpanded ? '' : 'line-clamp-2'}`}>
                     {insight.description}
                   </p>
                 </div>
 
-                {/* Coherent Strategic Metrics */}
-                <div className='space-y-3.5 py-1'>
-                  {/* Impact score */}
-                  <div className='space-y-1.5'>
-                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
-                      <span className='flex items-center gap-1'>🎯 Potencial de Impacto</span>
-                      <span className='text-blue-400 font-black text-[12px]'>
-                        {metrics.impactScore}%
-                      </span>
-                    </div>
-                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
-                      <div
-                        className='bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500'
-                        style={{ width: `${metrics.impactScore}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Feasibility score */}
-                  <div className='space-y-1.5'>
-                    <div className='flex justify-between items-center text-[10.5px] font-black text-slate-400 uppercase tracking-wider'>
-                      <span className='flex items-center gap-1'>🛠️ Viabilidad de Producción</span>
-                      <span className='text-[#10B981] font-black text-[12px]'>
-                        {metrics.feasibilityScore}%
-                      </span>
-                    </div>
-                    <div className='w-full bg-slate-955/60 rounded-full h-2 overflow-hidden border border-white/[0.04]'>
-                      <div
-                        className='bg-gradient-to-r from-[#10B981] to-[#06B6D4] h-full rounded-full transition-all duration-500'
-                        style={{ width: `${metrics.feasibilityScore}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Match badge & alignment label */}
-                  <div className='flex flex-wrap items-center gap-2 pt-1.5'>
-                    <span
-                      className={`text-[9.5px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded border ${metrics.alignmentCls}`}
-                    >
-                      {metrics.alignmentText}
+                {/* Collapsed view footer row */}
+                {!isExpanded && (
+                  <div className='flex items-center justify-between gap-3 pt-2.5 border-t border-white/[0.04] mt-1'>
+                    <span className='text-[9.5px] font-extrabold uppercase tracking-widest text-slate-500 bg-slate-800/40 px-2.5 py-1 rounded border border-white/[0.03]'>
+                      {metrics.formatLabel || 'Contenido'}
                     </span>
 
-                    {metrics.matchedPillar && (
-                      <span className='text-[9.5px] font-extrabold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/25 px-2.5 py-1 rounded'>
-                        Match con Pilar: {metrics.matchedPillar}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tactical Rationale */}
-                <div className='rounded-xl bg-slate-955/50 border border-white/[0.04] p-3.5 text-[12.5px] leading-relaxed text-slate-300 flex flex-col gap-1.5'>
-                  <span className='text-[10.5px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1'>
-                    <SparklesIcon className='h-3.5 w-3.5 text-indigo-400' /> Por qué funciona para
-                    esta marca
-                  </span>
-                  <p className='font-medium text-slate-200'>{metrics.rationale}</p>
-                </div>
-
-                {/* Action Draft */}
-                <div className='rounded-xl bg-blue-500/[0.02] border-l-2 border-blue-500 p-3.5 text-[12.5px] leading-relaxed text-slate-250 flex flex-col gap-1.5 mt-auto'>
-                  <span className='text-[10.5px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1'>
-                    <span>💡</span> Borrador de Copia / Acción
-                  </span>
-                  <p className='font-semibold text-slate-100'>
-                    {insight.suggested_action ||
-                      'Crear publicación enfocada sobre este ángulo en las redes.'}
-                  </p>
-                </div>
-
-                {/* Source Link & Calendarize */}
-                <div className='flex items-center justify-between gap-3 pt-4 border-t border-white/[0.04] mt-2'>
-                  {insight.source_url ? (
-                    <a
-                      href={insight.source_url}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 font-bold transition-colors truncate max-w-[45%]'
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCreateEvent(insight);
+                      }}
+                      className='flex items-center gap-1 text-[11px] font-bold text-white bg-[#6366f1] hover:bg-[#4f46e5] rounded-lg px-3 py-1.5 transition-colors shadow-sm'
                     >
-                      <LinkIcon className='h-3.5 w-3.5 flex-shrink-0' />
-                      <span className='truncate'>Ver fuente</span>
-                    </a>
-                  ) : (
-                    <span />
-                  )}
+                      <span>+ Usar</span>
+                    </button>
+                  </div>
+                )}
 
-                  <button
-                    onClick={() => onCreateEvent(insight)}
-                    className='flex items-center gap-2 text-[12px] font-black text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-5 py-2.5 transition-all duration-150 shadow-md hover:shadow-[0_0_12px_rgba(37,99,235,0.45)]'
+                {/* Expanded content */}
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => e.stopPropagation()} // Prevent collapse when clicking details
+                    className='space-y-4 pt-3.5 border-t border-white/[0.05] mt-1 cursor-default'
                   >
-                    <CalendarIcon className='h-4 w-4' />
-                    Calendarizar Idea
-                  </button>
-                </div>
+                    {/* Progress bars */}
+                    <div className='space-y-3 py-1'>
+                      {/* Impact */}
+                      <div className='space-y-1.5'>
+                        <div className='flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider'>
+                          <span>🎯 Potencial de Impacto</span>
+                          <span className='text-blue-400 font-bold'>{metrics.impactScore}%</span>
+                        </div>
+                        <div className='w-full bg-slate-955/60 rounded-full h-1.5 overflow-hidden border border-white/[0.04]'>
+                          <div
+                            className='bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500'
+                            style={{ width: `${metrics.impactScore}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Feasibility */}
+                      <div className='space-y-1.5'>
+                        <div className='flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider'>
+                          <span>🛠️ Viabilidad de Producción</span>
+                          <span className='text-[#10B981] font-bold'>{metrics.feasibilityScore}%</span>
+                        </div>
+                        <div className='w-full bg-slate-955/60 rounded-full h-1.5 overflow-hidden border border-white/[0.04]'>
+                          <div
+                            className='bg-gradient-to-r from-[#10B981] to-[#06B6D4] h-full rounded-full transition-all duration-500'
+                            style={{ width: `${metrics.feasibilityScore}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Match & Alignment Badges */}
+                    <div className='flex flex-wrap gap-2'>
+                      <span className={`text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded border ${metrics.alignmentCls}`}>
+                        {metrics.alignmentText}
+                      </span>
+                      {metrics.matchedPillar && (
+                        <span className='text-[9px] font-extrabold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/25 px-2.5 py-0.5 rounded'>
+                          Match Pilar: {metrics.matchedPillar}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rationale "Por qué funciona" */}
+                    <div className='rounded-xl bg-slate-950/50 border border-white/[0.04] p-3 text-[12px] leading-relaxed text-slate-350 space-y-1'>
+                      <span className='text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1'>
+                        <SparklesIcon className='h-3 w-3 text-indigo-400' /> Por qué funciona para esta marca
+                      </span>
+                      <p className='font-medium text-slate-200 leading-relaxed'>{metrics.rationale}</p>
+                    </div>
+
+                    {/* Copy draft */}
+                    <div className='rounded-xl bg-blue-500/[0.02] border-l-2 border-blue-500 p-3 text-[12px] leading-relaxed text-slate-350 space-y-1'>
+                      <span className='text-[10px] font-black uppercase tracking-wider text-blue-400'>
+                        💡 Borrador de Copia / Acción
+                      </span>
+                      <p className='font-semibold text-slate-100'>{insight.suggested_action || 'Crear publicación enfocada sobre este ángulo en las redes.'}</p>
+                    </div>
+
+                    {/* Source link & Action Button */}
+                    <div className='flex items-center justify-between gap-3 pt-3 border-t border-white/[0.04] mt-2'>
+                      {insight.source_url ? (
+                        <a
+                          href={insight.source_url}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 font-bold transition-colors truncate max-w-[45%]'
+                        >
+                          <LinkIcon className='h-3.5 w-3.5 flex-shrink-0' />
+                          <span className='truncate'>Ver fuente</span>
+                        </a>
+                      ) : (
+                        <span />
+                      )}
+
+                      <button
+                        onClick={() => onCreateEvent(insight)}
+                        className='flex items-center gap-2 text-[11.5px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl px-4 py-2 transition-all shadow-md'
+                      >
+                        <CalendarIcon className='h-3.5 w-3.5' />
+                        Calendarizar Idea
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             );
           })}
         </div>
-      </div>
+      )}
     </div>
   );
 };

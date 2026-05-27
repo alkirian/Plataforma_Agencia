@@ -5,7 +5,9 @@ import {
   handleSaveMetaIntegration,
   handleDeleteMetaIntegration,
   handleGetClientAdInsights,
-  handleExchangeOAuthToken
+  handleExchangeOAuthToken,
+  handleGetClientComments,
+  handleReplyToComment
 } from '../controllers/metaAds.controller.js';
 
 const router = Router({ mergeParams: true }); // Habilitar mergeParams para heredar :clientId
@@ -27,5 +29,7 @@ router.get('/config', (req, res) => {
 
 router.post('/exchange', handleExchangeOAuthToken);
 router.get('/campaigns', handleGetClientAdInsights);
+router.get('/comments', handleGetClientComments);
+router.post('/comments/:commentId/reply', handleReplyToComment);
 
 export default router;
