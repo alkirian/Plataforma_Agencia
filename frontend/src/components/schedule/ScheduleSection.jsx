@@ -1154,7 +1154,7 @@ export const ScheduleSection = ({ clientId }) => {
           }`}
         >
           <div
-            className={`flex h-[calc(100dvh-6.25rem)] md:h-[calc(100dvh-6.5rem)] flex-col overflow-hidden bg-transparent p-0 shadow-none transition-colors ${
+            className={`relative flex h-[calc(100dvh-6.25rem)] md:h-[calc(100dvh-6.5rem)] flex-col overflow-hidden bg-transparent p-0 shadow-none transition-colors ${
               isCalendarDragOver
                 ? 'ring-1 ring-[color:var(--color-accent-blue)] bg-surface-soft'
                 : ''
@@ -1163,11 +1163,39 @@ export const ScheduleSection = ({ clientId }) => {
             onDragLeave={handleCalendarDragLeave}
             onDrop={handleCalendarDrop}
           >
-            {isCalendarDragOver && (
-              <div className='mb-3 rounded-lg border border-[color:var(--color-accent-blue)] bg-[color:var(--color-accent-blue)]/10 px-3 py-2 text-sm text-text-primary'>
-                Suelta archivos para anclarlos a esta fecha del calendario.
-              </div>
-            )}
+            {/* Overlay de Drag and Drop Premium Inmersivo */}
+            <AnimatePresence>
+              {isCalendarDragOver && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className='absolute inset-0 z-30 rounded-2xl border-2 border-dashed border-rose-500/50 bg-[#161517]/85 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none gap-4 p-6 text-center shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]'
+                >
+                  {/* Aura brillante de fondo */}
+                  <div className='absolute -z-10 w-48 h-48 rounded-full bg-rose-500/10 blur-[80px]' />
+
+                  <motion.div
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                    className='w-14 h-14 rounded-full bg-rose-500/15 border border-rose-500/25 flex items-center justify-center text-rose-400'
+                  >
+                    <ArrowUpTrayIcon className='w-7 h-7 rotate-180 text-rose-300' />
+                  </motion.div>
+
+                  <div className='space-y-1.5'>
+                    <h3 className='text-lg font-extrabold text-white tracking-wide uppercase font-sans'>
+                      ¡Suelta tus archivos aquí!
+                    </h3>
+                    <p className='text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto'>
+                      Las imágenes o videos se anclarán y previsualizarán de forma automática en este día del calendario.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <FullCalendarWrapper
               key={`${currentDate.getTime()}-${currentView}-${isChatOpen ? 'chat' : 'full'}`}
               events={events}

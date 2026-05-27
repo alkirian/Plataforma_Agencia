@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Utilidad para formatear fechas en es-ES
 const formatDayHeader = date => {
@@ -13,16 +13,52 @@ const formatDayHeader = date => {
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
 export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = false }) => {
-  // Filtrar y ordenar eventos del mes actual
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Calcular el total de eventos del mes antes de filtrar (para el Empty State proactivo)
+  const monthEventsTotal = useMemo(() => {
+    const base = currentDate || new Date();
+    return events.filter(e => e.start && sameMonth(new Date(e.start), base)).length;
+  }, [events, currentDate]);
+
+  // Filtrar y ordenar eventos del mes actual de forma reactiva
   const grouped = useMemo(() => {
     const result = new Map();
     const base = currentDate || new Date();
 
-    const monthEvents = events
-      .filter(e => e.start && sameMonth(new Date(e.start), base))
-      .sort((a, b) => new Date(a.start) - new Date(b.start));
+    let filteredEvents = events.filter(e => e.start && sameMonth(new Date(e.start), base));
 
-    monthEvents.forEach(e => {
+    // 1. Filtrar por búsqueda de texto (Título o Copy)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredEvents = filteredEvents.filter(e => 
+        e.title?.toLowerCase().includes(query) || 
+        e.extendedProps?.copy?.toLowerCase().includes(query)
+      );
+    }
+
+    // 2. Filtrar por estado de la publicación
+    if (statusFilter !== 'all') {
+      filteredEvents = filteredEvents.filter(e => {
+        const status = (e.extendedProps?.status || 'pendiente').toLowerCase();
+        if (statusFilter === 'diseño') {
+          return status === 'en-diseño' || status === 'en-diseno' || status === 'pendiente';
+        }
+        if (statusFilter === 'progreso') {
+          return status === 'en-progreso' || status === 'en-revision' || status === 'esperando-aprobacion';
+        }
+        if (statusFilter === 'aprobado') {
+          return status === 'aprobado' || status === 'publicado';
+        }
+        return true;
+      });
+    }
+
+    // Ordenar por fecha cronológicamente
+    filteredEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+    filteredEvents.forEach(e => {
       const d = new Date(e.start);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!result.has(key)) result.set(key, { date: d, items: [] });
@@ -31,7 +67,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
 
     // Convertir a array ordenado por fecha
     return Array.from(result.values()).sort((a, b) => a.date - b.date);
-  }, [events, currentDate]);
+  }, [events, currentDate, searchQuery, statusFilter]);
 
   return (
     <motion.div
@@ -40,28 +76,134 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
       transition={{ duration: 0.4 }}
       className='w-full'
     >
-      <div className='p-3'>
-        <div className='mb-4 pb-2 flex items-center justify-between border-b border-white/5'>
+      <div className='p-3 space-y-4'>
+        {/* Cabecera de la Agenda */}
+        <div className='pb-2 flex items-center justify-between border-b border-white/5'>
           <h3 className='text-sm font-bold text-white tracking-tight flex items-center gap-2'>
             <span className='w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse'></span>
             <span>Agenda del Mes</span>
           </h3>
           <span className='text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/5 text-gray-400'>
-            {grouped.reduce((acc, g) => acc + g.items.length, 0)} tareas
+            {monthEventsTotal} tareas
           </span>
         </div>
 
+        {/* Buscador y Barra de Filtros (Solo visibles si hay eventos en el mes) */}
+        {monthEventsTotal > 0 && (
+          <div className='space-y-2 bg-[#1e1c20]/20 p-2.5 rounded-xl border border-white/5'>
+            {/* Input de Búsqueda */}
+            <div className='relative'>
+              <input
+                type='text'
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder='Buscar publicación...'
+                className='w-full rounded-lg border border-white/10 bg-black/40 pl-8 pr-7 py-1.5 text-xs text-white placeholder-gray-500 focus:border-rose-500/40 focus:outline-none transition-all'
+              />
+              <svg
+                className='absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-500'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
+                />
+              </svg>
+              {searchQuery && (
+                <button
+                  type='button'
+                  onClick={() => setSearchQuery('')}
+                  className='absolute right-2 top-1.5 text-gray-500 hover:text-white p-0.5 text-xs font-bold'
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Píldoras de Filtro de Estado */}
+            <div className='flex gap-1 overflow-x-auto pb-0.5 scrollbar-none custom-scrollbar'>
+              {[
+                { id: 'all', label: 'Todos' },
+                { id: 'diseño', label: 'Diseño' },
+                { id: 'progreso', label: 'Producción' },
+                { id: 'aprobado', label: 'Aprobados' },
+              ].map(filter => (
+                <button
+                  key={filter.id}
+                  type='button'
+                  onClick={() => setStatusFilter(filter.id)}
+                  className={`rounded-md px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-wider transition-all duration-200 flex-shrink-0 ${
+                    statusFilter === filter.id
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : 'bg-black/35 hover:bg-white/5 text-gray-400 border border-transparent hover:text-white'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Listado de la Agenda */}
         {loading ? (
-          <div className='flex items-center gap-2 text-xs text-gray-400 animate-pulse py-4 justify-center'>
+          <div className='flex items-center gap-2 text-xs text-gray-400 animate-pulse py-8 justify-center'>
             <span className='h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent' />
             <span>Cargando agenda...</span>
           </div>
+        ) : monthEventsTotal === 0 ? (
+          /* Empty State Proactivo con Lanzador de IA */
+          <div className='p-5 text-center rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent border border-dashed border-white/10 space-y-4 my-2 backdrop-blur-sm'>
+            <div className='w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto text-amber-400 animate-pulse'>
+              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9.75 3.75 11 7l3.25 1.25L11 9.5l-1.25 3.25L8.5 9.5 5.25 8.25 8.5 7l1.25-3.25ZM17 12l.8 2.2L20 15l-2.2.8L17 18l-.8-2.2L14 15l2.2-.8L17 12Z'
+                />
+              </svg>
+            </div>
+            <div className='space-y-1.5'>
+              <p className='text-xs font-bold text-white tracking-wide'>¿Lienzo en blanco?</p>
+              <p className='text-[10px] text-gray-400 leading-relaxed max-w-[170px] mx-auto'>
+                Deja que Ares diseñe una propuesta estratégica de contenidos para todo el mes con un clic.
+              </p>
+            </div>
+            <button
+              type='button'
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('cadence:calendar-action', { detail: { action: 'ai-gen' } })
+                );
+              }}
+              className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-black text-[10px] font-extrabold transition-all duration-200 shadow-lg'
+            >
+              <span>Generar con IA</span>
+            </button>
+          </div>
         ) : grouped.length === 0 ? (
-          <div className='text-xs text-gray-500 py-8 text-center bg-white/[0.02] rounded-2xl border border-dashed border-white/5'>
-            Sin tareas planificadas para este mes.
+          /* Sin resultados por el filtro */
+          <div className='text-xs text-gray-500 py-8 text-center bg-white/[0.01] rounded-xl border border-dashed border-white/5 space-y-2.5'>
+            <p>No se encontraron resultados.</p>
+            <button
+              type='button'
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+              }}
+              className='text-[9px] font-bold text-rose-400 uppercase tracking-widest hover:underline'
+            >
+              Limpiar Filtros
+            </button>
           </div>
         ) : (
-          <div className='space-y-4 pr-1'>
+          /* Listado con Cards Premium y Micro-Animaciones */
+          <div className='space-y-4 pr-1 max-h-[calc(100dvh-15.5rem)] overflow-y-auto custom-scrollbar'>
             {grouped.map(group => (
               <div key={group.date.toISOString()} className='space-y-2'>
                 <div className='text-[9px] font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono'>
@@ -74,13 +216,20 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                       minute: '2-digit',
                     });
                     const status = e.extendedProps?.status || 'pendiente';
+                    const hasFeedback = !!e.extendedProps?.client_feedback;
+
+                    // Estilo de tarjeta normal o destacado con bordes rosa si tiene ajustes del cliente
+                    const cardStyles = hasFeedback
+                      ? 'border-[#fe0979]/30 bg-[#fe0979]/5 hover:bg-[#fe0979]/10 shadow-[0_2px_12px_rgba(254,9,121,0.08)] hover:border-[#fe0979]/50'
+                      : 'border-white/5 bg-[#1e1c20]/30 hover:bg-[#1e1c20]/65 hover:border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.15)]';
+
                     return (
                       <li key={e.id}>
                         <motion.button
                           whileHover={{ x: 2, scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           onClick={() => onEventClick && onEventClick(e)}
-                          className='w-full text-left group flex flex-col gap-2 p-3 rounded-xl border border-white/5 bg-[#1e1c20]/30 hover:bg-[#1e1c20]/65 hover:border-white/10 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.15)]'
+                          className={`w-full text-left group flex flex-col gap-2 p-3 rounded-xl border transition-all duration-300 ${cardStyles}`}
                         >
                           <div className='flex items-start justify-between gap-3 w-full'>
                             <div className='flex items-start gap-2 min-w-0'>
@@ -102,9 +251,16 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                           </div>
 
                           <div className='flex items-center justify-between gap-2 pl-3.5 border-t border-white/[0.03] pt-1.5 mt-0.5 w-full'>
-                            <span className='text-[8px] font-bold tracking-wider text-gray-400 uppercase font-mono'>
-                              {status.replace('-', ' ')}
-                            </span>
+                            <div className='flex items-center gap-1.5'>
+                              <span className='text-[8px] font-bold tracking-wider text-gray-400 uppercase font-mono'>
+                                {status.replace('-', ' ')}
+                              </span>
+                              {hasFeedback && (
+                                <span className='text-[7px] text-[#fe0979] bg-[#fe0979]/15 border border-[#fe0979]/30 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide animate-pulse'>
+                                  💬 Ajuste
+                                </span>
+                              )}
+                            </div>
                             {e.extendedProps?.originalData?.channel && (
                               <span className='text-[8px] text-rose-300 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-md font-sans font-bold scale-90 uppercase tracking-widest'>
                                 {e.extendedProps.originalData.channel}
