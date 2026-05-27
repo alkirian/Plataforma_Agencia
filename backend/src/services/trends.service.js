@@ -419,7 +419,10 @@ export const getLatestTrendReports = async ({ token }) => {
     .select('agency_id')
     .single();
 
-  if (!profile?.agency_id) throw new Error('No se encontró la agencia del usuario.');
+  if (!profile?.agency_id) {
+    logger.info?.('[trends] El usuario no tiene una agencia asignada aún. Retornando lista vacía.');
+    return [];
+  }
 
   // Obtener el reporte más reciente por cliente
   const { data, error } = await supabaseAuth
