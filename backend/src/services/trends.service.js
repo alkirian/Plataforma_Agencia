@@ -429,7 +429,7 @@ export const getLatestTrendReports = async ({ token }) => {
     .from('trend_reports')
     .select(`
       id, client_id, summary, insights, keywords, generated_at,
-      clients:client_id (id, name, industry)
+      clients (id, name, industry)
     `)
     .eq('agency_id', profile.agency_id)
     .order('generated_at', { ascending: false })
