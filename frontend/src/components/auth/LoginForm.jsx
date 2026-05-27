@@ -35,7 +35,12 @@ export const LoginForm = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      await supabase.auth.signInWithOAuth({ provider: 'google' });
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
       toast.error('No se pudo iniciar con Google');
