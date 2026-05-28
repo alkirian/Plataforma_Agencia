@@ -80,10 +80,15 @@ export const handleChat = async (req, res, next) => {
     console.log('✅ Respuesta AI generada:', {
       hasResponse: !!response?.response,
       responseLength: response?.response?.length,
-      hasCommand: !!response?.command
+      hasCommands: !!response?.commands?.length
     });
 
-    // Guardar respuesta del asistente con metadatos del agente y comando en estado pendiente
+    const pendingCommands = Array.isArray(response?.commands)
+      ? response.commands.map(cmd => ({ ...cmd, status: 'pending' }))
+      : [];
+    const firstPendingCommand = pendingCommands.length > 0 ? pendingCommands[0] : null;
+
+    // Guardar respuesta del asistente con metadatos del agente y comandos en estado pendiente
     try {
       console.log('💾 Intentando guardar respuesta del asistente...');
       const assistantMessage = await saveChatMessage({
@@ -96,7 +101,8 @@ export const handleChat = async (req, res, next) => {
           chatHistory,
           relatedToMessageId: userMessageId,
           agentId,
-          command: response?.command ? { ...response.command, status: 'pending' } : null
+          commands: pendingCommands,
+          command: firstPendingCommand // Compatibilidad hacia atrás
         }
       });
       console.log('✅ Respuesta del asistente guardada:', assistantMessage);
@@ -111,14 +117,15 @@ export const handleChat = async (req, res, next) => {
         response: response?.response || 'Respuesta generada',
         messageId: userMessageId,
         suggestions: response?.suggestions,
-        command: response?.command ? { ...response.command, status: 'pending' } : null
+        commands: pendingCommands,
+        command: firstPendingCommand // Compatibilidad hacia atrás
       }
     };
 
     console.log('📤 Enviando respuesta al cliente:', {
       hasResponse: !!responseData.data.response,
       hasMessageId: !!responseData.data.messageId,
-      hasCommand: !!responseData.data.command
+      hasCommands: !!responseData.data.commands?.length
     });
 
     res.json(responseData);

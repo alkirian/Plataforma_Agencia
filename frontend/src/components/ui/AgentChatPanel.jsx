@@ -139,7 +139,8 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
         created_at: new Date().toISOString(),
         metadata: {
           agentId,
-          command: response.command // Contiene el comando propuesto (reschedule, update_brand_profile, etc.)
+          commands: response.commands || (response.command ? [response.command] : []),
+          command: response.command // Compatibilidad hacia atrás
         }
       };
 
@@ -150,7 +151,7 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
       setTimeout(() => setAvatarState('idle'), 4000); // Vuelve a reposo después de 4s
       
       // Si la respuesta incluye un comando pendiente, reproducir micro-chirp de alerta
-      if (response.command) {
+      if ((response.commands && response.commands.length > 0) || response.command) {
         agentSynth.playHover();
       }
 
@@ -179,8 +180,9 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
   };
 
   // Lógica para confirmar comandos de acción "Double-Check"
-  const handleConfirmCommand = async (msg) => {
-    const { command } = msg.metadata;
+  const handleConfirmCommand = async (msg, commandIdx = 0) => {
+    const commandsList = msg.metadata?.commands || (msg.metadata?.command ? [msg.metadata.command] : []);
+    const command = commandsList[commandIdx];
     if (!command) return;
 
     const actionToast = toast.loading(`Ejecutando acción propuesta por ${bio.name}...`);
@@ -250,13 +252,24 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
       agentSynth.playSuccess();
 
       // 2. Modificar el estado local del mensaje en la pantalla
+      let updatedCommands = [];
+      let updatedLegacyCommand = null;
+
       setMessages(prev => prev.map(m => {
         if (m.id === msg.id) {
+          updatedCommands = m.metadata?.commands 
+            ? m.metadata.commands.map((cmd, i) => i === commandIdx ? { ...cmd, status: 'approved' } : cmd)
+            : [];
+          updatedLegacyCommand = m.metadata?.command && commandIdx === 0
+            ? { ...m.metadata.command, status: 'approved' }
+            : m.metadata?.command;
+
           return {
             ...m,
             metadata: {
               ...m.metadata,
-              command: { ...m.metadata.command, status: 'approved' }
+              commands: updatedCommands,
+              command: updatedLegacyCommand
             }
           };
         }
@@ -270,7 +283,8 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
           .update({
             metadata: {
               ...msg.metadata,
-              command: { ...msg.metadata.command, status: 'approved' }
+              commands: updatedCommands,
+              command: updatedLegacyCommand
             }
           })
           .eq('id', msg.id);
@@ -283,17 +297,28 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
   };
 
   // Lógica para rechazar/descartar comandos de acción
-  const handleDiscardCommand = async (msg) => {
+  const handleDiscardCommand = async (msg, commandIdx = 0) => {
     agentSynth.playReject();
+
+    let updatedCommands = [];
+    let updatedLegacyCommand = null;
 
     // 1. Modificar el estado local del mensaje
     setMessages(prev => prev.map(m => {
       if (m.id === msg.id) {
+        updatedCommands = m.metadata?.commands 
+          ? m.metadata.commands.map((cmd, i) => i === commandIdx ? { ...cmd, status: 'rejected' } : cmd)
+          : [];
+        updatedLegacyCommand = m.metadata?.command && commandIdx === 0
+          ? { ...m.metadata.command, status: 'rejected' }
+          : m.metadata?.command;
+
         return {
           ...m,
           metadata: {
             ...m.metadata,
-            command: { ...m.metadata.command, status: 'rejected' }
+            commands: updatedCommands,
+            command: updatedLegacyCommand
           }
         };
       }
@@ -308,7 +333,8 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
           .update({
             metadata: {
               ...msg.metadata,
-              command: { ...msg.metadata.command, status: 'rejected' }
+              commands: updatedCommands,
+              command: updatedLegacyCommand
             }
           })
           .eq('id', msg.id);
@@ -408,7 +434,7 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
           ) : (
             messages.map((msg, index) => {
               const isUser = msg.role === 'user';
-              const command = msg.metadata?.command;
+              const commandsList = msg.metadata?.commands || (msg.metadata?.command ? [msg.metadata.command] : []);
               
               return (
                 <div 
@@ -432,155 +458,159 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
                     {msg.content}
 
                     {/* RENDERIZADOR DE TARJETAS DE APROBACIÓN DE COMANDOS (DOUBLE CHECK) */}
-                    {!isUser && command && (
-                      <div className="mt-4 border border-white/10 rounded-2xl bg-black/40 overflow-hidden backdrop-blur-md transition-all duration-300">
-                        {/* Header de la Tarjeta Operativa */}
-                        <div 
-                          className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-white/95"
-                          style={{ background: `linear-gradient(90deg, rgba(15,23,42,0.6) 0%, ${bio.color}33 100%)` }}
-                        >
-                          <span>Acción Propuesta</span>
-                          <span 
-                            className={`px-2 py-0.5 rounded-full text-[8px] border ${
-                              command.status === 'approved' 
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                : command.status === 'rejected'
-                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse-soft'
-                            }`}
-                          >
-                            {command.status === 'approved' ? 'Aprobada' : command.status === 'rejected' ? 'Descartada' : 'Pendiente Visto Bueno'}
-                          </span>
-                        </div>
-
-                        {/* Contenido / Detalles del Comando */}
-                        <div className="p-3 text-[11px] space-y-2 text-slate-200">
-                          {command.action === 'reschedule' && (
-                            <div>
-                              <p className="font-bold text-white">🗓️ Reprogramar Publicación</p>
-                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
-                                Mover post <strong className="text-white">"{command.params.title || 'Calendario'}"</strong> a la fecha:
-                              </p>
-                              <p className="text-xs font-mono font-bold mt-1 text-[#ffd166]">{command.params.date}</p>
-                            </div>
-                          )}
-
-                          {command.action === 'update_status' && (
-                            <div>
-                              <p className="font-bold text-white">🟢 Cambiar Estado del Post</p>
-                              <p className="text-[10px] text-text-muted mt-1">
-                                Actualizar estado de publicación a:
-                              </p>
-                              <p className="text-xs font-bold font-mono mt-1 uppercase text-[#4ECDC4]">{command.params.status}</p>
-                            </div>
-                          )}
-
-                          {command.action === 'create' && (
-                            <div>
-                              <p className="font-bold text-white">✍️ Crear Nueva Publicación</p>
-                              <div className="text-[10px] text-text-muted space-y-1 mt-1 leading-normal">
-                                <p>• Título: <span className="text-white font-bold">{command.params.title}</span></p>
-                                <p>• Fecha: <span className="text-white font-bold">{command.params.date}</span></p>
-                                <p>• Canal: <span className="text-[#38ef7d] font-bold">{command.params.channel}</span></p>
-                                {command.params.copy && <p className="italic truncate max-w-[200px] mt-0.5">"{command.params.copy}"</p>}
-                              </div>
-                            </div>
-                          )}
-
-                          {command.action === 'delete' && (
-                            <div>
-                              <p className="font-bold text-red-400">🗑️ Eliminar Publicación</p>
-                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
-                                Eliminar el post seleccionado de forma permanente.
-                              </p>
-                            </div>
-                          )}
-
-                          {command.action === 'update_brand_profile' && (
-                            <div>
-                              <p className="font-bold text-white">🧬 Ajustar ADN de Marca</p>
-                              <p className="text-[10px] text-text-secondary leading-normal">
-                                Se actualizarán los siguientes campos en la Identidad del Cliente:
-                              </p>
-                              <div className="text-[10px] space-y-1.5 mt-2 bg-black/30 p-2 rounded-xl border border-white/5">
-                                {Object.entries(command.params.updates).map(([key, val]) => {
-                                  const keyLabels = {
-                                    brand_voice: 'Tono de Voz',
-                                    target_audience: 'Público Objetivo',
-                                    business_description: 'Negocio',
-                                    reference_style: 'Dirección Estética',
-                                    brand_values: 'Valores',
-                                    competitors: 'Competidores'
-                                  };
-                                  return (
-                                    <p key={key} className="leading-normal">
-                                      <strong className="text-white text-[9px] uppercase tracking-wider">{keyLabels[key] || key}:</strong>
-                                      <span className="block text-slate-300 mt-0.5 text-[10px] italic">"{val}"</span>
-                                    </p>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {command.action === 'run_trends' && (
-                            <div>
-                              <p className="font-bold text-white">🔍 Iniciar Búsqueda de Tendencias</p>
-                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
-                                Escanear la web e indexar novedades en tiempo real con las palabras clave:
-                              </p>
-                              <p className="text-xs font-mono font-bold mt-1 text-cyan-400 bg-black/30 p-2 rounded-xl border border-white/5">
-                                "{command.params.keywords || 'Pilares de la marca'}"
-                              </p>
-                            </div>
-                          )}
-
-                          {command.action === 'reply_comment' && (
-                            <div>
-                              <p className="font-bold text-white">💬 Publicar Respuesta en Redes</p>
-                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
-                                Responder al comentario seleccionado en <span className="text-emerald-400 font-bold uppercase">{command.params.platform || 'instagram'}</span>:
-                              </p>
-                              <p className="text-xs italic font-bold mt-1.5 text-[#ffd166] bg-black/30 p-2.5 rounded-xl border border-white/5 leading-relaxed">
-                                "{command.params.replyText}"
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Botones de Confirmación / Doble Check */}
-                        {command.status === 'pending' ? (
-                          <div className="grid grid-cols-2 border-t border-white/10 bg-slate-950/70">
-                            <button
-                              onClick={() => handleConfirmCommand(msg)}
-                              className="px-3 py-2 text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-colors flex items-center justify-center gap-1.5 border-r border-white/10"
+                    {!isUser && commandsList.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {commandsList.map((command, cmdIdx) => (
+                          <div key={cmdIdx} className="border border-white/10 rounded-2xl bg-black/40 overflow-hidden backdrop-blur-md transition-all duration-300">
+                            {/* Header de la Tarjeta Operativa */}
+                            <div 
+                              className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-white/95"
+                              style={{ background: `linear-gradient(90deg, rgba(15,23,42,0.6) 0%, ${bio.color}33 100%)` }}
                             >
-                              <CheckIcon className="h-3.5 w-3.5" />
-                              <span>Confirmar Ajuste</span>
-                            </button>
-                            <button
-                              onClick={() => handleDiscardCommand(msg)}
-                              className="px-3 py-2 text-[10px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              <NoSymbolIcon className="h-3.5 w-3.5" />
-                              <span>Descartar</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="px-3 py-2 bg-slate-950/90 text-center text-[10px] font-bold text-text-muted border-t border-white/10 flex items-center justify-center gap-1 font-mono">
-                            {command.status === 'approved' ? (
-                              <>
-                                <CheckIcon className="h-3.5 w-3.5 text-emerald-400" />
-                                <span className="text-emerald-400/90 uppercase tracking-widest text-[9px]">Ajuste Aplicado con Éxito</span>
-                              </>
+                              <span>Propuesta {commandsList.length > 1 ? `#${cmdIdx + 1}` : ''}</span>
+                              <span 
+                                className={`px-2 py-0.5 rounded-full text-[8px] border ${
+                                  command.status === 'approved' 
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                    : command.status === 'rejected'
+                                      ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse-soft'
+                                }`}
+                              >
+                                {command.status === 'approved' ? 'Aprobada' : command.status === 'rejected' ? 'Descartada' : 'Pendiente Visto Bueno'}
+                              </span>
+                            </div>
+
+                            {/* Contenido / Detalles del Comando */}
+                            <div className="p-3 text-[11px] space-y-2 text-slate-200">
+                              {command.action === 'reschedule' && (
+                                <div>
+                                  <p className="font-bold text-white">🗓️ Reprogramar Publicación</p>
+                                  <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                    Mover post <strong className="text-white">"{command.params.title || 'Calendario'}"</strong> a la fecha:
+                                  </p>
+                                  <p className="text-xs font-mono font-bold mt-1 text-[#ffd166]">{command.params.date}</p>
+                                </div>
+                              )}
+
+                              {command.action === 'update_status' && (
+                                <div>
+                                  <p className="font-bold text-white">🟢 Cambiar Estado del Post</p>
+                                  <p className="text-[10px] text-text-muted mt-1">
+                                    Actualizar estado de publicación a:
+                                  </p>
+                                  <p className="text-xs font-bold font-mono mt-1 uppercase text-[#4ECDC4]">{command.params.status}</p>
+                                </div>
+                              )}
+
+                              {command.action === 'create' && (
+                                <div>
+                                  <p className="font-bold text-white">✍️ Crear Nueva Publicación</p>
+                                  <div className="text-[10px] text-text-muted space-y-1 mt-1 leading-normal">
+                                    <p>• Título: <span className="text-white font-bold">{command.params.title}</span></p>
+                                    <p>• Fecha: <span className="text-white font-bold">{command.params.date}</span></p>
+                                    <p>• Canal: <span className="text-[#38ef7d] font-bold">{command.params.channel}</span></p>
+                                    {command.params.copy && <p className="italic mt-1 border-l-2 border-white/10 pl-2 text-slate-300 whitespace-pre-wrap leading-relaxed">"{command.params.copy}"</p>}
+                                  </div>
+                                </div>
+                              )}
+
+                              {command.action === 'delete' && (
+                                <div>
+                                  <p className="font-bold text-red-400">🗑️ Eliminar Publicación</p>
+                                  <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                    Eliminar el post seleccionado de forma permanente.
+                                  </p>
+                                </div>
+                              )}
+
+                              {command.action === 'update_brand_profile' && (
+                                <div>
+                                  <p className="font-bold text-white">🧬 Ajustar ADN de Marca</p>
+                                  <p className="text-[10px] text-text-secondary leading-normal">
+                                    Se actualizarán los siguientes campos en la Identidad del Cliente:
+                                  </p>
+                                  <div className="text-[10px] space-y-1.5 mt-2 bg-black/30 p-2 rounded-xl border border-white/5">
+                                    {command.params.updates && Object.entries(command.params.updates).map(([key, val]) => {
+                                      const keyLabels = {
+                                        brand_voice: 'Tono de Voz',
+                                        target_audience: 'Público Objetivo',
+                                        business_description: 'Negocio',
+                                        reference_style: 'Dirección Estética',
+                                        brand_values: 'Valores',
+                                        competitors: 'Competidores'
+                                      };
+                                      return (
+                                        <p key={key} className="leading-normal">
+                                          <strong className="text-white text-[9px] uppercase tracking-wider">{keyLabels[key] || key}:</strong>
+                                          <span className="block text-slate-300 mt-0.5 text-[10px] italic">"{val}"</span>
+                                        </p>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {command.action === 'run_trends' && (
+                                <div>
+                                  <p className="font-bold text-white">🔍 Iniciar Búsqueda de Tendencias</p>
+                                  <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                    Escanear la web e indexar novedades en tiempo real con las palabras clave:
+                                  </p>
+                                  <p className="text-xs font-mono font-bold mt-1 text-cyan-400 bg-black/30 p-2 rounded-xl border border-white/5">
+                                    "{command.params.keywords || 'Pilares de la marca'}"
+                                  </p>
+                                </div>
+                              )}
+
+                              {command.action === 'reply_comment' && (
+                                <div>
+                                  <p className="font-bold text-white">💬 Publicar Respuesta en Redes</p>
+                                  <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                    Responder al comentario seleccionado en <span className="text-emerald-400 font-bold uppercase">{command.params.platform || 'instagram'}</span>:
+                                  </p>
+                                  <p className="text-xs italic font-bold mt-1.5 text-[#ffd166] bg-black/30 p-2.5 rounded-xl border border-white/5 leading-relaxed">
+                                    "{command.params.replyText}"
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Botones de Confirmación / Doble Check */}
+                            {command.status === 'pending' ? (
+                              <div className="grid grid-cols-2 border-t border-white/10 bg-slate-950/70">
+                                <button
+                                  onClick={() => handleConfirmCommand(msg, cmdIdx)}
+                                  className="px-3 py-2 text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-colors flex items-center justify-center gap-1.5 border-r border-white/10"
+                                >
+                                  <CheckIcon className="h-3.5 w-3.5" />
+                                  <span>Confirmar Ajuste</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDiscardCommand(msg, cmdIdx)}
+                                  className="px-3 py-2 text-[10px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  <NoSymbolIcon className="h-3.5 w-3.5" />
+                                  <span>Descartar</span>
+                                </button>
+                              </div>
                             ) : (
-                              <>
-                                <NoSymbolIcon className="h-3.5 w-3.5 text-red-400/80" />
-                                <span className="text-red-400/80 uppercase tracking-widest text-[9px]">Ajuste Descartado</span>
-                              </>
+                              <div className="px-3 py-2 bg-slate-950/90 text-center text-[10px] font-bold text-text-muted border-t border-white/10 flex items-center justify-center gap-1 font-mono">
+                                {command.status === 'approved' ? (
+                                  <>
+                                    <CheckIcon className="h-3.5 w-3.5 text-emerald-400" />
+                                    <span className="text-emerald-400/90 uppercase tracking-widest text-[9px]">Ajuste Aplicado con Éxito</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <NoSymbolIcon className="h-3.5 w-3.5 text-red-400/80" />
+                                    <span className="text-red-400/80 uppercase tracking-widest text-[9px]">Ajuste Descartado</span>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
+                        ))}
                       </div>
                     )}
                   </div>

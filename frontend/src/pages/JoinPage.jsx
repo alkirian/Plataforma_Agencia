@@ -41,7 +41,24 @@ export const JoinPage = () => {
         } = await supabase.auth.getSession();
         setSession(currentSession);
 
-        // Resolver el código de forma pública
+        // Resolver el código de forma pública (priorizar RPC resiliente de Supabase)
+        try {
+          const { data, error: rpcErr } = await supabase.rpc('resolve_invite_link', {
+            invite_code: code
+          });
+          if (!rpcErr && data && data.length > 0) {
+            setInviteInfo({
+              code: data[0].code,
+              agencyId: data[0].agency_id,
+              agencyName: data[0].agency_name,
+              role: data[0].role
+            });
+            return;
+          }
+        } catch (rpcErr) {
+          console.warn('[JoinPage] RPC resolve_invite_link falló, intentando backend:', rpcErr);
+        }
+
         const res = await fetch(`${apiBaseUrl}/shared/invite/${code}`);
         const result = await res.json();
 
@@ -67,6 +84,25 @@ export const JoinPage = () => {
     setAccepting(true);
 
     try {
+      // Intentar primero usando el RPC directo de la base de datos (altamente resiliente)
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('accept_agency_invite_link', {
+          invite_code: code,
+          user_full_name: 'Miembro Invitado'
+        });
+        if (rpcErr) throw rpcErr;
+
+        toast.success('¡Te has unido exitosamente a la agencia!');
+        localStorage.removeItem('pending_invite_code');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+        return;
+      } catch (rpcErr) {
+        console.warn('[JoinPage] RPC accept_agency_invite_link falló, intentando backend:', rpcErr.message);
+      }
+
+      // Fallback: llamar al backend Express
       const res = await fetch(`${apiBaseUrl}/invitations/links/accept`, {
         method: 'POST',
         headers: {

@@ -16,6 +16,7 @@ import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 import { MonthAgenda } from './MonthAgenda';
 import { AIContentGenerator } from './AIContentGenerator';
 import { ScheduleImportModal } from './ScheduleImportModal';
+import { AgentChatPanel } from '../ui';
 
 // Utilidades centralizadas
 import { toDateInputValue, normalizeFormat, normalizePlatform } from './scheduleUtils';
@@ -44,7 +45,7 @@ export const ScheduleSection = ({ clientId }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
-  const isChatOpen = false;
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isCalendarDragOver, setIsCalendarDragOver] = useState(false);
@@ -167,6 +168,16 @@ export const ScheduleSection = ({ clientId }) => {
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      loadEvents();
+    };
+    window.addEventListener('cadence:refresh-schedule', handleRefresh);
+    return () => {
+      window.removeEventListener('cadence:refresh-schedule', handleRefresh);
+    };
+  }, [loadEvents]);
 
   useEffect(() => {
     const loadAssets = async () => {
@@ -945,6 +956,20 @@ export const ScheduleSection = ({ clientId }) => {
                 </svg>
                 <span>Nuevo Evento</span>
               </div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`px-6 py-3 rounded-xl border font-semibold transition-all duration-200 flex items-center gap-2
+                ${
+                  isChatOpen
+                    ? 'bg-[#7C5CFC] text-white border-[#7C5CFC]/30 shadow-[0_0_15px_rgba(124,92,252,0.4)]'
+                    : 'bg-surface-soft hover:bg-white/10 text-text-primary border-white/10'
+                }`}
+            >
+              <SparklesIcon className={`w-5 h-5 ${isChatOpen ? 'text-white' : 'text-purple-400'}`} />
+              <span>Copiloto Aura</span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -2004,6 +2029,18 @@ export const ScheduleSection = ({ clientId }) => {
               Ver
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Copiloto Aura Chat Panel */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <AgentChatPanel
+            clientId={clientId}
+            agent={{ id: 'schedule' }}
+            onClose={() => setIsChatOpen(false)}
+            client={client}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@api/apiFetch';
 import toast from 'react-hot-toast';
+import { supabase } from '../supabaseClient';
 
 // Premium styling constants
 const inputClass =
@@ -24,32 +25,78 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   useEffect(() => {
     const checkInvitation = async () => {
       try {
+        // A) Intentar primero vía Supabase RPCs (altamente resiliente y veloz)
+        try {
+          const { data: rpcInvData, error: rpcInvError } = await supabase.rpc('check_pending_invitations');
+          if (!rpcInvError && rpcInvData && rpcInvData.length > 0) {
+            const inv = rpcInvData[0];
+            setInvitation({
+              id: inv.id,
+              agencyId: inv.agency_id,
+              agencyName: inv.agency_name,
+              role: inv.role,
+              status: inv.status
+            });
+            setStep('details');
+            return;
+          }
+
+          const pendingCode = localStorage.getItem('pending_invite_code');
+          if (pendingCode) {
+            const { data: rpcLinkData, error: rpcLinkError } = await supabase.rpc('resolve_invite_link', {
+              invite_code: pendingCode
+            });
+            if (!rpcLinkError && rpcLinkData && rpcLinkData.length > 0) {
+              const linkInfo = rpcLinkData[0];
+              setInvitation({
+                agencyName: linkInfo.agency_name,
+                role: linkInfo.role,
+                isLinkInvite: true,
+                code: pendingCode,
+              });
+              setStep('details');
+              return;
+            }
+          }
+        } catch (rpcErr) {
+          console.warn('[Onboarding] Supabase RPCs de invitaciones fallaron, intentando backend:', rpcErr);
+        }
+
+        // B) Fallback: Consultar backend Express
         // 1) First verify if there is an active direct email invite
-        const response = await fetch(`${API_URL}/invitations/pending`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-        const result = await response.json();
-        if (response.ok && result.success && result.data) {
-          setInvitation(result.data);
-          setStep('details'); // Go directly to details
-          return;
+        try {
+          const response = await fetch(`${API_URL}/invitations/pending`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+          const result = await response.json();
+          if (response.ok && result.success && result.data) {
+            setInvitation(result.data);
+            setStep('details'); // Go directly to details
+            return;
+          }
+        } catch (err) {
+          console.warn('[Onboarding] Error al consultar invitaciones pendientes del backend:', err);
         }
 
         // 2) Second check if there is a pending invitation code in localStorage
         const pendingCode = localStorage.getItem('pending_invite_code');
         if (pendingCode) {
-          const res = await fetch(`${API_URL}/shared/invite/${pendingCode}`);
-          const resJson = await res.json();
-          if (res.ok && resJson.success && resJson.data) {
-            setInvitation({
-              agencyName: resJson.data.agencyName,
-              role: resJson.data.role,
-              isLinkInvite: true,
-              code: pendingCode,
-            });
-            setStep('details'); // Go directly to details
+          try {
+            const res = await fetch(`${API_URL}/shared/invite/${pendingCode}`);
+            const resJson = await res.json();
+            if (res.ok && resJson.success && resJson.data) {
+              setInvitation({
+                agencyName: resJson.data.agencyName,
+                role: resJson.data.role,
+                isLinkInvite: true,
+                code: pendingCode,
+              });
+              setStep('details'); // Go directly to details
+            }
+          } catch (err) {
+            console.warn('[Onboarding] Error al resolver código de enlace del backend:', err);
           }
         }
       } catch (err) {
@@ -66,39 +113,104 @@ export const Onboarding = ({ session, onProfileComplete }) => {
     setLoading(true);
 
     try {
-      let url = `${API_URL}/users/complete-profile`;
       const pendingCode = localStorage.getItem('pending_invite_code') || undefined;
-      let bodyData = { fullName, agencyName, inviteCode: pendingCode, agencyType };
+      let completedSuccessfully = false;
 
-      // If direct email invitation exists
-      if (invitation && !invitation.isLinkInvite) {
-        url = `${API_URL}/invitations/accept`;
-        bodyData = { fullName };
+      // 1. Intentar completar perfil mediante backend Express
+      try {
+        let url = `${API_URL}/users/complete-profile`;
+        let bodyData = { fullName, agencyName, inviteCode: pendingCode, agencyType };
+
+        // Si existe invitación directa por email
+        if (invitation && !invitation.isLinkInvite) {
+          url = `${API_URL}/invitations/accept`;
+          bodyData = { fullName };
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(bodyData),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          completedSuccessfully = true;
+        } else {
+          // Si el servidor devolvió un error específico (ej: de validación), lo lanzamos sin hacer fallback
+          if (response.status === 400 || response.status === 409) {
+            throw new Error(data.message || 'Error al completar el perfil.');
+          }
+          throw new Error('Servidor inalcanzable');
+        }
+      } catch (fetchErr) {
+        if (fetchErr.message && fetchErr.message !== 'Servidor inalcanzable' && !fetchErr.message.includes('Failed to fetch')) {
+          throw fetchErr;
+        }
+
+        console.warn('[Onboarding] Servidor inalcanzable, ejecutando guardado directo en Supabase...');
+
+        // 2. Fallback: Guardado directo en Supabase mediante RPCs
+        let createdAgencyId = null;
+
+        if (invitation && !invitation.isLinkInvite) {
+          // Aceptar invitación directa
+          const { data: rpcRes, error: rpcErr } = await supabase.rpc('accept_agency_invitation', {
+            user_full_name: fullName
+          });
+          if (rpcErr) throw rpcErr;
+          createdAgencyId = rpcRes?.agencyId;
+        } else if (invitation && invitation.isLinkInvite) {
+          // Aceptar invitación de enlace
+          const { data: rpcRes, error: rpcErr } = await supabase.rpc('accept_agency_invite_link', {
+            invite_code: invitation.code,
+            user_full_name: fullName
+          });
+          if (rpcErr) throw rpcErr;
+          createdAgencyId = rpcRes?.agencyId;
+        } else {
+          // Crear nueva agencia/negocio y perfil admin
+          const { data: newAgencyId, error: rpcErr } = await supabase.rpc('create_new_agency_and_admin', {
+            user_id: session.user.id,
+            agency_name: agencyName,
+            user_full_name: fullName,
+            agency_type: agencyType
+          });
+          if (rpcErr) throw rpcErr;
+          createdAgencyId = newAgencyId;
+
+          // Auto-crear cliente para negocio propio
+          if (agencyType === 'own_business' && createdAgencyId) {
+            try {
+              await supabase.from('clients').insert({
+                agency_id: createdAgencyId,
+                name: agencyName,
+                industry: 'Mi Negocio',
+                brand_info: { card_color: '#7C5CFC' },
+              });
+            } catch (clientErr) {
+              console.warn('[Onboarding] Auto-creación de marca falló en fallback:', clientErr.message);
+            }
+          }
+        }
+
+        completedSuccessfully = true;
       }
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(bodyData),
-      });
+      if (completedSuccessfully) {
+        // Limpiar código de localStorage
+        localStorage.removeItem('pending_invite_code');
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al completar el perfil.');
+        if (invitation) {
+          toast.success('¡Te has unido exitosamente!');
+        } else {
+          toast.success(agencyType === 'agency' ? '¡Agencia creada exitosamente!' : '¡Negocio y marca inicializados!', { icon: '✨' });
+        }
+        onProfileComplete();
       }
-
-      // Clear code from localStorage
-      localStorage.removeItem('pending_invite_code');
-
-      if (invitation) {
-        toast.success('¡Te has unido exitosamente!');
-      } else {
-        toast.success(agencyType === 'agency' ? '¡Agencia creada exitosamente!' : '¡Negocio y marca inicializados!', { icon: '✨' });
-      }
-      onProfileComplete();
     } catch (error) {
       toast.error(error.message);
     } finally {

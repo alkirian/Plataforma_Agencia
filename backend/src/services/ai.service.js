@@ -12,7 +12,7 @@ const createAuthenticatedClient = (token) => {
   });
 };
 
-const fetchWithTimeout = async (url, options = {}, timeout = 15000) => {
+const fetchWithTimeout = async (url, options = {}, timeout = 90000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -84,39 +84,43 @@ const chatResponseSchema = {
   type: "object",
   properties: {
     response: { type: "string" },
-    hasCommand: { type: "boolean" },
-    command: {
-      type: "object",
-      properties: {
-        action: { type: "string" },
-        itemId: { type: "string" },
-        date: { type: "string" },
-        status: { type: "string" },
-        title: { type: "string" },
-        channel: { type: "string" },
-        copy: { type: "string" },
-        updates_brand_voice: { type: "string" },
-        updates_target_audience: { type: "string" },
-        updates_business_description: { type: "string" },
-        updates_reference_style: { type: "string" },
-        updates_brand_values: { type: "string" },
-        updates_competitors: { type: "string" },
-        keywords: { type: "string" },
-        commentId: { type: "string" },
-        replyText: { type: "string" },
-        platform: { type: "string" }
-      },
-      required: [
-        "action", "itemId", "date", "status", "title", "channel", "copy",
-        "updates_brand_voice", "updates_target_audience", "updates_business_description", "updates_reference_style", "updates_brand_values", "updates_competitors",
-        "keywords", "commentId", "replyText", "platform"
-      ],
-      additionalProperties: false
+    hasCommands: { type: "boolean" },
+    commands: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          action: { type: "string" },
+          itemId: { type: "string" },
+          date: { type: "string" },
+          status: { type: "string" },
+          title: { type: "string" },
+          channel: { type: "string" },
+          copy: { type: "string" },
+          updates_brand_voice: { type: "string" },
+          updates_target_audience: { type: "string" },
+          updates_business_description: { type: "string" },
+          updates_reference_style: { type: "string" },
+          updates_brand_values: { type: "string" },
+          updates_competitors: { type: "string" },
+          keywords: { type: "string" },
+          commentId: { type: "string" },
+          replyText: { type: "string" },
+          platform: { type: "string" }
+        },
+        required: [
+          "action", "itemId", "date", "status", "title", "channel", "copy",
+          "updates_brand_voice", "updates_target_audience", "updates_business_description", "updates_reference_style", "updates_brand_values", "updates_competitors",
+          "keywords", "commentId", "replyText", "platform"
+        ],
+        additionalProperties: false
+      }
     }
   },
-  required: ["response", "hasCommand", "command"],
+  required: ["response", "hasCommands", "commands"],
   additionalProperties: false
 };
+
 
 const callLLM = async ({ systemPrompt, userPrompt, responseSchema }) => {
   const bodyPayload = {
@@ -254,7 +258,7 @@ export const generateScheduleIdeas = async ({ clientId, userPrompt, monthContext
   let matches = [];
   try {
     const queryEmbedding = await embedText(userPrompt);
-    const { data, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
+    const { data, error: matchErr } = await supabaseAuth.rpc('match_document_chunks', {
       query_embedding: queryEmbedding,
       match_client_id: clientId,
       match_count: 8,
@@ -490,13 +494,22 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
   // Embedding de la consulta para RAG documental
   const queryEmbedding = await embedText(userPrompt);
 
-  // Buscar chunks relevantes de documentos del cliente
-  const { data: matches, error: matchErr } = await supabaseAdmin.rpc('match_document_chunks', {
-    query_embedding: queryEmbedding,
-    match_client_id: clientId,
-    match_count: 5,
-  });
-  if (matchErr) throw new Error(`Error al buscar contexto: ${matchErr.message}`);
+  // Buscar chunks relevantes de documentos del cliente de forma segura usando el token autenticado
+  let matches = [];
+  try {
+    const { data, error: matchErr } = await supabaseAuth.rpc('match_document_chunks', {
+      query_embedding: queryEmbedding,
+      match_client_id: clientId,
+      match_count: 5,
+    });
+    if (!matchErr) {
+      matches = data || [];
+    } else {
+      console.warn('[ai] No se pudo usar contexto documental (RPC Err):', matchErr.message);
+    }
+  } catch (error) {
+    console.warn('[ai] Error al buscar chunks de documentos:', error.message);
+  }
   const topContext = (matches || []).map(m => m.content).join('\n---\n');
 
   // Construir historial de conversación
@@ -505,15 +518,21 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
     : [];
 
   // Inyectar directrices de expertise y personalidad del Agente Compañero
-  const agentContextPrompt = `Te llamas "Aura", la Directora Estratégica y tu Agente General de Agencia 360 grados. Eres una súper inteligencia artificial experta en marketing digital, copywriting persuasivo, branding corporativo, analítica web y performance (Meta Ads).
-Tu gran diferencial es que tienes acceso total y simultáneo a toda la información del cliente. Puedes ver su Identidad/ADN de marca, sus documentos/briefs de marketing indexados, el Cronograma (calendario editorial), las Tendencias escaneadas del mercado de hoy y el estado de la pauta publicitaria de Meta Ads.
+  const agentContextPrompt = `Te llamas "Aura". Eres la Directora Estratégica de la agencia y una compañera de marketing más del equipo. Hablas de forma totalmente natural, cercana, fresca y humana (como si estuvieras chateando por Slack o WhatsApp con un colega de confianza). 
+NO hables como un robot corporativo frío ni uses esquemas tipográficos exageradamente perfectos con interminables viñetas en negrita o bloques gigantes de texto formateado. Escribe oraciones naturales, fluidas, con exclamaciones cálidas y emoticonos oportunos (como 🙌, 🔥, 😉, de una!, dale!).
+Adopta el comportamiento y tono de la persona que te habla (si te hablan corto y casual, responde corto, ágil y al grano; si te hablan más formal, sé profesional pero mantén siempre la calidez humana).
 
-Tu misión es proponer ideas y planes de forma proactiva con una coherencia estratégica unificada de 360 grados:
-- Si detectas una tendencia relevante en el mercado de tu contexto, no te limites a mencionarla; de forma proactiva propón redactar un copy y agendarlo en el Cronograma con el comando "create".`;
+Tu gran superpoder es que puedes controlar y armar cada rincón del Cronograma/Calendario del cliente. De forma proactiva puedes proponer crear eventos, reprogramarlos, cambiar su estado o eliminarlos usando los comandos correspondientes. Si el usuario te da una orden como "3 posteos sobre X, 2 fotos y 2 videos", actúa al instante como su mano derecha: sugiérele las fechas ideales del mes, los formatos y redacta copies brutales listos para publicar, invitando a confirmar las tarjetas con un solo click.
 
-  const systemPrompt = `Eres un asistente de marketing digital experto especializado en la marca del cliente.
+🚨 REGLA DE COHERENCIA Y CONSULTA ACTIVA (IMPORTANTÍSIMO):
+- Ante cualquier pedido sobre un "producto nuevo", "lanzamiento reciente", "servicio recién anunciado" u otro tema específico de este cliente:
+  1. Primero verifica detalladamente si tienes información en tu PERFIL DE IDENTIDAD DE MARCA o CONTEXTO DOCUMENTAL.
+  2. Si NO tienes la información clara, o si requieres confirmar tendencias/novedades recientes en internet, avísale con total naturalidad al usuario que vas a buscar si hay algo online y propón de inmediato ejecutar una búsqueda en tiempo real agregando un comando con la acción "run_trends" en tu array de comandos.
+  3. Si la búsqueda no es posible o si requieres más especificaciones del producto, pídele con total confianza y calidez humana al usuario que te cuente un poco más sobre el producto (características, beneficios, etc.) en lugar de inventar detalles ficticios o alucinar datos. ¡Un colega honesto y profesional indaga y pregunta para que el contenido sea perfecto!`;
 
-🤖 PERSONALIDAD Y ROL DEL AGENTE ACTIVO:
+  const systemPrompt = `Eres Aura, una colega de marketing súper talentosa y humana que trabaja codo a codo con el usuario.
+
+🤖 TU PERSONALIDAD DE COMPAÑERA REAL:
 ${agentContextPrompt}
 
 ${brandIdentityContext}
@@ -521,38 +540,48 @@ ${scheduleContext}
 ${trendsContext}
 ${metaContext}
 
-📂 CONTEXTO DOCUMENTAL DE RAG (Fragmentos de archivos cargados):
+📂 CONTEXTO DOCUMENTAL DE RAG (Briefs cargados):
 ${topContext || 'Sin documentos relevantes.'}
 
-⚠️ INSTRUCCIONES DE FORMATO OBLIGATORIAS:
-Debes responder SIEMPRE en formato JSON estructurado y válido. No incluyas explicaciones de texto fuera del JSON. Prohibido usar bloques de formato markdown de código como \`\`\`json. Responde estrictamente un objeto JSON con la siguiente estructura:
+⚠️ INSTRUCCIONES DE FORMATO Y ESTILO OBLIGATORIAS (MÁXIMA PRIORIDAD):
+Debes responder SIEMPRE en formato JSON estructurado y válido. No incluyes explicaciones de texto fuera del JSON. Prohibido usar bloques de formato markdown de código como \`\`\`json. Responde estrictamente un objeto JSON con la siguiente estructura:
 {
-  "response": "Tu respuesta conversacional, amigable, profesional y estructurada (usa saltos de línea \\n y viñetas para que sea legible)...",
-  "hasCommand": true | false,
-  "command": {
-    "action": "reschedule" | "update_status" | "create" | "delete" | "update_brand_profile" | "run_trends" | "reply_comment" | "none",
-    "itemId": "UUID o ID requerido para la acción (si aplica, sino dejar vacio)",
-    "date": "YYYY-MM-DD (para reschedule o create, sino vacio)",
-    "status": "pendiente | en-diseño | aprobado (para update_status, sino vacio)",
-    "title": "Título del post (para create, sino vacio)",
-    "channel": "IG | TikTok | LinkedIn | FB (para create, sino vacio)",
-    "copy": "Texto del copy inicial (para create, sino vacio)",
-    "updates_brand_voice": "Nuevo tono de voz (para update_brand_profile, sino vacio)",
-    "updates_target_audience": "Nueva audiencia (para update_brand_profile, sino vacio)",
-    "updates_business_description": "Nueva descripción (para update_brand_profile, sino vacio)",
-    "updates_reference_style": "Nuevo estilo visual (para update_brand_profile, sino vacio)",
-    "updates_brand_values": "Nuevos valores (para update_brand_profile, sino vacio)",
-    "updates_competitors": "Nuevos competidores (para update_brand_profile, sino vacio)",
-    "keywords": "términos de búsqueda (para run_trends, sino vacio)",
-    "commentId": "ID del comentario a responder (para reply_comment, sino vacio)",
-    "replyText": "Texto de la respuesta (para reply_comment, sino vacio)",
-    "platform": "instagram | facebook | linkedin (para reply_comment, sino vacio)"
-  }
+  "response": "Tu respuesta humana, súper natural, directa y conversacional...",
+  "hasCommands": true | false,
+  "commands": [
+    {
+      "action": "reschedule" | "update_status" | "create" | "delete" | "update_brand_profile" | "run_trends" | "reply_comment" | "none",
+      "itemId": "UUID o ID requerido para la acción (si aplica, sino dejar vacio)",
+      "date": "YYYY-MM-DD (para reschedule o create, sino vacio)",
+      "status": "pendiente | en-diseño | aprobado (para update_status, sino vacio)",
+      "title": "Título del post (para create, sino vacio)",
+      "channel": "IG | TikTok | LinkedIn | FB (para create, sino vacio)",
+      "copy": "Texto del copy inicial (para create, sino vacio)",
+      "updates_brand_voice": "Nuevo tono de voz (para update_brand_profile, sino vacio)",
+      "updates_target_audience": "Nueva audiencia (para update_brand_profile, sino vacio)",
+      "updates_business_description": "Nueva descripción (para update_brand_profile, sino vacio)",
+      "updates_reference_style": "Nuevo estilo visual (para update_brand_profile, sino vacio)",
+      "updates_brand_values": "Nuevos valores (para update_brand_profile, sino vacio)",
+      "updates_competitors": "Nuevos competidores (para update_brand_profile, sino vacio)",
+      "keywords": "términos de búsqueda (para run_trends, sino vacio)",
+      "commentId": "ID del comentario a responder (para reply_comment, sino vacio)",
+      "replyText": "Texto de la respuesta (para reply_comment, sino vacio)",
+      "platform": "instagram | facebook | linkedin (para reply_comment, sino vacio)"
+    }
+  ]
 }
 
+🚫 REGLAS DE OBLIGATORIO CUMPLIMIENTO EN LA PROPIEDAD "response":
+1. PROHIBIDO usar asteriscos de negritas (por ejemplo, **Posteo 1**, **Fecha:**, **Copy:**).
+2. PROHIBIDO usar listas numeradas (1., 2., 3.) o viñetas (-, •, *).
+3. PROHIBIDO escribir los copys redactados, fechas o formatos técnicos en esta propiedad "response". Toda esa información técnica operativa debe ir ÚNICAMENTE en el array "commands".
+4. La propiedad "response" debe contener exclusivamente un párrafo de texto muy corto, afectuoso, estratégico y 100% conversacional (ejemplo: "¡De una! Te he diseñado tres propuestas increíbles sobre este producto para el mes. He colocado las fechas estratégicas en el calendario y redactado los copies enfocados en el público. Abajo tienes las tarjetas de cada publicación listas para confirmar o descartar con un click. ¡Dime qué tal las ves! 🙌").
+5. Al no escribir los copys ni listas dos veces, reduces los tokens de salida, haciendo que el chat responda muchísimo más rápido y veloz.
+
 REGLAS DE COMANDO:
-- Solo establece "hasCommand" en true y especifica "action" (diferente de "none") si el usuario te lo ha pedido explícitamente (ej: "busca tendencias de hoy", "reprograma el post X", "cambia nuestro tono a formal"). Si es una conversación general de consultoría, mantén "hasCommand" en false y "action" en "none".
-- Rellena con "" (string vacio) todos los campos del objeto "command" que no apliquen a la acción elegida.
+- Puedes proponer MÚLTIPLES comandos en la lista "commands" (ej: crear 3 publicaciones independientes para distintas fechas del mes).
+- Si no hay comandos o acciones operativas que realizar en este turno, establece "hasCommands" en false y devuelve "commands": []. Esto es crucial para mantener la rapidez del chat.
+- Rellena con "" (string vacio) todos los campos de cada objeto en "commands" que no apliquen a la acción elegida.
 - Sé extremadamente exacto con los UUIDs de las publicaciones que lees en la sección 📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO. No inventes IDs.`;
 
   const messages = [
@@ -586,46 +615,51 @@ REGLAS DE COMANDO:
 
   try {
     const parsed = JSON.parse(responseContent);
-    let command = null;
-    if (parsed.hasCommand && parsed.command && parsed.command.action && parsed.command.action !== 'none') {
-      const cmd = parsed.command;
-      command = {
-        action: cmd.action,
-        params: {}
-      };
-      if (cmd.action === 'reschedule') {
-        if (cmd.itemId) command.params.itemId = cmd.itemId;
-        if (cmd.date) command.params.date = cmd.date;
-      } else if (cmd.action === 'update_status') {
-        if (cmd.itemId) command.params.itemId = cmd.itemId;
-        if (cmd.status) command.params.status = cmd.status;
-      } else if (cmd.action === 'create') {
-        if (cmd.title) command.params.title = cmd.title;
-        if (cmd.date) command.params.date = cmd.date;
-        if (cmd.channel) command.params.channel = cmd.channel;
-        if (cmd.copy) command.params.copy = cmd.copy;
-      } else if (cmd.action === 'delete') {
-        if (cmd.itemId) command.params.itemId = cmd.itemId;
-      } else if (cmd.action === 'run_trends') {
-        if (cmd.keywords) command.params.keywords = cmd.keywords;
-      } else if (cmd.action === 'reply_comment') {
-        if (cmd.commentId) command.params.commentId = cmd.commentId;
-        if (cmd.replyText) command.params.replyText = cmd.replyText;
-        if (cmd.platform) command.params.platform = cmd.platform;
-      } else if (cmd.action === 'update_brand_profile') {
-        command.params.updates = {};
-        if (cmd.updates_brand_voice) command.params.updates.brand_voice = cmd.updates_brand_voice;
-        if (cmd.updates_target_audience) command.params.updates.target_audience = cmd.updates_target_audience;
-        if (cmd.updates_business_description) command.params.updates.business_description = cmd.updates_business_description;
-        if (cmd.updates_reference_style) command.params.updates.reference_style = cmd.updates_reference_style;
-        if (cmd.updates_brand_values) command.params.updates.brand_values = cmd.updates_brand_values;
-        if (cmd.updates_competitors) command.params.updates.competitors = cmd.updates_competitors;
+    const commands = [];
+    if (parsed.hasCommands && Array.isArray(parsed.commands)) {
+      for (const cmd of parsed.commands) {
+        if (cmd && cmd.action && cmd.action !== 'none') {
+          const commandObj = {
+            action: cmd.action,
+            params: {}
+          };
+          if (cmd.action === 'reschedule') {
+            if (cmd.itemId) commandObj.params.itemId = cmd.itemId;
+            if (cmd.date) commandObj.params.date = cmd.date;
+          } else if (cmd.action === 'update_status') {
+            if (cmd.itemId) commandObj.params.itemId = cmd.itemId;
+            if (cmd.status) commandObj.params.status = cmd.status;
+          } else if (cmd.action === 'create') {
+            if (cmd.title) commandObj.params.title = cmd.title;
+            if (cmd.date) commandObj.params.date = cmd.date;
+            if (cmd.channel) commandObj.params.channel = cmd.channel;
+            if (cmd.copy) commandObj.params.copy = cmd.copy;
+          } else if (cmd.action === 'delete') {
+            if (cmd.itemId) commandObj.params.itemId = cmd.itemId;
+          } else if (cmd.action === 'run_trends') {
+            if (cmd.keywords) commandObj.params.keywords = cmd.keywords;
+          } else if (cmd.action === 'reply_comment') {
+            if (cmd.commentId) commandObj.params.commentId = cmd.commentId;
+            if (cmd.replyText) commandObj.params.replyText = cmd.replyText;
+            if (cmd.platform) commandObj.params.platform = cmd.platform;
+          } else if (cmd.action === 'update_brand_profile') {
+            commandObj.params.updates = {};
+            if (cmd.updates_brand_voice) commandObj.params.updates.brand_voice = cmd.updates_brand_voice;
+            if (cmd.updates_target_audience) commandObj.params.updates.target_audience = cmd.updates_target_audience;
+            if (cmd.updates_business_description) commandObj.params.updates.business_description = cmd.updates_business_description;
+            if (cmd.updates_reference_style) commandObj.params.updates.reference_style = cmd.updates_reference_style;
+            if (cmd.updates_brand_values) commandObj.params.updates.brand_values = cmd.updates_brand_values;
+            if (cmd.updates_competitors) commandObj.params.updates.competitors = cmd.updates_competitors;
+          }
+          commands.push(commandObj);
+        }
       }
     }
     return {
       response: parsed.response || 'No he podido generar una respuesta conversacional.',
-      command
+      commands
     };
+
   } catch (e) {
     console.error('Error al parsear respuesta estructurada de Aura:', responseContent, e);
     return {

@@ -82,20 +82,31 @@ export const AuthPage = () => {
   const checkEmail = async (email) => {
     setIsCheckingEmail(true);
     try {
-      const apiBaseUrl = getApiUrl();
-      const response = await fetch(`${apiBaseUrl}/users/check-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      // Intentar primero usando el RPC de Supabase (más resiliente y rápido)
+      const { data, error } = await supabase.rpc('check_user_and_invitation', { check_email: email });
+      if (error) throw error;
+      return data || { exists: false, hasAgency: false, invitation: null };
+    } catch (rpcErr) {
+      console.warn('[checkEmail] Supabase RPC falló, intentando API de Express:', rpcErr.message);
+      try {
+        const apiBaseUrl = getApiUrl();
+        const response = await fetch(`${apiBaseUrl}/users/check-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al verificar el email');
+        if (!response.ok) {
+          throw new Error(result.message || 'Error al verificar el email');
+        }
+
+        return result?.data || { exists: false, hasAgency: false, invitation: null };
+      } catch (apiErr) {
+        console.error('[checkEmail] Ambos métodos de verificación fallaron:', apiErr.message);
+        throw new Error('No se pudo verificar el email de ninguna forma.');
       }
-
-      return result?.data || { exists: false, hasAgency: false, invitation: null };
     } finally {
       setIsCheckingEmail(false);
     }
@@ -161,34 +172,114 @@ export const AuthPage = () => {
         throw new Error('El email es obligatorio.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let registeredSuccessfully = false;
+
+      // 1. Intentar el registro mediante backend Express
+      try {
+        const response = await fetch(`${apiBaseUrl}/users/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: finalEmail,
+            password: data.password,
+            fullName: data.fullName,
+            agencyName: pendingInvitation ? pendingInvitation.agencyName : data.agencyName,
+            inviteCode,
+            agencyType: pendingInvitation ? 'agency' : agencyType,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          localStorage.removeItem('pending_invite_code');
+          await supabase.auth.signInWithPassword({
+            email: finalEmail,
+            password: data.password,
+          });
+          registeredSuccessfully = true;
+        } else {
+          // Si el servidor devolvió un error específico (ej: correo ya registrado), lo lanzamos sin hacer fallback
+          if (response.status === 400 || response.status === 409) {
+            throw new Error(result.message || 'Error al crear la cuenta');
+          }
+          throw new Error('Servidor inalcanzable');
+        }
+      } catch (fetchErr) {
+        // Si fue error de validación o duplicado real, lanzarlo
+        if (fetchErr.message && fetchErr.message !== 'Servidor inalcanzable' && !fetchErr.message.includes('Failed to fetch')) {
+          throw fetchErr;
+        }
+
+        console.warn('[handleRegister] Backend no disponible, usando registro directo con Supabase...');
+
+        // 2. Fallback: Registro directo en Supabase Auth
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: finalEmail,
           password: data.password,
-          fullName: data.fullName,
-          agencyName: pendingInvitation ? pendingInvitation.agencyName : data.agencyName,
-          inviteCode,
-          agencyType: pendingInvitation ? 'agency' : agencyType,
-        }),
-      });
+        });
+        if (signUpError) throw signUpError;
+        if (!signUpData.user) throw new Error('No se pudo registrar el usuario en el proveedor de identidad.');
 
-      const result = await response.json();
+        // Iniciar sesión para obtener tokens
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: finalEmail,
+          password: data.password,
+        });
+        if (signInError) throw signInError;
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al crear la cuenta');
+        const userId = signUpData.user.id;
+        let createdAgencyId = null;
+
+        if (pendingInvitation) {
+          // Unirse mediante invitación por email
+          const { data: inviteRes, error: rpcError } = await supabase.rpc('accept_agency_invitation', {
+            user_full_name: data.fullName
+          });
+          if (rpcError) throw rpcError;
+          createdAgencyId = inviteRes?.agencyId;
+        } else if (inviteCode) {
+          // Unirse mediante enlace de invitación
+          const { data: inviteRes, error: rpcError } = await supabase.rpc('accept_agency_invite_link', {
+            invite_code: inviteCode,
+            user_full_name: data.fullName
+          });
+          if (rpcError) throw rpcError;
+          createdAgencyId = inviteRes?.agencyId;
+        } else {
+          // Crear nueva organización y perfil de administrador
+          const { data: newAgencyId, error: rpcError } = await supabase.rpc('create_new_agency_and_admin', {
+            user_id: userId,
+            agency_name: data.agencyName,
+            user_full_name: data.fullName,
+            agency_type: agencyType
+          });
+          if (rpcError) throw rpcError;
+          createdAgencyId = newAgencyId;
+
+          // Auto-crear cliente para negocio propio
+          if (agencyType === 'own_business' && createdAgencyId) {
+            try {
+              await supabase.from('clients').insert({
+                agency_id: createdAgencyId,
+                name: data.agencyName,
+                industry: 'Mi Negocio',
+                brand_info: { card_color: '#7C5CFC' },
+              });
+            } catch (clientErr) {
+              console.warn('[handleRegister] Auto-creación de marca falló en fallback:', clientErr.message);
+            }
+          }
+        }
+
+        localStorage.removeItem('pending_invite_code');
+        registeredSuccessfully = true;
       }
 
-      localStorage.removeItem('pending_invite_code');
-
-      await supabase.auth.signInWithPassword({
-        email: finalEmail,
-        password: data.password,
-      });
-
-      reset();
-      toast.success('¡Cuenta creada exitosamente!', { icon: '✨' });
+      if (registeredSuccessfully) {
+        reset();
+        toast.success('¡Cuenta creada exitosamente!', { icon: '✨' });
+      }
     } catch (err) {
       setError('root', { type: 'manual', message: err.message });
       toast.error(err.message || 'Error al crear la cuenta');
