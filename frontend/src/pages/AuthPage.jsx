@@ -819,6 +819,10 @@ export const AuthPage = () => {
                       {errors.password && <p className={errorClass}>{errors.password.message}</p>}
                     </div>
 
+                    <div className="text-[10px] text-white/40 text-center font-medium pl-1">
+                      ¿Te registraste con Google? Haz clic en <span className="font-bold text-[#A088FF] hover:underline cursor-pointer" onClick={handleGoogleLogin}>Continuar con Google</span> más abajo.
+                    </div>
+
                     <button type="submit" disabled={isSubmitting} className={primaryBtn}>
                       {isSubmitting ? 'Verificando acceso...' : 'Iniciar Sesión'}
                     </button>
