@@ -167,32 +167,36 @@
 }
 
 .fc .fc-daygrid-day-number {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-  font-size: 10px !important;
-  background: rgba(20, 18, 22, 0.7) !important; /* Fondo ultra oscuro traslúcido */
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 5px !important;
-  padding: 2px 6px !important;
-  min-width: 18px;
-  text-align: center;
+  color: var(--color-text-primary, #111827) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  min-width: auto !important;
+  text-align: right !important;
   line-height: 1 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: none !important;
   display: inline-block !important;
+  opacity: 0.8 !important;
 }
 
 .fc .fc-day-today .fc-daygrid-day-number {
-  color: #ffffff !important;
+  color: var(--color-accent-sage, #7C5CFC) !important; /* Usar color del tema */
   font-weight: 800 !important;
-  background: var(--color-accent-sage, #8fa89b) !important; /* Color destacado del día de hoy */
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
 }
 
 .fc .fc-day-other .fc-daygrid-day-number {
-  opacity: 0.45 !important;
-  background: rgba(20, 18, 22, 0.45) !important;
+  opacity: 0.3 !important;
+  color: var(--color-text-muted, #9ca3af) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Events (Agrandados a pedido del usuario) */
@@ -449,10 +453,10 @@
 
 .fc-theme-standard td,
 .fc-theme-standard th {
-  border-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--fc-border) !important;
 }
 
 .fc .fc-scrollgrid {
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--fc-border) !important;
   border-radius: 12px !important;
 }

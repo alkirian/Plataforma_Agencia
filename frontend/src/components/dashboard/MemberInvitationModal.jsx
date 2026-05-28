@@ -71,8 +71,8 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
               leaveFrom='opacity-100 scale-100 y-0'
               leaveTo='opacity-0 scale-95 y-4'
             >
-              <Dialog.Panel className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface-strong)] p-6 shadow-2xl transition-all'>
-                <Dialog.Title className='text-xl font-bold text-white mb-2 flex items-center gap-2.5'>
+              <Dialog.Panel className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] p-6 shadow-2xl transition-all'>
+                <Dialog.Title className='text-xl font-bold text-[color:var(--color-text-primary)] mb-2 flex items-center gap-2.5'>
                   <UserPlusIcon className='h-6 w-6 text-[color:var(--color-accent-blue)]' />
                   <span>Invitar Nuevo Miembro</span>
                 </Dialog.Title>
@@ -117,7 +117,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                         className={`px-4 py-3 text-xs font-bold rounded-xl border transition-all duration-200 flex flex-col items-center gap-1 ${
                           inviteRole === 'member'
                             ? 'bg-[color:var(--color-accent-blue)]/10 border-[color:var(--color-accent-blue)] text-[color:var(--color-accent-blue)] shadow-md'
-                            : 'bg-[#222024] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-gray-500 hover:text-white'
+                            : 'bg-[color:var(--color-surface-soft)] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
                         }`}
                         disabled={sendingInvite}
                       >
@@ -130,7 +130,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                         className={`px-4 py-3 text-xs font-bold rounded-xl border transition-all duration-200 flex flex-col items-center gap-1 ${
                           inviteRole === 'admin'
                             ? 'bg-[color:var(--color-accent-rose)]/10 border-[color:var(--color-accent-rose)] text-[color:var(--color-accent-rose)] shadow-md'
-                            : 'bg-[#222024] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-gray-500 hover:text-white'
+                            : 'bg-[color:var(--color-surface-soft)] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
                         }`}
                         disabled={sendingInvite}
                       >
@@ -144,7 +144,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                     <button
                       type='button'
                       onClick={onClose}
-                      className='btn-cyber border border-transparent text-[color:var(--color-text-muted)] hover:text-white hover:bg-[color:var(--color-surface)]'
+                      className='btn-cyber border border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)]'
                       disabled={sendingInvite}
                     >
                       Cancelar
@@ -152,11 +152,11 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                     <button
                       type='submit'
                       disabled={sendingInvite}
-                      className='btn-cyber btn-tone btn-tone--blue min-w-[140px] flex items-center justify-center gap-1.5 font-bold'
+                      className='px-6 py-2.5 rounded-xl text-sm font-extrabold transition-all duration-200 bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow-[0_4px_14px_rgba(14,165,233,0.3)] active:scale-[0.98] min-w-[140px] flex items-center justify-center gap-1.5 cursor-pointer'
                     >
                       {sendingInvite ? (
                         <>
-                          <span className='h-4 w-4 animate-spin rounded-full border-2 border-[#161517] border-t-transparent' />
+                          <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                           <span>Invitando…</span>
                         </>
                       ) : (

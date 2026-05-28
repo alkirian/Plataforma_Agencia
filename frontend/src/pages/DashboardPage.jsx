@@ -469,7 +469,7 @@ export const DashboardPage = () => {
           <button
             id='add-client-button'
             onClick={() => setIsModalOpen(true)}
-            className='px-6 py-3 rounded-xl text-sm font-extrabold transition-all duration-200 shadow-[0_0_20px_rgba(124,92,252,0.15)] hover:shadow-[0_0_30px_rgba(124,92,252,0.3)] bg-[#EEEEFF] text-[#07070E] hover:opacity-90 active:scale-[0.98]'
+            className='px-6 py-3 rounded-xl text-sm font-extrabold transition-all duration-200 bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow-[0_4px_14px_rgba(14,165,233,0.3)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.4)] active:scale-[0.98]'
             aria-label='Abrir modal para añadir nuevo cliente'
           >
             + Añadir Cliente
@@ -478,7 +478,7 @@ export const DashboardPage = () => {
           <button
             id='add-member-button'
             onClick={() => setIsMemberModalOpen(true)}
-            className='px-6 py-3 rounded-xl border border-border-subtle bg-[#121220] hover:bg-[#18182A] text-text-primary text-sm font-extrabold transition-all duration-200 active:scale-[0.98]'
+            className='px-6 py-3 rounded-xl text-sm font-extrabold transition-all duration-200 bg-[#38bdf8] hover:bg-[#0ea5e9] text-white shadow-[0_4px_14px_rgba(56,189,248,0.2)] hover:shadow-[0_6px_20px_rgba(56,189,248,0.3)] active:scale-[0.98]'
             aria-label='Abrir modal para invitar nuevo miembro'
           >
             + Invitar Colaborador

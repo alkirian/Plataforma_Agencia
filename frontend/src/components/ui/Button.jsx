@@ -16,20 +16,20 @@ export const Button = ({
 }) => {
   const variants = {
     primary: cyber
-      ? 'btn-cyber bg-gradient-to-r from-[var(--color-accent-blue)]/20 to-[var(--color-accent-violet)]/20 text-text-primary border-[color:var(--color-border-subtle)]'
-      : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/25',
+      ? 'btn-cyber bg-[#0ea5e9] text-white border-transparent hover:bg-[#0284c7] shadow-[0_4px_14px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.35)]'
+      : 'bg-[#0ea5e9] text-white hover:bg-[#0284c7] shadow-lg shadow-sky-500/25',
     secondary: cyber
-      ? 'btn-cyber bg-surface-soft text-text-primary border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-strong)]'
-      : 'bg-surface-800 text-surface-100 hover:bg-surface-700 border border-surface-700',
+      ? 'btn-cyber bg-[#38bdf8] text-white border-transparent hover:bg-[#0ea5e9] shadow-[0_4px_14px_rgba(56,189,248,0.15)] hover:shadow-[0_6px_20px_rgba(56,189,248,0.25)]'
+      : 'bg-[#38bdf8] text-white hover:bg-[#0ea5e9] border border-transparent shadow-md',
     ghost: cyber
-      ? 'bg-transparent text-text-muted hover:text-text-primary hover:bg-[rgba(96,165,250,0.05)] border border-transparent hover:border-[color:var(--color-border-subtle)]'
+      ? 'bg-transparent text-text-muted hover:text-text-primary hover:bg-[rgba(14,165,233,0.08)] border border-transparent hover:border-[color:var(--color-border-subtle)]'
       : 'bg-transparent text-surface-300 hover:bg-surface-800/50 hover:text-surface-100',
     danger: cyber
       ? 'btn-cyber bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-100 border-red-500/40'
       : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
     success: cyber
-      ? 'btn-cyber bg-gradient-to-r from-success/20 to-success/30 text-green-100 border-success/40'
-      : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
+      ? 'btn-cyber bg-gradient-to-r from-[#0ea5e9]/20 to-[#0284c7]/20 text-[#0ea5e9] hover:bg-[#0ea5e9]/30 border-[#0ea5e9]/40'
+      : 'bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:from-sky-600 hover:to-sky-700',
   };
 
   const sizes = {

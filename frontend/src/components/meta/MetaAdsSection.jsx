@@ -432,26 +432,16 @@ export const MetaAdsSection = ({ clientId }) => {
 
   return (
     <div className='p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full'>
-      {/* 1. HEADER DEL DASHBOARD */}
-      <div className='bg-app-sidebar border border-border-subtle p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden backdrop-blur-xl'>
-        <div className='flex items-center gap-4'>
-          <div className='p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/25 flex-shrink-0'>
+      {/* 1. HEADER DEL DASHBOARD (Compacto y Simplificado) */}
+      <div className='bg-app-sidebar border border-border-subtle p-3 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 relative overflow-hidden backdrop-blur-xl'>
+        <div className='flex items-center gap-3'>
+          <div className='p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/25 flex-shrink-0'>
             <InteractiveAvatar variant='meta' size='sm' />
           </div>
           <div>
-            <h3 className='text-lg font-black text-text-primary font-title'>
+            <h3 className='text-sm font-extrabold text-text-primary font-title'>
               Cuenta de Meta Conectada
             </h3>
-            <div className='flex items-center gap-3 mt-1 text-[11px] text-text-muted'>
-              <span className='font-mono bg-surface border border-border-subtle px-2 py-0.5 rounded-md text-text-secondary font-bold'>
-                {integration.meta_ad_account_id}
-              </span>
-              <span>•</span>
-              <span className='flex items-center gap-1'>
-                <span className='w-1.5 h-1.5 rounded-full bg-emerald-500' />
-                Sincronizado {insights?.isMock ? '(Modo Sandbox)' : '(Tiempo Real)'}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -823,13 +813,6 @@ export const MetaAdsSection = ({ clientId }) => {
             </div>
           </div>
 
-          <div className='mt-4 pt-4 border-t border-border-subtle text-[9px] text-text-muted leading-relaxed flex gap-2'>
-            <InformationCircleIcon className='h-4.5 w-4.5 text-purple-400 flex-shrink-0' />
-            <span>
-              Esta distribución representa cómo el cliente distribuye su presupuesto entre capturar
-              clientes, cerrar compras en catálogo, conseguir visitas, o lograr impacto visual.
-            </span>
-          </div>
         </div>
       </div>
 

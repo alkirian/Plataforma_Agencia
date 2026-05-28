@@ -458,14 +458,6 @@ export const ClientDetailPage = () => {
               {activeTab === 'schedule' ? (
                 <div className='flex items-center gap-2'>
                   <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('cadence:new-event'))}
-                    className='flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-text-primary text-app-sidebar hover:bg-white text-[11px] font-bold transition-all duration-200 shadow-sm'
-                  >
-                    <PlusIcon className='h-3.5 w-3.5' />
-                    <span>Nuevo Evento</span>
-                  </button>
-
-                  <button
                     onClick={() =>
                       window.dispatchEvent(
                         new CustomEvent('cadence:calendar-action', { detail: { action: 'ai-gen' } })

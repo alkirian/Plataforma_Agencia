@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabaseClient.js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
+const geminiApiKey = process.env.GEMINI_API_KEY;
 
 const createAuthenticatedClient = (token) => {
   if (!token) throw new Error('Token requerido');
@@ -122,15 +123,78 @@ const chatResponseSchema = {
 };
 
 
-const callLLM = async ({ systemPrompt, userPrompt, responseSchema }) => {
+const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, model = 'gpt-4o-mini', temperature = 0.65, maxTokens = 4500 }) => {
+  // --- GOOGLE GEMINI INTEGRATION ---
+  if (model.startsWith('gemini-')) {
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY no está configurada.');
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+
+    let systemInstructionText = systemPrompt;
+    const contents = [];
+
+    const messagesToProcess = messages || [
+      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      ...(userPrompt ? [{ role: 'user', content: userPrompt }] : [])
+    ];
+
+    for (const msg of messagesToProcess) {
+      if (msg.role === 'system') {
+        systemInstructionText = msg.content;
+      } else {
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
+
+    const requestBody = {
+      contents,
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens
+      }
+    };
+
+    if (systemInstructionText) {
+      requestBody.systemInstruction = {
+        parts: [{ text: systemInstructionText }]
+      };
+    }
+
+    if (responseSchema) {
+      requestBody.generationConfig.responseMimeType = 'application/json';
+      requestBody.generationConfig.responseSchema = responseSchema;
+    }
+
+    const resp = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!resp.ok) {
+      const details = await resp.json().catch(() => ({}));
+      throw new Error(details?.error?.message || `Error al llamar a Gemini (${resp.status})`);
+    }
+
+    const json = await resp.json();
+    const responseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return responseText;
+  }
+
+  // --- OPENAI INTEGRATION ---
   const bodyPayload = {
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
+    model,
+    messages: messages || [
+      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      ...(userPrompt ? [{ role: 'user', content: userPrompt }] : [])
     ],
-    temperature: 0.65,
-    max_tokens: 4500,
+    temperature,
+    max_tokens: maxTokens,
   };
 
   if (responseSchema) {
@@ -392,7 +456,7 @@ Reglas obligatorias:
 /**
  * Maneja conversaciones de chat con el cliente usando RAG
  */
-export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token, agentId }) => {
+export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token, agentId, model }) => {
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: client, error: clientErr } = await supabaseAuth
@@ -590,28 +654,13 @@ REGLAS DE COMANDO:
     { role: 'user', content: userPrompt }
   ];
 
-  const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiApiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages,
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'chat_response',
-          strict: true,
-          schema: chatResponseSchema
-        }
-      },
-      temperature: 0.7,
-      max_tokens: 1200,
-    }),
+  const responseContent = await callLLM({
+    messages,
+    responseSchema: chatResponseSchema,
+    model: model || 'gpt-4o-mini',
+    temperature: 0.7,
+    maxTokens: 1200
   });
-
-  if (!resp.ok) throw new Error('Error al generar respuesta del chat');
-  const json = await resp.json();
-  const responseContent = json.choices?.[0]?.message?.content || '{}';
 
   try {
     const parsed = JSON.parse(responseContent);

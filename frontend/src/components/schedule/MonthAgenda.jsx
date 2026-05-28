@@ -78,19 +78,19 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
     >
       <div className='p-3 space-y-4'>
         {/* Cabecera de la Agenda */}
-        <div className='pb-2 flex items-center justify-between border-b border-white/5'>
-          <h3 className='text-sm font-bold text-white tracking-tight flex items-center gap-2'>
+        <div className='pb-2 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5'>
+          <h3 className='text-sm font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-2'>
             <span className='w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse'></span>
             <span>Agenda del Mes</span>
           </h3>
-          <span className='text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/5 text-gray-400'>
+          <span className='text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-200/50 dark:bg-white/5 text-slate-600 dark:text-gray-400'>
             {monthEventsTotal} tareas
           </span>
         </div>
 
         {/* Buscador y Barra de Filtros (Solo visibles si hay eventos en el mes) */}
         {monthEventsTotal > 0 && (
-          <div className='space-y-2 bg-[#1e1c20]/20 p-2.5 rounded-xl border border-white/5'>
+          <div className='space-y-2 bg-slate-100/70 dark:bg-[#1e1c20]/20 p-2.5 rounded-xl border border-slate-200/60 dark:border-white/5'>
             {/* Input de Búsqueda */}
             <div className='relative'>
               <input
@@ -98,10 +98,10 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder='Buscar publicación...'
-                className='w-full rounded-lg border border-white/10 bg-black/40 pl-8 pr-7 py-1.5 text-xs text-white placeholder-gray-500 focus:border-rose-500/40 focus:outline-none transition-all'
+                className='w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-black/40 pl-8 pr-7 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:border-rose-500/40 focus:outline-none transition-all shadow-xs'
               />
               <svg
-                className='absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-500'
+                className='absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400 dark:text-gray-500'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -117,7 +117,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                 <button
                   type='button'
                   onClick={() => setSearchQuery('')}
-                  className='absolute right-2 top-1.5 text-gray-500 hover:text-white p-0.5 text-xs font-bold'
+                  className='absolute right-2 top-1.5 text-slate-400 dark:text-gray-500 hover:text-slate-800 dark:hover:text-white p-0.5 text-xs font-bold'
                 >
                   ✕
                 </button>
@@ -138,8 +138,8 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                   onClick={() => setStatusFilter(filter.id)}
                   className={`rounded-md px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-wider transition-all duration-200 flex-shrink-0 ${
                     statusFilter === filter.id
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      : 'bg-black/35 hover:bg-white/5 text-gray-400 border border-transparent hover:text-white'
+                      ? 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-500/25'
+                      : 'bg-white/60 dark:bg-black/35 hover:bg-slate-200/50 dark:hover:bg-white/5 text-slate-500 dark:text-gray-400 border border-slate-200/50 dark:border-transparent hover:text-slate-800 dark:hover:text-white'
                   }`}
                 >
                   {filter.label}
@@ -157,8 +157,8 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
           </div>
         ) : monthEventsTotal === 0 ? (
           /* Empty State Proactivo con Lanzador de IA */
-          <div className='p-5 text-center rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent border border-dashed border-white/10 space-y-4 my-2 backdrop-blur-sm'>
-            <div className='w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto text-amber-400 animate-pulse'>
+          <div className='p-5 text-center rounded-2xl bg-gradient-to-b from-slate-50 dark:from-white/[0.03] to-transparent border border-dashed border-slate-200 dark:border-white/10 space-y-4 my-2 backdrop-blur-xs'>
+            <div className='w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto text-amber-500 dark:text-amber-400 animate-pulse'>
               <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
@@ -169,8 +169,8 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
               </svg>
             </div>
             <div className='space-y-1.5'>
-              <p className='text-xs font-bold text-white tracking-wide'>¿Lienzo en blanco?</p>
-              <p className='text-[10px] text-gray-400 leading-relaxed max-w-[170px] mx-auto'>
+              <p className='text-xs font-bold text-slate-800 dark:text-white tracking-wide'>¿Lienzo en blanco?</p>
+              <p className='text-[10px] text-slate-500 dark:text-gray-400 leading-relaxed max-w-[170px] mx-auto'>
                 Deja que Ares diseñe una propuesta estratégica de contenidos para todo el mes con un clic.
               </p>
             </div>
@@ -188,7 +188,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
           </div>
         ) : grouped.length === 0 ? (
           /* Sin resultados por el filtro */
-          <div className='text-xs text-gray-500 py-8 text-center bg-white/[0.01] rounded-xl border border-dashed border-white/5 space-y-2.5'>
+          <div className='text-xs text-slate-500 dark:text-gray-500 py-8 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-xl border border-dashed border-slate-200 dark:border-white/5 space-y-2.5'>
             <p>No se encontraron resultados.</p>
             <button
               type='button'
@@ -196,7 +196,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                 setSearchQuery('');
                 setStatusFilter('all');
               }}
-              className='text-[9px] font-bold text-rose-400 uppercase tracking-widest hover:underline'
+              className='text-[9px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest hover:underline'
             >
               Limpiar Filtros
             </button>
@@ -206,7 +206,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
           <div className='space-y-4 pr-1 max-h-[calc(100dvh-15.5rem)] overflow-y-auto custom-scrollbar'>
             {grouped.map(group => (
               <div key={group.date.toISOString()} className='space-y-2'>
-                <div className='text-[9px] font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono'>
+                <div className='text-[9px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest pl-1 font-mono'>
                   {formatDayHeader(group.date)}
                 </div>
                 <ul className='space-y-2'>
@@ -221,7 +221,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                     // Estilo de tarjeta normal o destacado con bordes rosa si tiene ajustes del cliente
                     const cardStyles = hasFeedback
                       ? 'border-[#fe0979]/30 bg-[#fe0979]/5 hover:bg-[#fe0979]/10 shadow-[0_2px_12px_rgba(254,9,121,0.08)] hover:border-[#fe0979]/50'
-                      : 'border-white/5 bg-[#1e1c20]/30 hover:bg-[#1e1c20]/65 hover:border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.15)]';
+                      : 'border-slate-200/50 dark:border-white/5 bg-white/70 dark:bg-[#1e1c20]/30 hover:bg-white dark:hover:bg-[#1e1c20]/65 hover:border-slate-350 dark:hover:border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.15)]';
 
                     return (
                       <li key={e.id}>
@@ -241,18 +241,18 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                                 }}
                                 aria-hidden
                               />
-                              <span className='text-xs text-gray-200 font-bold group-hover:text-white transition-colors line-clamp-2 leading-snug'>
+                              <span className='text-xs text-slate-700 dark:text-gray-200 font-bold group-hover:text-slate-900 group-hover:dark:text-white transition-colors line-clamp-2 leading-snug'>
                                 {e.title}
                               </span>
                             </div>
-                            <span className='text-[9px] text-gray-400 font-mono flex-shrink-0 bg-white/5 rounded-md px-1.5 py-0.5 leading-none mt-0.5'>
+                            <span className='text-[9px] text-slate-500 dark:text-gray-400 font-mono flex-shrink-0 bg-slate-100 dark:bg-white/5 rounded-md px-1.5 py-0.5 leading-none mt-0.5'>
                               {time}
                             </span>
                           </div>
 
-                          <div className='flex items-center justify-between gap-2 pl-3.5 border-t border-white/[0.03] pt-1.5 mt-0.5 w-full'>
+                          <div className='flex items-center justify-between gap-2 pl-3.5 border-t border-slate-100 dark:border-white/[0.03] pt-1.5 mt-0.5 w-full'>
                             <div className='flex items-center gap-1.5'>
-                              <span className='text-[8px] font-bold tracking-wider text-gray-400 uppercase font-mono'>
+                              <span className='text-[8px] font-bold tracking-wider text-slate-400 dark:text-gray-400 uppercase font-mono'>
                                 {status.replace('-', ' ')}
                               </span>
                               {hasFeedback && (
@@ -262,7 +262,7 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                               )}
                             </div>
                             {e.extendedProps?.originalData?.channel && (
-                              <span className='text-[8px] text-rose-300 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-md font-sans font-bold scale-90 uppercase tracking-widest'>
+                              <span className='text-[8px] text-rose-500 dark:text-rose-300 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10 dark:border-rose-500/20 px-1.5 py-0.5 rounded-md font-sans font-bold scale-90 uppercase tracking-widest'>
                                 {e.extendedProps.originalData.channel}
                               </span>
                             )}

@@ -35,9 +35,22 @@ const AGENT_BIOS = {
   }
 };
 
+const MODELS = [
+  { id: 'gpt-4o-mini', name: 'Aura Estándar', desc: 'GPT-4o Mini (rápida, económica)', color: '#7C5CFC', glow: 'rgba(124, 92, 252, 0.4)' },
+  { id: 'gpt-4o', name: 'Aura Premium', desc: 'GPT-4o (inteligencia superior, copia premium)', color: '#FF5A79', glow: 'rgba(255, 90, 121, 0.4)' },
+  { id: 'gemini-2.0-flash', name: 'Aura Creativa', desc: 'Gemini 2.0 Flash (veloz, muy creativa)', color: '#38BDF8', glow: 'rgba(56, 189, 248, 0.4)' },
+  { id: 'gemini-1.5-pro', name: 'Aura Avanzada', desc: 'Gemini 1.5 Pro (razonamiento profundo)', color: '#34D399', glow: 'rgba(52, 211, 153, 0.4)' }
+];
+
 export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
   const agentId = 'general'; // Forzar hilo unificado de Aura
   const bio = AGENT_BIOS.general;
+  
+  const [selectedModel, setSelectedModel] = useState(() => {
+    return localStorage.getItem(`cadence_aura_model_${clientId}`) || 'gpt-4o'; // Default a GPT-4o por calidad premium
+  });
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const activeModel = MODELS.find(m => m.id === selectedModel) || MODELS[0];
   
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -128,7 +141,8 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
       const response = await getChatResponse(clientId, {
         userPrompt: queryText.trim(),
         chatHistory: historyPayload,
-        agentId: agentId
+        agentId: agentId,
+        model: selectedModel
       });
 
       // Crear mensaje de respuesta del asistente
@@ -376,7 +390,13 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
                 className="w-11 h-11"
                 interactive={true} 
               />
-              <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-black animate-pulse" />
+              <span 
+                className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-black animate-pulse transition-all duration-300"
+                style={{ 
+                  backgroundColor: activeModel.color,
+                  boxShadow: `0 0 6px ${activeModel.glow}`
+                }}
+              />
             </div>
 
             <div>
@@ -392,12 +412,83 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Selector de Modelos con Orbe Brillante */}
+            <div className="relative">
+              <button
+                onClick={() => setShowModelDropdown(!showModelDropdown)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200 text-left cursor-pointer"
+              >
+                <span 
+                  className="w-2 h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    backgroundColor: activeModel.color,
+                    boxShadow: `0 0 8px ${activeModel.glow}`
+                  }}
+                />
+                <span className="text-[10px] font-bold text-white leading-none">
+                  {activeModel.name}
+                </span>
+                <svg className={`h-3 w-3 text-text-muted transition-transform duration-200 ${showModelDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {showModelDropdown && (
+                  <>
+                    {/* Backdrop para cerrar el dropdown al hacer click afuera */}
+                    <div className="fixed inset-0 z-10 cursor-default" onClick={() => setShowModelDropdown(false)} />
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-64 z-20 rounded-2xl bg-slate-950/95 border border-white/15 shadow-2xl p-2 backdrop-blur-xl flex flex-col gap-1"
+                    >
+                      <div className="px-3 py-1.5 border-b border-white/5 mb-1">
+                        <span className="text-[8px] font-mono font-bold text-text-secondary tracking-widest uppercase">
+                          CEREBRO DE AURA
+                        </span>
+                      </div>
+                      {MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            setSelectedModel(m.id);
+                            localStorage.setItem(`cadence_aura_model_${clientId}`, m.id);
+                            setShowModelDropdown(false);
+                            toast.success(`Cerebro de Aura: ${m.name}`);
+                          }}
+                          className={`w-full text-left p-2 rounded-xl transition-all duration-200 flex items-start gap-2.5 cursor-pointer hover:bg-white/5 ${
+                            selectedModel === m.id ? 'bg-white/5 border border-white/10' : 'border border-transparent'
+                          }`}
+                        >
+                          <span 
+                            className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0"
+                            style={{ 
+                              backgroundColor: m.color,
+                              boxShadow: `0 0 8px ${m.glow}`
+                            }}
+                          />
+                          <div className="leading-tight">
+                            <p className="text-[11px] font-bold text-white">{m.name}</p>
+                            <p className="text-[9px] text-text-secondary mt-0.5">{m.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Botón Silenciar */}
             <button 
               onClick={handleMuteToggle}
               title={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
-              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-all duration-200"
+              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-all duration-200 cursor-pointer"
             >
               {isMuted ? <SpeakerXMarkIcon className="h-4 w-4 text-red-400/80" /> : <SpeakerWaveIcon className="h-4 w-4" />}
             </button>
@@ -405,7 +496,7 @@ export const AgentChatPanel = ({ clientId, agent, onClose, client }) => {
             {/* Botón Cerrar */}
             <button 
               onClick={onClose}
-              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-all duration-200"
+              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-all duration-200 cursor-pointer"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>

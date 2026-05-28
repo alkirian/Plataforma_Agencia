@@ -1128,7 +1128,7 @@ export const ScheduleSection = ({ clientId }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className='xl:w-64 xl:flex-shrink-0 max-h-[calc(100dvh-6.25rem)] xl:max-h-[calc(100dvh-6.5rem)] xl:overflow-y-auto bg-[#1e1c20]/15 border border-white/5 rounded-2xl custom-scrollbar'
+          className='xl:w-64 xl:flex-shrink-0 max-h-[calc(100dvh-6.25rem)] xl:max-h-[calc(100dvh-6.5rem)] xl:overflow-y-auto bg-slate-100/70 dark:bg-[#1e1c20]/15 border border-slate-200/50 dark:border-white/5 rounded-2xl custom-scrollbar'
         >
           <MonthAgenda
             events={events}

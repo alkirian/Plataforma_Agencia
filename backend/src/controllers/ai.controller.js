@@ -34,7 +34,7 @@ export const handleChat = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const { clientId } = req.params;
-    const { userPrompt, chatHistory, agentId } = req.body;
+    const { userPrompt, chatHistory, agentId, model } = req.body;
 
     if (!clientId) {
       console.error('❌ clientId faltante');
@@ -53,7 +53,8 @@ export const handleChat = async (req, res, next) => {
       clientId,
       userId: req.user.id,
       userPromptLength: userPrompt.trim().length,
-      agentId
+      agentId,
+      model
     });
 
     // Guardar mensaje del usuario con metadatos del agente
@@ -66,7 +67,7 @@ export const handleChat = async (req, res, next) => {
         clientId,
         role: 'user',
         content: userPrompt.trim(),
-        metadata: { chatHistory, agentId }
+        metadata: { chatHistory, agentId, model }
       });
       userMessageId = userMessage.id;
       console.log('✅ Mensaje de usuario guardado:', userMessage);
@@ -75,8 +76,8 @@ export const handleChat = async (req, res, next) => {
     }
 
     // Generar respuesta con AI inyectando expertise
-    console.log('🤖 Generando respuesta AI con agentId:', agentId);
-    const response = await handleChatConversation({ clientId, userPrompt, chatHistory, token, agentId });
+    console.log('🤖 Generando respuesta AI con agentId:', agentId, 'y modelo:', model);
+    const response = await handleChatConversation({ clientId, userPrompt, chatHistory, token, agentId, model });
     console.log('✅ Respuesta AI generada:', {
       hasResponse: !!response?.response,
       responseLength: response?.response?.length,
@@ -101,6 +102,7 @@ export const handleChat = async (req, res, next) => {
           chatHistory,
           relatedToMessageId: userMessageId,
           agentId,
+          model,
           commands: pendingCommands,
           command: firstPendingCommand // Compatibilidad hacia atrás
         }
@@ -118,14 +120,16 @@ export const handleChat = async (req, res, next) => {
         messageId: userMessageId,
         suggestions: response?.suggestions,
         commands: pendingCommands,
-        command: firstPendingCommand // Compatibilidad hacia atrás
+        command: firstPendingCommand, // Compatibilidad hacia atrás
+        model
       }
     };
 
     console.log('📤 Enviando respuesta al cliente:', {
       hasResponse: !!responseData.data.response,
       hasMessageId: !!responseData.data.messageId,
-      hasCommands: !!responseData.data.commands?.length
+      hasCommands: !!responseData.data.commands?.length,
+      modelUsed: responseData.data.model
     });
 
     res.json(responseData);
