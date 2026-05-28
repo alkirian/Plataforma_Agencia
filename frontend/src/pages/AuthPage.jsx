@@ -682,13 +682,15 @@ export const AuthPage = () => {
               {flowState === 'enterEmail' && '¡Hola! 👋'}
               {flowState === 'login' && (userHasAgency ? 'Ingresa a tu Agencia 🏢' : 'Ingresa a Cadence ⚡')}
               {flowState === 'register_choice' && '¿Cómo usarás Cadence?'}
-              {flowState === 'register' && 'Crea tu cuenta premium'}
+              {flowState === 'register' && (pendingInvitation ? '¡Te han invitado! 🎉' : 'Crea tu cuenta premium')}
             </h2>
             <p className="text-xs text-white/40 font-medium leading-relaxed max-w-[320px] lg:max-w-none">
               {flowState === 'enterEmail' && 'Ingresa tu correo para dominar tus campañas y automatizar tu ecosistema de marca.'}
               {flowState === 'login' && (userHasAgency ? 'Ingresa tu contraseña para acceder directamente a tu panel de control.' : 'Coloca tu contraseña para ingresar a tu cuenta.')}
               {flowState === 'register_choice' && 'Elige la estructura que mejor se adapte a tu flujo diario de trabajo.'}
-              {flowState === 'register' && (agencyType === 'agency' ? 'Completa los datos para inicializar tu Agencia.' : 'Completa los datos de tu Negocio o Marca.')}
+              {flowState === 'register' && (pendingInvitation 
+                ? `Estás a un paso de unirte a ${pendingInvitation.agencyName}. Completa tus datos para ingresar.` 
+                : (agencyType === 'agency' ? 'Completa los datos para inicializar tu Agencia.' : 'Completa los datos de tu Negocio o Marca.'))}
             </p>
           </div>
 
@@ -1120,13 +1122,45 @@ export const AuthPage = () => {
                     </div>
 
                     <button type="submit" disabled={isSubmitting} className={primaryBtn}>
-                      {isSubmitting ? 'Registrando...' : 'Crear Cuenta'}
+                      {isSubmitting ? (pendingInvitation ? 'Uniéndote...' : 'Registrando...') : (pendingInvitation ? 'Aceptar Invitación y Unirse' : 'Crear Cuenta')}
                     </button>
+
+                    {pendingInvitation && (
+                      <>
+                        <div className="relative my-4 flex items-center">
+                          <div className="flex-1 border-t border-white/[0.06]" />
+                          <span className="px-3 text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">o</span>
+                          <div className="flex-1 border-t border-white/[0.06]" />
+                        </div>
+
+                        <button type="button" onClick={handleGoogleLogin} className={googleBtn}>
+                          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                            <path
+                              fill="currentColor"
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            />
+                            <path
+                              fill="currentColor"
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            />
+                            <path
+                              fill="currentColor"
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            />
+                            <path
+                              fill="currentColor"
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            />
+                          </svg>
+                          <span>Unirse con Google</span>
+                        </button>
+                      </>
+                    )}
 
                     <div className="text-center pt-4 border-t border-white/[0.06] flex items-center justify-between">
                       <button
                         type="button"
-                        onClick={() => setFlowState('register_choice')}
+                        onClick={pendingInvitation ? handleBackToEmail : () => setFlowState('register_choice')}
                         className="text-xs font-bold text-white/40 hover:text-white transition-colors underline"
                       >
                         Regresar
