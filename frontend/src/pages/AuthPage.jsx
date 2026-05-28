@@ -313,8 +313,12 @@ export const AuthPage = () => {
         toast.success('¡Cuenta creada exitosamente!', { icon: '✨' });
       }
     } catch (err) {
-      setError('root', { type: 'manual', message: err.message });
-      toast.error(err.message || 'Error al crear la cuenta');
+      let msg = err.message || 'Error al crear la cuenta';
+      if (msg.includes('Error sending confirmation email')) {
+        msg = 'Límite de correos alcanzado en Supabase (3 envíos por hora). Por favor, haz clic en "Unirse con Google" abajo para registrarte y entrar al instante de forma segura.';
+      }
+      setError('root', { type: 'manual', message: msg });
+      toast.error(msg, { duration: 6000 });
     }
   };
 
