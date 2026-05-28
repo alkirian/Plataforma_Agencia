@@ -25,6 +25,9 @@ const MetaAdsSection = lazy(() =>
 const CMSection = lazy(() =>
   import('../components/cm/CMSection').then(m => ({ default: m.CMSection }))
 );
+const DesignSection = lazy(() =>
+  import('../components/design/DesignSection').then(m => ({ default: m.DesignSection }))
+);
 import {
   CalendarIcon,
   FolderIcon,
@@ -40,6 +43,7 @@ import {
   Cog6ToothIcon,
   ChartBarIcon,
   ChatBubbleLeftRightIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { InteractiveAvatar, AgentBentoCard, AgentChatPanel } from '../components/ui';
 
@@ -96,6 +100,14 @@ const agentCards = [
     color: '#7C5CFC',
     stat: '5 fuentes cargadas',
   },
+  {
+    id: 'design',
+    name: 'Estudio de Diseño',
+    icon: PhotoIcon,
+    grad: 'linear-gradient(140deg, #3b0764 0%, #701a75 50%, #4c1d95 100%)',
+    color: '#D946EF',
+    stat: 'Fotos 2K/4K con IA',
+  },
 ];
 
 export const ClientDetailPage = () => {
@@ -108,7 +120,7 @@ export const ClientDetailPage = () => {
   const { notifications, markTrendsAsReadForClient } = useNotifications();
 
   // Si la pestaña no está definida o no es una de las reales, mostramos el Panel Bento
-  const activeTab = ['schedule', 'documents', 'identity', 'trends', 'meta', 'cm'].includes(requestedTab)
+  const activeTab = ['schedule', 'documents', 'identity', 'trends', 'meta', 'cm', 'design'].includes(requestedTab)
     ? requestedTab
     : null;
 
@@ -156,6 +168,7 @@ export const ClientDetailPage = () => {
     trends: false,
     meta: false,
     cm: false,
+    design: false,
   });
 
   // Estado para las tarjetas ordenables
@@ -219,6 +232,7 @@ export const ClientDetailPage = () => {
       trends: false,
       meta: false,
       cm: false,
+      design: false,
     });
   }, [clientId]);
 
@@ -449,7 +463,9 @@ export const ClientDetailPage = () => {
                             ? 'Meta Ads'
                             : activeTab === 'cm'
                               ? 'CM Inteligente'
-                              : 'Identidad'}
+                              : activeTab === 'design'
+                                ? 'Estudio de Diseño'
+                                : 'Identidad'}
                   </span>
                 </div>
               </div>
@@ -595,6 +611,9 @@ export const ClientDetailPage = () => {
                 </div>
                 <div style={{ display: activeTab === 'cm' ? 'block' : 'none' }}>
                   {visitedTabs.cm && <CMSection clientId={clientId} />}
+                </div>
+                <div style={{ display: activeTab === 'design' ? 'block' : 'none' }}>
+                  {visitedTabs.design && <DesignSection clientId={clientId} />}
                 </div>
               </Suspense>
             </div>

@@ -145,7 +145,7 @@ export const JoinPage = () => {
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-[#111012] flex items-center justify-center p-6 text-text-primary'>
+      <div className='min-h-screen bg-app flex items-center justify-center p-6 text-text-primary'>
         <div className='text-center space-y-4'>
           <div className='h-10 w-10 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto'></div>
           <p className='text-xs text-text-muted animate-pulse font-medium'>
@@ -157,18 +157,18 @@ export const JoinPage = () => {
   }
 
   return (
-    <div className='min-h-screen bg-[#0e0d0f] flex items-center justify-center p-6 relative overflow-hidden text-text-primary'>
+    <div className='min-h-screen bg-app flex items-center justify-center p-6 relative overflow-hidden text-text-primary'>
       {/* Luces y partículas de fondo premium */}
-      <div className='absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-primary-600/10 blur-[120px] pointer-events-none' />
-      <div className='absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none' />
+      <div className='absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-primary-600/5 dark:bg-primary-600/10 blur-[120px] pointer-events-none' />
+      <div className='absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-indigo-600/5 dark:bg-indigo-600/10 blur-[120px] pointer-events-none' />
 
       <div className='w-full max-w-lg relative z-10'>
         {/* Caso de error o link inválido */}
         {error ? (
-          <Card hover={false} className='border-red-500/20 bg-red-950/5 backdrop-blur-md'>
+          <Card hover={false} className='border-red-500/20 dark:border-red-500/30 bg-red-500/5 dark:bg-red-950/10 backdrop-blur-md'>
             <CardHeader className='text-center border-b border-red-500/10 pb-4'>
               <ExclamationTriangleIcon className='h-12 w-12 text-red-500 mx-auto mb-2 animate-bounce' />
-              <CardTitle className='text-red-400 text-xl font-bold'>Invitación Inválida</CardTitle>
+              <CardTitle className='text-red-600 dark:text-red-400 text-xl font-bold'>Invitación Inválida</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4 pt-6 text-center'>
               <p className='text-sm text-text-muted leading-relaxed'>
@@ -195,7 +195,7 @@ export const JoinPage = () => {
           >
             {/* Header / Logo de la plataforma */}
             <div className='text-center mb-6'>
-              <h2 className='text-2xl font-bold tracking-wider text-white flex items-center justify-center gap-2'>
+              <h2 className='text-2xl font-bold tracking-wider text-text-primary flex items-center justify-center gap-2'>
                 <SparklesIcon className='h-6 w-6 text-primary-400' />
                 CADENCE
               </h2>
@@ -207,35 +207,35 @@ export const JoinPage = () => {
             {/* Tarjeta de Invitación */}
             <Card
               hover={false}
-              className='border border-white/5 bg-surface-strong/40 backdrop-blur-md overflow-hidden p-0'
+              className='border border-border-subtle bg-surface-strong/40 backdrop-blur-md overflow-hidden p-0'
             >
-              <div className='p-6 border-b border-white/5 bg-gradient-to-r from-primary-950/20 to-indigo-950/20 text-center py-8'>
+              <div className='p-6 border-b border-border-subtle bg-gradient-to-r from-primary-500/5 to-indigo-500/5 dark:from-primary-950/20 dark:to-indigo-950/20 text-center py-8'>
                 <div className='h-16 w-16 rounded-full bg-gradient-to-tr from-primary-500 to-indigo-600 flex items-center justify-center font-bold text-white text-2xl mx-auto shadow-lg mb-4'>
                   {inviteInfo?.agencyName?.charAt(0) || 'A'}
                 </div>
 
-                <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-500/10 text-primary-400 border border-primary-500/20 uppercase tracking-wider mb-2'>
+                <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 uppercase tracking-wider mb-2'>
                   <UserGroupIcon className='h-3.5 w-3.5' />
                   Invitación de Equipo
                 </span>
 
                 <h3 className='text-xl font-bold text-text-primary px-2'>
                   ¡Te han invitado a unirte a{' '}
-                  <span className='text-primary-400'>{inviteInfo?.agencyName}</span>!
+                  <span className='text-primary-600 dark:text-primary-400'>{inviteInfo?.agencyName}</span>!
                 </h3>
               </div>
 
               <div className='p-6 space-y-6'>
-                <div className='rounded-xl bg-surface-soft/60 border border-white/5 p-4 space-y-3.5 text-sm text-text-muted'>
+                <div className='rounded-xl bg-surface-soft/60 border border-border-subtle p-4 space-y-3.5 text-sm text-text-muted'>
                   <div className='flex items-center gap-3'>
-                    <ShieldCheckIcon className='h-5 w-5 text-indigo-400 flex-shrink-0' />
+                    <ShieldCheckIcon className='h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0' />
                     <span>
                       Te unirás con el rol de{' '}
                       <strong className='text-text-primary capitalize'>{inviteInfo?.role}</strong>.
                     </span>
                   </div>
                   <div className='flex items-center gap-3'>
-                    <BuildingOfficeIcon className='h-5 w-5 text-indigo-400 flex-shrink-0' />
+                    <BuildingOfficeIcon className='h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0' />
                     <span>
                       Tendrás acceso a ver los clientes, documentos y cronogramas de contenido de la
                       agencia.

@@ -6,8 +6,10 @@ import {
   UserIcon,
   PaintBrushIcon,
   LanguageIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { KeyboardShortcutsModal } from '../components/ui/KeyboardShortcutsModal';
+import { CadenceLogosPreview } from '../components/ui/CadenceLogosPreview';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 
@@ -57,8 +59,10 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
     localStorage.setItem('cadence-theme', nextTheme);
     if (nextTheme === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('dark');
     } else {
       document.documentElement.removeAttribute('data-theme');
+      document.documentElement.classList.add('dark');
     }
     toast.success(nextTheme === 'light' ? 'Modo Claro activado' : 'Modo Oscuro activado');
   };
@@ -169,6 +173,7 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
     { id: 'language', label: t.tabs.language, icon: LanguageIcon },
     { id: 'shortcuts', label: t.tabs.shortcuts, icon: CommandLineIcon },
     { id: 'team', label: t.tabs.team, icon: UserGroupIcon },
+    { id: 'brand', label: t.tabs.brand, icon: SparklesIcon },
   ];
 
   return (
@@ -266,6 +271,10 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
                   t={t}
                   lang={lang}
                 />
+              )}
+
+              {activeTab === 'brand' && (
+                <CadenceLogosPreview />
               )}
             </motion.div>
           </AnimatePresence>

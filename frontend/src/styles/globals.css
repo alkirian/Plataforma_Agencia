@@ -60,6 +60,19 @@
     --card-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.35);
     --input-focus-ring: rgba(124, 92, 252, 0.2);
+
+    /* --- Tokens Semánticos para Botones de Acción (Tono) --- */
+    --color-btn-tone-text: #ffffff;
+    --color-btn-tone-green-bg: #10b981;
+    --color-btn-tone-green-hover: #059669;
+    --color-btn-tone-blue-bg: #6366f1;
+    --color-btn-tone-blue-hover: #4f46e5;
+    --color-btn-tone-yellow-bg: #ffd166;
+    --color-btn-tone-yellow-hover: #e4a11b;
+    --color-btn-tone-yellow-text: #121220; /* Texto oscuro para botón amarillo en modo oscuro por contraste */
+
+    /* --- Tokens de Modales y Backdrop Blur --- */
+    --backdrop-blur-val: blur(12px);
   }
 
   [data-theme='light'] {
@@ -103,6 +116,19 @@
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
     --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
     --input-focus-ring: rgba(24, 119, 242, 0.25);
+
+    /* --- Tokens Semánticos para Botones de Acción (Tono) --- */
+    --color-btn-tone-text: #ffffff;
+    --color-btn-tone-green-bg: #0f766e; /* Verde/Teal oscuro para legibilidad */
+    --color-btn-tone-green-hover: #0d5e58;
+    --color-btn-tone-blue-bg: #1877f2;  /* Azul FB vibrante */
+    --color-btn-tone-blue-hover: #145dbf;
+    --color-btn-tone-yellow-bg: #b45309; /* Ambar profundo para contraste de texto blanco */
+    --color-btn-tone-yellow-hover: #92400e;
+    --color-btn-tone-yellow-text: #ffffff; /* Texto blanco en modo claro */
+
+    /* --- Tokens de Modales y Backdrop Blur --- */
+    --backdrop-blur-val: blur(12px);
   }
 
   body {
@@ -270,7 +296,7 @@
     box-shadow: var(--card-shadow);
   }
 
-  /* Disable all blur utilities for clean flat look */
+  /* Enable premium backdrop blur custom styled via CSS variables */
   .backdrop-blur,
   .backdrop-blur-xs,
   .backdrop-blur-sm,
@@ -279,7 +305,8 @@
   .backdrop-blur-xl,
   .backdrop-blur-2xl,
   .backdrop-blur-3xl {
-    backdrop-filter: none !important;
+    backdrop-filter: var(--backdrop-blur-val) !important;
+    -webkit-backdrop-filter: var(--backdrop-blur-val) !important;
   }
 
   /* Solid ring style */
@@ -315,37 +342,39 @@
     outline: none;
   }
 
-  /* Dark tone button variants - adapted to desaturated pastels */
+  /* Premium adaptive action buttons (Tone) - High contrast & vibrant hovers */
   .btn-tone {
     padding: 0.625rem 1.25rem;
     border-radius: 0.75rem;
     font-weight: 600;
-    color: #161517;
+    color: var(--color-btn-tone-text);
     border: 1px solid transparent;
     transition:
       transform 0.1s ease,
-      background-color 0.2s ease;
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
   .btn-tone:active {
     transform: scale(0.98);
   }
   .btn-tone--green {
-    background-color: var(--color-accent-sage);
+    background-color: var(--color-btn-tone-green-bg);
   }
   .btn-tone--green:hover {
-    background-color: #7a9486;
+    background-color: var(--color-btn-tone-green-hover);
   }
   .btn-tone--blue {
-    background-color: var(--color-accent-lavender);
+    background-color: var(--color-btn-tone-blue-bg);
   }
   .btn-tone--blue:hover {
-    background-color: #8389a3;
+    background-color: var(--color-btn-tone-blue-hover);
   }
   .btn-tone--yellow {
-    background-color: var(--color-accent-sand);
+    background-color: var(--color-btn-tone-yellow-bg);
+    color: var(--color-btn-tone-yellow-text);
   }
   .btn-tone--yellow:hover {
-    background-color: #a3988a;
+    background-color: var(--color-btn-tone-yellow-hover);
   }
 }
 

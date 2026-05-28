@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getClients, getClientById } from '../../api/clients';
@@ -6,6 +6,8 @@ import { PlusIcon, Cog6ToothIcon, BellIcon } from '@heroicons/react/24/outline';
 import { ClientSearchModal } from '../ui/ClientSearchModal';
 import { NotificationPanel } from '../notifications/NotificationPanel';
 import { useNotifications } from '../../hooks/useNotifications';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
 export const Sidebar = ({ userEmail, profile, onLogout }) => {
   const location = useLocation();
@@ -38,6 +40,139 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
       staleTime: 1000 * 60 * 5, // Considerar frescos por 5 minutos
     });
   };
+
+  const containerRef = useRef(null);
+
+  // Animación interactiva fluida para la barra lateral y los clientes con GSAP
+  useGSAP(() => {
+    const items = gsap.utils.toArray(".client-item");
+
+    items.forEach((item) => {
+      const initialsCircle = item.querySelector(".client-ini");
+      const clientName = item.querySelector(".client-name");
+      const activeIndicatorDot = item.querySelector(".client-dot");
+      const activeState = item.dataset.active === "true";
+      const brandColor = item.dataset.color;
+
+      const handleMouseEnter = () => {
+        // Efecto expansivo y deslizamiento lateral
+        gsap.to(item, {
+          x: 6,
+          backgroundColor: activeState 
+            ? `${brandColor}22` 
+            : "rgba(255, 255, 255, 0.05)",
+          borderColor: activeState
+            ? `${brandColor}66`
+            : "rgba(255, 255, 255, 0.08)",
+          duration: 0.35,
+          ease: "power2.out"
+        });
+
+        // Rotación y pop de las iniciales
+        gsap.to(initialsCircle, {
+          scale: 1.12,
+          rotation: 12,
+          borderColor: `${brandColor}aa`,
+          backgroundColor: `${brandColor}38`,
+          duration: 0.35,
+          ease: "back.out(2)"
+        });
+
+        // Deslizar levemente el texto hacia la derecha
+        gsap.to(clientName, {
+          x: 2,
+          color: "#ffffff",
+          duration: 0.3
+        });
+
+        // Escalar e imantar el punto de estado activo al final
+        gsap.to(activeIndicatorDot, {
+          scale: 1.5,
+          x: -2,
+          duration: 0.35,
+          ease: "back.out(3.5)"
+        });
+      };
+
+      const handleMouseLeave = () => {
+        // Retorno elástico al estado de reposo inicial
+        gsap.to(item, {
+          x: 0,
+          backgroundColor: activeState
+            ? `${brandColor}12`
+            : "transparent",
+          borderColor: activeState
+            ? `${brandColor}33`
+            : "transparent",
+          duration: 0.45,
+          ease: "power2.out"
+        });
+
+        gsap.to(initialsCircle, {
+          scale: 1,
+          rotation: 0,
+          borderColor: `${brandColor}40`,
+          backgroundColor: `${brandColor}20`,
+          duration: 0.45,
+          ease: "power2.out"
+        });
+
+        gsap.to(clientName, {
+          x: 0,
+          color: "",
+          duration: 0.4
+        });
+
+        gsap.to(activeIndicatorDot, {
+          scale: 1,
+          x: 0,
+          duration: 0.4,
+          ease: "power2.out"
+        });
+      };
+
+      const handleClick = () => {
+        // Animación de pop/latido al seleccionar un cliente
+        gsap.fromTo(item,
+          { scale: 0.94 },
+          { scale: 1, duration: 0.55, ease: "elastic.out(1.2, 0.45)" }
+        );
+        gsap.fromTo(initialsCircle,
+          { rotation: -20, scale: 0.85 },
+          { rotation: 0, scale: 1, duration: 0.65, ease: "back.out(2.2)" }
+        );
+      };
+
+      item.addEventListener("mouseenter", handleMouseEnter);
+      item.addEventListener("mouseleave", handleMouseLeave);
+      item.addEventListener("click", handleClick);
+
+      // Conservamos las referencias en el DOM para la limpieza
+      item._gsapEnter = handleMouseEnter;
+      item._gsapLeave = handleMouseLeave;
+      item._gsapClick = handleClick;
+    });
+
+    // Entrada elegante escalonada para los clientes al montar
+    gsap.fromTo(".client-item",
+      { opacity: 0, x: -15 },
+      { opacity: 1, x: 0, duration: 0.6, stagger: 0.08, ease: "power2.out", delay: 0.15 }
+    );
+
+    // Entrada elegante para el botón de agregar cliente
+    gsap.fromTo(".add-client",
+      { opacity: 0, scale: 0.9 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)", delay: 0.4 }
+    );
+
+    return () => {
+      items.forEach((item) => {
+        item.removeEventListener("mouseenter", item._gsapEnter);
+        item.removeEventListener("mouseleave", item._gsapLeave);
+        item.removeEventListener("click", item._gsapClick);
+      });
+    };
+  }, { scope: containerRef, dependencies: [clients, location.pathname] });
 
   // Notificaciones
   const {
@@ -76,6 +211,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
 
   return (
     <aside
+      ref={containerRef}
       id='sidebar'
       className='w-[240px] min-w-[240px] bg-app-sidebar border-r border-border-subtle flex flex-col h-screen overflow-hidden select-none z-30 font-sans'
     >
@@ -122,10 +258,12 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
                 key={client.id}
                 to={targetPath}
                 onMouseEnter={() => prefetchClientData(client.id)}
-                className={`client-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 border border-transparent ${
+                data-active={isActive ? "true" : "false"}
+                data-color={brandColor}
+                className={`client-item flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent select-none relative ${
                   isActive
-                    ? 'bg-surface border-border-strong text-text-primary font-bold shadow-sm'
-                    : 'text-text-muted hover:bg-surface-soft/30 hover:text-text-primary'
+                    ? 'text-text-primary font-bold shadow-sm'
+                    : 'text-text-muted'
                 }`}
                 style={{
                   backgroundColor: isActive ? brandColor + '12' : 'transparent',

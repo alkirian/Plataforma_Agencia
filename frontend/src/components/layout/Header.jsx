@@ -15,6 +15,7 @@ import {
   CalendarIcon,
   FolderIcon,
   FingerPrintIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
@@ -47,14 +48,15 @@ export const Header = ({ userEmail, profile, onLogout }) => {
   const isClientPage = location.pathname.startsWith('/clients/');
   const currentClientId = params.id;
   const currentClientTab = isClientPage ? new URLSearchParams(location.search).get('tab') : null;
-  const activeClientTab = ['schedule', 'documents', 'identity', 'trends'].includes(currentClientTab)
+  const activeClientTab = ['schedule', 'documents', 'identity', 'trends', 'design'].includes(currentClientTab)
     ? currentClientTab
     : 'schedule';
   const isDocumentsTab = isClientPage && activeClientTab === 'documents';
   const isIdentityTab = isClientPage && activeClientTab === 'identity';
   const isTrendsTab = isClientPage && activeClientTab === 'trends';
+  const isDesignTab = isClientPage && activeClientTab === 'design';
   const showCalendarViewControls =
-    isClientPage && !isDocumentsTab && !isIdentityTab && !isTrendsTab;
+    isClientPage && !isDocumentsTab && !isIdentityTab && !isTrendsTab && !isDesignTab;
   const clientTabs = [
     {
       id: 'schedule',
@@ -79,6 +81,12 @@ export const Header = ({ userEmail, profile, onLogout }) => {
       label: 'Tendencias',
       icon: ArrowTrendingUpIcon,
       tooltip: 'Análisis diario de tendencias de mercado e ideas',
+    },
+    {
+      id: 'design',
+      label: 'Diseño',
+      icon: PhotoIcon,
+      tooltip: 'Generación de imágenes premium y adaptación multiformato con IA',
     },
   ];
 

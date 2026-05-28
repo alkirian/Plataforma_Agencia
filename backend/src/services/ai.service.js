@@ -167,7 +167,24 @@ const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, mod
 
     if (responseSchema) {
       requestBody.generationConfig.responseMimeType = 'application/json';
-      requestBody.generationConfig.responseSchema = responseSchema;
+      
+      // Gemini no soporta la clave "additionalProperties" en su implementación de JSON Schema.
+      // Clonamos y limpiamos recursivamente para asegurar compatibilidad universal entre OpenAI y Gemini.
+      const cleanSchemaForGemini = (schema) => {
+        if (!schema || typeof schema !== 'object') return schema;
+        const clone = Array.isArray(schema) ? [...schema] : { ...schema };
+        if (clone.additionalProperties !== undefined) {
+          delete clone.additionalProperties;
+        }
+        for (const key in clone) {
+          if (typeof clone[key] === 'object') {
+            clone[key] = cleanSchemaForGemini(clone[key]);
+          }
+        }
+        return clone;
+      };
+      
+      requestBody.generationConfig.responseSchema = cleanSchemaForGemini(responseSchema);
     }
 
     const resp = await fetchWithTimeout(url, {

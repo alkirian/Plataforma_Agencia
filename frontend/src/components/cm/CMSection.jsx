@@ -758,10 +758,10 @@ export const CMSection = ({ clientId }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* COL 1: MINIMALIST SMART INBOX (4 COLS) */}
-        <div className="lg:col-span-4 flex flex-col bg-slate-50 dark:bg-[#0b0b14]/30 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-4 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
           
           {/* Header search & consolidated filters */}
-          <div className="p-4 border-b border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-white/[0.01] space-y-3">
+          <div className="p-4 border-b border-border-subtle bg-surface-soft/30 space-y-3">
             {/* Search Input */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -786,9 +786,9 @@ export const CMSection = ({ clientId }) => {
             </div>
             
             {/* Platform & Status Selector */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-slate-200 dark:border-white/[0.04]">
+            <div className="flex flex-col gap-2 pt-2 border-t border-border-subtle">
               {/* Canal Selector */}
-              <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-slate-950/40 p-1 rounded-lg border border-slate-300/60 dark:border-white/[0.05]">
+              <div className="flex items-center gap-1 bg-surface-soft p-1 rounded-lg border border-border-subtle">
                 {[
                   { id: 'all', label: 'Todos' },
                   { id: 'facebook', label: 'Facebook' },
@@ -800,8 +800,8 @@ export const CMSection = ({ clientId }) => {
                     onClick={() => setPlatformFilter(tab.id)}
                     className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all duration-150 cursor-pointer text-center ${
                       platformFilter === tab.id
-                        ? 'bg-white dark:bg-white/5 text-accent-cyan font-semibold border border-slate-300 dark:border-white/10 shadow-xs dark:shadow-none'
-                        : 'text-slate-500 dark:text-text-muted hover:text-slate-800 dark:hover:text-text-primary'
+                        ? 'bg-surface text-accent-blue font-semibold border border-border-subtle shadow-xs'
+                        : 'text-text-muted hover:text-text-primary'
                     }`}
                   >
                     {tab.label}
@@ -810,7 +810,7 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Status Switcher tabs */}
-              <div className="flex border-b border-slate-200 dark:border-white/5 mt-1.5">
+              <div className="flex border-b border-border-subtle mt-1.5">
                 {[
                   { id: 'pending', label: 'Pendientes' },
                   { id: 'escalated', label: 'Urgentes' },
@@ -821,14 +821,14 @@ export const CMSection = ({ clientId }) => {
                     type="button"
                     onClick={() => setStatusFilter(tab.id)}
                     className={`flex-1 pb-2 text-center text-xs font-semibold relative transition-colors duration-150 cursor-pointer ${
-                      statusFilter === tab.id ? 'text-accent-cyan' : 'text-slate-500 dark:text-text-muted hover:text-slate-800 dark:hover:text-text-primary'
+                      statusFilter === tab.id ? 'text-accent-blue' : 'text-text-muted hover:text-text-primary'
                     }`}
                   >
                     <span>{tab.label}</span>
                     {statusFilter === tab.id && (
                       <motion.div
                         layoutId="cm-status-underline"
-                        className="absolute bottom-0 inset-x-0 h-0.5 bg-accent-cyan rounded-full"
+                        className="absolute bottom-0 inset-x-0 h-0.5 bg-accent-blue rounded-full"
                       />
                     )}
                   </button>
@@ -857,8 +857,8 @@ export const CMSection = ({ clientId }) => {
                         onClick={() => setSelectedThreadId(thread.id)}
                         className={`p-3.5 cursor-pointer transition-all duration-150 rounded-xl flex flex-col gap-2.5 border-l-2 select-none ${
                           isSelected 
-                            ? 'bg-white dark:bg-white/[0.04] border-accent-cyan shadow-sm dark:shadow-none' 
-                            : 'bg-transparent border-l-transparent hover:bg-slate-200/40 dark:hover:bg-white/[0.02]'
+                            ? 'bg-surface-soft border-accent-blue shadow-xs' 
+                            : 'bg-transparent border-l-transparent hover:bg-surface-soft/40'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -866,22 +866,22 @@ export const CMSection = ({ clientId }) => {
                             <img
                               src={thread.user.avatar}
                               alt={thread.user.name}
-                              className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-white/10 flex-shrink-0"
+                              className="w-6 h-6 rounded-full object-cover border border-border-subtle flex-shrink-0"
                             />
-                            <span className="text-[13px] font-semibold text-slate-800 dark:text-white/90 truncate">
+                            <span className="text-[13px] font-semibold text-text-primary truncate">
                               @{thread.user.name}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className="text-[8px] text-slate-600 dark:text-white/50 font-mono uppercase bg-slate-200/60 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 px-1.5 py-0.5 rounded">
+                            <span className="text-[8px] text-text-muted font-mono uppercase bg-surface-soft border border-border-subtle px-1.5 py-0.5 rounded">
                               {thread.platform.substring(0, 2)}
                             </span>
-                            <span className="text-[10px] text-text-muted">{thread.time}</span>
+                            <span className="text-[10px] text-text-secondary">{thread.time}</span>
                           </div>
                         </div>
 
-                        <p className="text-[12px] text-slate-600 dark:text-white/60 leading-relaxed line-clamp-2 pr-1 font-medium">
+                        <p className="text-[12px] text-text-muted leading-relaxed line-clamp-2 pr-1 font-medium">
                           {thread.comment}
                         </p>
 
@@ -911,29 +911,29 @@ export const CMSection = ({ clientId }) => {
         </div>
 
         {/* COL 2: COPILOT WORKSPACE (8 COLS) */}
-        <div className="lg:col-span-8 flex flex-col bg-slate-50 dark:bg-[#0b0b14]/30 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-8 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
           {activeThread ? (
             <div className="p-6 flex flex-col flex-1 gap-6">
               
               {/* SECCIÓN 1: EL MENSAJE RECIBIDO */}
-              <div className="bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-xl p-4 space-y-3">
+              <div className="bg-surface-soft/30 border border-border-subtle rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <img
                       src={activeThread.user.avatar}
                       alt={activeThread.user.name}
-                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                      className="w-8 h-8 rounded-full object-cover border border-border-subtle"
                     />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-text-primary">
                           @{activeThread.user.name}
                         </span>
-                        <span className="text-[9px] text-slate-600 dark:text-white/50 font-mono uppercase bg-slate-200/60 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] text-text-muted font-mono uppercase bg-surface-soft border border-border-subtle px-1.5 py-0.5 rounded">
                           {activeThread.platform}
                         </span>
                       </div>
-                      <span className="text-[10px] text-text-muted block mt-0.5">
+                      <span className="text-[10px] text-text-secondary block mt-0.5">
                         Recibido {activeThread.time}
                       </span>
                     </div>
@@ -944,18 +944,18 @@ export const CMSection = ({ clientId }) => {
                   </div>
                 </div>
 
-                <div className="text-base font-semibold text-slate-800 dark:text-white/95 leading-relaxed pl-4 whitespace-pre-wrap select-text border-l-2 border-accent-cyan py-0.5">
+                <div className="text-base font-semibold text-text-primary leading-relaxed pl-4 whitespace-pre-wrap select-text border-l-2 border-accent-blue py-0.5">
                   "{activeThread.comment}"
                 </div>
 
                 {/* CONTEXTO ASOCIADO AL POST */}
-                <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-slate-200 dark:border-white/5 text-xs">
+                <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-border-subtle text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     {activeThread.postThumbnail && (
                       <img
                         src={activeThread.postThumbnail}
                         alt="Post"
-                        className="w-6 h-6 rounded object-cover border border-slate-300 dark:border-white/10 flex-shrink-0"
+                        className="w-6 h-6 rounded object-cover border border-border-subtle flex-shrink-0"
                       />
                     )}
                     <div className="min-w-0">
@@ -970,7 +970,7 @@ export const CMSection = ({ clientId }) => {
                       href={activeThread.postLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[10px] font-semibold text-accent-cyan hover:underline transition-colors shrink-0"
+                      className="flex items-center gap-1 text-[10px] font-semibold text-accent-blue hover:underline transition-colors shrink-0"
                     >
                       <LinkIcon className="h-3 w-3" />
                       <span>Ver original</span>
@@ -981,14 +981,12 @@ export const CMSection = ({ clientId }) => {
 
               {/* SECCIÓN 2: BORRADOR DE RESPUESTA DE LA IA */}
               <div className="flex-1 flex flex-col gap-3 min-h-[220px]">
-
-
                 {/* Technical details block (Togglable) */}
                 {showTechDetails && (
                   <motion.div
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3.5 bg-slate-100/80 dark:bg-slate-950/40 border border-slate-200 dark:border-white/5 rounded-xl text-[10px] text-slate-600 dark:text-text-secondary font-mono space-y-1.5 leading-relaxed"
+                    className="p-3.5 bg-surface-soft/60 border border-border-subtle rounded-xl text-[10px] text-text-muted font-mono space-y-1.5 leading-relaxed"
                   >
                     <div><span className="text-text-secondary font-bold">ID Interacción:</span> {activeThread.id}</div>
                     <div><span className="text-text-secondary font-bold">Base de Conocimiento Citada:</span> {activeThread.contextUsed || 'Base de Conocimiento General'}</div>
@@ -997,18 +995,18 @@ export const CMSection = ({ clientId }) => {
                   </motion.div>
                 )}
 
-                <div className="relative flex-1 flex flex-col bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 rounded-xl p-4 min-h-[140px] shadow-xs dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="relative flex-1 flex flex-col bg-surface border border-border-strong rounded-xl p-4 min-h-[140px] shadow-sm">
                   {/* Concentric Pulse AI indicator */}
                   {(loadingDraft || regenerating) && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-strong/90 rounded-xl">
                       <div className="relative w-8 h-8 flex items-center justify-center mb-2">
-                        <div className="absolute inset-0 rounded-full bg-accent-cyan/10 animate-ping" />
-                        <div className="absolute w-5 h-5 rounded-full bg-accent-cyan/20 animate-ping" />
-                        <div className="absolute w-3 h-3 rounded-full bg-accent-cyan shadow-[0_0_8px_rgba(78,205,196,0.5)] flex items-center justify-center">
-                          <SparklesIcon className="w-2.5 h-2.5 text-slate-950 animate-spin" />
+                        <div className="absolute inset-0 rounded-full bg-accent-blue/10 animate-ping" />
+                        <div className="absolute w-5 h-5 rounded-full bg-accent-blue/20 animate-ping" />
+                        <div className="absolute w-3 h-3 rounded-full bg-accent-blue shadow-[0_0_8px_rgba(24,119,242,0.5)] flex items-center justify-center">
+                          <SparklesIcon className="w-2.5 h-2.5 text-white animate-spin" />
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold tracking-wider text-accent-cyan uppercase animate-pulse">
+                      <span className="text-[10px] font-bold tracking-wider text-accent-blue uppercase animate-pulse">
                         Optimizando Respuesta...
                       </span>
                     </div>
@@ -1018,48 +1016,48 @@ export const CMSection = ({ clientId }) => {
                     <textarea
                       value={activeDraft}
                       onChange={e => setActiveDraft(e.target.value)}
-                      className="w-full flex-1 bg-transparent border-0 resize-none text-sm text-slate-800 dark:text-white/90 leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
+                      className="w-full flex-1 bg-transparent border-0 resize-none text-sm text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
                       placeholder="Modifica el borrador de la IA aquí..."
                     />
                   ) : (
-                    <div className="text-sm text-slate-800 dark:text-white/90 leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
+                    <div className="text-sm text-text-primary leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
                       {activeDraft}
                     </div>
                   )}
 
                   {/* Shimmer RAG Citation Label */}
                   {!loadingDraft && activeThread.contextUsed && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-[10px] text-slate-500 dark:text-text-secondary">
+                    <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-[10px] text-text-muted">
                       <span className="flex items-center gap-1.5 font-mono truncate max-w-[80%]">
-                        <ShieldCheckIcon className="h-4 w-4 text-accent-cyan flex-shrink-0" />
-                        <span>Validado con: <span className="text-slate-800 dark:text-white/80 font-bold">{activeThread.contextUsed}</span></span>
+                        <ShieldCheckIcon className="h-4 w-4 text-accent-blue flex-shrink-0" />
+                        <span>Validado con: <span className="text-text-primary font-bold">{activeThread.contextUsed}</span></span>
                       </span>
                     </div>
                   )}
                 </div>
 
                 {/* AI Copilot Tweak Menu */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-100/50 dark:bg-white/[0.01] p-3 rounded-xl border border-slate-200 dark:border-white/5">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-soft/30 p-3 rounded-xl border border-border-subtle">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">Ajustar Tono:</span>
                     <button
                       onClick={() => handleRegenerate('shorter')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white dark:bg-white/[0.02] hover:bg-slate-200 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 transition-all text-slate-700 dark:text-white/80 hover:text-slate-900 hover:dark:text-white shadow-xs dark:shadow-none"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
                     >
                       Más Corto
                     </button>
                     <button
                       onClick={() => handleRegenerate('warmer')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white dark:bg-white/[0.02] hover:bg-slate-200 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 transition-all text-slate-700 dark:text-white/80 hover:text-slate-900 hover:dark:text-white shadow-xs dark:shadow-none"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
                     >
                       Más Empático
                     </button>
                     <button
                       onClick={() => handleRegenerate('cta')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white dark:bg-white/[0.02] hover:bg-slate-200 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 transition-all text-slate-700 dark:text-white/80 hover:text-slate-900 hover:dark:text-white shadow-xs dark:shadow-none"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
                     >
                       Con CTA
                     </button>
@@ -1090,7 +1088,7 @@ export const CMSection = ({ clientId }) => {
                         }
                       }}
                       disabled={regenerating || !customAIInstruction.trim() || activeThread.status === 'replied'}
-                      className="absolute right-1 top-1 py-1 px-2 rounded bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan font-bold text-[9px] transition-colors cursor-pointer"
+                      className="absolute right-1 top-1 py-1 px-2 rounded bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue font-bold text-[9px] transition-colors cursor-pointer"
                     >
                       OK
                     </button>
@@ -1099,9 +1097,9 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* SECCIÓN 3: ACCIONES PRINCIPALES */}
-              <div className="pt-4 border-t border-slate-200 dark:border-white/5 flex items-center justify-between gap-3">
+              <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
                 {activeThread.status === 'replied' ? (
-                  <div className="w-full bg-accent-cyan/5 border border-accent-cyan/20 text-accent-cyan py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold">
+                  <div className="w-full bg-accent-blue/5 border border-accent-blue/20 text-accent-blue py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold">
                     <CheckIcon className="h-4.5 w-4.5" />
                     <span>Respuesta publicada correctamente en redes</span>
                   </div>
@@ -1112,7 +1110,7 @@ export const CMSection = ({ clientId }) => {
                         onClick={() => setIsEditing(!isEditing)}
                         className={`btn-cyber flex items-center gap-1 px-4 py-2.5 text-xs font-bold cursor-pointer ${
                           isEditing 
-                            ? 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/15'
+                            ? 'bg-accent-blue/10 border-accent-blue/30 text-accent-blue hover:bg-accent-blue/15'
                             : ''
                         }`}
                       >
@@ -1125,8 +1123,7 @@ export const CMSection = ({ clientId }) => {
                             setThreads(prev => prev.map(t => t.id === activeThread.id ? { ...t, status: 'escalated' } : t));
                             toast.error('Comentario derivado a atención prioritaria humana.');
                           }}
-                          className="btn-cyber text-xs font-bold cursor-pointer"
-                          style={{ borderColor: 'rgba(255, 107, 107, 0.2)', color: 'var(--color-accent-rose)' }}
+                          className="btn-cyber text-xs font-bold cursor-pointer border-error/20 text-error hover:bg-error/5"
                         >
                           Escalar a Humano
                         </button>
@@ -1136,8 +1133,8 @@ export const CMSection = ({ clientId }) => {
                     <button
                       onClick={handleApprove}
                       disabled={approving || regenerating}
-                      className="btn-cyber text-white px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer shadow-[0_0_15px_rgba(124,92,252,0.15)] hover:shadow-[0_0_20px_rgba(124,92,252,0.3)] transition-all duration-200"
-                      style={{ backgroundColor: 'var(--color-accent-lavender)', borderColor: 'rgba(124, 92, 252, 0.4)' }}
+                      className="btn-cyber text-white px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer shadow-md hover:shadow-lg transition-all duration-200"
+                      style={{ backgroundColor: 'var(--color-accent-lavender)', borderColor: 'var(--color-border-subtle)' }}
                     >
                       {approving ? (
                         <ArrowPathIcon className="h-4 w-4 animate-spin" />

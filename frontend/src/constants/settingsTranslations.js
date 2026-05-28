@@ -8,6 +8,7 @@ export const translations = {
       language: 'Idioma',
       shortcuts: 'Atajos de Teclado',
       team: 'Miembros del Equipo',
+      brand: 'Identidad de Marca',
     },
     profile: {
       title: 'Datos de tu Perfil',
@@ -96,6 +97,7 @@ export const translations = {
       language: 'Language',
       shortcuts: 'Keyboard Shortcuts',
       team: 'Team Members',
+      brand: 'Brand Identity',
     },
     profile: {
       title: 'Profile Information',

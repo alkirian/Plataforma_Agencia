@@ -119,8 +119,8 @@ const PostCard = ({ item, token, onUpdateItem }) => {
       animate={{ opacity: 1, y: 0 }}
       className={`card-cyber p-6 flex flex-col gap-4 border transition-all duration-200 ${
         isApproved
-          ? 'border-[#8FA89B]/40 hover:border-[#8FA89B]/60 bg-[#161917]/90'
-          : 'border-border-subtle hover:border-border-strong bg-[#161517]'
+          ? 'border-[#8FA89B]/40 hover:border-[#8FA89B]/60 bg-[#f0fbf6] dark:bg-[#161917]/90'
+          : 'border-border-subtle hover:border-border-strong bg-surface'
       }`}
     >
       {/* Date & Channel Header */}
@@ -140,7 +140,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
       <h3 className='text-base font-bold text-text-primary leading-tight'>{item.title}</h3>
 
       {/* Copy / Text */}
-      <div className='rounded-xl bg-[#222024]/50 border border-border-subtle/40 p-4'>
+      <div className='rounded-xl bg-surface-soft/40 border border-border-subtle/30 p-4'>
         <p className='text-xs text-text-muted font-semibold uppercase tracking-wider mb-2'>
           Copia del Post
         </p>
@@ -187,10 +187,10 @@ const PostCard = ({ item, token, onUpdateItem }) => {
 
       {/* Existing Feedback */}
       {hasFeedback && (
-        <div className='rounded-xl bg-[#A19EA6]/10 border border-[#A19EA6]/30 px-4 py-3 flex items-start gap-2.5'>
-          <ChatBubbleLeftRightIcon className='h-4 w-4 text-[#A19EA6] mt-0.5 flex-shrink-0' />
+        <div className='rounded-xl bg-[#7c5cfc]/5 dark:bg-[#A19EA6]/10 border border-[#7c5cfc]/20 dark:border-[#A19EA6]/30 px-4 py-3 flex items-start gap-2.5'>
+          <ChatBubbleLeftRightIcon className='h-4 w-4 text-[#7c5cfc] dark:text-[#A19EA6] mt-0.5 flex-shrink-0' />
           <div>
-            <p className='text-[10px] text-[#A19EA6] font-bold uppercase tracking-wider mb-0.5'>
+            <p className='text-[10px] text-[#7c5cfc] dark:text-[#A19EA6] font-bold uppercase tracking-wider mb-0.5'>
               Ajustes Solicitados
             </p>
             <p className='text-xs text-text-primary leading-relaxed italic'>
@@ -282,7 +282,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
                 <button
                   type='submit'
                   disabled={isSubmitting || !feedbackText.trim()}
-                  className='bg-[#9BA1BA] text-[#161517] hover:bg-[#F3F2F4] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50'
+                  className='btn-cyber bg-[#7c5cfc] text-white hover:bg-[#60A5FA] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 border-transparent'
                 >
                   Enviar Comentarios
                 </button>
@@ -340,10 +340,10 @@ export const ApprovalPortalPage = () => {
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-[#100F11] flex items-center justify-center'>
+      <div className='min-h-screen bg-app flex items-center justify-center'>
         <div className='flex flex-col items-center gap-3'>
-          <div className='w-8 h-8 rounded-full border-2 border-[#9BA1BA] border-t-transparent animate-spin' />
-          <p className='text-xs text-[#A19EA6]'>Cargando cronograma compartido...</p>
+          <div className='w-8 h-8 rounded-full border-2 border-border-strong border-t-transparent animate-spin' />
+          <p className='text-xs text-text-muted'>Cargando cronograma compartido...</p>
         </div>
       </div>
     );
@@ -351,13 +351,13 @@ export const ApprovalPortalPage = () => {
 
   if (error) {
     return (
-      <div className='min-h-screen bg-[#100F11] flex items-center justify-center p-4'>
-        <div className='max-w-md w-full bg-[#161517] border border-[#fe0979]/30 rounded-2xl p-8 text-center space-y-4 shadow-2xl'>
+      <div className='min-h-screen bg-app flex items-center justify-center p-4'>
+        <div className='max-w-md w-full bg-surface border border-[#fe0979]/30 rounded-2xl p-8 text-center space-y-4 shadow-2xl'>
           <div className='w-12 h-12 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center mx-auto'>
             <ExclamationCircleIcon className='h-6 w-6 text-[#fe0979]' />
           </div>
           <h2 className='text-lg font-bold text-text-primary'>Enlace No Válido</h2>
-          <p className='text-xs text-[#A19EA6] leading-relaxed'>
+          <p className='text-xs text-text-muted leading-relaxed'>
             {error}. Comunícate con tu agencia de publicidad para solicitar un nuevo enlace de
             aprobación vigente.
           </p>
@@ -379,14 +379,14 @@ export const ApprovalPortalPage = () => {
   const approvedCount = items.filter(item => item.status === 'Aprobado').length;
 
   return (
-    <div className='min-h-screen bg-[#100F11] text-text-primary pb-16'>
+    <div className='min-h-screen bg-app text-text-primary pb-16'>
       <Toaster position='top-center' reverseOrder={false} />
 
       {/* ─── Premium Standalone Header ─── */}
-      <header className='sticky top-0 z-40 bg-[#161517]/80 backdrop-blur-md border-b border-border-subtle'>
+      <header className='sticky top-0 z-40 header-cyber bg-surface/80 backdrop-blur-md'>
         <div className='max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap'>
           <div className='flex items-center gap-3'>
-            <div className='w-9 h-9 rounded-xl bg-gradient-to-br from-[#2C2930] to-black border border-border-subtle flex items-center justify-center font-bold text-[#F3F2F4] text-sm'>
+            <div className='w-9 h-9 rounded-xl bg-gradient-to-br from-[#2C2930] to-[#121220] dark:from-[#2C2930] dark:to-black border border-border-subtle flex items-center justify-center font-bold text-text-primary text-sm'>
               C
             </div>
             <div>
@@ -426,13 +426,13 @@ export const ApprovalPortalPage = () => {
 
           {/* Summary Stats */}
           <div className='flex items-center gap-4'>
-            <div className='bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center'>
+            <div className='bg-surface-soft border border-border-subtle px-4 py-2 rounded-xl text-center'>
               <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
                 Pendientes
               </p>
-              <p className='text-lg font-black text-[#F3F2F4] mt-0.5'>{pendingCount}</p>
+              <p className='text-lg font-black text-text-primary mt-0.5'>{pendingCount}</p>
             </div>
-            <div className='bg-[#222024] border border-border-subtle/50 px-4 py-2 rounded-xl text-center'>
+            <div className='bg-surface-soft border border-border-subtle px-4 py-2 rounded-xl text-center'>
               <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
                 Aprobados
               </p>
@@ -447,7 +447,7 @@ export const ApprovalPortalPage = () => {
             onClick={() => setActiveFilter('all')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeFilter === 'all'
-                ? 'bg-text-primary text-black'
+                ? 'bg-text-primary text-white dark:text-[#07070e] font-black'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >
@@ -457,7 +457,7 @@ export const ApprovalPortalPage = () => {
             onClick={() => setActiveFilter('pending')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeFilter === 'pending'
-                ? 'bg-text-primary text-black'
+                ? 'bg-text-primary text-white dark:text-[#07070e] font-black'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >
@@ -467,7 +467,7 @@ export const ApprovalPortalPage = () => {
             onClick={() => setActiveFilter('approved')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeFilter === 'approved'
-                ? 'bg-text-primary text-black'
+                ? 'bg-text-primary text-white dark:text-[#07070e] font-black'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >

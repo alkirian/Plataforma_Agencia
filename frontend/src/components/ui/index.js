@@ -23,3 +23,7 @@ export { ClientCardSkeleton } from './ClientCardSkeleton';
 
 // Re-exportar utilidades
 export { cn } from '../../lib/utils';
+
+// Brand assets
+export { CadenceLogosPreview } from './CadenceLogosPreview';
+

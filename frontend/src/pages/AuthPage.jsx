@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@api/apiFetch';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
 // High-end inputs and buttons classes
 const inputClass =
@@ -26,8 +28,14 @@ export const AuthPage = () => {
   const [userHasAgency, setUserHasAgency] = useState(false);
   const [loginMethod, setLoginMethod] = useState('email'); // 'email', 'google'
 
-  // Mouse Parallax coordinates
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  // Refs para animaciones de GSAP
+  const leftPanelRef = useRef(null);
+  const cubeRef = useRef(null);
+  const dialRef = useRef(null);
+  const gridRef = useRef(null);
+  const waveRef = useRef(null);
+  const ringRef = useRef(null);
+  const formContainerRef = useRef(null);
 
   const {
     register,
@@ -40,16 +48,134 @@ export const AuthPage = () => {
     watch,
   } = useForm();
 
-  // Mouse position listener for sutil parallax
-  useEffect(() => {
+  // Lógica de Animaciones Premium con GSAP
+  useGSAP(() => {
+    if (!leftPanelRef.current) return;
+
+    // 1. Revelación cinemática letra por letra con desenfoque progresivo
+    gsap.fromTo(".brand-letter", 
+      { opacity: 0, y: 80, filter: "blur(15px)", transformPerspective: 1000, rotateX: -30 },
+      { opacity: 0.015, y: 0, filter: "blur(0px)", rotateX: 0, duration: 1.8, stagger: 0.08, ease: "power4.out" }
+    );
+
+    // 2. Entrada elástica para los widgets en 3D
+    gsap.fromTo([cubeRef.current, dialRef.current, gridRef.current, waveRef.current],
+      { opacity: 0, scale: 0.8, y: 40 },
+      { opacity: 1, scale: 1, y: 0, duration: 1.4, stagger: 0.15, ease: "back.out(1.5)", delay: 0.3 }
+    );
+
+    // 3. Configuración de efectos magnéticos ultra-precisos a 60 FPS (quickTo)
+    const cubeX = gsap.quickTo(cubeRef.current, "x", { duration: 0.8, ease: "power2.out" });
+    const cubeY = gsap.quickTo(cubeRef.current, "y", { duration: 0.8, ease: "power2.out" });
+    const cubeRotateX = gsap.quickTo(cubeRef.current, "rotateX", { duration: 0.8, ease: "power2.out" });
+    const cubeRotateY = gsap.quickTo(cubeRef.current, "rotateY", { duration: 0.8, ease: "power2.out" });
+
+    const dialX = gsap.quickTo(dialRef.current, "x", { duration: 0.9, ease: "power2.out" });
+    const dialY = gsap.quickTo(dialRef.current, "y", { duration: 0.9, ease: "power2.out" });
+    const dialRotateX = gsap.quickTo(dialRef.current, "rotateX", { duration: 0.9, ease: "power2.out" });
+    const dialRotateY = gsap.quickTo(dialRef.current, "rotateY", { duration: 0.9, ease: "power2.out" });
+
+    const gridX = gsap.quickTo(gridRef.current, "x", { duration: 0.75, ease: "power2.out" });
+    const gridY = gsap.quickTo(gridRef.current, "y", { duration: 0.75, ease: "power2.out" });
+    const gridRotateX = gsap.quickTo(gridRef.current, "rotateX", { duration: 0.75, ease: "power2.out" });
+    const gridRotateY = gsap.quickTo(gridRef.current, "rotateY", { duration: 0.75, ease: "power2.out" });
+
+    const waveX = gsap.quickTo(waveRef.current, "x", { duration: 0.85, ease: "power2.out" });
+    const waveY = gsap.quickTo(waveRef.current, "y", { duration: 0.85, ease: "power2.out" });
+    const waveRotateX = gsap.quickTo(waveRef.current, "rotateX", { duration: 0.85, ease: "power2.out" });
+    const waveRotateY = gsap.quickTo(waveRef.current, "rotateY", { duration: 0.85, ease: "power2.out" });
+
+    const ringX = gsap.quickTo(ringRef.current, "x", { duration: 1.2, ease: "power2.out" });
+    const ringY = gsap.quickTo(ringRef.current, "y", { duration: 1.2, ease: "power2.out" });
+    const ringRotate = gsap.quickTo(ringRef.current, "rotation", { duration: 1.2, ease: "power2.out" });
+
+    // 4. Mouse movement tracking
     const handleMouseMove = (e) => {
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = (e.clientY / window.innerHeight) * 2 - 1;
-      setMousePos({ x, y });
+      const rect = leftPanelRef.current.getBoundingClientRect();
+      const relX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2); // normalize -1 to 1
+      const relY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // normalize -1 to 1
+
+      // Cubo: flotación e inclinación tridimensional
+      cubeX(relX * -40);
+      cubeY(relY * -40);
+      cubeRotateX(relY * -18);
+      cubeRotateY(relX * 18);
+
+      // Dial Concentrado: flotación contraria sutil
+      dialX(relX * 25);
+      dialY(relY * -20);
+      dialRotateX(relY * -12);
+      dialRotateY(relX * 12);
+
+      // Red de Nodos: seguimiento más amplio
+      gridX(relX * -20);
+      gridY(relY * 35);
+      gridRotateX(relY * 15);
+      gridRotateY(relX * -15);
+
+      // Soundwave Card: seguimiento de masa
+      waveX(relX * 30);
+      waveY(relY * 30);
+      waveRotateX(relY * 18);
+      waveRotateY(relX * -18);
+
+      // Anillos orbitales de fondo
+      ringX(relX * 12);
+      ringY(relY * 12);
+      ringRotate(relX * 25);
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+
+    const handleMouseLeave = () => {
+      // Retorno elástico al estado de reposo original
+      gsap.to([cubeRef.current, dialRef.current, gridRef.current, waveRef.current], {
+        x: 0, y: 0, rotateX: 0, rotateY: 0, duration: 1.2, ease: "elastic.out(1, 0.75)"
+      });
+      gsap.to(ringRef.current, { x: 0, y: 0, rotation: 0, duration: 1.5, ease: "power2.out" });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    leftPanelRef.current.addEventListener("mouseleave", handleMouseLeave);
+
+    // 5. Animación líquida de frecuencia sinusoidal para el Soundwave
+    const bars = gsap.utils.toArray(".soundwave-bar");
+    gsap.to(bars, {
+      scaleY: 2.5,
+      transformOrigin: "bottom center",
+      duration: 0.65,
+      yoyo: true,
+      repeat: -1,
+      stagger: {
+        each: 0.07,
+        from: "center",
+        ease: "sine.inOut"
+      },
+      ease: "sine.inOut"
+    });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, { scope: leftPanelRef });
+
+  // Transición Flip / Swing 3D para el formulario de login lateral al cambiar flowState
+  useGSAP(() => {
+    if (!formContainerRef.current) return;
+
+    gsap.fromTo(formContainerRef.current,
+      { 
+        rotateY: -65, 
+        opacity: 0,
+        transformPerspective: 1000, 
+      },
+      { 
+        rotateY: 0, 
+        opacity: 1, 
+        duration: 0.95, 
+        ease: "back.out(1.15)",
+        clearProps: "transform"
+      }
+    );
+  }, [flowState]);
 
   // Pre-load invites from localStorage
   useEffect(() => {
@@ -437,27 +563,21 @@ export const AuthPage = () => {
       {/* ──────────────────────────────────────────────────────────── */}
       {/* LIENZO IZQUIERDO: Branding de Agua + Figuras Geométricas 3D */}
       {/* ──────────────────────────────────────────────────────────── */}
-      <div className="flex-1 relative hidden lg:flex flex-col justify-between p-12 overflow-hidden z-10">
+      <div ref={leftPanelRef} className="flex-1 relative hidden lg:flex flex-col justify-between p-12 overflow-hidden z-10">
         
         {/* Giant Spatial Watermark Branding */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none">
-          <span className="font-title font-black text-[12vw] tracking-[0.25em] uppercase text-white/[0.015] watermark-glow">
-            CADENCE
-          </span>
+          {"CADENCE".split("").map((letra, i) => (
+            <span key={i} className="brand-letter inline-block font-title font-black text-[12vw] tracking-[0.25em] uppercase text-white/[0.015] watermark-glow">
+              {letra}
+            </span>
+          ))}
         </div>
 
         {/* Ambient glow layers */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <motion.div
-            variants={glowVariants}
-            animate="animate1"
-            className="absolute top-[20%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-gradient-to-br from-[#7C5CFC]/8 to-transparent blur-[120px]"
-          />
-          <motion.div
-            variants={glowVariants}
-            animate="animate2"
-            className="absolute bottom-[20%] right-[20%] w-[30vw] h-[30vw] rounded-full bg-[#4ECDC4]/5 blur-[100px]"
-          />
+          <div className="absolute top-[20%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-gradient-to-br from-[#7C5CFC]/8 to-transparent blur-[120px]" />
+          <div className="absolute bottom-[20%] right-[20%] w-[30vw] h-[30vw] rounded-full bg-[#4ECDC4]/5 blur-[100px]" />
         </div>
 
         {/* Technical Grid Blueprint */}
@@ -489,16 +609,10 @@ export const AuthPage = () => {
         <div className="relative z-10 my-auto w-full h-[60vh] flex items-center justify-center">
           
           {/* 1. Wireframe 3D Cube (Central Left) */}
-          <motion.div
+          <div
+            ref={cubeRef}
             className="absolute left-[8%] top-[15%] w-36 h-36 border border-white/[0.04] bg-[#07070E]/30 rounded-2xl backdrop-blur-md shadow-2xl p-4 flex items-center justify-center cursor-crosshair glow-hover-transition"
-            style={{
-              transform: `translate3d(${mousePos.x * -25}px, ${mousePos.y * -25}px, 0)`,
-            }}
-            whileHover={{
-              scale: 1.1,
-              borderColor: 'rgba(124,92,252,0.4)',
-              boxShadow: '0 25px 50px rgba(124,92,252,0.15)',
-            }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="w-20 h-20 relative wireframe-cube-anim">
               {/* SVG 3D Cube Wireframe representation */}
@@ -515,19 +629,13 @@ export const AuthPage = () => {
               </svg>
             </div>
             <span className="absolute bottom-2 right-3 font-mono text-[8px] tracking-wider text-white/30">CUBE.MESH</span>
-          </motion.div>
+          </div>
 
           {/* 2. Concentric Data Dial Card (Top Right / Center) */}
-          <motion.div
+          <div
+            ref={dialRef}
             className="absolute left-[38%] top-[5%] w-[250px] rounded-2xl border border-white/[0.04] bg-[#07070E]/30 p-5 backdrop-blur-md shadow-2xl cursor-pointer glow-hover-transition"
-            style={{
-              transform: `translate3d(${mousePos.x * 20}px, ${mousePos.y * -15}px, 0)`,
-            }}
-            whileHover={{
-              scale: 1.06,
-              borderColor: 'rgba(78,205,196,0.3)',
-              boxShadow: '0 25px 50px rgba(78,205,196,0.12)',
-            }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-7 h-7 rounded-full border border-[#4ECDC4]/20 flex items-center justify-center text-[#4ECDC4] text-xs font-black">
@@ -549,19 +657,13 @@ export const AuthPage = () => {
               </svg>
               <div className="absolute font-mono text-[9px] font-extrabold text-white/50">89.4%</div>
             </div>
-          </motion.div>
+          </div>
 
           {/* 3. Node Net Connectivity Grid (Bottom Left / Center) */}
-          <motion.div
+          <div
+            ref={gridRef}
             className="absolute left-[15%] bottom-[8%] w-[240px] rounded-2xl border border-white/[0.04] bg-[#07070E]/30 p-4.5 backdrop-blur-md shadow-2xl cursor-pointer glow-hover-transition"
-            style={{
-              transform: `translate3d(${mousePos.x * -15}px, ${mousePos.y * 30}px, 0)`,
-            }}
-            whileHover={{
-              scale: 1.08,
-              borderColor: 'rgba(255,107,107,0.3)',
-              boxShadow: '0 25px 50px rgba(255,107,107,0.12)',
-            }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="flex flex-col space-y-3">
               <div className="flex items-center justify-between text-left">
@@ -590,19 +692,13 @@ export const AuthPage = () => {
                 <span>NODES: 04/04</span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* 4. Sound Wave Frequency Card (Bottom Right / Center) */}
-          <motion.div
+          <div
+            ref={waveRef}
             className="absolute left-[45%] bottom-[12%] w-[220px] rounded-2xl border border-white/[0.04] bg-[#07070E]/30 p-4 backdrop-blur-md shadow-2xl cursor-pointer glow-hover-transition"
-            style={{
-              transform: `translate3d(${mousePos.x * 25}px, ${mousePos.y * 25}px, 0)`,
-            }}
-            whileHover={{
-              scale: 1.07,
-              borderColor: 'rgba(160,136,255,0.4)',
-              boxShadow: '0 25px 50px rgba(124,92,252,0.12)',
-            }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <div className="flex flex-col space-y-3.5">
               <div className="flex items-center justify-between text-left">
@@ -616,24 +712,20 @@ export const AuthPage = () => {
               {/* Soundwaves bars animating */}
               <div className="flex justify-between items-end h-8 px-2 bg-white/[0.01] rounded-lg border border-white/[0.03]">
                 {[20, 60, 45, 80, 30, 90, 50, 75, 40, 85, 30].map((h, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    className="w-1 rounded-full bg-gradient-to-t from-[#7C5CFC] to-[#FF6B6B]"
-                    animate={{ height: [`${h * 0.35}%`, `${h}%`, `${h * 0.35}%`] }}
-                    transition={{ duration: 1.2 + i * 0.1, repeat: Infinity, ease: 'easeInOut' }}
+                    className="soundwave-bar w-1 rounded-full bg-gradient-to-t from-[#7C5CFC] to-[#FF6B6B]"
+                    style={{ height: `${h * 0.35}%` }}
                   />
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* 5. Ambient Orbiting Ring Overlay */}
           <div
+            ref={ringRef}
             className="absolute w-[600px] h-[600px] z-0 opacity-10 pointer-events-none"
-            style={{
-              transform: `translate3d(${mousePos.x * 8}px, ${mousePos.y * 8}px, 0) rotate(${mousePos.x * 12}deg)`,
-              transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-            }}
           >
             <svg viewBox="0 0 200 200" className="w-full h-full text-white" fill="none">
               <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="0.3" strokeDasharray="4 4" />
@@ -703,7 +795,7 @@ export const AuthPage = () => {
           </div>
 
           {/* Form wrapper */}
-          <div className="w-full">
+          <div ref={formContainerRef} className="w-full">
             <AnimatePresence mode="wait">
               
               {/* 1. STATE: ENTER EMAIL */}

@@ -16,6 +16,7 @@ import {
 } from '../controllers/clients.controller.js';
 import { handleGetDocumentsForClient, handleUploadDocument, handleDeleteDocument } from '../controllers/documents.controller.js';
 import { handleGenerateIdeas, handleChat, handleGetChatHistory, handleGenerateImage, handleGenerateCopyFromTrend } from '../controllers/ai.controller.js';
+import { handleTransformProductImage, handleOutpaintImage } from '../controllers/design.controller.js';
 import { handleGetBrandAssets, handleCreateBrandAsset, handleDeleteBrandAsset } from '../controllers/brandAssets.controller.js';
 import { handleAutoFillBrandProfile, handleSearchCompanyBrandProfile, handleAnalyzeBrandConsistency } from '../controllers/brand.controller.js';
 import { validate, clientSchema, clientBrandProfileSchema, clientCardColorSchema } from '../schemas/validation.js';
@@ -54,6 +55,10 @@ router.post('/:clientId/generate-copy', handleGenerateCopyFromTrend);
 router.post('/:clientId/chat', handleChat);
 router.get('/:clientId/chat/history', handleGetChatHistory);
 router.post('/:clientId/schedule/:itemId/generate-image', handleGenerateImage);
+
+// Rutas de Estudio de Diseño con IA
+router.post('/:clientId/design/transform-product', handleTransformProductImage);
+router.post('/:clientId/design/outpaint', handleOutpaintImage);
 
 
 // Ruta para el feed de actividad de un cliente

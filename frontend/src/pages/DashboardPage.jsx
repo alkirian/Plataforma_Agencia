@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { ClientCreationModal } from '../components/dashboard/ClientCreationModal.jsx';
 import { MemberInvitationModal } from '../components/dashboard/MemberInvitationModal.jsx';
 import { LoadingCard, ErrorCard } from '../components/ui/index.js';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -16,6 +18,104 @@ export const DashboardPage = () => {
 
   // Contenedor de referencia para calcular coordenadas locales del cursor
   const containerRef = React.useRef(null);
+  const flowerDotRef = React.useRef(null);
+  const springCoilRef = React.useRef(null);
+
+  // Animaciones elásticas e interactivas premium con GSAP
+  useGSAP(() => {
+    // 1. Revelación cinemática de las palabras en el montaje (deslizamiento y blur)
+    const words = gsap.utils.toArray(".word-disena, .word-gestiona, .word-marcas, .hero-plain-word");
+    gsap.fromTo(words,
+      { opacity: 0, y: 45, filter: "blur(12px)", transformPerspective: 1000, rotateX: -15 },
+      { opacity: 1, y: 0, filter: "blur(0px)", rotateX: 0, duration: 1.4, stagger: 0.08, ease: "power4.out", delay: 0.15 }
+    );
+
+    // 2. Entrada rebotante elástica para los dos elementos SVG interactivos
+    gsap.fromTo([flowerDotRef.current, springCoilRef.current],
+      { scale: 0, rotation: -120 },
+      { scale: 1, rotation: 0, duration: 1.5, stagger: 0.25, ease: "back.out(2)", delay: 0.55 }
+    );
+
+    // 3. Rotación infinita y lenta en el punto de flor de "Diseñá"
+    gsap.to(flowerDotRef.current, {
+      rotation: "+=360",
+      duration: 35,
+      repeat: -1,
+      ease: "none"
+    });
+
+    // 4. Disparadores de hover dinámicos y notorios para la palabra "Diseñá"
+    const wordDisena = document.querySelector(".word-disena");
+    if (wordDisena) {
+      const handleEnter = () => {
+        gsap.to(wordDisena, { scale: 1.05, duration: 0.35, ease: "back.out(2)" });
+        gsap.to(flowerDotRef.current, { rotation: "+=180", scale: 1.45, duration: 0.6, ease: "back.out(1.5)" });
+      };
+      const handleLeave = () => {
+        gsap.to(wordDisena, { scale: 1, duration: 0.45, ease: "power2.out" });
+        gsap.to(flowerDotRef.current, { scale: 1, duration: 0.45, ease: "power2.out" });
+      };
+      wordDisena.addEventListener("mouseenter", handleEnter);
+      wordDisena.addEventListener("mouseleave", handleLeave);
+      wordDisena._enter = handleEnter;
+      wordDisena._leave = handleLeave;
+    }
+
+    // 5. Disparadores de hover dinámicos y notorios para la palabra "gestioná"
+    const wordGestiona = document.querySelector(".word-gestiona");
+    if (wordGestiona) {
+      const handleEnter = () => {
+        gsap.to(wordGestiona, { scale: 1.04, duration: 0.3, ease: "power2.out" });
+        gsap.timeline()
+          .to(springCoilRef.current, { scaleY: 0.5, y: 7, duration: 0.12, ease: "power1.out" })
+          .to(springCoilRef.current, { scaleY: 1.25, y: -4, duration: 0.2, ease: "power2.out" })
+          .to(springCoilRef.current, { scaleY: 1, y: 0, duration: 0.65, ease: "elastic.out(1.3, 0.35)" });
+      };
+      const handleLeave = () => {
+        gsap.to(wordGestiona, { scale: 1, duration: 0.45, ease: "power2.out" });
+      };
+      wordGestiona.addEventListener("mouseenter", handleEnter);
+      wordGestiona.addEventListener("mouseleave", handleLeave);
+      wordGestiona._enter = handleEnter;
+      wordGestiona._leave = handleLeave;
+    }
+
+    // 6. Disparadores de hover dinámicos para la palabra "marcas"
+    const wordMarcas = document.querySelector(".word-marcas");
+    if (wordMarcas) {
+      const handleEnter = () => {
+        gsap.to(wordMarcas, { scale: 1.08, duration: 0.3, ease: "back.out(2)" });
+      };
+      const handleLeave = () => {
+        gsap.to(wordMarcas, { scale: 1, duration: 0.4, ease: "power2.out" });
+      };
+      wordMarcas.addEventListener("mouseenter", handleEnter);
+      wordMarcas.addEventListener("mouseleave", handleLeave);
+      wordMarcas._enter = handleEnter;
+      wordMarcas._leave = handleLeave;
+    }
+
+    // 7. Animación infinita y fluida del subrayado ondulado en "marcas" (desplazamiento continuo)
+    gsap.fromTo(".wavy-underline-path",
+      { x: 0 },
+      { x: -40, duration: 1.6, repeat: -1, ease: "none" }
+    );
+
+    return () => {
+      if (wordDisena) {
+        wordDisena.removeEventListener("mouseenter", wordDisena._enter);
+        wordDisena.removeEventListener("mouseleave", wordDisena._leave);
+      }
+      if (wordGestiona) {
+        wordGestiona.removeEventListener("mouseenter", wordGestiona._enter);
+        wordGestiona.removeEventListener("mouseleave", wordGestiona._leave);
+      }
+      if (wordMarcas) {
+        wordMarcas.removeEventListener("mouseenter", wordMarcas._enter);
+        wordMarcas.removeEventListener("mouseleave", wordMarcas._leave);
+      }
+    };
+  }, { scope: containerRef });
 
   // Valores de movimiento del mouse (normalizados de -0.5 a 0.5)
   const mouseX = useMotionValue(0);
@@ -256,10 +356,93 @@ export const DashboardPage = () => {
         </div>
 
         {/* Textos de Bienvenida Lexend */}
-        <h1 className='text-3xl sm:text-4xl font-title font-black text-text-primary tracking-tight leading-snug max-w-xl'>
-          Diseñá y gestioná el contenido de tus{' '}
-          <span className='bg-gradient-to-r from-[#7C5CFC] to-[#FF6B6B] bg-clip-text text-transparent'>
+        {/* Textos de Bienvenida Lexend */}
+        <h1 className='text-4xl sm:text-5xl lg:text-6xl font-title font-black text-text-primary tracking-tight leading-[1.2] max-w-4xl text-center select-none flex flex-wrap items-center justify-center gap-y-1.5'>
+          {/* Palabra: Diseñá */}
+          <span className="word-disena inline-block relative cursor-pointer mr-3 group">
+            Diseñ<span className="relative inline-block">
+              ı
+              <svg
+                ref={flowerDotRef}
+                className="absolute -top-[44%] left-1/2 -translate-x-1/2 w-[1.15em] h-[1.15em] pointer-events-none drop-shadow-[0_0_12px_rgba(253,186,116,0.5)]"
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <radialGradient id="hero-flower-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#FEC5FB" />
+                    <stop offset="50%" stopColor="#FF9C7C" />
+                    <stop offset="100%" stopColor="#E76F00" />
+                  </radialGradient>
+                </defs>
+                <path
+                  d="M50 50 C20 20, 20 80, 50 50 C80 20, 80 80, 50 50 C20 20, 80 20, 50 50 C20 80, 80 80, 50 50 Z"
+                  fill="url(#hero-flower-grad)"
+                />
+                <circle cx="50" cy="50" r="10" fill="#030307" />
+              </svg>
+            </span>á
+          </span>
+
+          <span className="hero-plain-word inline-block mr-3 text-text-secondary font-medium font-sans text-3xl sm:text-4xl lg:text-5xl">y</span>
+
+          {/* Palabra: gestioná */}
+          <span className="word-gestiona inline-block relative cursor-pointer mr-3 group">
+            gest<span className="relative inline-block">
+              ı
+              <svg
+                ref={springCoilRef}
+                className="absolute -top-[75%] left-1/2 -translate-x-1/2 w-[1.25em] h-[1.45em] pointer-events-none drop-shadow-[0_0_12px_rgba(78,205,196,0.45)] z-10"
+                viewBox="0 0 40 50"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <linearGradient id="hero-spring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4ECDC4" />
+                    <stop offset="100%" stopColor="#7C5CFC" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M 20 8 C 32 8, 32 18, 20 18 C 8 18, 8 28, 20 28 C 32 28, 32 38, 20 38 C 8 38, 8 46, 20 46"
+                  stroke="url(#hero-spring-grad)"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>oná
+          </span>
+
+          <span className="hero-plain-word inline-block mr-3 text-text-secondary font-medium font-sans text-3xl sm:text-4xl lg:text-5xl">el</span>
+          <span className="hero-plain-word inline-block mr-3 text-text-secondary font-medium font-sans text-3xl sm:text-4xl lg:text-5xl">contenido</span>
+          <span className="hero-plain-word inline-block mr-3 text-text-secondary font-medium font-sans text-3xl sm:text-4xl lg:text-5xl">de</span>
+          <span className="hero-plain-word inline-block mr-3 text-text-secondary font-medium font-sans text-3xl sm:text-4xl lg:text-5xl">tus</span>
+
+          {/* Palabra: marcas */}
+          <span className="word-marcas inline-block relative cursor-pointer bg-gradient-to-r from-[#7C5CFC] to-[#FF6B6B] bg-clip-text text-transparent ml-2.5 pb-2.5">
             marcas
+            {/* Custom SVG Wavy Underline flowing infinitely */}
+            <svg 
+              className="absolute left-0 -bottom-1.5 w-full h-3 overflow-hidden pointer-events-none" 
+              viewBox="0 0 100 12" 
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="underline-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#7C5CFC" />
+                  <stop offset="100%" stopColor="#FF6B6B" />
+                </linearGradient>
+              </defs>
+              <path
+                className="wavy-underline-path"
+                d="M -40,6 Q -30,0 -20,6 T 0,6 T 20,6 T 40,6 T 60,6 T 80,6 T 100,6 T 120,6 T 140,6"
+                fill="none"
+                stroke="url(#underline-wave-grad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+            </svg>
           </span>
         </h1>
 
