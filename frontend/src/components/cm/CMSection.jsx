@@ -512,9 +512,9 @@ export const CMSection = ({ clientId }) => {
   };
 
   const getSentimentBadge = (sentiment) => {
-    if (sentiment === 'positive') return <span className="bg-[color:var(--color-accent-sage)]/10 text-[color:var(--color-accent-sage)] border border-[color:var(--color-accent-sage)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Positivo</span>;
-    if (sentiment === 'negative') return <span className="bg-[color:var(--color-accent-rose)]/10 text-[color:var(--color-accent-rose)] border border-[color:var(--color-accent-rose)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Queja</span>;
-    return <span className="bg-[color:var(--color-accent-lavender)]/10 text-[color:var(--color-accent-lavender)] border border-[color:var(--color-accent-lavender)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Consulta</span>;
+    if (sentiment === 'positive') return <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Positivo</span>;
+    if (sentiment === 'negative') return <span className="bg-rose-500/10 text-rose-400 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Queja</span>;
+    return <span className="bg-[#7C5CFC]/10 text-[#b5a1ff] px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Consulta</span>;
   };
 
   const getConfidenceLabel = (confidence) => {
@@ -710,13 +710,13 @@ export const CMSection = ({ clientId }) => {
     <div className="p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full text-text-primary">
       
       {/* 1. TOP HEADER - CLEAN & HIGH-END */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-3 px-1 border-b border-border-subtle pb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-3 px-1 border-b border-white/5 pb-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold tracking-tight text-text-primary font-title">
               CM Inteligente
             </h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 text-accent-cyan text-[10px] font-semibold">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 text-accent-cyan text-[10px] font-semibold select-none">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse" />
               Sincronizado
             </span>
@@ -730,17 +730,17 @@ export const CMSection = ({ clientId }) => {
         <div className="flex items-center gap-5 ml-auto sm:ml-0">
           {/* Quick Metrics */}
           <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 bg-surface-soft border border-border-subtle py-1.5 px-3 rounded-lg shadow-sm">
+            <div className="flex items-center gap-1.5 bg-white/[0.01] border border-white/5 py-1.5 px-3 rounded-lg shadow-sm">
               <span className="text-text-muted font-medium">Pendientes:</span>
               <span className="text-accent-cyan font-bold text-sm">{pendingCount}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-surface-soft border border-border-subtle py-1.5 px-3 rounded-lg shadow-sm">
+            <div className="flex items-center gap-1.5 bg-white/[0.01] border border-white/5 py-1.5 px-3 rounded-lg shadow-sm">
               <span className="text-text-muted font-medium">Urgentes:</span>
               <span className="font-bold text-sm" style={{ color: 'var(--color-accent-rose)' }}>{escalatedCount}</span>
             </div>
           </div>
 
-          <div className="w-px h-4 bg-border-subtle" />
+          <div className="w-px h-4 bg-white/10" />
 
           {/* Action Tools */}
           <button
@@ -758,10 +758,10 @@ export const CMSection = ({ clientId }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* COL 1: MINIMALIST SMART INBOX (4 COLS) */}
-        <div className="lg:col-span-4 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-4 flex flex-col bg-[#0b0b14]/30 border border-white/5 rounded-2xl overflow-hidden min-h-[580px]">
           
           {/* Header search & consolidated filters */}
-          <div className="p-4 border-b border-border-subtle bg-surface-soft/30 space-y-3">
+          <div className="p-4 border-b border-white/5 bg-white/[0.01] space-y-3">
             {/* Search Input */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -786,9 +786,9 @@ export const CMSection = ({ clientId }) => {
             </div>
             
             {/* Platform & Status Selector */}
-            <div className="flex flex-col gap-2 pt-1 border-t border-border-subtle/50">
+            <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.04]">
               {/* Canal Selector */}
-              <div className="flex items-center gap-1 bg-surface-strong p-1 rounded-lg border border-border-subtle">
+              <div className="flex items-center gap-1 bg-slate-950/40 p-1 rounded-lg border border-white/[0.05]">
                 {[
                   { id: 'all', label: 'Todos' },
                   { id: 'facebook', label: 'Facebook' },
@@ -798,9 +798,9 @@ export const CMSection = ({ clientId }) => {
                     key={tab.id}
                     type="button"
                     onClick={() => setPlatformFilter(tab.id)}
-                    className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all duration-150 cursor-pointer ${
+                    className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all duration-150 cursor-pointer text-center ${
                       platformFilter === tab.id
-                        ? 'bg-surface text-accent-cyan font-semibold border border-border-subtle'
+                        ? 'bg-white/5 text-accent-cyan font-semibold border border-white/10'
                         : 'text-text-muted hover:text-text-primary'
                     }`}
                   >
@@ -810,7 +810,7 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Status Switcher tabs */}
-              <div className="flex border-b border-border-subtle mt-1.5">
+              <div className="flex border-b border-white/5 mt-1.5">
                 {[
                   { id: 'pending', label: 'Pendientes' },
                   { id: 'escalated', label: 'Urgentes' },
@@ -838,7 +838,7 @@ export const CMSection = ({ clientId }) => {
           </div>
 
           {/* Inbox threads list */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[480px]">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 max-h-[480px]">
             {loadingThreads ? (
               <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted h-64">
                 <ArrowPathIcon className="h-6 w-6 animate-spin text-accent-cyan mb-2" />
@@ -855,10 +855,10 @@ export const CMSection = ({ clientId }) => {
                       <motion.div
                         key={thread.id}
                         onClick={() => setSelectedThreadId(thread.id)}
-                        className={`p-3 cursor-pointer transition-all duration-150 rounded-xl border flex flex-col gap-2 ${
+                        className={`p-3.5 cursor-pointer transition-all duration-150 rounded-xl flex flex-col gap-2.5 border-l-2 select-none ${
                           isSelected 
-                            ? 'bg-surface-soft border-border-strong shadow-sm' 
-                            : 'bg-transparent border-transparent hover:bg-surface-soft/40 hover:border-border-subtle'
+                            ? 'bg-white/[0.04] border-accent-cyan' 
+                            : 'bg-transparent border-l-transparent hover:bg-white/[0.02]'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -866,26 +866,26 @@ export const CMSection = ({ clientId }) => {
                             <img
                               src={thread.user.avatar}
                               alt={thread.user.name}
-                              className="w-6 h-6 rounded-full object-cover border border-border-subtle flex-shrink-0"
+                              className="w-6 h-6 rounded-full object-cover border border-white/10 flex-shrink-0"
                             />
-                            <span className="text-xs font-bold text-text-primary truncate">
+                            <span className="text-[13px] font-semibold text-white/90 truncate">
                               @{thread.user.name}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className="text-[8px] text-text-muted font-mono uppercase bg-surface border border-border-subtle px-1.5 py-0.5 rounded">
+                            <span className="text-[8px] text-white/50 font-mono uppercase bg-white/[0.04] border border-white/10 px-1.5 py-0.5 rounded">
                               {thread.platform.substring(0, 2)}
                             </span>
                             <span className="text-[10px] text-text-muted">{thread.time}</span>
                           </div>
                         </div>
 
-                        <p className="text-xs text-text-muted leading-relaxed line-clamp-2 pr-1">
+                        <p className="text-[12px] text-white/60 leading-relaxed line-clamp-2 pr-1 font-medium">
                           {thread.comment}
                         </p>
 
-                        <div className="flex items-center justify-between border-t border-border-subtle/50 pt-2 mt-0.5">
+                        <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-1.5">
                             {getSentimentBadge(thread.sentiment)}
                           </div>
@@ -893,7 +893,7 @@ export const CMSection = ({ clientId }) => {
                             <img
                               src={thread.postThumbnail}
                               alt="Post"
-                              className="w-4 h-4 rounded object-cover opacity-60 border border-border-subtle"
+                              className="w-4 h-4 rounded object-cover opacity-60 border border-white/10"
                             />
                           ) : null}
                         </div>
@@ -911,25 +911,25 @@ export const CMSection = ({ clientId }) => {
         </div>
 
         {/* COL 2: COPILOT WORKSPACE (8 COLS) */}
-        <div className="lg:col-span-8 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-8 flex flex-col bg-[#0b0b14]/30 border border-white/5 rounded-2xl overflow-hidden min-h-[580px]">
           {activeThread ? (
             <div className="p-6 flex flex-col flex-1 gap-6">
               
               {/* SECCIÓN 1: EL MENSAJE RECIBIDO */}
-              <div className="bg-surface-soft border border-border-subtle rounded-xl p-4 space-y-3">
+              <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <img
                       src={activeThread.user.avatar}
                       alt={activeThread.user.name}
-                      className="w-8 h-8 rounded-full object-cover border border-border-subtle"
+                      className="w-8 h-8 rounded-full object-cover border border-white/10"
                     />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-text-primary">
                           @{activeThread.user.name}
                         </span>
-                        <span className="text-[9px] text-text-muted font-mono uppercase bg-surface border border-border-subtle px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] text-white/50 font-mono uppercase bg-white/[0.04] border border-white/10 px-1.5 py-0.5 rounded">
                           {activeThread.platform}
                         </span>
                       </div>
@@ -944,18 +944,18 @@ export const CMSection = ({ clientId }) => {
                   </div>
                 </div>
 
-                <div className="text-sm text-text-primary leading-relaxed pl-3 whitespace-pre-wrap select-text font-medium border-l-2 border-border-strong">
+                <div className="text-base font-semibold text-white/95 leading-relaxed pl-4 whitespace-pre-wrap select-text border-l-2 border-accent-cyan py-0.5">
                   "{activeThread.comment}"
                 </div>
 
                 {/* CONTEXTO ASOCIADO AL POST */}
-                <div className="flex items-center justify-between gap-3 pt-3 border-t border-border-subtle/50 text-xs">
+                <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-white/5 text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     {activeThread.postThumbnail && (
                       <img
                         src={activeThread.postThumbnail}
                         alt="Post"
-                        className="w-6 h-6 rounded object-cover border border-border-subtle flex-shrink-0"
+                        className="w-6 h-6 rounded object-cover border border-white/10 flex-shrink-0"
                       />
                     )}
                     <div className="min-w-0">
@@ -989,12 +989,12 @@ export const CMSection = ({ clientId }) => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowTechDetails(!showTechDetails)}
-                      className="text-[10px] font-semibold text-text-muted hover:text-text-primary px-2.5 py-1 rounded border border-border-subtle bg-surface-strong transition-colors cursor-pointer"
+                      className="text-[10px] font-bold text-text-secondary hover:text-white px-2.5 py-1.5 rounded bg-white/[0.02] border border-white/5 hover:bg-white/5 transition-all cursor-pointer"
                     >
                       {showTechDetails ? 'Ocultar metadatos' : 'Ver metadatos'}
                     </button>
                     <span 
-                      className="text-[10px] font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-2.5 py-1 rounded-full cursor-help" 
+                      className="text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2.5 py-1.5 rounded-full cursor-help select-none" 
                       title={`Confianza exacta: ${activeThread.aiConfidence || 95}%`}
                     >
                       {loadingDraft ? 'Analizando...' : getConfidenceLabel(activeThread.aiConfidence)}
@@ -1007,7 +1007,7 @@ export const CMSection = ({ clientId }) => {
                   <motion.div
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3.5 bg-surface-strong border border-border-subtle rounded-xl text-[10px] text-text-muted font-mono space-y-1.5 leading-relaxed"
+                    className="p-3.5 bg-slate-950/40 border border-white/5 rounded-xl text-[10px] text-text-secondary font-mono space-y-1.5 leading-relaxed"
                   >
                     <div><span className="text-text-secondary font-bold">ID Interacción:</span> {activeThread.id}</div>
                     <div><span className="text-text-secondary font-bold">Base de Conocimiento Citada:</span> {activeThread.contextUsed || 'Base de Conocimiento General'}</div>
@@ -1016,7 +1016,7 @@ export const CMSection = ({ clientId }) => {
                   </motion.div>
                 )}
 
-                <div className="relative flex-1 flex flex-col bg-surface-strong border border-border-subtle rounded-xl p-4 min-h-[140px]">
+                <div className="relative flex-1 flex flex-col bg-slate-950/70 border border-white/10 rounded-xl p-4 min-h-[140px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   {/* Concentric Pulse AI indicator */}
                   {(loadingDraft || regenerating) && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-strong/90 rounded-xl">
@@ -1037,48 +1037,48 @@ export const CMSection = ({ clientId }) => {
                     <textarea
                       value={activeDraft}
                       onChange={e => setActiveDraft(e.target.value)}
-                      className="w-full flex-1 bg-transparent border-0 resize-none text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
+                      className="w-full flex-1 bg-transparent border-0 resize-none text-sm text-white/90 leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
                       placeholder="Modifica el borrador de la IA aquí..."
                     />
                   ) : (
-                    <div className="text-xs text-text-secondary leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
+                    <div className="text-sm text-white/90 leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
                       {activeDraft}
                     </div>
                   )}
 
                   {/* Shimmer RAG Citation Label */}
                   {!loadingDraft && activeThread.contextUsed && (
-                    <div className="mt-3 pt-2.5 border-t border-border-subtle/50 flex items-center justify-between text-[10px] text-text-muted">
+                    <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-text-secondary">
                       <span className="flex items-center gap-1.5 font-mono truncate max-w-[80%]">
                         <ShieldCheckIcon className="h-4 w-4 text-accent-cyan flex-shrink-0" />
-                        <span className="truncate">Validado con: {activeThread.contextUsed}</span>
+                        <span>Validado con: <span className="text-white/80 font-bold">{activeThread.contextUsed}</span></span>
                       </span>
                     </div>
                   )}
                 </div>
 
                 {/* AI Copilot Tweak Menu */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-soft p-3 rounded-xl border border-border-subtle">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/[0.01] p-3 rounded-xl border border-white/5">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">Ajustar Tono:</span>
                     <button
                       onClick={() => handleRegenerate('shorter')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white/[0.02] hover:bg-white/5 border border-white/5 transition-all text-white/80 hover:text-white"
                     >
                       Más Corto
                     </button>
                     <button
                       onClick={() => handleRegenerate('warmer')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white/[0.02] hover:bg-white/5 border border-white/5 transition-all text-white/80 hover:text-white"
                     >
                       Más Empático
                     </button>
                     <button
                       onClick={() => handleRegenerate('cta')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-white/[0.02] hover:bg-white/5 border border-white/5 transition-all text-white/80 hover:text-white"
                     >
                       Con CTA
                     </button>
@@ -1118,7 +1118,7 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* SECCIÓN 3: ACCIONES PRINCIPALES */}
-              <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
+              <div className="pt-4 border-t border-white/5 flex items-center justify-between gap-3">
                 {activeThread.status === 'replied' ? (
                   <div className="w-full bg-accent-cyan/5 border border-accent-cyan/20 text-accent-cyan py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold">
                     <CheckIcon className="h-4.5 w-4.5" />
@@ -1155,8 +1155,8 @@ export const CMSection = ({ clientId }) => {
                     <button
                       onClick={handleApprove}
                       disabled={approving || regenerating}
-                      className="btn-cyber text-white border-transparent px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer"
-                      style={{ backgroundColor: 'var(--color-accent-lavender)' }}
+                      className="btn-cyber text-white px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer shadow-[0_0_15px_rgba(124,92,252,0.15)] hover:shadow-[0_0_20px_rgba(124,92,252,0.3)] transition-all duration-200"
+                      style={{ backgroundColor: 'var(--color-accent-lavender)', borderColor: 'rgba(124, 92, 252, 0.4)' }}
                     >
                       {approving ? (
                         <ArrowPathIcon className="h-4 w-4 animate-spin" />
@@ -1197,39 +1197,39 @@ export const CMSection = ({ clientId }) => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm h-full bg-surface border-l border-border-subtle p-6 flex flex-col gap-6 shadow-3xl overflow-y-auto z-10 text-text-primary"
+              className="relative w-full max-w-sm h-full bg-[#07070f]/95 backdrop-blur-md border-l border-white/5 p-6 flex flex-col gap-6 shadow-3xl overflow-y-auto z-10 text-text-primary"
             >
-              <div className="flex justify-between items-center border-b border-border-subtle pb-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-4">
                 <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5 font-title">
                   <ShieldCheckIcon className="h-5 w-5 text-accent-cyan" />
                   <span>Reglas y Canales</span>
                 </h4>
                 <button
                   onClick={() => setShowRulesPanel(false)}
-                  className="btn-cyber px-3 py-1.5 text-[10px] font-bold transition-all cursor-pointer"
+                  className="btn-cyber px-3 py-1.5 text-[10px] font-bold transition-all cursor-pointer bg-white/[0.02] border border-white/5 text-white/80 hover:text-white"
                 >
                   Cerrar
                 </button>
               </div>
 
               {/* Tone Card Reference */}
-              <div className="bg-surface-soft border border-border-subtle p-4 rounded-xl space-y-1.5">
-                <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider block">Tono de Voz Activo</span>
+              <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider block select-none">Tono de Voz Activo</span>
                 <p className="text-xs text-text-primary font-bold">Cálido, Cercano & Empático</p>
-                <div className="text-[10px] text-text-muted leading-relaxed">
+                <div className="text-[10px] text-text-muted leading-relaxed select-none">
                   Utiliza siempre emojis amistosos, saluda de manera personalizada y mantén un lenguaje optimista y servicial.
                 </div>
               </div>
 
               {/* Autopilot Toggles Panel */}
               <div className="space-y-4">
-                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1">
+                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 select-none">
                   Ajustes de Autopiloto
                 </h5>
 
                 <div className="space-y-3">
                   {/* Toggle 1 */}
-                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
+                  <div className="flex items-center justify-between bg-white/[0.01] p-3 rounded-xl border border-white/5">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
                       <span className="text-[11px] font-bold text-text-primary">Auto-responder Saludos</span>
                       <span className="text-[9px] text-text-muted leading-tight">La IA responderá automáticamente comentarios de saludos.</span>
@@ -1239,7 +1239,7 @@ export const CMSection = ({ clientId }) => {
                         setAutopilotGreeting(!autopilotGreeting);
                         toast.success(autopilotGreeting ? 'Autopiloto de saludos inactivo' : 'Autopiloto de saludos activado');
                       }}
-                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-white/10"
                       style={{ backgroundColor: autopilotGreeting ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
                       <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
@@ -1249,7 +1249,7 @@ export const CMSection = ({ clientId }) => {
                   </div>
 
                   {/* Toggle 2 */}
-                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
+                  <div className="flex items-center justify-between bg-white/[0.01] p-3 rounded-xl border border-white/5">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
                       <span className="text-[11px] font-bold text-text-primary">Auto-resolver FAQs</span>
                       <span className="text-[9px] text-text-muted leading-tight">Contesta automáticamente preguntas de precios y envíos con alta confianza.</span>
@@ -1259,7 +1259,7 @@ export const CMSection = ({ clientId }) => {
                         setAutopilotFaq(!autopilotFaq);
                         toast.success(autopilotFaq ? 'Autopiloto de FAQ inactivo' : 'Autopiloto de FAQ activado');
                       }}
-                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-white/10"
                       style={{ backgroundColor: autopilotFaq ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
                       <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
@@ -1269,7 +1269,7 @@ export const CMSection = ({ clientId }) => {
                   </div>
 
                   {/* Toggle 3 */}
-                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
+                  <div className="flex items-center justify-between bg-white/[0.01] p-3 rounded-xl border border-white/5">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
                       <span className="text-[11px] font-bold text-text-primary">Derivar Críticos</span>
                       <span className="text-[9px] text-text-muted leading-tight">Envía quejas o crisis directamente a revisión del equipo humano.</span>
@@ -1279,7 +1279,7 @@ export const CMSection = ({ clientId }) => {
                         setEscalateNegatives(!escalateNegatives);
                         toast.success(escalateNegatives ? 'Derivación inactiva (Peligro)' : 'Derivación de seguridad activa');
                       }}
-                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-white/10"
                       style={{ backgroundColor: escalateNegatives ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
                       <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
@@ -1291,15 +1291,15 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Integraciones Multicanal */}
-              <div className="space-y-4 border-t border-border-subtle pt-4">
-                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <div className="space-y-4 border-t border-white/5 pt-4">
+                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 flex items-center gap-1.5 select-none">
                   <LinkIcon className="h-3.5 w-3.5 text-accent-cyan" />
                   <span>Integraciones Multicanal</span>
                 </h5>
 
                 <div className="space-y-3">
                   {/* Facebook / Instagram Card */}
-                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
+                  <div className="bg-white/[0.01] p-3 rounded-xl border border-white/5 space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
@@ -1312,12 +1312,12 @@ export const CMSection = ({ clientId }) => {
                           <span className="text-[9px] text-text-muted leading-tight">Canal de auto-respuestas CM</span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
                         Activo
                       </span>
                     </div>
                     {integration && (
-                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
+                      <div className="pt-2.5 border-t border-white/5 flex items-center justify-between gap-1 text-[9px]">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="text-text-muted font-semibold truncate max-w-[130px]">
                             Pág: {integration.page_name || 'Sin nombre'}
@@ -1337,7 +1337,7 @@ export const CMSection = ({ clientId }) => {
                   </div>
 
                   {/* LinkedIn Card */}
-                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
+                  <div className="bg-white/[0.01] p-3 rounded-xl border border-white/5 space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded bg-sky-500/10 text-sky-400">
@@ -1351,17 +1351,17 @@ export const CMSection = ({ clientId }) => {
                         </div>
                       </div>
                       {linkedinIntegration ? (
-                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
                           Sincronizado
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-white/5 text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
                           Inactivo
                         </span>
                       )}
                     </div>
                     {linkedinIntegration ? (
-                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
+                      <div className="pt-2.5 border-t border-white/5 flex items-center justify-between gap-1 text-[9px]">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="text-text-muted font-semibold truncate max-w-[130px]">
                             {linkedinIntegration.linkedin_name}
@@ -1393,7 +1393,7 @@ export const CMSection = ({ clientId }) => {
                   </div>
 
                   {/* TikTok Card */}
-                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
+                  <div className="bg-white/[0.01] p-3 rounded-xl border border-white/5 space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded bg-pink-500/10 text-pink-400">
@@ -1407,17 +1407,17 @@ export const CMSection = ({ clientId }) => {
                         </div>
                       </div>
                       {tiktokIntegration ? (
-                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
                           Sincronizado
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-white/5 text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
                           Inactivo
                         </span>
                       )}
                     </div>
                     {tiktokIntegration ? (
-                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
+                      <div className="pt-2.5 border-t border-white/5 flex items-center justify-between gap-1 text-[9px]">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="text-text-muted font-semibold truncate max-w-[130px]">
                             @{tiktokIntegration.tiktok_username}
@@ -1451,7 +1451,7 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Guidelines info */}
-              <div className="bg-surface-soft border border-border-subtle p-4 rounded-xl flex items-start gap-2.5 mt-auto">
+              <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl flex items-start gap-2.5 mt-auto">
                 <ShieldCheckIcon className="h-4.5 w-4.5 text-accent-cyan flex-shrink-0 mt-0.5" />
                 <div className="text-[10px] text-text-muted leading-relaxed">
                   <span className="font-bold text-text-secondary">Seguridad RAG:</span> El CM Inteligente está restringido a responder únicamente en base a los documentos cargados en tu sección "Documentos". Nunca inventará links o datos que no estén explícitamente verificados.

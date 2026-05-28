@@ -110,11 +110,17 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
             const isActive = location.pathname.startsWith(`/clients/${client.id}`);
             const brandColor = client.brand_info?.card_color || colors[idx % colors.length];
             const initials = (client.name || 'CL').substring(0, 2).toUpperCase();
+            
+            // Preservar la pestaña/módulo activo del cliente al cambiar de cliente
+            const activeTab = new URLSearchParams(location.search).get('tab');
+            const targetPath = activeTab
+              ? `/clients/${client.id}?tab=${activeTab}`
+              : `/clients/${client.id}`;
 
             return (
               <Link
                 key={client.id}
-                to={`/clients/${client.id}`}
+                to={targetPath}
                 onMouseEnter={() => prefetchClientData(client.id)}
                 className={`client-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 border border-transparent ${
                   isActive

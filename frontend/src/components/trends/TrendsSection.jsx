@@ -1047,6 +1047,11 @@ export const TrendsSection = ({ clientId }) => {
   // Agrupado de historial por fecha
   const groupedReports = groupReportsByDate(reports);
 
+  // Extract content pillars and products for custom suggestions
+  const pillars = client?.brand_info?.content_pillars || [];
+  const products = client?.brand_info?.products_services || [];
+  const suggestions = [...pillars, ...products].filter(Boolean).slice(0, 5);
+
   return (
     <div className='w-full max-w-full py-6 px-4 sm:px-6 md:px-8 xl:px-12 space-y-6'>
       {/* ─── Header & Search override ─── */}
@@ -1104,6 +1109,30 @@ export const TrendsSection = ({ clientId }) => {
           </button>
         </div>
       </motion.div>
+
+      {/* Suggested Search Keywords based on brand identity pillars */}
+      {suggestions.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className='flex flex-wrap items-center gap-2 p-3 rounded-xl border border-white/[0.04] bg-[#0F172A]/40 text-left'
+        >
+          <span className='text-[10px] font-black uppercase tracking-wider text-slate-500 mr-2 flex items-center gap-1 shrink-0 select-none'>
+            <span>✨</span> Sugerencias de tu Marca:
+          </span>
+          {suggestions.map((s, idx) => (
+            <button
+              key={idx}
+              type='button'
+              disabled={isRunning}
+              onClick={() => setCustomKeywords(s)}
+              className='bg-[#1E293B]/40 hover:bg-[#1E293B]/80 text-[#9b82ff] hover:text-white rounded-lg px-2.5 py-1 text-[10px] font-bold border border-white/[0.05] hover:border-[#7C5CFC]/30 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed select-none'
+            >
+              {s}
+            </button>
+          ))}
+        </motion.div>
+      )}
 
       {/* ─── Main Content Layout ─── */}
       {isLoading ? (

@@ -123,6 +123,7 @@ export const AIContentGenerator = ({
       : new Date();
   });
   const [selectedSpecialDates, setSelectedSpecialDates] = useState([]);
+  const [showSpecialDates, setShowSpecialDates] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -504,9 +505,6 @@ export const AIContentGenerator = ({
                     <Dialog.Title className='text-xl font-semibold text-text-primary'>
                       Generar contenido con IA
                     </Dialog.Title>
-                    <p className='mt-1 text-sm text-text-muted'>
-                      La IA usa la identidad del cliente, documentos y eventos existentes.
-                    </p>
                   </div>
                   <button
                     onClick={onClose}
@@ -545,142 +543,127 @@ export const AIContentGenerator = ({
 
                 {/* 📅 Efemérides & Fechas Especiales (Mes Actual + Próximo Mes) */}
                 {(specialDatesList.length > 0 || nextMonthSpecialDatesList.length > 0) && (
-                  <div className='mt-4 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 p-4 space-y-3.5'>
-                    <div className='flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/10 pb-2.5'>
-                      <div>
-                        <div className='flex items-center gap-1.5'>
-                          <span className='text-base select-none'>📅</span>
-                          <p className='text-sm font-semibold text-amber-300'>
-                            Efemérides y Fechas Especiales Clave
-                          </p>
-                        </div>
-                        <p className='mt-1 text-xs text-text-muted leading-relaxed'>
-                          Hacé clic en las efemérides que querés que la IA conmemore o considere
-                          para el calendario:
-                        </p>
-                      </div>
-                      {brandProfile?.industry && (
-                        <span className='rounded-md bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[9px] font-bold text-amber-400'>
-                          ✨ Filtrado para el sector: {brandProfile.industry}
+                  <div className='mt-4 rounded-xl border border-amber-500/20 bg-gradient-to-b from-amber-500/5 to-transparent overflow-hidden'>
+                    <button
+                      type='button'
+                      onClick={() => setShowSpecialDates(!showSpecialDates)}
+                      className='w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-amber-300 hover:bg-amber-500/5 transition-all duration-200 select-none'
+                    >
+                      <div className='flex items-center gap-2'>
+                        <span className='text-sm'>📅</span>
+                        <span>
+                          Efemérides y Fechas Especiales ({selectedSpecialDates.length} seleccionada{selectedSpecialDates.length !== 1 ? 's' : ''})
                         </span>
-                      )}
-                    </div>
-
-                    <div className='space-y-3.5 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar'>
-                      {/* MES ACTUAL */}
-                      {specialDatesList.length > 0 && (
-                        <div className='space-y-1.5'>
-                          <span className='text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize'>
-                            En {calendarViewDate.toLocaleDateString('es-ES', { month: 'long' })}{' '}
-                            (Mes seleccionado):
+                        {brandProfile?.industry && (
+                          <span className='ml-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-400/80'>
+                            ✨ Filtrado: {brandProfile.industry}
                           </span>
-                          <div className='flex flex-wrap gap-2'>
-                            {specialDatesList.map((specialDate, index) => {
-                              const isSelected = selectedSpecialDates.some(
-                                d => d.title === specialDate.title
-                              );
-                              return (
-                                <button
-                                  key={`special-date-curr-${index}`}
-                                  type='button'
-                                  onClick={() => handleToggleSpecialDate(specialDate)}
-                                  className={`
-                                    px-3 py-1.5 text-xs rounded-xl border transition-all duration-200 text-left flex items-center gap-2 group hover:scale-[1.02] active:scale-98 cursor-pointer
-                                    ${
-                                      isSelected
-                                        ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
-                                        : specialDate.isRecommended
-                                          ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
-                                          : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
-                                    }
-                                  `}
-                                >
-                                  <input
-                                    type='checkbox'
-                                    checked={isSelected}
-                                    readOnly
-                                    className='h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none'
-                                  />
-                                  <div className='leading-tight flex items-center'>
-                                    <span className='font-bold'>
-                                      {specialDate.isMonthLong
-                                        ? '🗓️ Mes entero'
-                                        : `${specialDate.day} de ${calendarViewDate.toLocaleDateString('es-ES', { month: 'short' })}`}
-                                    </span>
-                                    <span className='mx-1.5 opacity-40'>|</span>
-                                    <span className='font-semibold text-gray-200'>
-                                      {specialDate.title}
-                                    </span>
-                                    {specialDate.isRecommended && !isSelected && (
-                                      <span className='ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide'>
-                                        Sugerido
-                                      </span>
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        <span className='text-[10px] text-text-muted hover:text-text-primary'>
+                          {showSpecialDates ? 'Ocultar ▲' : 'Ver sugeridas ▼'}
+                        </span>
+                      </div>
+                    </button>
 
-                      {/* MES SIGUIENTE */}
-                      {nextMonthSpecialDatesList.length > 0 && (
-                        <div className='space-y-1.5 pt-2 border-t border-amber-500/5'>
-                          <span className='text-[9px] font-extrabold text-amber-400/80 uppercase tracking-widest block capitalize'>
-                            En {nextMonthDate.toLocaleDateString('es-ES', { month: 'long' })}{' '}
-                            (Próximo mes):
-                          </span>
-                          <div className='flex flex-wrap gap-2'>
-                            {nextMonthSpecialDatesList.map((specialDate, index) => {
-                              const isSelected = selectedSpecialDates.some(
-                                d => d.title === specialDate.title
-                              );
-                              return (
-                                <button
-                                  key={`special-date-next-${index}`}
-                                  type='button'
-                                  onClick={() => handleToggleSpecialDate(specialDate)}
-                                  className={`
-                                    px-3 py-1.5 text-xs rounded-xl border transition-all duration-200 text-left flex items-center gap-2 group hover:scale-[1.02] active:scale-98 cursor-pointer
-                                    ${
-                                      isSelected
-                                        ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold shadow-sm shadow-amber-400/5'
-                                        : specialDate.isRecommended
-                                          ? 'border-amber-500/25 bg-amber-500/5 hover:border-amber-500/40 text-gray-200'
-                                          : 'border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary hover:border-white/20'
-                                    }
-                                  `}
-                                >
-                                  <input
-                                    type='checkbox'
-                                    checked={isSelected}
-                                    readOnly
-                                    className='h-3 w-3 rounded border-gray-600 text-amber-500 focus:ring-amber-500/30 bg-black/40 pointer-events-none'
-                                  />
-                                  <div className='leading-tight flex items-center'>
-                                    <span className='font-bold'>
-                                      {specialDate.isMonthLong
-                                        ? '🗓️ Mes entero'
-                                        : `${specialDate.day} de ${nextMonthDate.toLocaleDateString('es-ES', { month: 'short' })}`}
-                                    </span>
-                                    <span className='mx-1.5 opacity-40'>|</span>
-                                    <span className='font-semibold text-gray-200'>
-                                      {specialDate.title}
-                                    </span>
-                                    {specialDate.isRecommended && !isSelected && (
-                                      <span className='ml-1.5 text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide'>
-                                        Sugerido
+                    {showSpecialDates && (
+                      <div className='px-4 pb-4 pt-1.5 border-t border-amber-500/10 space-y-3'>
+                        <p className='text-[11px] text-text-muted leading-relaxed'>
+                          Seleccioná las efemérides que quieras que la IA conmemore o considere para generar tus publicaciones:
+                        </p>
+
+                        <div className='max-h-[160px] overflow-y-auto pr-1 custom-scrollbar space-y-3'>
+                          {/* MES ACTUAL */}
+                          {specialDatesList.length > 0 && (
+                            <div className='space-y-1.5'>
+                              <span className='text-[9px] font-extrabold text-amber-400/70 uppercase tracking-widest block capitalize'>
+                                En {calendarViewDate.toLocaleDateString('es-ES', { month: 'long' })}:
+                              </span>
+                              <div className='flex flex-wrap gap-1.5'>
+                                {specialDatesList.map((specialDate, index) => {
+                                  const isSelected = selectedSpecialDates.some(
+                                    d => d.title === specialDate.title
+                                  );
+                                  return (
+                                    <button
+                                      key={`special-date-curr-${index}`}
+                                      type='button'
+                                      onClick={() => handleToggleSpecialDate(specialDate)}
+                                      className={`
+                                        inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-full border transition-all duration-150 cursor-pointer select-none
+                                        ${
+                                          isSelected
+                                            ? 'border-amber-400 bg-amber-400/15 text-amber-300 font-bold shadow-sm shadow-amber-400/5'
+                                            : 'border-border-subtle bg-surface-soft hover:bg-white/5 text-text-muted hover:text-text-primary'
+                                        }
+                                      `}
+                                    >
+                                      <span className='opacity-90'>
+                                        {specialDate.isMonthLong
+                                          ? '🗓️ Mes'
+                                          : `${specialDate.day}/${calendarViewDate.getMonth() + 1}`}
                                       </span>
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
+                                      <span className='font-medium'>{specialDate.title}</span>
+                                      {isSelected && <span className='text-[9px] font-extrabold'>✓</span>}
+                                      {specialDate.isRecommended && !isSelected && (
+                                        <span className='ml-1 text-[8px] text-amber-400 bg-amber-500/15 px-1 py-0.2 rounded font-extrabold uppercase tracking-wide'>
+                                          ✨
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* MES SIGUIENTE */}
+                          {nextMonthSpecialDatesList.length > 0 && (
+                            <div className='space-y-1.5 pt-2.5 border-t border-amber-500/5'>
+                              <span className='text-[9px] font-extrabold text-amber-400/70 uppercase tracking-widest block capitalize'>
+                                En {nextMonthDate.toLocaleDateString('es-ES', { month: 'long' })}:
+                              </span>
+                              <div className='flex flex-wrap gap-1.5'>
+                                {nextMonthSpecialDatesList.map((specialDate, index) => {
+                                  const isSelected = selectedSpecialDates.some(
+                                    d => d.title === specialDate.title
+                                  );
+                                  return (
+                                    <button
+                                      key={`special-date-next-${index}`}
+                                      type='button'
+                                      onClick={() => handleToggleSpecialDate(specialDate)}
+                                      className={`
+                                        inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-full border transition-all duration-150 cursor-pointer select-none
+                                        ${
+                                          isSelected
+                                            ? 'border-amber-400 bg-amber-400/15 text-amber-300 font-bold shadow-sm shadow-amber-400/5'
+                                            : 'border-border-subtle bg-surface-soft hover:bg-white/5 text-text-muted hover:text-text-primary'
+                                        }
+                                      `}
+                                    >
+                                      <span className='opacity-90'>
+                                        {specialDate.isMonthLong
+                                          ? '🗓️ Mes'
+                                          : `${specialDate.day}/${nextMonthDate.getMonth() + 1}`}
+                                      </span>
+                                      <span className='font-medium'>{specialDate.title}</span>
+                                      {isSelected && <span className='text-[9px] font-extrabold'>✓</span>}
+                                      {specialDate.isRecommended && !isSelected && (
+                                        <span className='ml-1 text-[8px] text-amber-400 bg-amber-500/15 px-1 py-0.2 rounded font-extrabold uppercase tracking-wide'>
+                                          ✨
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -884,10 +867,12 @@ export const AIContentGenerator = ({
                                 />
                                 <button
                                   type='button'
-                                  className='w-6 h-6 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary text-[10px] flex items-center justify-center hover:bg-white/5 transition-all'
+                                  className='w-6.5 h-6.5 rounded-md border border-[color:var(--color-border-subtle)] bg-surface-soft text-text-muted hover:text-text-primary flex items-center justify-center hover:bg-white/5 transition-all group'
                                   title='Seleccionar fecha manualmente'
                                 >
-                                  📅
+                                  <svg className="w-3.5 h-3.5 text-text-muted group-hover:text-text-primary transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                  </svg>
                                 </button>
                               </div>
 
@@ -901,10 +886,12 @@ export const AIContentGenerator = ({
                                       return next;
                                     })
                                   }
-                                  className='p-1 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-text-muted hover:text-red-400 rounded-md transition-all text-[10px]'
+                                  className='w-6.5 h-6.5 rounded-md hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-text-muted hover:text-red-400 transition-all flex items-center justify-center'
                                   title='Quitar fecha'
                                 >
-                                  ❌
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
                                 </button>
                               )}
                             </div>

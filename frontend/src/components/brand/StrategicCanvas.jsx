@@ -21,6 +21,32 @@ export const StrategicCanvas = ({
 }) => {
   const [editMode, setEditMode] = useState(false);
 
+  // Extract numbered sections for jump links
+  const sections = [];
+  if (formData.business_description) {
+    const lines = formData.business_description.split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('### ')) {
+        const title = trimmed.replace('### ', '');
+        const matchNum = title.match(/^(\d+)\.\s+(.*)/);
+        if (matchNum) {
+          sections.push({
+            num: matchNum[1],
+            title: matchNum[2].replace(/\*\*/g, '')
+          });
+        }
+      }
+    });
+  }
+
+  const scrollToSection = (num) => {
+    const el = document.getElementById(`jump-sec-${num}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Helper to parse **bold** text within paragraphs and lists
   const parseBoldText = (text) => {
     const parts = text.split(/\*\*([^*]+)\*\*/g);
@@ -69,10 +95,15 @@ export const StrategicCanvas = ({
           // Section Titles (###)
           if (trimmed.startsWith('### ')) {
             const title = trimmed.replace('### ', '');
+            const matchNum = title.match(/^(\d+)\.\s+(.*)/);
+            const num = matchNum ? matchNum[1] : undefined;
+            const headingId = num ? `jump-sec-${num}` : undefined;
+
             return (
               <h3
                 key={idx}
-                className='text-[10.5px] font-black text-[#4ECDC4] uppercase tracking-widest border-b border-border-subtle/50 pb-1 mt-4 mb-2 first:mt-0 flex items-center gap-1.5 text-left'
+                id={headingId}
+                className='text-[10.5px] font-black text-[#4ECDC4] uppercase tracking-widest border-b border-border-subtle/50 pb-1 mt-4 mb-2 first:mt-0 flex items-center gap-1.5 text-left scroll-mt-6'
               >
                 <span className='h-2 w-2 rounded bg-[#7C5CFC]' />
                 {title}
@@ -233,8 +264,36 @@ export const StrategicCanvas = ({
                     className='w-full rounded-xl bg-transparent p-3.5 text-xs text-white placeholder-text-secondary focus:outline-none focus:ring-0 leading-relaxed transition-all duration-300 flex-1 resize-none min-h-0 h-full border-none disabled:opacity-30'
                   />
                 ) : (
-                  <div className='w-full overflow-y-auto p-4 flex-1 h-full max-h-full scroll-smooth select-text pr-2'>
-                    {renderFormattedBrief(formData.business_description)}
+                  <div className='flex-1 overflow-hidden h-full flex flex-row relative'>
+                    {/* Scrollable text container */}
+                    <div className='flex-grow overflow-y-auto p-4 h-full max-h-full scroll-smooth select-text pr-12 relative'>
+                      {renderFormattedBrief(formData.business_description)}
+                    </div>
+
+                    {/* Floating Jump Links Index Sidebar */}
+                    {sections.length > 0 && (
+                      <div className='absolute right-2 top-4 bottom-4 flex flex-col items-center justify-center pointer-events-none z-10 select-none'>
+                        <div className='bg-slate-950/80 backdrop-blur-md border border-white/[0.08] rounded-2xl p-1 flex flex-col gap-1.5 pointer-events-auto shadow-xl max-h-[90%] overflow-y-auto scrollbar-none'>
+                          {sections.map((sec) => (
+                            <button
+                              key={sec.num}
+                              type='button'
+                              onClick={() => scrollToSection(sec.num)}
+                              className='group relative w-6 h-6 rounded-xl border border-white/5 hover:border-[#7C5CFC]/30 hover:bg-[#7C5CFC]/10 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90'
+                            >
+                              <span className='text-[9.5px] font-black text-slate-400 group-hover:text-white font-mono'>
+                                {sec.num}
+                              </span>
+                              
+                              {/* Floating tooltip showing clean title */}
+                              <div className='absolute right-9 top-1/2 -translate-y-1/2 bg-slate-950/95 border border-white/10 rounded-xl px-2.5 py-1 text-[9.5px] font-extrabold text-white whitespace-nowrap shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 font-title'>
+                                {sec.num}. {sec.title}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
