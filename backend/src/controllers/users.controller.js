@@ -86,7 +86,7 @@ export const handleCheckEmail = async (req, res, next) => {
     }
 
     // Verificar si el usuario existe y si pertenece a una agencia
-    const { exists, hasAgency } = await checkUserExistsByEmail(email);
+    const { exists, hasAgency, loginMethod } = await checkUserExistsByEmail(email);
 
     // Buscar si hay una invitación pendiente para este correo si no tiene agencia activa
     let invitation = null;
@@ -99,6 +99,7 @@ export const handleCheckEmail = async (req, res, next) => {
       data: { 
         exists,
         hasAgency,
+        loginMethod,
         invitation: invitation ? {
           agencyId: invitation.agencyId,
           agencyName: invitation.agencyName,

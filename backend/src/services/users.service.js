@@ -169,7 +169,7 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, invite
 export const checkUserExistsByEmail = async (email) => {
   try {
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    if (!normalizedEmail) return { exists: false, hasAgency: false };
+    if (!normalizedEmail) return { exists: false, hasAgency: false, loginMethod: 'email' };
 
     let authUser = null;
 
@@ -208,7 +208,7 @@ export const checkUserExistsByEmail = async (email) => {
     }
 
     if (!authUser) {
-      return { exists: false, hasAgency: false };
+      return { exists: false, hasAgency: false, loginMethod: 'email' };
     }
 
     // 3. Si el usuario existe en Auth, verificar si tiene un perfil con agencia en public.profiles
@@ -223,10 +223,14 @@ export const checkUserExistsByEmail = async (email) => {
     }
 
     const hasAgency = !!(profile && profile.agency_id);
+    const providers = authUser.app_metadata?.providers || [];
+    const isGoogleOnly = providers.includes('google') && !providers.includes('email');
+    const loginMethod = isGoogleOnly ? 'google' : 'email';
 
     return {
       exists: true,
-      hasAgency
+      hasAgency,
+      loginMethod
     };
   } catch (error) {
     console.error('Error en checkUserExistsByEmail:', error);
