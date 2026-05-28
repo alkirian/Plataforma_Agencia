@@ -79,7 +79,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
       id='sidebar'
       className='w-[240px] min-w-[240px] bg-app-sidebar border-r border-border-subtle flex flex-col h-screen overflow-hidden select-none z-30 font-sans'
     >
-      {/* Logo Area (Look Rambla exact specs) */}
+      {/* Logo Area (Look Cadence exact specs) */}
       <Link
         to='/dashboard'
         className='sb-logo p-5 border-b border-border-subtle cursor-pointer flex items-center gap-3 hover:opacity-95 transition-opacity'
@@ -88,11 +88,11 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
           className='sb-logo-icon w-10 h-10 rounded-[12px] bg-gradient-to-br from-accent-violet to-accent-sage flex items-center justify-center font-black text-white text-lg shadow-sm select-none'
           style={{ minWidth: '40px', minHeight: '40px' }}
         >
-          R
+          C
         </div>
         <div className='flex flex-col min-w-0'>
           <span className='sb-logo-name font-title font-black text-[15px] tracking-tight text-text-primary leading-tight truncate'>
-            Rambla Studio
+            Cadence
           </span>
           <span className='sb-logo-sub text-[8.5px] tracking-[0.1em] text-text-muted uppercase leading-none font-extrabold mt-0.5'>
             Agency Platform
@@ -100,7 +100,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
         </div>
       </Link>
 
-      {/* Clientes Section (Look Rambla exact specs, enlarged) */}
+      {/* Clientes Section (Look Cadence exact specs, enlarged) */}
       <div className='flex-1 overflow-y-auto p-4 custom-scrollbar'>
         <div className='text-[10px] font-extrabold tracking-[0.14em] text-text-secondary uppercase mb-3.5 px-2'>
           Clientes
@@ -156,7 +156,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
             );
           })}
 
-          {/* Botón Añadir Cliente (Look Rambla exact specs) */}
+          {/* Botón Añadir Cliente (Look Cadence exact specs) */}
           <button
             onClick={handleCreateClient}
             className='add-client w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold text-text-secondary border border-dashed border-border-subtle hover:border-border-strong hover:text-text-primary transition-all duration-200 mt-3.5 text-left'
@@ -178,7 +178,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
         </div>
       </div>
 
-      {/* Perfil de Usuario (Look Rambla exact specs, bulletproof constrained, enlarged) */}
+      {/* Perfil de Usuario (Look Cadence exact specs, bulletproof constrained, enlarged) */}
       <div className='sb-user p-4 border-t border-border-subtle flex items-center gap-3'>
         <div className='relative flex-shrink-0'>
           <button

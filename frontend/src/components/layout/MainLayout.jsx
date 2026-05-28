@@ -8,7 +8,7 @@ export const MainLayout = ({ children, userEmail, profile, onLogout }) => {
   useAppKeyboardShortcuts();
 
   return (
-    // Estructura de pantalla completa con Sidebar lateral izquierdo (look Rambla)
+    // Estructura de pantalla completa con Sidebar lateral izquierdo (look Cadence)
     <div className='flex h-screen w-screen overflow-hidden bg-app text-text-primary font-sans keyboard-nav'>
       {/* Sidebar de navegación y lista de clientes de Supabase */}
       <Sidebar userEmail={userEmail} profile={profile} onLogout={onLogout} />

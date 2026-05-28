@@ -183,3 +183,66 @@ export const handleReplyToComment = async (req, res) => {
     });
   }
 };
+
+/**
+ * Ajusta dinámicamente el tono de un borrador de comentario con IA.
+ */
+export const handleTweakCommentDraft = async (req, res) => {
+  const { clientId } = req.params;
+  const { commentText, currentDraft, instruction, brandVoice, businessDescription } = req.body;
+
+  if (!commentText || !currentDraft || !instruction) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Los campos commentText, currentDraft e instruction son requeridos.'
+    });
+  }
+
+  try {
+    const result = await metaAdsService.tweakCommentDraft(clientId, {
+      commentText,
+      currentDraft,
+      instruction,
+      brandVoice,
+      businessDescription
+    });
+    res.status(200).json({
+      status: 'success',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Obtiene el borrador IA y análisis detallado para un comentario específico en caliente (Lazy Load).
+ */
+export const handleGetCommentAIDraft = async (req, res) => {
+  const { clientId, commentId } = req.params;
+  const { commentText, platform } = req.query;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!commentText || !platform) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Los parámetros de consulta commentText y platform son requeridos.'
+    });
+  }
+
+  try {
+    const result = await metaAdsService.getCommentAIDraft(clientId, commentId, commentText, platform, token);
+    res.status(200).json({
+      status: 'success',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};

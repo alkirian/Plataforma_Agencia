@@ -33,7 +33,7 @@ const JoinPage = lazy(() =>
 // Componente de loading
 const PageLoader = () => (
   <div className='min-h-screen flex items-center justify-center'>
-    <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-rambla-accent'></div>
+    <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-accent-violet'></div>
   </div>
 );
 
@@ -61,14 +61,14 @@ function App() {
           <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7C5CFC] to-[#4ECDC4] p-[1.5px] animate-spin' style={{ animationDuration: '3s' }}>
             <div className='w-full h-full bg-[#07070E] rounded-[14px]' />
           </div>
-          {/* Central Logo Letter R */}
+          {/* Central Logo Letter C */}
           <div className='absolute inset-0 flex items-center justify-center font-title font-black text-white text-xl'>
-            R
+            C
           </div>
         </div>
         <div className='flex flex-col items-center gap-1.5'>
           <span className='font-title font-black text-sm tracking-widest text-text-primary uppercase'>
-            Rambla Studio
+            Cadence
           </span>
           <span className='text-[10px] tracking-[0.15em] text-text-muted uppercase font-semibold animate-pulse'>
             Cargando entorno creativo...

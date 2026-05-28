@@ -17,8 +17,7 @@ router.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
-// Registra las rutas de los módulos
-router.use('/users', protect, userRoutes); // proteger rutas
+router.use('/users', userRoutes); // proteger rutas individuales adentro de userRoutes
 router.use('/clients', protect, clientRoutes);
 router.use('/documents', protect, documentsRoutes);
 router.use('/ai', protect, aiRoutes);

@@ -5,6 +5,15 @@ import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { InteractiveAvatar } from './InteractiveAvatar';
 import { agentSynth } from '../../utils/agentSynth';
 
+const hexToRgba = (hex, alpha = 1) => {
+  if (!hex) return `rgba(255, 255, 255, ${alpha})`;
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export const AgentBentoCard = ({
   card,
   index,
@@ -160,13 +169,13 @@ export const AgentBentoCard = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      className={`agent-card flex flex-col gap-3 group cursor-grab active:cursor-grabbing transition-all duration-200 h-full ${
+      className={`agent-card flex flex-col gap-3 group cursor-pointer hover:cursor-grab active:cursor-grabbing transition-all duration-200 h-full ${
         isDraggingThis ? 'opacity-40 scale-95' : 'opacity-100'
       }`}
       style={{ perspective: 1000 }}
     >
       <motion.div
-        className={`agent-card-inner flex-1 w-full rounded-[24px] relative overflow-hidden flex items-center justify-center border border-white/5 shadow-lg transition-all duration-300 transform ${
+        className={`agent-card-inner flex-1 w-full rounded-[24px] relative overflow-hidden flex items-center justify-center border transition-all duration-300 transform ${
           isDraggingThis
             ? 'border-accent-blue/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
             : ''
@@ -175,7 +184,12 @@ export const AgentBentoCard = ({
           background: card.grad,
           rotateX,
           rotateY,
-          transformStyle: 'preserve-3d'
+          transformStyle: 'preserve-3d',
+          borderColor: isHovered ? hexToRgba(card.color, 0.4) : 'rgba(255,255,255,0.05)',
+          boxShadow: isHovered 
+            ? `0 15px 40px -10px ${hexToRgba(card.color, 0.35)}, inset 0 0 0 1px ${hexToRgba(card.color, 0.1)}`
+            : '0 10px 25px -5px rgba(0,0,0,0.3)',
+          scale: isHovered ? 1.02 : 1
         }}
       >
         {/* Reflexión de brillo (Spotlight cursor tracker) */}

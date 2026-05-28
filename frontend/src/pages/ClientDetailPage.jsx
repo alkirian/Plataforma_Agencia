@@ -334,7 +334,7 @@ export const ClientDetailPage = () => {
       <AnimatePresence mode='wait'>
         {!activeTab ? (
           /* =========================================================================
-             VISTA 1: BENTO PANEL DE CONTROL DEL CLIENTE (Look Rambla exact specs)
+             VISTA 1: BENTO PANEL DE CONTROL DEL CLIENTE (Look Cadence exact specs)
              ========================================================================= */
           <motion.div
             key='bento-panel'
@@ -413,7 +413,7 @@ export const ClientDetailPage = () => {
           </motion.div>
         ) : (
           /* =========================================================================
-             VISTA 2: VISTA DETALLADA DEL MÓDULO CON BOTÓN VOLVER (Look Rambla Studio)
+             VISTA 2: VISTA DETALLADA DEL MÓDULO CON BOTÓN VOLVER (Look Cadence Studio)
              ========================================================================= */
           <motion.div
             key='active-tab-view'

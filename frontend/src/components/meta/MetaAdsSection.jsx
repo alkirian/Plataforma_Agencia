@@ -16,6 +16,7 @@ import {
   SparklesIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
+import { useMetaOAuth } from '../../hooks/useMetaOAuth';
 
 export const MetaAdsSection = ({ clientId }) => {
   const [loading, setLoading] = useState(true);
@@ -28,15 +29,20 @@ export const MetaAdsSection = ({ clientId }) => {
   const [adAccountId, setAdAccountId] = useState('');
   const [pageId, setPageId] = useState('');
   const [accessToken, setAccessToken] = useState('');
-  const [connecting, setConnecting] = useState(false);
-
-  // Estados del Flujo OAuth Automatizado
-  const [oauthStep, setOauthStep] = useState('connect'); // 'connect' | 'select_account'
-  const [adAccountsList, setAdAccountsList] = useState([]);
-  const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [pagesList, setPagesList] = useState([]);
-  const [selectedPageId, setSelectedPageId] = useState('');
-  const [tempAccessToken, setTempAccessToken] = useState('');
+  // Hook de Autenticación de Meta unificado
+  const {
+    connecting,
+    oauthStep,
+    setOauthStep,
+    adAccountsList,
+    pagesList,
+    selectedAccountId,
+    setSelectedAccountId,
+    selectedPageId,
+    setSelectedPageId,
+    tempAccessToken,
+    handleFacebookOAuth,
+  } = useMetaOAuth(clientId, 'oauth-toast');
 
   // Tooltip graph state
   const [activeDataIndex, setActiveDataIndex] = useState(null);
@@ -78,131 +84,7 @@ export const MetaAdsSection = ({ clientId }) => {
     loadIntegration();
   }, [clientId, dateRange]);
 
-  // 3. Flujo OAuth Real / Simulación Interactiva
-  const handleFacebookOAuth = async () => {
-    try {
-      setConnecting(true);
-
-      // 1. Obtener la App ID real desde el backend
-      const configRes = await apiFetch(`/clients/${clientId}/meta-integration/config`);
-      const appId = configRes.data?.appId;
-      console.log('🔍 [DEBUG FRONTEND] appId recuperado:', appId, 'Respuesta completa:', configRes);
-
-      if (appId) {
-        // FLOW REAL: Abrir popup de Facebook OAuth oficial redireccionando al callback estático
-        const redirectUri = window.location.origin + '/meta-callback.html';
-        const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=ads_read,ads_management,business_management,pages_show_list,pages_read_engagement,pages_read_user_content,instagram_basic,instagram_manage_comments,pages_manage_posts,instagram_content_publish,pages_manage_engagement`;
-
-        toast.loading('Esperando autorización en el popup de Facebook...', { id: 'oauth-toast' });
-
-        const popup = window.open(
-          oauthUrl,
-          'facebook-login',
-          'width=650,height=650,scrollbars=yes'
-        );
-
-        if (!popup) {
-          toast.error(
-            'El popup fue bloqueado por el navegador. Habilita las ventanas emergentes.',
-            { id: 'oauth-toast' }
-          );
-          setConnecting(false);
-          return;
-        }
-
-        // Registrar el event listener para escuchar el mensaje de meta-callback.html
-        const handleMessage = async event => {
-          if (event.origin !== window.location.origin) return;
-
-          if (event.data?.type === 'META_OAUTH_SUCCESS') {
-            window.removeEventListener('message', handleMessage);
-            const hash = event.data.hash;
-            const params = new URLSearchParams(hash.replace('#', '?'));
-            const shortLivedToken = params.get('access_token');
-
-            if (shortLivedToken) {
-              try {
-                toast.loading('Sincronizando cuentas con el backend...', { id: 'oauth-toast' });
-
-                // Enviar el token real al backend para intercambiar y listar cuentas reales
-                const exchangeRes = await apiFetch(
-                  `/clients/${clientId}/meta-integration/exchange`,
-                  {
-                    method: 'POST',
-                    body: JSON.stringify({ shortLivedToken }),
-                  }
-                );
-
-                toast.success('¡Cuentas publicitarias y páginas vinculadas con éxito!', {
-                  id: 'oauth-toast',
-                });
-                setTempAccessToken(exchangeRes.data.accessToken);
-                setAdAccountsList(exchangeRes.data.accounts || []);
-                setPagesList(exchangeRes.data.pages || []);
-
-                if (exchangeRes.data.accounts?.length > 0) {
-                  setSelectedAccountId(exchangeRes.data.accounts[0].id);
-                }
-                if (exchangeRes.data.pages?.length > 0) {
-                  setSelectedPageId(exchangeRes.data.pages[0].id);
-                }
-                setOauthStep('select_account');
-              } catch (err) {
-                toast.error(err.message || 'Error al procesar la vinculación.', {
-                  id: 'oauth-toast',
-                });
-              } finally {
-                setConnecting(false);
-              }
-            }
-          } else if (event.data?.type === 'META_OAUTH_ERROR') {
-            window.removeEventListener('message', handleMessage);
-            toast.error(event.data.error || 'Error al iniciar sesión en Facebook.', {
-              id: 'oauth-toast',
-            });
-            setConnecting(false);
-          }
-        };
-
-        window.addEventListener('message', handleMessage);
-
-        // Limpiador en caso de que cierren el popup manualmente sin autorizar
-        const checkClosed = setInterval(() => {
-          if (!popup || popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-            toast.dismiss('oauth-toast');
-            setConnecting(false);
-          }
-        }, 1000);
-      } else {
-        // FLOW SIMULADO/SANDBOX (Cuando no hay variables de entorno configuradas)
-        toast.loading('Iniciando sesión segura con Meta Sandbox...', { id: 'oauth-toast' });
-
-        const res = await apiFetch(`/clients/${clientId}/meta-integration/exchange`, {
-          method: 'POST',
-          body: JSON.stringify({ shortLivedToken: 'mock_short_lived_token' }),
-        });
-
-        toast.success('¡Sesión autorizada por Meta Sandbox!', { id: 'oauth-toast' });
-        setTempAccessToken(res.data.accessToken);
-        setAdAccountsList(res.data.accounts || []);
-        setPagesList(res.data.pages || []);
-
-        if (res.data.accounts?.length > 0) {
-          setSelectedAccountId(res.data.accounts[0].id);
-        }
-        if (res.data.pages?.length > 0) {
-          setSelectedPageId(res.data.pages[0].id);
-        }
-        setOauthStep('select_account');
-        setConnecting(false);
-      }
-    } catch (err) {
-      toast.error(err.message || 'Error al autorizar con Facebook.', { id: 'oauth-toast' });
-      setConnecting(false);
-    }
-  };
+  // 3. Flujo OAuth Real / Simulación Interactiva centralizado en useMetaOAuth hook.
 
   // 4. Confirmar la cuenta seleccionada en el Dropdown de OAuth
   const handleConfirmAccountSelection = async () => {
@@ -513,21 +395,40 @@ export const MetaAdsSection = ({ clientId }) => {
   const maxSpend = dailyHistory.length ? Math.max(...dailyHistory.map(d => d.spend)) : 100;
   const maxClicks = dailyHistory.length ? Math.max(...dailyHistory.map(d => d.clicks)) : 100;
 
-  // Generar puntos para dibujo SVG
-  const generateChartPoints = (key, maxValue) => {
+  // Generar trazados de curvas suavizadas Bézier para dibujo SVG
+  const getCurvePath = (key, maxValue) => {
     if (!dailyHistory.length) return '';
-    return dailyHistory
-      .map((day, idx) => {
-        const x = chartPadding + (idx / (dailyHistory.length - 1)) * graphWidth;
-        const val = day[key];
-        const y = chartPadding + graphHeight - (val / maxValue) * graphHeight;
-        return `${x},${y}`;
-      })
-      .join(' ');
+    const points = dailyHistory.map((day, idx) => {
+      const x = chartPadding + (idx / (dailyHistory.length - 1)) * graphWidth;
+      const val = day[key];
+      const y = chartPadding + graphHeight - (val / maxValue) * graphHeight;
+      return { x, y };
+    });
+
+    if (points.length === 0) return '';
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const curr = points[i];
+      const next = points[i + 1];
+      const cpX1 = curr.x + (next.x - curr.x) / 3;
+      const cpY1 = curr.y;
+      const cpX2 = curr.x + 2 * (next.x - curr.x) / 3;
+      const cpY2 = next.y;
+      d += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+    }
+    return d;
   };
 
-  const spendPoints = generateChartPoints('spend', maxSpend);
-  const clicksPoints = generateChartPoints('clicks', maxClicks);
+  const getAreaPath = (key, maxValue) => {
+    const curve = getCurvePath(key, maxValue);
+    if (!curve) return '';
+    return `${curve} L ${chartPadding + graphWidth} ${chartPadding + graphHeight} L ${chartPadding} ${chartPadding + graphHeight} Z`;
+  };
+
+  const spendCurvePath = getCurvePath('spend', maxSpend);
+  const spendAreaPath = getAreaPath('spend', maxSpend);
+  const clicksCurvePath = getCurvePath('clicks', maxClicks);
+  const clicksAreaPath = getAreaPath('clicks', maxClicks);
 
   return (
     <div className='p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full'>
@@ -597,6 +498,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#a855f7',
             bg: 'rgba(168,85,247,0.05)',
             icon: CurrencyDollarIcon,
+            historyKey: 'spend',
           },
           {
             label: 'Impresiones',
@@ -605,6 +507,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#3b82f6',
             bg: 'rgba(59,130,246,0.05)',
             icon: EyeIcon,
+            historyKey: 'impressions',
           },
           {
             label: 'Clics',
@@ -613,6 +516,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#06b6d4',
             bg: 'rgba(6,182,212,0.05)',
             icon: CursorArrowRaysIcon,
+            historyKey: 'clicks',
           },
           {
             label: 'CTR Promedio',
@@ -621,6 +525,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#10b981',
             bg: 'rgba(16,185,129,0.05)',
             icon: PercentBadgeIcon,
+            historyKey: 'ctr',
           },
           {
             label: 'CPC Medio',
@@ -629,6 +534,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#f59e0b',
             bg: 'rgba(245,158,11,0.05)',
             icon: CurrencyDollarIcon,
+            historyKey: 'cpc',
           },
           {
             label: 'Conversiones',
@@ -637,6 +543,7 @@ export const MetaAdsSection = ({ clientId }) => {
             color: '#ec4899',
             bg: 'rgba(236,72,153,0.05)',
             icon: SparklesIcon,
+            historyKey: 'clicks',
           },
         ].map((card, idx) => (
           <motion.div
@@ -662,6 +569,59 @@ export const MetaAdsSection = ({ clientId }) => {
             </div>
             <div className='text-xl font-black text-text-primary font-title mb-1'>{card.val}</div>
             <span className='text-[9px] text-text-muted font-semibold'>{card.desc}</span>
+
+            {/* CPC Pacing Ring */}
+            {card.label === 'CPC Medio' && (
+              <div className='absolute right-3 bottom-3 w-8 h-8'>
+                <svg className='w-full h-full transform -rotate-90'>
+                  <circle
+                    cx='16'
+                    cy='16'
+                    r='12'
+                    stroke='rgba(255,255,255,0.04)'
+                    strokeWidth='2.5'
+                    fill='transparent'
+                  />
+                  <circle
+                    cx='16'
+                    cy='16'
+                    r='12'
+                    stroke={totals.cpc > 0.40 ? '#f59e0b' : '#10b981'}
+                    strokeWidth='2.5'
+                    fill='transparent'
+                    strokeDasharray='75.4'
+                    strokeDashoffset={Math.max(0, 75.4 - (Math.min(totals.cpc, 1.0) / 1.0) * 75.4)}
+                    className='transition-all duration-500'
+                  />
+                </svg>
+                <div className='absolute inset-0 flex items-center justify-center text-[7px] font-black text-text-primary'>
+                  {totals.cpc > 0.40 ? '⚠️' : 'OK'}
+                </div>
+              </div>
+            )}
+
+            {/* Sparkline mini-grafico SVG */}
+            {dailyHistory && dailyHistory.length > 0 && card.historyKey && card.label !== 'CPC Medio' && (
+              <div className='h-6 w-full mt-3 opacity-65'>
+                <svg className='w-full h-full overflow-visible'>
+                  <path
+                    d={(() => {
+                      const maxVal = Math.max(...dailyHistory.map(d => d[card.historyKey])) || 1;
+                      const points = dailyHistory.map((day, dIdx) => {
+                        const x = (dIdx / (dailyHistory.length - 1)) * 100 + "%";
+                        const y = 90 - (day[card.historyKey] / maxVal) * 70 + "%";
+                        return `${dIdx === 0 ? 'M' : 'L'} ${x} ${y}`;
+                      });
+                      return points.join(' ');
+                    })()}
+                    fill='none'
+                    stroke={card.color}
+                    strokeWidth='1.5'
+                    strokeLinecap='round'
+                  />
+                </svg>
+              </div>
+            )}
           </motion.div>
         ))}
       </div>
@@ -691,7 +651,6 @@ export const MetaAdsSection = ({ clientId }) => {
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                 className='w-full h-full overflow-visible'
               >
-                {/* Defs para Gradients de Relleno */}
                 <defs>
                   <linearGradient id='spendGrad' x1='0' y1='0' x2='0' y2='1'>
                     <stop offset='5%' stopColor='#a855f7' stopOpacity='0.25' />
@@ -701,6 +660,11 @@ export const MetaAdsSection = ({ clientId }) => {
                     <stop offset='5%' stopColor='#22d3ee' stopOpacity='0.2' />
                     <stop offset='95%' stopColor='#22d3ee' stopOpacity='0.0' />
                   </linearGradient>
+                  {/* Neon Glow Filter */}
+                  <filter id='glow' x='-20%' y='-20%' width='140%' height='140%'>
+                    <feGaussianBlur stdDeviation='3.5' result='blur' />
+                    <feComposite in='SourceGraphic' in2='blur' operator='over' />
+                  </filter>
                 </defs>
 
                 {/* Líneas horizontales de guía */}
@@ -718,14 +682,15 @@ export const MetaAdsSection = ({ clientId }) => {
 
                 {/* Relleno e Histórico de Inversión (Gasto) */}
                 <path
-                  d={`M${chartPadding},${chartPadding + graphHeight} L${spendPoints} L${chartPadding + graphWidth},${chartPadding + graphHeight} Z`}
+                  d={spendAreaPath}
                   fill='url(#spendGrad)'
                 />
-                <motion.polyline
+                <motion.path
                   fill='none'
                   stroke='#a855f7'
-                  strokeWidth='2.5'
-                  points={spendPoints}
+                  strokeWidth='3'
+                  filter='url(#glow)'
+                  d={spendCurvePath}
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
                   transition={{ duration: 1 }}
@@ -733,15 +698,16 @@ export const MetaAdsSection = ({ clientId }) => {
 
                 {/* Relleno e Histórico de Clics */}
                 <path
-                  d={`M${chartPadding},${chartPadding + graphHeight} L${clicksPoints} L${chartPadding + graphWidth},${chartPadding + graphHeight} Z`}
+                  d={clicksAreaPath}
                   fill='url(#clicksGrad)'
                 />
-                <motion.polyline
+                <motion.path
                   fill='none'
                   stroke='#22d3ee'
                   strokeWidth='2'
                   strokeDasharray='4 2'
-                  points={clicksPoints}
+                  filter='url(#glow)'
+                  d={clicksCurvePath}
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
                   transition={{ duration: 1.2 }}

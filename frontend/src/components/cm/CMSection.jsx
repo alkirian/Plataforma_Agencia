@@ -1,9 +1,10 @@
 // src/components/cm/CMSection.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { apiFetch } from '../../api/apiFetch';
 import { InteractiveAvatar } from '../ui/InteractiveAvatar';
+import { useMetaOAuth } from '../../hooks/useMetaOAuth';
 import {
   ChatBubbleLeftRightIcon,
   SparklesIcon,
@@ -26,18 +27,27 @@ export const CMSection = ({ clientId }) => {
   const [integration, setIntegration] = useState(null);
   const [connecting, setConnecting] = useState(false);
 
-  // States for automated Meta Onboarding
-  const [oauthStep, setOauthStep] = useState('connect'); // 'connect' | 'select_account'
-  const [adAccountsList, setAdAccountsList] = useState([]);
-  const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [pagesList, setPagesList] = useState([]);
-  const [selectedPageId, setSelectedPageId] = useState('');
-  const [tempAccessToken, setTempAccessToken] = useState('');
+  // Hook de Autenticación de Meta unificado
+  const {
+    connecting: connectingOAuth,
+    oauthStep,
+    setOauthStep,
+    adAccountsList,
+    pagesList,
+    selectedAccountId,
+    setSelectedAccountId,
+    selectedPageId,
+    setSelectedPageId,
+    tempAccessToken,
+    handleFacebookOAuth,
+  } = useMetaOAuth(clientId, 'cm-oauth-toast');
 
   const [linkedinIntegration, setLinkedinIntegration] = useState(null);
   const [tiktokIntegration, setTiktokIntegration] = useState(null);
   const [connectingLI, setConnectingLI] = useState(false);
   const [connectingTK, setConnectingTK] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [showTechDetails, setShowTechDetails] = useState(false);
 
   // 1. Cargar estado de todas las integraciones
   const loadAllIntegrations = async () => {
@@ -241,130 +251,7 @@ export const CMSection = ({ clientId }) => {
     }
   };
 
-  // 2. Automated Meta OAuth Flow with Extended Scopes (Ads + Pages + Instagram Comments)
-  const handleFacebookOAuth = async () => {
-    try {
-      setConnecting(true);
-
-      // Obtener el App ID real desde el backend
-      const configRes = await apiFetch(`/clients/${clientId}/meta-integration/config`);
-      const appId = configRes.data?.appId;
-
-      if (appId) {
-        // FLOW REAL: popup oficial con redirección a callback local
-        const redirectUri = window.location.origin + '/meta-callback.html';
-        
-        // Scope automatizado y extendido: ¡Pide todo lo necesario para Ads, Facebook Pages e Instagram en un solo flujo fácil!
-        const oauthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=ads_read,ads_management,business_management,pages_show_list,pages_read_engagement,pages_read_user_content,instagram_basic,instagram_manage_comments,pages_manage_posts,instagram_content_publish,pages_manage_engagement`;
-
-        toast.loading('Esperando autorización en el popup de Facebook...', { id: 'cm-oauth-toast' });
-
-        const popup = window.open(
-          oauthUrl,
-          'facebook-login',
-          'width=650,height=650,scrollbars=yes'
-        );
-
-        if (!popup) {
-          toast.error(
-            'El popup fue bloqueado por el navegador. Habilita las ventanas emergentes.',
-            { id: 'cm-oauth-toast' }
-          );
-          setConnecting(false);
-          return;
-        }
-
-        const handleMessage = async event => {
-          if (event.origin !== window.location.origin) return;
-
-          if (event.data?.type === 'META_OAUTH_SUCCESS') {
-            window.removeEventListener('message', handleMessage);
-            const hash = event.data.hash;
-            const params = new URLSearchParams(hash.replace('#', '?'));
-            const shortLivedToken = params.get('access_token');
-
-            if (shortLivedToken) {
-              try {
-                toast.loading('Sincronizando con Meta y recuperando cuentas...', { id: 'cm-oauth-toast' });
-
-                // Intercambio a token de 60 días y recupera AdAccounts + Facebook/Instagram Pages
-                const exchangeRes = await apiFetch(
-                  `/clients/${clientId}/meta-integration/exchange`,
-                  {
-                    method: 'POST',
-                    body: JSON.stringify({ shortLivedToken }),
-                  }
-                );
-
-                toast.success('¡Sesión vinculada con Meta exitosamente!', {
-                  id: 'cm-oauth-toast',
-                });
-                setTempAccessToken(exchangeRes.data.accessToken);
-                setAdAccountsList(exchangeRes.data.accounts || []);
-                setPagesList(exchangeRes.data.pages || []);
-
-                if (exchangeRes.data.accounts?.length > 0) {
-                  setSelectedAccountId(exchangeRes.data.accounts[0].id);
-                }
-                if (exchangeRes.data.pages?.length > 0) {
-                  setSelectedPageId(exchangeRes.data.pages[0].id);
-                }
-                setOauthStep('select_account');
-              } catch (err) {
-                toast.error(err.message || 'Error al procesar la vinculación.', {
-                  id: 'cm-oauth-toast',
-                });
-              } finally {
-                setConnecting(false);
-              }
-            }
-          } else if (event.data?.type === 'META_OAUTH_ERROR') {
-            window.removeEventListener('message', handleMessage);
-            toast.error(event.data.error || 'Error al iniciar sesión en Facebook.', {
-              id: 'cm-oauth-toast',
-            });
-            setConnecting(false);
-          }
-        };
-
-        window.addEventListener('message', handleMessage);
-
-        const checkClosed = setInterval(() => {
-          if (!popup || popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-            toast.dismiss('cm-oauth-toast');
-            setConnecting(false);
-          }
-        }, 1000);
-      } else {
-        // FLOW SIMULADO/SANDBOX DE CONTINGENCIA
-        toast.loading('Conectando de forma segura con Meta Sandbox...', { id: 'cm-oauth-toast' });
-
-        const res = await apiFetch(`/clients/${clientId}/meta-integration/exchange`, {
-          method: 'POST',
-          body: JSON.stringify({ shortLivedToken: 'mock_short_lived_token' }),
-        });
-
-        toast.success('¡Sesión autorizada por Meta Sandbox!', { id: 'cm-oauth-toast' });
-        setTempAccessToken(res.data.accessToken);
-        setAdAccountsList(res.data.accounts || []);
-        setPagesList(res.data.pages || []);
-
-        if (res.data.accounts?.length > 0) {
-          setSelectedAccountId(res.data.accounts[0].id);
-        }
-        if (res.data.pages?.length > 0) {
-          setSelectedPageId(res.data.pages[0].id);
-        }
-        setOauthStep('select_account');
-        setConnecting(false);
-      }
-    } catch (err) {
-      toast.error(err.message || 'Error al autorizar con Facebook.', { id: 'cm-oauth-toast' });
-      setConnecting(false);
-    }
-  };
+  // 2. Automated Meta OAuth Flow centralizado en useMetaOAuth hook.
 
   // 3. Guardar la configuración seleccionada en el Dropdown
   const handleConfirmOnboarding = async () => {
@@ -435,6 +322,7 @@ export const CMSection = ({ clientId }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [customAIInstruction, setCustomAIInstruction] = useState('');
 
   // Autopilot settings
   const [autopilotGreeting, setAutopilotGreeting] = useState(true);
@@ -476,36 +364,79 @@ export const CMSection = ({ clientId }) => {
     }
   }, [integration, clientId]);
 
-  // Sync draft when thread changes
+  // Sync draft when thread changes (Lazy load if missing)
   const activeThread = threads.find(t => t.id === selectedThreadId);
   useEffect(() => {
-    if (activeThread) {
+    if (!activeThread) {
+      setActiveDraft('');
+      return;
+    }
+    
+    // Si ya posee el borrador de IA, lo fijamos de inmediato sin hacer red redundante (cambio instantáneo de 0ms)
+    if (activeThread.aiDraft) {
       setActiveDraft(activeThread.aiDraft);
       setIsEditing(false);
-    } else {
-      setActiveDraft('');
+      return;
     }
-  }, [selectedThreadId, threads]);
+    
+    // Si no posee el borrador, se carga de forma perezosa (lazy load)
+    const loadLazyDraft = async () => {
+      try {
+        setLoadingDraft(true);
+        setActiveDraft('Analizando comentario con IA...');
+        
+        const res = await apiFetch(
+          `/clients/${clientId}/meta-integration/comments/${activeThread.id}/draft?commentText=${encodeURIComponent(activeThread.comment)}&platform=${activeThread.platform}`
+        );
+        
+        if (res.data) {
+          const { aiDraft, sentiment, tag, aiConfidence, contextUsed } = res.data;
+          
+          // Actualizar el hilo en el estado local del componente para conservar el análisis e impedir reconexiones
+          setThreads(prev => prev.map(t => t.id === activeThread.id ? {
+            ...t,
+            aiDraft,
+            sentiment,
+            tag,
+            aiConfidence,
+            contextUsed
+          } : t));
+          
+          setActiveDraft(aiDraft);
+        }
+      } catch (err) {
+        console.error('Error al cargar borrador perezoso:', err);
+        setActiveDraft('No se pudo generar el borrador automático de IA.');
+      } finally {
+        setLoadingDraft(false);
+        setIsEditing(false);
+      }
+    };
+    
+    loadLazyDraft();
+  }, [selectedThreadId, threads, clientId]);
 
-  // Filter threads
-  const filteredThreads = threads.filter(thread => {
-    const matchesSearch = 
-      thread.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      thread.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      thread.postTitle.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (!matchesSearch) return false;
-    
-    // Platform Filter
-    if (platformFilter !== 'all' && thread.platform?.toLowerCase() !== platformFilter) return false;
-    
-    // Status Filter
-    if (statusFilter === 'pending' && thread.status !== 'pending') return false;
-    if (statusFilter === 'escalated' && thread.status !== 'escalated') return false;
-    if (statusFilter === 'replied' && thread.status !== 'replied') return false;
-    
-    return true;
-  });
+  // Filter threads using useMemo for optimal rendering performance
+  const filteredThreads = useMemo(() => {
+    return threads.filter(thread => {
+      const matchesSearch = 
+        thread.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        thread.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        thread.postTitle.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Platform Filter
+      if (platformFilter !== 'all' && thread.platform?.toLowerCase() !== platformFilter) return false;
+      
+      // Status Filter
+      if (statusFilter === 'pending' && thread.status !== 'pending') return false;
+      if (statusFilter === 'escalated' && thread.status !== 'escalated') return false;
+      if (statusFilter === 'replied' && thread.status !== 'replied') return false;
+      
+      return true;
+    });
+  }, [threads, searchQuery, platformFilter, statusFilter]);
 
   // Calculate statistics
   const pendingCount = threads.filter(t => t.status === 'pending').length;
@@ -549,28 +480,48 @@ export const CMSection = ({ clientId }) => {
 
   // Handle AI Regeneration Tweak
   const handleRegenerate = async (instruction) => {
+    if (!activeThread) return;
     setRegenerating(true);
-    // Simulate LLM Call to ai.service.js
-    await new Promise(r => setTimeout(r, 1000));
     
-    let newDraft = activeDraft;
-    if (instruction === 'shorter') {
-      newDraft = `¡Hola ${activeThread.user.name}! El envío a Palermo sale $1.200 y llega hoy mismo si compras antes de las 14 hs (máx 24hs). ¿Te paso el link de compra? ☕️`;
-    } else if (instruction === 'warmer') {
-      newDraft = `¡Hola Sofi hermosa! 😊 Qué alegría tu interés en nuestro Blend Orgánico. El envío a Palermo tiene un valor de $1.200. Si hacés tu pedido hoy antes de las 14:00, ¡te lo llevamos volando hoy mismo! Sino, te llega en 24 horas hábiles. ¿Te gustaría que te pasemos el link para asegurar el tuyo? Que tengas un día hermoso! ☕️🌸`;
-    } else if (instruction === 'cta') {
-      newDraft = `¡Hola Sofía! El envío a Palermo tiene un costo de $1.200 y demora menos de 24 horas. ¡Realiza tu compra ahora haciendo clic en el siguiente enlace y asegura tu Blend Orgánico con un 10% de descuento de bienvenida! 👉 https://cafeconcordia.com/shop ☕️✨`;
+    const idToast = toast.loading('Ajustando borrador con IA...', { id: 'tweak-comment-toast' });
+    try {
+      const res = await apiFetch(`/clients/${clientId}/meta-integration/comments/tweak`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commentText: activeThread.comment,
+          currentDraft: activeDraft,
+          instruction,
+          brandVoice: integration?.brand_voice || '',
+          businessDescription: integration?.business_description || ''
+        })
+      });
+      
+      if (res.data?.draft) {
+        setActiveDraft(res.data.draft);
+        toast.success('Borrador ajustado con éxito.', { id: 'tweak-comment-toast' });
+      } else {
+        throw new Error('La respuesta de IA no devolvió un borrador válido.');
+      }
+    } catch (err) {
+      console.error('Error al ajustar el borrador:', err);
+      toast.error(err.message || 'Error al ajustar el borrador.', { id: 'tweak-comment-toast' });
+    } finally {
+      setRegenerating(false);
     }
-    
-    setActiveDraft(newDraft);
-    setRegenerating(false);
-    toast.success('Borrador ajustado con IA');
   };
 
   const getSentimentBadge = (sentiment) => {
-    if (sentiment === 'positive') return <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold">🟢 Positivo</span>;
-    if (sentiment === 'negative') return <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold">🔴 Queja</span>;
-    return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold">🟡 Consulta</span>;
+    if (sentiment === 'positive') return <span className="bg-[color:var(--color-accent-sage)]/10 text-[color:var(--color-accent-sage)] border border-[color:var(--color-accent-sage)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Positivo</span>;
+    if (sentiment === 'negative') return <span className="bg-[color:var(--color-accent-rose)]/10 text-[color:var(--color-accent-rose)] border border-[color:var(--color-accent-rose)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Queja</span>;
+    return <span className="bg-[color:var(--color-accent-lavender)]/10 text-[color:var(--color-accent-lavender)] border border-[color:var(--color-accent-lavender)]/20 px-2 py-0.5 rounded text-[9px] font-bold">Consulta</span>;
+  };
+
+  const getConfidenceLabel = (confidence) => {
+    if (!confidence) return 'Confianza alta';
+    if (confidence >= 90) return 'Confianza alta';
+    if (confidence >= 75) return 'Confianza media';
+    return 'Revisión recomendada';
   };
 
   if (loading) {
@@ -628,10 +579,10 @@ export const CMSection = ({ clientId }) => {
                 <button
                   type="button"
                   onClick={handleFacebookOAuth}
-                  disabled={connecting}
+                  disabled={connectingOAuth}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-4 rounded-xl transition-all duration-200 shadow-xl flex items-center justify-center gap-3 transform hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
                 >
-                  {connecting ? (
+                  {connectingOAuth ? (
                     <ArrowPathIcon className="h-5 w-5 animate-spin" />
                   ) : (
                     <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
@@ -758,75 +709,47 @@ export const CMSection = ({ clientId }) => {
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full text-text-primary">
       
-      {/* 1. AGENT CARD TOP STATUS BAR */}
-      <div className="bg-app-sidebar border border-border-subtle p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex-shrink-0">
-            <InteractiveAvatar variant="cm" size="sm" />
+      {/* 1. TOP HEADER - CLEAN & HIGH-END */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-3 px-1 border-b border-border-subtle pb-5">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-text-primary font-title">
+              CM Inteligente
+            </h1>
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 text-accent-cyan text-[10px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse" />
+              Sincronizado
+            </span>
           </div>
-          <div>
-            <h3 className="text-lg font-black text-text-primary font-title">
-              CM Inteligente Activo
-            </h3>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-text-muted">
-              <span className="font-mono bg-surface border border-border-subtle px-2 py-0.5 rounded-md text-text-secondary font-bold">
-                Página ID: {integration.meta_page_id || 'Conectada'}
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Sincronizado {integration.meta_page_id?.includes('mock') ? '(Modo Sandbox)' : '(Tiempo Real)'}
-              </span>
-            </div>
-          </div>
+          <p className="text-xs text-text-muted">
+            Monitoreo en tiempo real y auto-respuestas para tus redes sociales.
+          </p>
         </div>
 
-        {/* Stats & Disconnect Actions */}
-        <div className="flex flex-wrap items-center gap-6 self-end md:self-center">
-          {/* Dynamic statistics */}
-          <div className="flex items-center gap-6 pr-2">
-            <div className="text-center sm:text-left">
-              <div className="text-base font-black text-emerald-400 font-title">{pendingCount}</div>
-              <div className="text-[9px] text-text-secondary font-bold uppercase tracking-wider mt-0.5">
-                Pendientes
-              </div>
+        {/* Header Actions & Clean Stats */}
+        <div className="flex items-center gap-5 ml-auto sm:ml-0">
+          {/* Quick Metrics */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5 bg-surface-soft border border-border-subtle py-1.5 px-3 rounded-lg shadow-sm">
+              <span className="text-text-muted font-medium">Pendientes:</span>
+              <span className="text-accent-cyan font-bold text-sm">{pendingCount}</span>
             </div>
-            <div className="h-8 w-px bg-border-subtle" />
-            <div className="text-center sm:text-left">
-              <div className="text-base font-black text-rose-400 font-title">{escalatedCount}</div>
-              <div className="text-[9px] text-text-secondary font-bold uppercase tracking-wider mt-0.5">
-                Escalados CM
-              </div>
-            </div>
-            <div className="h-8 w-px bg-border-subtle" />
-            <div className="text-center sm:text-left">
-              <div className="text-base font-black text-blue-400 font-title">{totalTimeSaved} min</div>
-              <div className="text-[9px] text-text-secondary font-bold uppercase tracking-wider mt-0.5">
-                Tiempo Ahorrado
-              </div>
+            <div className="flex items-center gap-1.5 bg-surface-soft border border-border-subtle py-1.5 px-3 rounded-lg shadow-sm">
+              <span className="text-text-muted font-medium">Urgentes:</span>
+              <span className="font-bold text-sm" style={{ color: 'var(--color-accent-rose)' }}>{escalatedCount}</span>
             </div>
           </div>
 
-          <div className="h-8 w-px bg-border-subtle hidden md:block" />
+          <div className="w-px h-4 bg-border-subtle" />
 
-          {/* Botón Reglas Copiloto */}
+          {/* Action Tools */}
           <button
             onClick={() => setShowRulesPanel(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border border-border-subtle bg-surface hover:bg-surface-soft text-text-secondary hover:text-text-primary font-bold text-xs rounded-xl transition-all duration-200 cursor-pointer shadow-sm animate-fade-in"
+            className="btn-cyber flex items-center gap-2 text-xs py-2 px-4 shadow-sm cursor-pointer"
             title="Configurar Reglas y Autopiloto"
           >
-            <Cog6ToothIcon className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Reglas & Autopiloto</span>
-          </button>
-
-          {/* Botón Desconectar */}
-          <button
-            onClick={handleDisconnect}
-            className="flex items-center gap-1.5 px-3 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 text-red-400 font-bold text-xs rounded-xl transition-all duration-200 cursor-pointer shadow-sm"
-            title="Desconectar cuenta"
-          >
-            <TrashIcon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Desconectar</span>
+            <Cog6ToothIcon className="h-4 w-4 text-accent-cyan" />
+            <span>Reglas y Canales</span>
           </button>
         </div>
       </div>
@@ -834,91 +757,93 @@ export const CMSection = ({ clientId }) => {
       {/* 2. MAIN WORKSPACE CONTAINER */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
-        {/* COL 1: SMART INBOX LIST (4 COLS) */}
-        <div className="lg:col-span-4 flex flex-col bg-app-sidebar border border-border-subtle rounded-2xl overflow-hidden min-h-[600px]">
-          {/* Header search */}
-          <div className="p-4 border-b border-border-subtle space-y-3">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Buscar comentario o usuario..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-surface border border-border-subtle rounded-xl pl-9 pr-10 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-500 transition-colors"
-              />
+        {/* COL 1: MINIMALIST SMART INBOX (4 COLS) */}
+        <div className="lg:col-span-4 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
+          
+          {/* Header search & consolidated filters */}
+          <div className="p-4 border-b border-border-subtle bg-surface-soft/30 space-y-3">
+            {/* Search Input */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-3.5 w-3.5 text-text-muted" />
+                <input
+                  type="text"
+                  placeholder="Buscar comentarios..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="input-cyber pl-9 pr-4 py-2 text-xs"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => fetchThreads(false)}
                 disabled={loadingThreads}
-                className="absolute right-2 top-1.5 p-1 rounded-lg hover:bg-surface-soft text-text-muted hover:text-emerald-400 transition-colors"
+                className="btn-cyber p-2.5 flex items-center justify-center cursor-pointer"
                 title="Actualizar bandeja"
               >
                 <ArrowPathIcon className={`h-4 w-4 ${loadingThreads ? 'animate-spin' : ''}`} />
               </button>
             </div>
             
-            {/* Horizontal Platform Filter Tabs */}
-            <div className="flex gap-1.5 overflow-x-auto pb-2 border-b border-border-subtle/40">
-              {[
-                { id: 'all', label: 'Todos', count: threads.length },
-                { id: 'facebook', label: 'Facebook', count: fbCount },
-                { id: 'instagram', label: 'Instagram', count: igCount },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setPlatformFilter(tab.id)}
-                  className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                    platformFilter === tab.id
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                      : 'border border-border-subtle bg-surface text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  <span className={`px-1.2 py-0.2 rounded-md text-[8px] font-black ${
-                    platformFilter === tab.id ? 'bg-emerald-500/20 text-emerald-300' : 'bg-surface-soft text-text-secondary'
-                  }`}>
-                    {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {/* Platform & Status Selector */}
+            <div className="flex flex-col gap-2 pt-1 border-t border-border-subtle/50">
+              {/* Canal Selector */}
+              <div className="flex items-center gap-1 bg-surface-strong p-1 rounded-lg border border-border-subtle">
+                {[
+                  { id: 'all', label: 'Todos' },
+                  { id: 'facebook', label: 'Facebook' },
+                  { id: 'instagram', label: 'Instagram' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setPlatformFilter(tab.id)}
+                    className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all duration-150 cursor-pointer ${
+                      platformFilter === tab.id
+                        ? 'bg-surface text-accent-cyan font-semibold border border-border-subtle'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Underlined Status Filter Switcher */}
-            <div className="flex gap-4 text-[10px] font-bold text-text-secondary px-1 pt-1">
-              {[
-                { id: 'pending', label: `Pendientes (${pendingCount})` },
-                { id: 'escalated', label: `Urgentes (${escalatedCount})` },
-                { id: 'replied', label: 'Respondidos' },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setStatusFilter(tab.id)}
-                  className={`hover:text-text-primary transition-colors cursor-pointer relative pb-1.5 ${
-                    statusFilter === tab.id ? 'text-emerald-400 font-black' : 'text-text-muted font-medium'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {statusFilter === tab.id && (
-                    <motion.div
-                      layoutId="cm-status-underline"
-                      className="absolute bottom-0 inset-x-0 h-0.5 bg-emerald-500 rounded-full"
-                    />
-                  )}
-                </button>
-              ))}
+              {/* Status Switcher tabs */}
+              <div className="flex border-b border-border-subtle mt-1.5">
+                {[
+                  { id: 'pending', label: 'Pendientes' },
+                  { id: 'escalated', label: 'Urgentes' },
+                  { id: 'replied', label: 'Respondidos' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.id)}
+                    className={`flex-1 pb-2 text-center text-xs font-semibold relative transition-colors duration-150 cursor-pointer ${
+                      statusFilter === tab.id ? 'text-accent-cyan' : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {statusFilter === tab.id && (
+                      <motion.div
+                        layoutId="cm-status-underline"
+                        className="absolute bottom-0 inset-x-0 h-0.5 bg-accent-cyan rounded-full"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Inbox threads list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-border-subtle max-h-[500px]">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[480px]">
             {loadingThreads ? (
               <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted h-64">
-                <ArrowPathIcon className="h-8 w-8 animate-spin text-emerald-500 mb-3" />
-                <p className="text-xs font-bold tracking-widest uppercase">
-                  Cargando comentarios...
+                <ArrowPathIcon className="h-6 w-6 animate-spin text-accent-cyan mb-2" />
+                <p className="text-xs font-semibold tracking-wider uppercase text-text-muted/65">
+                  Cargando...
                 </p>
               </div>
             ) : (
@@ -930,59 +855,54 @@ export const CMSection = ({ clientId }) => {
                       <motion.div
                         key={thread.id}
                         onClick={() => setSelectedThreadId(thread.id)}
-                        className={`p-3.5 cursor-pointer transition-all flex flex-col gap-1.5 hover:bg-surface-soft/40 relative border-b border-border-subtle/30 ${
-                          isSelected ? 'bg-surface-soft border-l-4 border-emerald-500' : 'bg-transparent'
+                        className={`p-3 cursor-pointer transition-all duration-150 rounded-xl border flex flex-col gap-2 ${
+                          isSelected 
+                            ? 'bg-surface-soft border-border-strong shadow-sm' 
+                            : 'bg-transparent border-transparent hover:bg-surface-soft/40 hover:border-border-subtle'
                         }`}
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex gap-2 items-center min-w-0">
                             <img
                               src={thread.user.avatar}
                               alt={thread.user.name}
-                              className="w-6.5 h-6.5 rounded-full object-cover border border-border-subtle"
+                              className="w-6 h-6 rounded-full object-cover border border-border-subtle flex-shrink-0"
                             />
-                            <div>
-                              <span className="text-xs font-bold text-text-primary">
-                                @{thread.user.name}
-                              </span>
-                              <div className="flex items-center gap-1.5 mt-0.5 text-[8px] text-text-muted">
-                                {thread.platform === 'Instagram' ? (
-                                  <span className="text-pink-400 font-bold uppercase tracking-wider text-[7px]">Instagram</span>
-                                ) : (
-                                  <span className="text-blue-400 font-bold uppercase tracking-wider text-[7px]">Facebook</span>
-                                )}
-                                <span>•</span>
-                                <span>{thread.time}</span>
-                              </div>
-                            </div>
+                            <span className="text-xs font-bold text-text-primary truncate">
+                              @{thread.user.name}
+                            </span>
                           </div>
                           
-                          {/* Sentiment dot indicator instead of massive badge */}
-                          <div className="flex items-center gap-1.5 pt-0.5">
-                            {thread.sentiment === 'positive' ? (
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]" title="Sentimiento Positivo" />
-                            ) : thread.sentiment === 'negative' ? (
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]" title="Queja / Crítico" />
-                            ) : (
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.4)]" title="Consulta / Neutral" />
-                            )}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-[8px] text-text-muted font-mono uppercase bg-surface border border-border-subtle px-1.5 py-0.5 rounded">
+                              {thread.platform.substring(0, 2)}
+                            </span>
+                            <span className="text-[10px] text-text-muted">{thread.time}</span>
                           </div>
                         </div>
 
-                        <p className="text-[11px] text-text-secondary leading-relaxed pl-9 pr-1 font-medium line-clamp-2">
-                          "{thread.comment}"
+                        <p className="text-xs text-text-muted leading-relaxed line-clamp-2 pr-1">
+                          {thread.comment}
                         </p>
 
-                        <div className="text-[8px] text-text-muted pl-9 truncate font-mono tracking-tight opacity-75">
-                          Post: {thread.postTitle}
+                        <div className="flex items-center justify-between border-t border-border-subtle/50 pt-2 mt-0.5">
+                          <div className="flex items-center gap-1.5">
+                            {getSentimentBadge(thread.sentiment)}
+                          </div>
+                          {thread.postThumbnail ? (
+                            <img
+                              src={thread.postThumbnail}
+                              alt="Post"
+                              className="w-4 h-4 rounded object-cover opacity-60 border border-border-subtle"
+                            />
+                          ) : null}
                         </div>
                       </motion.div>
                     );
                   })
                 ) : (
                   <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted h-64">
-                    <ChatBubbleLeftRightIcon className="h-8 w-8 opacity-20 mb-2" />
-                    <p className="text-[11px] font-bold">No hay comentarios en esta bandeja</p>
+                    <p className="text-xs font-medium text-text-muted">No hay comentarios con este filtro.</p>
                   </div>
                 )}
               </AnimatePresence>
@@ -991,191 +911,260 @@ export const CMSection = ({ clientId }) => {
         </div>
 
         {/* COL 2: COPILOT WORKSPACE (8 COLS) */}
-        <div className="lg:col-span-8 flex flex-col bg-app-sidebar border border-border-subtle rounded-2xl overflow-hidden min-h-[600px]">
+        <div className="lg:col-span-8 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
           {activeThread ? (
-            <div className="p-5 flex flex-col flex-1 gap-5">
+            <div className="p-6 flex flex-col flex-1 gap-6">
               
-              {/* Thread Context Header */}
-              <div className="border-b border-border-subtle pb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-xs font-bold text-text-secondary uppercase tracking-widest flex items-center gap-1.5">
-                    <UserIcon className="h-4 w-4 text-emerald-400" />
-                    <span>Detalle de Interacción</span>
-                  </h4>
-                  <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-surface border border-border-subtle text-text-muted">
-                    ID: {activeThread.id}
-                  </span>
-                </div>
-                
-                <div className="bg-surface/50 border border-border-subtle p-3.5 rounded-xl flex gap-3 items-stretch relative overflow-hidden">
-                  {/* Thumbnail of original post if available */}
-                  {activeThread.postThumbnail ? (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-border-subtle flex-shrink-0 relative group">
-                      <img 
-                        src={activeThread.postThumbnail} 
-                        alt="Thumbnail" 
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      {/* Subtle gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    </div>
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-surface border border-border-subtle flex items-center justify-center flex-shrink-0 text-text-muted text-[9px] font-bold">
-                      Sin foto
-                    </div>
-                  )}
-
-                  {/* Post details & Comment */}
-                  <div className="flex-1 flex flex-col justify-between gap-1 min-w-0">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2 text-[9px] text-text-muted font-bold uppercase tracking-wider">
-                        <span className="truncate">Post: {activeThread.postTitle}</span>
-                        {activeThread.platform === 'Instagram' ? (
-                          <span className="bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-600 text-white font-black px-1.5 py-0.5 rounded text-[8px] tracking-wider uppercase scale-90">
-                            Instagram
-                          </span>
-                        ) : (
-                          <span className="bg-blue-600 text-white font-black px-1.5 py-0.5 rounded text-[8px] tracking-wider uppercase scale-90">
-                            Facebook
-                          </span>
-                        )}
+              {/* SECCIÓN 1: EL MENSAJE RECIBIDO */}
+              <div className="bg-surface-soft border border-border-subtle rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={activeThread.user.avatar}
+                      alt={activeThread.user.name}
+                      className="w-8 h-8 rounded-full object-cover border border-border-subtle"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-text-primary">
+                          @{activeThread.user.name}
+                        </span>
+                        <span className="text-[9px] text-text-muted font-mono uppercase bg-surface border border-border-subtle px-1.5 py-0.5 rounded">
+                          {activeThread.platform}
+                        </span>
                       </div>
-                      <div className="text-xs text-text-primary font-medium line-clamp-2 pl-2 border-l-2 border-emerald-500/40">
-                        "{activeThread.comment}"
-                      </div>
+                      <span className="text-[10px] text-text-muted block mt-0.5">
+                        Recibido {activeThread.time}
+                      </span>
                     </div>
-
-                    {/* View Original Post Link Action */}
-                    {activeThread.postLink && (
-                      <a
-                        href={activeThread.postLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="self-start flex items-center gap-1 text-[9px] font-black uppercase text-emerald-400 hover:text-emerald-300 transition-colors tracking-widest mt-1 cursor-pointer"
-                      >
-                        <LinkIcon className="h-3 w-3" />
-                        <span>Ver publicación original</span>
-                      </a>
-                    )}
                   </div>
+                  
+                  <div>
+                    {getSentimentBadge(activeThread.sentiment)}
+                  </div>
+                </div>
+
+                <div className="text-sm text-text-primary leading-relaxed pl-3 whitespace-pre-wrap select-text font-medium border-l-2 border-border-strong">
+                  "{activeThread.comment}"
+                </div>
+
+                {/* CONTEXTO ASOCIADO AL POST */}
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-border-subtle/50 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {activeThread.postThumbnail && (
+                      <img
+                        src={activeThread.postThumbnail}
+                        alt="Post"
+                        className="w-6 h-6 rounded object-cover border border-border-subtle flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-text-muted block font-semibold truncate">
+                        Publicación: {activeThread.postTitle}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {activeThread.postLink && (
+                    <a
+                      href={activeThread.postLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[10px] font-semibold text-accent-cyan hover:underline transition-colors shrink-0"
+                    >
+                      <LinkIcon className="h-3 w-3" />
+                      <span>Ver original</span>
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* AI Draft Suggestion Box */}
-              <div className="flex-1 flex flex-col gap-3">
+              {/* SECCIÓN 2: BORRADOR DE RESPUESTA DE LA IA */}
+              <div className="flex-1 flex flex-col gap-3 min-h-[220px]">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <SparklesIcon className="h-4.5 w-4.5 text-emerald-400" />
-                    <span className="text-xs font-bold text-text-secondary">Propuesta de Respuesta IA</span>
+                  <div className="flex items-center gap-2">
+                    <SparklesIcon className="h-4.5 w-4.5 text-accent-cyan" />
+                    <span className="text-xs font-bold text-text-primary tracking-wide">Respuesta sugerida por IA</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      Confianza: {activeThread.aiConfidence}%
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowTechDetails(!showTechDetails)}
+                      className="text-[10px] font-semibold text-text-muted hover:text-text-primary px-2.5 py-1 rounded border border-border-subtle bg-surface-strong transition-colors cursor-pointer"
+                    >
+                      {showTechDetails ? 'Ocultar metadatos' : 'Ver metadatos'}
+                    </button>
+                    <span 
+                      className="text-[10px] font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-2.5 py-1 rounded-full cursor-help" 
+                      title={`Confianza exacta: ${activeThread.aiConfidence || 95}%`}
+                    >
+                      {loadingDraft ? 'Analizando...' : getConfidenceLabel(activeThread.aiConfidence)}
                     </span>
                   </div>
                 </div>
 
-                <div className="relative flex-1 flex flex-col bg-surface border border-border-subtle rounded-xl p-4 shadow-xl">
-                  {/* Subtle Background Glow representing AI presence */}
-                  <div className="absolute right-4 top-4 w-12 h-12 rounded-full bg-emerald-500/10 blur-xl pointer-events-none" />
+                {/* Technical details block (Togglable) */}
+                {showTechDetails && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3.5 bg-surface-strong border border-border-subtle rounded-xl text-[10px] text-text-muted font-mono space-y-1.5 leading-relaxed"
+                  >
+                    <div><span className="text-text-secondary font-bold">ID Interacción:</span> {activeThread.id}</div>
+                    <div><span className="text-text-secondary font-bold">Base de Conocimiento Citada:</span> {activeThread.contextUsed || 'Base de Conocimiento General'}</div>
+                    <div><span className="text-text-secondary font-bold">Sentimiento / Tag:</span> {activeThread.sentiment?.toUpperCase()} • {activeThread.tag}</div>
+                    <div><span className="text-text-secondary font-bold">Confianza Exacta:</span> {activeThread.aiConfidence || 95}%</div>
+                  </motion.div>
+                )}
+
+                <div className="relative flex-1 flex flex-col bg-surface-strong border border-border-subtle rounded-xl p-4 min-h-[140px]">
+                  {/* Concentric Pulse AI indicator */}
+                  {(loadingDraft || regenerating) && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-strong/90 rounded-xl">
+                      <div className="relative w-8 h-8 flex items-center justify-center mb-2">
+                        <div className="absolute inset-0 rounded-full bg-accent-cyan/10 animate-ping" />
+                        <div className="absolute w-5 h-5 rounded-full bg-accent-cyan/20 animate-ping" />
+                        <div className="absolute w-3 h-3 rounded-full bg-accent-cyan shadow-[0_0_8px_rgba(78,205,196,0.5)] flex items-center justify-center">
+                          <SparklesIcon className="w-2.5 h-2.5 text-slate-950 animate-spin" />
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold tracking-wider text-accent-cyan uppercase animate-pulse">
+                        Optimizando Respuesta...
+                      </span>
+                    </div>
+                  )}
 
                   {isEditing ? (
                     <textarea
                       value={activeDraft}
                       onChange={e => setActiveDraft(e.target.value)}
-                      className="w-full flex-1 bg-transparent border-0 resize-none text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[140px]"
+                      className="w-full flex-1 bg-transparent border-0 resize-none text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
                       placeholder="Modifica el borrador de la IA aquí..."
                     />
                   ) : (
-                    <div className="text-xs text-text-secondary leading-relaxed flex-1 font-medium select-text pr-2">
+                    <div className="text-xs text-text-secondary leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
                       {activeDraft}
                     </div>
                   )}
 
-                  {/* Context files used */}
-                  <div className="border-t border-border-subtle/50 mt-3 pt-3 flex justify-between items-center text-[10px] text-text-muted">
-                    <span className="flex items-center gap-1 font-mono">
-                      <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-400" />
-                      Documento Citado: {activeThread.contextUsed}
-                    </span>
-                    
-                    <button
-                      onClick={() => setIsEditing(!isEditing)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-text-secondary hover:text-emerald-400 transition-colors"
-                    >
-                      <PencilIcon className="h-3 w-3" />
-                      <span>{isEditing ? 'Fijar' : 'Editar'}</span>
-                    </button>
-                  </div>
+                  {/* Shimmer RAG Citation Label */}
+                  {!loadingDraft && activeThread.contextUsed && (
+                    <div className="mt-3 pt-2.5 border-t border-border-subtle/50 flex items-center justify-between text-[10px] text-text-muted">
+                      <span className="flex items-center gap-1.5 font-mono truncate max-w-[80%]">
+                        <ShieldCheckIcon className="h-4 w-4 text-accent-cyan flex-shrink-0" />
+                        <span className="truncate">Validado con: {activeThread.contextUsed}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* AI Copilot Regeneration Controls */}
-                <div className="bg-surface/50 border border-border-subtle p-3 rounded-xl space-y-2">
-                  <div className="text-[9px] font-bold text-text-muted uppercase tracking-wider px-1">
-                    Ajustar Tono con IA (Borrador Rápido)
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* AI Copilot Tweak Menu */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-soft p-3 rounded-xl border border-border-subtle">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">Ajustar Tono:</span>
                     <button
                       onClick={() => handleRegenerate('shorter')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="border border-border-subtle bg-surface hover:bg-surface-soft text-[10px] font-bold py-1.5 rounded-lg text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center gap-1"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
                     >
-                      <ClockIcon className="h-3.5 w-3.5" />
-                      <span>Más Corto</span>
+                      Más Corto
                     </button>
                     <button
                       onClick={() => handleRegenerate('warmer')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="border border-border-subtle bg-surface hover:bg-surface-soft text-[10px] font-bold py-1.5 rounded-lg text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center gap-1"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
                     >
-                      <FaceSmileIcon className="h-3.5 w-3.5" />
-                      <span>Más Empático</span>
+                      Más Empático
                     </button>
                     <button
                       onClick={() => handleRegenerate('cta')}
                       disabled={regenerating || activeThread.status === 'replied'}
-                      className="border border-border-subtle bg-surface hover:bg-surface-soft text-[10px] font-bold py-1.5 rounded-lg text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center gap-1"
+                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer"
                     >
-                      <SparklesIcon className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>Con CTA</span>
+                      Con CTA
+                    </button>
+                  </div>
+
+                  {/* Custom Instruction input */}
+                  <div className="relative flex-1 sm:max-w-[220px]">
+                    <input
+                      type="text"
+                      placeholder="Ajuste personalizado..."
+                      value={customAIInstruction}
+                      onChange={e => setCustomAIInstruction(e.target.value)}
+                      disabled={regenerating || activeThread.status === 'replied'}
+                      className="input-cyber pr-10 py-1.5 text-[10px] w-full"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && customAIInstruction.trim()) {
+                          handleRegenerate(customAIInstruction.trim());
+                          setCustomAIInstruction('');
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customAIInstruction.trim()) {
+                          handleRegenerate(customAIInstruction.trim());
+                          setCustomAIInstruction('');
+                        }
+                      }}
+                      disabled={regenerating || !customAIInstruction.trim() || activeThread.status === 'replied'}
+                      className="absolute right-1 top-1 py-1 px-2 rounded bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan font-bold text-[9px] transition-colors cursor-pointer"
+                    >
+                      OK
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Main Actions Box */}
-              <div className="pt-3 border-t border-border-subtle flex gap-3">
+              {/* SECCIÓN 3: ACCIONES PRINCIPALES */}
+              <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
                 {activeThread.status === 'replied' ? (
-                  <div className="w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold font-title">
-                    <CheckIcon className="h-5 w-5" />
-                    <span>Mensaje Respondido • Ver en Red Social</span>
+                  <div className="w-full bg-accent-cyan/5 border border-accent-cyan/20 text-accent-cyan py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold">
+                    <CheckIcon className="h-4.5 w-4.5" />
+                    <span>Respuesta publicada correctamente en redes</span>
                   </div>
                 ) : (
                   <>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`btn-cyber flex items-center gap-1 px-4 py-2.5 text-xs font-bold cursor-pointer ${
+                          isEditing 
+                            ? 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/15'
+                            : ''
+                        }`}
+                      >
+                        {isEditing ? 'Fijar' : 'Editar'}
+                      </button>
+
+                      {activeThread.status !== 'escalated' && (
+                        <button
+                          onClick={() => {
+                            setThreads(prev => prev.map(t => t.id === activeThread.id ? { ...t, status: 'escalated' } : t));
+                            toast.error('Comentario derivado a atención prioritaria humana.');
+                          }}
+                          className="btn-cyber text-xs font-bold cursor-pointer"
+                          style={{ borderColor: 'rgba(255, 107, 107, 0.2)', color: 'var(--color-accent-rose)' }}
+                        >
+                          Escalar a Humano
+                        </button>
+                      )}
+                    </div>
+
                     <button
                       onClick={handleApprove}
                       disabled={approving || regenerating}
-                      className="flex-1 bg-text-primary hover:bg-white text-app-sidebar py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-black font-title transition-all shadow-xl hover:scale-[1.01]"
+                      className="btn-cyber text-white border-transparent px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer"
+                      style={{ backgroundColor: 'var(--color-accent-lavender)' }}
                     >
                       {approving ? (
                         <ArrowPathIcon className="h-4 w-4 animate-spin" />
                       ) : (
                         <CheckIcon className="h-4 w-4" />
                       )}
-                      <span>Aprobar y Enviar Respuesta</span>
+                      <span>Aprobar y Enviar</span>
                     </button>
-
-                    {activeThread.status !== 'escalated' && (
-                      <button
-                        onClick={() => {
-                          setThreads(prev => prev.map(t => t.id === activeThread.id ? { ...t, status: 'escalated' } : t));
-                          toast.error('Comentario derivado a atención prioritaria humana.');
-                        }}
-                        className="px-4 border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-400 py-3 rounded-xl text-xs font-bold transition-colors"
-                      >
-                        Escalar a CM
-                      </button>
-                    )}
                   </>
                 )}
               </div>
@@ -1184,7 +1173,7 @@ export const CMSection = ({ clientId }) => {
           ) : (
             <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted flex-1 h-full">
               <InteractiveAvatar variant="cm" size="lg" className="mb-4" />
-              <p className="text-xs font-bold">Selecciona un hilo para ver la conversación y la sugerencia de IA</p>
+              <p className="text-xs font-semibold text-text-muted">Selecciona una conversación de la bandeja para comenzar.</p>
             </div>
           )}
         </div>
@@ -1197,10 +1186,10 @@ export const CMSection = ({ clientId }) => {
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowRulesPanel(false)}
-              className="absolute inset-0 bg-black backdrop-blur-xs cursor-pointer"
+              className="absolute inset-0 bg-[#07070f]/75 cursor-pointer"
             />
             {/* Panel */}
             <motion.div
@@ -1208,95 +1197,92 @@ export const CMSection = ({ clientId }) => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-sm h-full bg-app-sidebar border-l border-border-subtle p-6 flex flex-col gap-6 shadow-2xl overflow-y-auto z-10 text-text-primary"
+              className="relative w-full max-w-sm h-full bg-surface border-l border-border-subtle p-6 flex flex-col gap-6 shadow-3xl overflow-y-auto z-10 text-text-primary"
             >
               <div className="flex justify-between items-center border-b border-border-subtle pb-4">
-                <h4 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5">
-                  <ShieldCheckIcon className="h-5 w-5 text-emerald-400" />
-                  <span>Reglas del Copiloto</span>
+                <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5 font-title">
+                  <ShieldCheckIcon className="h-5 w-5 text-accent-cyan" />
+                  <span>Reglas y Canales</span>
                 </h4>
                 <button
                   onClick={() => setShowRulesPanel(false)}
-                  className="px-3 py-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-soft text-text-muted hover:text-text-primary text-[10px] font-bold transition-all cursor-pointer"
+                  className="btn-cyber px-3 py-1.5 text-[10px] font-bold transition-all cursor-pointer"
                 >
                   Cerrar
                 </button>
               </div>
 
               {/* Tone Card Reference */}
-              <div className="bg-surface/50 border border-border-subtle p-4 rounded-2xl space-y-1.5">
-                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Tono de Voz Activo</span>
-                <p className="text-[11px] text-text-primary font-bold">Cálido, Cercano & Empático</p>
-                <div className="text-[9px] text-text-muted leading-relaxed">
+              <div className="bg-surface-soft border border-border-subtle p-4 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider block">Tono de Voz Activo</span>
+                <p className="text-xs text-text-primary font-bold">Cálido, Cercano & Empático</p>
+                <div className="text-[10px] text-text-muted leading-relaxed">
                   Utiliza siempre emojis amistosos, saluda de manera personalizada y mantén un lenguaje optimista y servicial.
                 </div>
               </div>
 
               {/* Autopilot Toggles Panel */}
               <div className="space-y-4">
-                <h5 className="text-[10px] font-bold text-text-secondary uppercase tracking-widest px-1">
+                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1">
                   Ajustes de Autopiloto
                 </h5>
 
-                <div className="space-y-3.5">
+                <div className="space-y-3">
                   {/* Toggle 1 */}
-                  <div className="flex items-center justify-between bg-surface/30 p-3 rounded-2xl border border-border-subtle/50">
+                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
-                      <span className="text-[10px] font-bold text-text-primary">Auto-responder Saludos</span>
-                      <span className="text-[8px] text-text-muted leading-tight">La IA responderá de forma autónoma comentarios de emojis y saludos.</span>
+                      <span className="text-[11px] font-bold text-text-primary">Auto-responder Saludos</span>
+                      <span className="text-[9px] text-text-muted leading-tight">La IA responderá automáticamente comentarios de saludos.</span>
                     </div>
                     <button
                       onClick={() => {
                         setAutopilotGreeting(!autopilotGreeting);
                         toast.success(autopilotGreeting ? 'Autopiloto de saludos inactivo' : 'Autopiloto de saludos activado');
                       }}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                        autopilotGreeting ? 'bg-emerald-500' : 'bg-surface border border-border-subtle'
-                      }`}
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      style={{ backgroundColor: autopilotGreeting ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
-                      <div className={`w-3.8 h-3.8 rounded-full bg-white transition-transform duration-200 transform ${
+                      <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
                         autopilotGreeting ? 'translate-x-4' : 'translate-x-0'
                       }`} />
                     </button>
                   </div>
 
                   {/* Toggle 2 */}
-                  <div className="flex items-center justify-between bg-surface/30 p-3 rounded-2xl border border-border-subtle/50">
+                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
-                      <span className="text-[10px] font-bold text-text-primary">Auto-resolver FAQs</span>
-                      <span className="text-[8px] text-text-muted leading-tight">Contesta automáticamente preguntas de precios/envíos con alta confianza.</span>
+                      <span className="text-[11px] font-bold text-text-primary">Auto-resolver FAQs</span>
+                      <span className="text-[9px] text-text-muted leading-tight">Contesta automáticamente preguntas de precios y envíos con alta confianza.</span>
                     </div>
                     <button
                       onClick={() => {
                         setAutopilotFaq(!autopilotFaq);
                         toast.success(autopilotFaq ? 'Autopiloto de FAQ inactivo' : 'Autopiloto de FAQ activado');
                       }}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                        autopilotFaq ? 'bg-emerald-500' : 'bg-surface border border-border-subtle'
-                      }`}
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      style={{ backgroundColor: autopilotFaq ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
-                      <div className={`w-3.8 h-3.8 rounded-full bg-white transition-transform duration-200 transform ${
+                      <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
                         autopilotFaq ? 'translate-x-4' : 'translate-x-0'
                       }`} />
                     </button>
                   </div>
 
                   {/* Toggle 3 */}
-                  <div className="flex items-center justify-between bg-surface/30 p-3 rounded-2xl border border-border-subtle/50">
+                  <div className="flex items-center justify-between bg-surface-soft p-3 rounded-xl border border-border-subtle">
                     <div className="flex flex-col gap-0.5 max-w-[80%]">
-                      <span className="text-[10px] font-bold text-text-primary">Derivar Críticos</span>
-                      <span className="text-[8px] text-text-muted leading-tight">Envía quejas o crisis directamente a revisión del equipo humano sin responder.</span>
+                      <span className="text-[11px] font-bold text-text-primary">Derivar Críticos</span>
+                      <span className="text-[9px] text-text-muted leading-tight">Envía quejas o crisis directamente a revisión del equipo humano.</span>
                     </div>
                     <button
                       onClick={() => {
                         setEscalateNegatives(!escalateNegatives);
                         toast.success(escalateNegatives ? 'Derivación inactiva (Peligro)' : 'Derivación de seguridad activa');
                       }}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                        escalateNegatives ? 'bg-emerald-500' : 'bg-surface border border-border-subtle'
-                      }`}
+                      className="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer border border-border-subtle"
+                      style={{ backgroundColor: escalateNegatives ? 'var(--color-accent-cyan)' : 'var(--color-surface-strong)' }}
                     >
-                      <div className={`w-3.8 h-3.8 rounded-full bg-white transition-transform duration-200 transform ${
+                      <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 transform ${
                         escalateNegatives ? 'translate-x-4' : 'translate-x-0'
                       }`} />
                     </button>
@@ -1305,80 +1291,88 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Integraciones Multicanal */}
-              <div className="space-y-4 border-t border-border-subtle/30 pt-4">
-                <h5 className="text-[10px] font-bold text-text-secondary uppercase tracking-widest px-1 flex items-center gap-1.5">
-                  <LinkIcon className="h-3.5 w-3.5 text-emerald-400" />
+              <div className="space-y-4 border-t border-border-subtle pt-4">
+                <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 flex items-center gap-1.5">
+                  <LinkIcon className="h-3.5 w-3.5 text-accent-cyan" />
                   <span>Integraciones Multicanal</span>
                 </h5>
 
                 <div className="space-y-3">
                   {/* Facebook / Instagram Card */}
-                  <div className="bg-surface/30 p-3 rounded-2xl border border-border-subtle/50 space-y-2.5 transition-all hover:border-emerald-500/20 hover:bg-surface/40">
+                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+                        <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
                           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                           </svg>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-text-primary">Facebook / Instagram</span>
-                          <span className="text-[8px] text-text-muted leading-tight">Canal de auto-respuestas CM</span>
+                          <span className="text-[11px] font-bold text-text-primary">Facebook / Instagram</span>
+                          <span className="text-[9px] text-text-muted leading-tight">Canal de auto-respuestas CM</span>
                         </div>
                       </div>
-                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[7.5px] font-bold uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
                         Activo
                       </span>
                     </div>
                     {integration && (
-                      <div className="pt-2 border-t border-border-subtle/30 flex items-center justify-between text-[8.5px]">
-                        <span className="text-text-muted font-medium truncate max-w-[140px]">
-                          Pág: {integration.page_name || 'Sin nombre'}
-                        </span>
-                        <span className="text-text-muted/60 font-mono">
-                          ID: {integration.page_id ? `${integration.page_id.substring(0, 6)}...` : 'N/A'}
-                        </span>
+                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-text-muted font-semibold truncate max-w-[130px]">
+                            Pág: {integration.page_name || 'Sin nombre'}
+                          </span>
+                          <span className="text-text-muted font-mono truncate max-w-[130px] opacity-75">
+                            ID: {integration.page_id ? `${integration.page_id.substring(0, 6)}...` : 'N/A'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleDisconnect}
+                          className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
+                        >
+                          Desconectar
+                        </button>
                       </div>
                     )}
                   </div>
 
                   {/* LinkedIn Card */}
-                  <div className="bg-surface/30 p-3 rounded-2xl border border-border-subtle/50 space-y-2.5 transition-all hover:border-emerald-500/20 hover:bg-surface/40">
+                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
+                        <div className="p-1.5 rounded bg-sky-500/10 text-sky-400">
                           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                             <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                           </svg>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-text-primary">LinkedIn Profile</span>
-                          <span className="text-[8px] text-text-muted leading-tight">Publicación directa multicanal</span>
+                          <span className="text-[11px] font-bold text-text-primary">LinkedIn Profile</span>
+                          <span className="text-[9px] text-text-muted leading-tight">Publicación directa multicanal</span>
                         </div>
                       </div>
                       {linkedinIntegration ? (
-                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[7.5px] font-bold uppercase tracking-wider animate-pulse">
+                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
                           Sincronizado
                         </span>
                       ) : (
-                        <span className="px-1.5 py-0.5 rounded-full bg-surface-soft border border-border-subtle text-text-muted text-[7.5px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider">
                           Inactivo
                         </span>
                       )}
                     </div>
                     {linkedinIntegration ? (
-                      <div className="pt-2 border-t border-border-subtle/30 flex items-center justify-between gap-1">
+                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
                         <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-[8.5px] text-text-secondary font-bold truncate max-w-[130px]">
+                          <span className="text-text-muted font-semibold truncate max-w-[130px]">
                             {linkedinIntegration.linkedin_name}
                           </span>
-                          <span className="text-[7.5px] text-text-muted font-mono truncate max-w-[130px]">
-                            {linkedinIntegration.linkedin_urn}
+                          <span className="text-text-muted font-mono truncate max-w-[130px] opacity-75">
+                            {linkedinIntegration.linkedin_urn ? `${linkedinIntegration.linkedin_urn.substring(0, 15)}...` : 'N/A'}
                           </span>
                         </div>
                         <button
                           onClick={handleDeleteLinkedIn}
-                          className="px-2 py-0.5 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/15 text-red-400 text-[8px] font-bold transition-all cursor-pointer flex-shrink-0"
+                          className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                         >
                           Desconectar
                         </button>
@@ -1387,7 +1381,7 @@ export const CMSection = ({ clientId }) => {
                       <div className="pt-0.5">
                         <button
                           onClick={handleLinkedInOAuth}
-                          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-[8.5px] py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 shadow-md transform hover:scale-[1.01]"
+                          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-[9px] py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 shadow-md cursor-pointer"
                         >
                           <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
                             <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
@@ -1399,42 +1393,42 @@ export const CMSection = ({ clientId }) => {
                   </div>
 
                   {/* TikTok Card */}
-                  <div className="bg-surface/30 p-3 rounded-2xl border border-border-subtle/50 space-y-2.5 transition-all hover:border-emerald-500/20 hover:bg-surface/40">
+                  <div className="bg-surface-soft p-3 rounded-xl border border-border-subtle space-y-2.5 transition-all duration-150">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
+                        <div className="p-1.5 rounded bg-pink-500/10 text-pink-400">
                           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                             <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.6-4.08-1.4-1.18-.78-2.07-1.9-2.57-3.19-.03 1.11-.02 2.22-.02 3.33v8.3c.02 1.39-.33 2.82-1.13 3.96-.8 1.16-2.05 1.99-3.46 2.3-1.45.31-3.03.11-4.37-.5-1.37-.62-2.48-1.75-3.09-3.13-.61-1.42-.64-3.07-.12-4.5.5-1.39 1.53-2.61 2.88-3.3 1.43-.72 3.12-.86 4.63-.4v4.07c-.9-.28-1.92-.19-2.73.35-.8.54-1.3 1.49-1.33 2.46.03.97.55 1.91 1.36 2.44.82.52 1.88.57 2.75.14.88-.43 1.47-1.33 1.52-2.3.01-3.12 0-6.24 0-9.36.03-3.38.01-6.76.02-10.15z" />
                           </svg>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-text-primary">TikTok Business</span>
-                          <span className="text-[8px] text-text-muted leading-tight">Publicación directa de videos</span>
+                          <span className="text-[11px] font-bold text-text-primary">TikTok Business</span>
+                          <span className="text-[9px] text-text-muted leading-tight">Publicación directa de videos</span>
                         </div>
                       </div>
                       {tiktokIntegration ? (
-                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[7.5px] font-bold uppercase tracking-wider animate-pulse">
+                        <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider">
                           Sincronizado
                         </span>
                       ) : (
-                        <span className="px-1.5 py-0.5 rounded-full bg-surface-soft border border-border-subtle text-text-muted text-[7.5px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider">
                           Inactivo
                         </span>
                       )}
                     </div>
                     {tiktokIntegration ? (
-                      <div className="pt-2 border-t border-border-subtle/30 flex items-center justify-between gap-1">
+                      <div className="pt-2.5 border-t border-border-subtle/50 flex items-center justify-between gap-1 text-[9px]">
                         <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-[8.5px] text-text-secondary font-bold truncate max-w-[130px]">
+                          <span className="text-text-muted font-semibold truncate max-w-[130px]">
                             @{tiktokIntegration.tiktok_username}
                           </span>
-                          <span className="text-[7.5px] text-text-muted font-mono truncate max-w-[130px]">
-                            {tiktokIntegration.tiktok_open_id}
+                          <span className="text-text-muted font-mono truncate max-w-[130px] opacity-75">
+                            {tiktokIntegration.tiktok_open_id ? `${tiktokIntegration.tiktok_open_id.substring(0, 15)}...` : 'N/A'}
                           </span>
                         </div>
                         <button
                           onClick={handleDeleteTikTok}
-                          className="px-2 py-0.5 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/15 text-red-400 text-[8px] font-bold transition-all cursor-pointer flex-shrink-0"
+                          className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                         >
                           Desconectar
                         </button>
@@ -1443,7 +1437,7 @@ export const CMSection = ({ clientId }) => {
                       <div className="pt-0.5">
                         <button
                           onClick={handleTikTokOAuth}
-                          className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold text-[8.5px] py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 shadow-md transform hover:scale-[1.01]"
+                          className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold text-[9px] py-1.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 shadow-md cursor-pointer"
                         >
                           <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
                             <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.6-4.08-1.4-1.18-.78-2.07-1.9-2.57-3.19-.03 1.11-.02 2.22-.02 3.33v8.3c.02 1.39-.33 2.82-1.13 3.96-.8 1.16-2.05 1.99-3.46 2.3-1.45.31-3.03.11-4.37-.5-1.37-.62-2.48-1.75-3.09-3.13-.61-1.42-.64-3.07-.12-4.5.5-1.39 1.53-2.61 2.88-3.3 1.43-.72 3.12-.86 4.63-.4v4.07c-.9-.28-1.92-.19-2.73.35-.8.54-1.3 1.49-1.33 2.46.03.97.55 1.91 1.36 2.44.82.52 1.88.57 2.75.14.88-.43 1.47-1.33 1.52-2.3.01-3.12 0-6.24 0-9.36.03-3.38.01-6.76.02-10.15z" />
@@ -1457,9 +1451,9 @@ export const CMSection = ({ clientId }) => {
               </div>
 
               {/* Guidelines info */}
-              <div className="bg-surface border border-border-subtle p-4 rounded-2xl flex items-start gap-2.5 mt-auto">
-                <ShieldCheckIcon className="h-4.5 w-4.5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <div className="text-[9.5px] text-text-muted leading-relaxed">
+              <div className="bg-surface-soft border border-border-subtle p-4 rounded-xl flex items-start gap-2.5 mt-auto">
+                <ShieldCheckIcon className="h-4.5 w-4.5 text-accent-cyan flex-shrink-0 mt-0.5" />
+                <div className="text-[10px] text-text-muted leading-relaxed">
                   <span className="font-bold text-text-secondary">Seguridad RAG:</span> El CM Inteligente está restringido a responder únicamente en base a los documentos cargados en tu sección "Documentos". Nunca inventará links o datos que no estén explícitamente verificados.
                 </div>
               </div>

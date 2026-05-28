@@ -1,5 +1,7 @@
 // src/api/webhooks.routes.js
 import { Router } from 'express';
+import { verifyMetaSignature } from '../middleware/webhookAuth.js';
+import { handleMetaWebhookEvent } from '../services/metaAds.service.js';
 
 const router = Router();
 
@@ -27,15 +29,19 @@ router.get('/meta', (req, res) => {
 /**
  * Endpoint de recepción de eventos de Meta (POST).
  * Recibe eventos de comentarios, menciones y mensajes en tiempo real.
+ * Protegido criptográficamente mediante verifyMetaSignature.
  */
-router.post('/meta', (req, res) => {
+router.post('/meta', verifyMetaSignature, (req, res) => {
   const body = req.body;
 
   // Verificar que el objeto sea una página (Facebook/Instagram comments)
   if (body.object === 'page') {
     console.log('📡 [Meta Webhooks] Evento recibido en vivo:', JSON.stringify(body, null, 2));
     
-    // Aquí se inyectaría en la cola o base de datos si se requiere persistencia en producción
+    // Procesar asíncronamente la pre-generación de respuestas
+    handleMetaWebhookEvent(body).catch(err => {
+      console.error('❌ Error al manejar evento de webhook:', err.message);
+    });
     
     return res.status(200).send('EVENT_RECEIVED');
   } else {

@@ -180,7 +180,7 @@ export const EventDetailModal = ({ isOpen, onClose, event, onUpdate, onDelete, c
                         transition={{ delay: 0.3 }}
                         className='space-y-2'
                       >
-                        <label className='text-sm font-medium text-rambla-text-secondary'>
+                        <label className='text-sm font-medium text-text-muted'>
                           Cambio rápido de estado:
                         </label>
                         <div className='flex flex-wrap gap-2'>

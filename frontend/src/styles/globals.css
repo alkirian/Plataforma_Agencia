@@ -19,7 +19,7 @@
 
 @layer base {
   :root {
-    /* App background and solid surfaces (Rambla exact values) */
+    /* App background and solid surfaces (Cadence exact values) */
     --color-app-bg: #07070e;
     --color-app-sidebar: #0c0c18;
     --gradient-cyber: #07070e;
@@ -38,7 +38,7 @@
     --color-text-secondary: #484868;
     --font-sans: 'Outfit', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-    /* Solid pastels & neon accents (Rambla exact values) */
+    /* Solid pastels & neon accents (Cadence exact values) */
     --color-accent-sage: #4ecdc4; /* Teal */
     --color-accent-lavender: #7c5cfc; /* Accent Purple */
     --color-accent-rose: #ff6b6b; /* Coral */

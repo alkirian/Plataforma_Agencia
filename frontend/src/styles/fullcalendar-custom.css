@@ -142,6 +142,7 @@
   border-color: var(--fc-border) !important;
   background: transparent;
   transition: background 0.15s ease;
+  position: relative !important;
 }
 
 .fc .fc-daygrid-day:hover {
@@ -153,27 +154,45 @@
   border-color: var(--fc-primary-color) !important;
 }
 
-/* Day numbers */
+/* Day numbers (Flotantes Premium de Alto Impacto Visual) */
+.fc .fc-daygrid-day-top {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  z-index: 10 !important;
+  display: flex !important;
+  flex-direction: row;
+  justify-content: flex-end;
+  pointer-events: none; /* Permite hacer clic en los eventos que están debajo */
+}
+
 .fc .fc-daygrid-day-number {
-  color: var(--fc-text);
-  font-weight: 600;
-  padding: 4px 6px;
-  display: inline-block;
-  min-width: 20px;
-  font-size: 0.73rem;
-  line-height: 1.1;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  background: rgba(20, 18, 22, 0.7) !important; /* Fondo ultra oscuro traslúcido */
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 5px !important;
+  padding: 2px 6px !important;
+  min-width: 18px;
   text-align: center;
+  line-height: 1 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+  display: inline-block !important;
 }
 
 .fc .fc-day-today .fc-daygrid-day-number {
-  color: var(--fc-text);
-  font-weight: 700;
-  background: rgba(143, 168, 155, 0.16);
-  border-radius: 5px;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  background: var(--color-accent-sage, #8fa89b) !important; /* Color destacado del día de hoy */
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 .fc .fc-day-other .fc-daygrid-day-number {
-  opacity: 0.3;
+  opacity: 0.45 !important;
+  background: rgba(20, 18, 22, 0.45) !important;
 }
 
 /* Events (Agrandados a pedido del usuario) */
@@ -216,12 +235,63 @@
   white-space: nowrap;
 }
 
-/* Month view event adjustments (Agrandados) */
-.fc .fc-daygrid-event {
-  margin: 2px 3px;
-  border-radius: 6px;
-  padding: 3px 6px; /* Tareas de mes más legibles */
-  font-size: 11px; /* Tipografía más grande en vista de mes */
+/* Estructura de la celda de mes para soportar relleno completo de eventos */
+.fc .fc-daygrid-day-frame {
+  height: 100% !important;
+  min-height: 100px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: stretch !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+.fc .fc-daygrid-day-events {
+  margin-top: 0 !important;
+  padding: 2px !important; /* Espaciado interno mínimo al borde de la celda */
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important; /* Separación mínima de 2px entre eventos apilados */
+  justify-content: stretch !important;
+  height: 100% !important;
+}
+
+/* Eventos específicos de la vista de mes: bloques completos y expansivos */
+.fc .fc-daygrid-day-events .fc-daygrid-event {
+  margin: 0 !important; /* Rellena todo el ancho */
+  border-radius: 6px !important; /* Bordes ligeramente curvos premium */
+  flex-grow: 1 !important; /* Rellena todo el alto disponible de la celda */
+  display: flex !important;
+  align-items: stretch !important;
+  height: 100% !important;
+  width: 100% !important;
+  border: 0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Asegurar que el contenedor principal del evento herede la altura del flex */
+.fc .fc-daygrid-day-events .fc-daygrid-event .fc-event-main {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-grow: 1 !important;
+  padding: 0 !important;
+}
+
+/* Contenido del evento personalizado para vista de mes con padding generoso */
+.fc .fc-daygrid-day-events .fc-event-main-custom {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 6px 8px !important; /* Más espacioso e interactivo */
+  box-sizing: border-box !important;
+  flex-grow: 1 !important;
+  min-height: 100% !important;
 }
 
 /* More link */

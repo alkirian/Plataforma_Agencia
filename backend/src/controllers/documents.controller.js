@@ -1,5 +1,5 @@
 // src/controllers/documents.controller.js
-import { supabaseAdmin } from '../config/supabaseClient.js';
+import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById } from '../services/documents.service.js';
 import { getUserAgencyId } from '../helpers/userHelpers.js';
 
@@ -34,17 +34,29 @@ export const handleGetDocumentsForClient = async (req, res, next) => {
 export const handleUploadDocument = async (req, res, next) => {
   try {
     const { clientId } = req.params;
-    const token = req.token;
+    const token = req.token || req.headers.authorization?.split(' ')[1];
     const { file_name, storage_path, file_type, file_size } = req.body || {};
     if (!clientId || !storage_path || !file_name) {
       return res.status(400).json({ success: false, message: 'Faltan campos requeridos.' });
     }
-    const agencyId = await getUserAgencyId(req.user.id);
+
+    // 1. Validar que el cliente realmente pertenece a la organización del usuario
+    const supabaseAuth = createAuthenticatedClient(token);
+    const { data: client, error: clientErr } = await supabaseAuth
+      .from('clients')
+      .select('id, agency_id')
+      .eq('id', clientId)
+      .maybeSingle();
+
+    if (clientErr || !client) {
+      console.warn(`⚠️ [documents] Intento de IDOR detectado: Usuario ${req.user.id} intentó asociar un documento al cliente ${clientId}`);
+      return res.status(403).json({ success: false, message: 'Acceso denegado o cliente inexistente.' });
+    }
 
     // Creamos el objeto que vamos a insertar
     const documentData = {
       client_id: clientId,
-      agency_id: agencyId, // <-- Sospechamos que este valor puede ser null
+      agency_id: client.agency_id, // Usamos la de base de datos validada
       file_name,
       storage_path,
       file_type,

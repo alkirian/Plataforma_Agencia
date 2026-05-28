@@ -5,43 +5,13 @@ import toast from 'react-hot-toast';
 import { generateIdeas } from '../../api/ai';
 import { getClientBrandProfile } from '../../api/clients';
 import { getSpecialDatesForMonth } from '../../utils/specialDates';
+import { toDateInputValue, normalizeFormat, normalizePlatform } from './scheduleUtils';
 
 const normalizeDateTime = date => {
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return new Date().toISOString();
   parsed.setHours(9, 0, 0, 0);
   return parsed.toISOString();
-};
-
-const normalizeFormat = formatStr => {
-  if (!formatStr) return 'Post Estático';
-  const s = formatStr.toLowerCase();
-  if (s.includes('reel') || s.includes('tiktok') || s.includes('short') || s.includes('video'))
-    return 'Reel / TikTok';
-  if (s.includes('carrusel') || s.includes('carousel')) return 'Carrusel';
-  if (s.includes('historia') || s.includes('story')) return 'Historia';
-  if (s.includes('entrevista')) return 'Entrevista';
-  if (s.includes('influencer')) return 'Video Influencer';
-  if (s.includes('cobertura')) return 'Cobertura de Evento';
-  if (s.includes('estatico') || s.includes('post') || s.includes('imagen')) return 'Post Estático';
-  return 'Post Estático';
-};
-
-const normalizePlatform = channel => {
-  if (!channel) return 'Instagram';
-  const c = channel.toUpperCase();
-  if (c === 'IG' || c.includes('INSTAGRAM')) return 'Instagram';
-  if (c === 'TIKTOK' || c.includes('TIKTOK')) return 'TikTok';
-  if (c === 'YT' || c.includes('YOUTUBE') || c.includes('SHORTS')) return 'YouTube';
-  if (c === 'FB' || c.includes('FACEBOOK')) return 'Facebook';
-  if (c === 'LI' || c.includes('LINKEDIN')) return 'LinkedIn';
-  return 'Instagram';
-};
-
-const toDateInputValue = date => {
-  const d = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
 const parseDateInput = value => {
