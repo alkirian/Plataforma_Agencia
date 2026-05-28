@@ -16,36 +16,12 @@ export const StrategicCanvas = ({
   onApplySuggestedFix,
   handleAddColor,
   handleRemoveColor,
+  handleUpdateColor,
   activeTab,
   setActiveTab,
 }) => {
   const [editMode, setEditMode] = useState(false);
-
-  // Extract numbered sections for jump links
-  const sections = [];
-  if (formData.business_description) {
-    const lines = formData.business_description.split('\n');
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('### ')) {
-        const title = trimmed.replace('### ', '');
-        const matchNum = title.match(/^(\d+)\.\s+(.*)/);
-        if (matchNum) {
-          sections.push({
-            num: matchNum[1],
-            title: matchNum[2].replace(/\*\*/g, '')
-          });
-        }
-      }
-    });
-  }
-
-  const scrollToSection = (num) => {
-    const el = document.getElementById(`jump-sec-${num}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  const [expandedChapter, setExpandedChapter] = useState('dna'); // Default open: ADN Estratégico
 
   // Helper to parse **bold** text within paragraphs and lists
   const parseBoldText = (text) => {
@@ -56,7 +32,7 @@ export const StrategicCanvas = ({
       // Odd indices are the matches inside **
       if (index % 2 === 1) {
         return (
-          <strong key={index} className='font-black text-white'>
+          <strong key={index} className='font-bold text-white'>
             {part}
           </strong>
         );
@@ -65,73 +41,27 @@ export const StrategicCanvas = ({
     });
   };
 
-  // Custom premium Markdown renderer to keep visual preview outstanding
-  const renderFormattedBrief = (text) => {
-    if (!text || !text.trim()) {
-      return (
-        <div className='flex flex-col items-center justify-center text-center py-16 px-4 text-text-muted select-none'>
-          <span className='text-3xl block mb-2'>📝</span>
-          <p className='text-xs font-black text-text-primary block mb-0.5 uppercase tracking-wider'>
-            Perfil Estratégico Vacío
-          </p>
-          <p className='text-[10px] text-text-muted leading-relaxed max-w-[260px] mx-auto'>
-            Escribe el ADN estratégico del negocio o presiona el botón <strong>"Analizar"</strong> para extraer el perfil automáticamente de internet.
-          </p>
-        </div>
-      );
-    }
+  // Helper to parse and render Markdown lines within a section block
+  const renderSectionBody = (contentLines) => {
+    if (!contentLines || contentLines.length === 0) return null;
 
-    const lines = text.split('\n');
     return (
-      <div className='space-y-2 select-text selection:bg-[#7C5CFC]/30 selection:text-white'>
-        {lines.map((line, idx) => {
+      <div className='space-y-2 select-text text-left'>
+        {contentLines.map((line, idx) => {
           const trimmed = line.trim();
 
           // Horizontal lines
           if (trimmed === '---') {
-            return <hr key={idx} className='border-border-subtle my-3' />;
+            return <hr key={idx} className='border-border-subtle/40 my-2.5' />;
           }
 
-          // Section Titles (###)
-          if (trimmed.startsWith('### ')) {
-            const title = trimmed.replace('### ', '');
-            const matchNum = title.match(/^(\d+)\.\s+(.*)/);
-            const num = matchNum ? matchNum[1] : undefined;
-            const headingId = num ? `jump-sec-${num}` : undefined;
-
-            return (
-              <h3
-                key={idx}
-                id={headingId}
-                className='text-[10.5px] font-black text-[#4ECDC4] uppercase tracking-widest border-b border-border-subtle/50 pb-1 mt-4 mb-2 first:mt-0 flex items-center gap-1.5 text-left scroll-mt-6'
-              >
-                <span className='h-2 w-2 rounded bg-[#7C5CFC]' />
-                {title}
-              </h3>
-            );
-          }
-
-          // Chapter Titles (##)
-          if (trimmed.startsWith('## ')) {
-            const title = trimmed.replace('## ', '');
-            return (
-              <h2
-                key={idx}
-                className='text-xs font-black text-white border-b border-[#7C5CFC]/30 pb-1.5 mt-5 mb-2.5 flex items-center gap-2 text-left'
-              >
-                <span>🧬</span>
-                {title}
-              </h2>
-            );
-          }
-
-          // Bullet items (- or *)
+          // bullet list items (- or *)
           if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             const listItem = trimmed.substring(2);
             return (
               <li
                 key={idx}
-                className='text-[11px] text-text-secondary leading-relaxed ml-2 pl-1 list-none flex items-start gap-2 text-left mb-1.5'
+                className='text-[12.5px] text-text-secondary leading-relaxed ml-2 pl-1 list-none flex items-start gap-2 mb-1.5'
               >
                 <span className='text-[#7C5CFC] text-[8px] mt-1.5 flex-shrink-0'>✦</span>
                 <span className='flex-1'>{parseBoldText(listItem)}</span>
@@ -141,17 +71,230 @@ export const StrategicCanvas = ({
 
           // Empty lines
           if (!trimmed) {
-            return <div key={idx} className='h-2' />;
+            return <div key={idx} className='h-1' />;
           }
 
           // Standard paragraphs
           return (
             <p
               key={idx}
-              className='text-[11px] text-text-secondary leading-relaxed text-left mb-2'
+              className='text-[12.5px] text-text-secondary leading-relaxed mb-2.5'
             >
               {parseBoldText(trimmed)}
             </p>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 1. Parses raw markdown text into an structured list of sections
+  const parseSectionsText = (text) => {
+    if (!text || !text.trim()) return [];
+    const lines = text.split('\n');
+    const parsed = [];
+    let currentSection = null;
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith('### ')) {
+        if (currentSection) {
+          parsed.push(currentSection);
+        }
+        const title = trimmed.replace('### ', '');
+        const matchNum = title.match(/^(\d+)\.\s+(.*)/);
+        currentSection = {
+          num: matchNum ? parseInt(matchNum[1], 10) : parsed.length + 1,
+          title: matchNum ? matchNum[2].replace(/\*\*/g, '') : title,
+          contentLines: [],
+        };
+      } else if (trimmed.startsWith('## ')) {
+        if (currentSection) {
+          parsed.push(currentSection);
+        }
+        const title = trimmed.replace('## ', '');
+        currentSection = {
+          num: null,
+          title: title,
+          isChapter: true,
+          contentLines: [],
+        };
+      } else if (currentSection) {
+        currentSection.contentLines.push(line);
+      } else {
+        // Collect initial text before first heading
+        currentSection = {
+          num: 0,
+          title: 'Resumen Inicial',
+          contentLines: [line],
+        };
+      }
+    });
+
+    if (currentSection) {
+      parsed.push(currentSection);
+    }
+
+    return parsed;
+  };
+
+  // Dynamic grouping logic of 16-point Strategic Brief into 5 Chapters (Pillars)
+  const renderDynamicPillars = (text) => {
+    if (!text || !text.trim()) {
+      return (
+        <div className='flex flex-col items-center justify-center text-center py-20 px-4 text-text-muted select-none'>
+          <span className='text-3xl block mb-2'>📝</span>
+          <p className='text-xs font-black text-text-primary block mb-0.5 uppercase tracking-wider font-title'>
+            Perfil Estratégico Vacío
+          </p>
+          <p className='text-[10px] text-text-muted leading-relaxed max-w-[260px] mx-auto'>
+            Escribe el ADN estratégico del negocio o presiona el botón <strong>"Analizar"</strong> para extraer el perfil automáticamente de internet.
+          </p>
+        </div>
+      );
+    }
+
+    const parsedSections = parseSectionsText(text);
+
+    // Fallback: If AI hasn't structured the headings yet, render raw paragraphs cleanly
+    if (parsedSections.length < 3) {
+      return (
+        <div className='bg-surface-strong/30 border border-white/5 rounded-xl p-4 text-left leading-relaxed text-[12.5px] text-text-secondary select-text whitespace-pre-wrap'>
+          {parseBoldText(text)}
+        </div>
+      );
+    }
+
+    // Chapters definition (Pillars)
+    const chapters = [
+      {
+        id: 'dna',
+        title: 'ADN Estratégico de la Marca',
+        icon: '🏛️',
+        description: 'Resumen, propuesta de valor única y definición del cliente ideal.',
+        sectionNums: [1, 3, 4],
+      },
+      {
+        id: 'voice',
+        title: 'Personalidad y Voz de la Comunicación',
+        icon: '🎭',
+        description: 'Tono emocional de marca, rasgos de personalidad y directrices de copia.',
+        sectionNums: [2, 5, 6],
+      },
+      {
+        id: 'visual',
+        title: 'Canales Digitales e Identidad Visual',
+        icon: '🎨',
+        description: 'Vibra estética, paleta de colores y diagnósticos web y de redes.',
+        sectionNums: [7, 8, 9],
+      },
+      {
+        id: 'audit',
+        title: 'Diagnóstico de Mercado y Competencia',
+        icon: '🎯',
+        description: 'Benchmarking, competidores, fortalezas, debilidades y oportunidades.',
+        sectionNums: [10, 11, 12, 13],
+      },
+      {
+        id: 'direction',
+        title: 'Dirección Comercial y Frases Clave',
+        icon: '🚀',
+        description: 'Línea de acción recomendada, Claims comerciales, copies y preguntas.',
+        sectionNums: [14, 15, 16],
+      },
+    ];
+
+    // Assign parsed sections to corresponding chapters
+    const assignedNums = chapters.flatMap((c) => c.sectionNums);
+    
+    const groupedChapters = chapters.map((chap) => {
+      const sectionsInChapter = parsedSections.filter(
+        (sec) => sec.num !== null && chap.sectionNums.includes(sec.num)
+      );
+      return {
+        ...chap,
+        sections: sectionsInChapter,
+      };
+    }).filter((chap) => chap.sections.length > 0);
+
+    // Collect leftovers (generic headers, chapter 0 or other metadata)
+    const leftoverSections = parsedSections.filter(
+      (sec) => sec.num === null || sec.num === 0 || !assignedNums.includes(sec.num)
+    );
+
+    if (leftoverSections.length > 0) {
+      groupedChapters.push({
+        id: 'other',
+        title: 'Otros Aspectos Estratégicos',
+        icon: '📝',
+        description: 'Información y notas de referencia adicionales del negocio.',
+        sections: leftoverSections,
+      });
+    }
+
+    return (
+      <div className='space-y-3 pb-6'>
+        {groupedChapters.map((chap) => {
+          const isExpanded = expandedChapter === chap.id;
+
+          return (
+            <div
+              key={chap.id}
+              className={`rounded-xl border transition-all duration-300 overflow-hidden ${
+                isExpanded
+                  ? 'border-[#7C5CFC]/30 bg-[#0d0d1e]/50 shadow-[0_4px_20px_rgba(124,92,252,0.06)]'
+                  : 'border-white/5 bg-[#0b0b14]/20 hover:bg-[#121225]/30'
+              }`}
+            >
+              {/* ACCORDION PILLAR HEADER */}
+              <div
+                onClick={() => setExpandedChapter(isExpanded ? null : chap.id)}
+                className='w-full flex items-center justify-between p-3.5 cursor-pointer select-none text-left'
+              >
+                <div className='flex items-center gap-3.5 min-w-0'>
+                  <span className='text-2xl flex-shrink-0'>{chap.icon}</span>
+                  <div className='min-w-0'>
+                    <h4 className='text-[13px] font-black text-white tracking-wide font-title truncate'>
+                      {chap.title}
+                    </h4>
+                    <p className='text-[10px] text-text-muted mt-0.5 truncate max-w-[420px]'>
+                      {chap.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Interactive dropdown arrow */}
+                <svg
+                  className={`w-4 h-4 text-text-muted transition-transform duration-300 flex-shrink-0 ${
+                    isExpanded ? 'transform rotate-180 text-white' : ''
+                  }`}
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M19 9l-7 7-7-7' />
+                </svg>
+              </div>
+
+              {/* PILLAR BODY CONTENT (VISIBLE ONLY WHEN EXPANDED) */}
+              {isExpanded && (
+                <div className='p-4 border-t border-white/[0.04] bg-slate-950/20 space-y-5 animate-fade-in max-h-[300px] overflow-y-auto scrollbar-thin'>
+                  {chap.sections.map((sec, idx) => (
+                    <div key={idx} className='space-y-2 border-b border-white/[0.03] pb-4 last:border-none last:pb-0'>
+                      {/* Section Heading Title inside Pillar */}
+                      <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest pb-1 border-b border-white/[0.03] mb-2 flex items-center gap-1.5'>
+                        <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
+                        {sec.num ? `${sec.num}. ` : ''} {sec.title}
+                      </h5>
+
+                      {/* Render formatted markdown lines for this section */}
+                      {renderSectionBody(sec.contentLines)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
@@ -234,6 +377,7 @@ export const StrategicCanvas = ({
               colorPalette={formData.color_palette || []}
               onAddColor={handleAddColor}
               onRemoveColor={handleRemoveColor}
+              onUpdateColor={handleUpdateColor}
               isAnalyzing={isAnalyzing}
               consistencyScore={consistencyReport?.consistency_score}
             />
@@ -254,7 +398,7 @@ export const StrategicCanvas = ({
               )}
 
               {/* Strategic Brief Text Area / Preview Canvas */}
-              <div className='flex-1 overflow-hidden h-full flex flex-col'>
+              <div className='flex-grow overflow-hidden h-full flex flex-col'>
                 {editMode ? (
                   <textarea
                     value={formData.business_description || ''}
@@ -264,36 +408,8 @@ export const StrategicCanvas = ({
                     className='w-full rounded-xl bg-transparent p-3.5 text-xs text-white placeholder-text-secondary focus:outline-none focus:ring-0 leading-relaxed transition-all duration-300 flex-1 resize-none min-h-0 h-full border-none disabled:opacity-30'
                   />
                 ) : (
-                  <div className='flex-1 overflow-hidden h-full flex flex-row relative'>
-                    {/* Scrollable text container */}
-                    <div className='flex-grow overflow-y-auto p-4 h-full max-h-full scroll-smooth select-text pr-12 relative'>
-                      {renderFormattedBrief(formData.business_description)}
-                    </div>
-
-                    {/* Floating Jump Links Index Sidebar */}
-                    {sections.length > 0 && (
-                      <div className='absolute right-2 top-4 bottom-4 flex flex-col items-center justify-center pointer-events-none z-10 select-none'>
-                        <div className='bg-slate-950/80 backdrop-blur-md border border-white/[0.08] rounded-2xl p-1 flex flex-col gap-1.5 pointer-events-auto shadow-xl max-h-[90%] overflow-y-auto scrollbar-none'>
-                          {sections.map((sec) => (
-                            <button
-                              key={sec.num}
-                              type='button'
-                              onClick={() => scrollToSection(sec.num)}
-                              className='group relative w-6 h-6 rounded-xl border border-white/5 hover:border-[#7C5CFC]/30 hover:bg-[#7C5CFC]/10 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90'
-                            >
-                              <span className='text-[9.5px] font-black text-slate-400 group-hover:text-white font-mono'>
-                                {sec.num}
-                              </span>
-                              
-                              {/* Floating tooltip showing clean title */}
-                              <div className='absolute right-9 top-1/2 -translate-y-1/2 bg-slate-950/95 border border-white/10 rounded-xl px-2.5 py-1 text-[9.5px] font-extrabold text-white whitespace-nowrap shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0 font-title'>
-                                {sec.num}. {sec.title}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <div className='w-full overflow-y-auto p-4 flex-1 h-full max-h-full scroll-smooth select-text pr-2'>
+                    {renderDynamicPillars(formData.business_description)}
                   </div>
                 )}
               </div>

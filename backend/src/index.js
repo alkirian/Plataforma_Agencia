@@ -8,6 +8,7 @@ import mainRouter from './api/index.js';
 import errorHandler from './middleware/errorHandler.js';
 import { requestLogger, logger } from './utils/logger.js';
 import { runDailyTrendsJob } from './services/trends.service.js';
+import { supabaseAdmin } from './config/supabaseClient.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -108,6 +109,28 @@ app.listen(PORT, () => {
         });
 
         logger.server('📅 [cron] Job de tendencias programado para las 8:00 AM (America/Argentina/Buenos_Aires).');
+
+        // 🚀 Verificación de Catch-up al inicio del servidor
+        setTimeout(async () => {
+            logger.server('🔍 [startup] Verificando si es necesario realizar el escaneo diario de tendencias...');
+            try {
+                const todayStr = new Date().toISOString().slice(0, 10);
+                const { count, error } = await supabaseAdmin
+                    .from('trend_reports')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('generated_at', `${todayStr}T00:00:00.000Z`);
+
+                if (!error && count === 0) {
+                    logger.server('⏰ [startup] No se encontraron reportes hoy. Ejecutando escaneo automático de tendencias de catch-up...');
+                    const result = await runDailyTrendsJob();
+                    logger.server(`✅ [startup] Escaneo automático de catch-up completado — ${result.processed} reportes, ${result.errors} errores.`);
+                } else {
+                    logger.server('✅ [startup] El escaneo diario ya se realizó hoy o existen reportes. No se requiere catch-up.');
+                }
+            } catch (err) {
+                logger.server(`❌ [startup] Error en verificación de tendencias: ${err.message}`);
+            }
+        }, 5000); // Se ejecuta a los 5 segundos de iniciar
     } else {
         logger.server('⚠️  TAVILY_API_KEY no configurada — job de tendencias desactivado.');
     }

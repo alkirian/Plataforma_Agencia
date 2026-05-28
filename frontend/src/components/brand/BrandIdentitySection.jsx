@@ -30,6 +30,7 @@ export const BrandIdentitySection = ({ clientId }) => {
     handleSubmit,
     handleAddColor,
     handleRemoveColor,
+    handleUpdateColor,
   } = useBrandIdentity(clientId);
 
   if (loading) {
@@ -144,6 +145,7 @@ export const BrandIdentitySection = ({ clientId }) => {
             onApplySuggestedFix={handleApplySuggestedFix}
             handleAddColor={handleAddColor}
             handleRemoveColor={handleRemoveColor}
+            handleUpdateColor={handleUpdateColor}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           />

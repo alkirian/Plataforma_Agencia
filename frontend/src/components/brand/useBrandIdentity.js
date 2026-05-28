@@ -393,6 +393,26 @@ export const useBrandIdentity = (clientId) => {
     toast.success('Color eliminado de la paleta.');
   };
 
+  const handleUpdateColor = (index, newHexColor) => {
+    if (!newHexColor || !/^#[0-9A-Fa-f]{6}$/.test(newHexColor)) {
+      toast.error('Color hexadecimal inválido.');
+      return;
+    }
+    const normalizedColor = newHexColor.toUpperCase();
+    
+    // Check if the color already exists at another index
+    const exists = formData.color_palette.some((color, idx) => color === normalizedColor && idx !== index);
+    if (exists) {
+      toast.error('Este color ya existe en tu paleta.');
+      return;
+    }
+
+    const updatedPalette = [...formData.color_palette];
+    updatedPalette[index] = normalizedColor;
+    handleChange('color_palette', updatedPalette);
+    toast.success(`Color actualizado a ${normalizedColor}.`);
+  };
+
   return {
     formData,
     loading,
@@ -418,5 +438,6 @@ export const useBrandIdentity = (clientId) => {
     handleSubmit,
     handleAddColor,
     handleRemoveColor,
+    handleUpdateColor,
   };
 };
