@@ -193,11 +193,38 @@ export const AuthPage = () => {
 
         if (response.ok) {
           localStorage.removeItem('pending_invite_code');
-          await supabase.auth.signInWithPassword({
-            email: finalEmail,
-            password: data.password,
-          });
-          registeredSuccessfully = true;
+          
+          let signedIn = false;
+          try {
+            const { error: signInErr } = await supabase.auth.signInWithPassword({
+              email: finalEmail,
+              password: data.password,
+            });
+            
+            if (!signInErr) {
+              signedIn = true;
+            } else {
+              console.warn('[handleRegister] Auto-login falló en backend response:', signInErr.message);
+              // Si falla por confirmación de email (común cuando está activada en Supabase)
+              if (signInErr.message.includes('confirm') || signInErr.message.includes('verified') || signInErr.status === 400) {
+                toast.success('¡Registro exitoso! Por favor, verifica tu correo electrónico para activar tu cuenta.', { duration: 8000, icon: '✉️' });
+                setFlowState('login');
+                reset();
+                return;
+              }
+            }
+          } catch (signInEx) {
+            console.warn('[handleRegister] Excepción al auto-loguear tras backend register:', signInEx);
+          }
+
+          if (signedIn) {
+            registeredSuccessfully = true;
+          } else {
+            toast.success('¡Cuenta creada exitosamente! Por favor, inicia sesión.', { icon: '✨' });
+            setFlowState('login');
+            reset();
+            return;
+          }
         } else {
           // Si el servidor devolvió un error específico (ej: correo ya registrado), lo lanzamos sin hacer fallback
           if (response.status === 400 || response.status === 409) {
@@ -221,13 +248,15 @@ export const AuthPage = () => {
         if (signUpError) throw signUpError;
         if (!signUpData.user) throw new Error('No se pudo registrar el usuario en el proveedor de identidad.');
 
-        // Iniciar sesión para obtener tokens
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: finalEmail,
-          password: data.password,
-        });
-        if (signInError) throw signInError;
+        // Si la confirmación de email está habilitada en Supabase, signUpData.session será null.
+        if (!signUpData.session) {
+          toast.success('¡Cuenta creada! Por favor, revisa tu correo electrónico para confirmar tu cuenta y poder ingresar.', { duration: 8000, icon: '✉️' });
+          setFlowState('login');
+          reset();
+          return;
+        }
 
+        // Si sí hay sesión, continuamos logueados e intentamos crear la agencia
         const userId = signUpData.user.id;
         let createdAgencyId = null;
 
