@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../config/supabaseClient.js';
 /**
  * Crea o re-envía una invitación para que un correo electrónico se una a una agencia.
  */
-export const createInvitation = async ({ agencyId, email, role, invitedBy }) => {
+export const createInvitation = async ({ agencyId, email, role, invitedBy, redirectUrl }) => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   
   if (!normalizedEmail) {
@@ -56,9 +56,9 @@ export const createInvitation = async ({ agencyId, email, role, invitedBy }) => 
 
   // 3) Enviar correo real usando el sistema de invitaciones nativo de Supabase Auth
   try {
-    const redirectUrl = process.env.FRONTEND_URL || 'http://localhost:5173/';
+    const finalRedirectUrl = redirectUrl || process.env.FRONTEND_URL || 'http://localhost:5173/';
     await supabaseAdmin.auth.admin.inviteUserByEmail(normalizedEmail, {
-      redirectTo: redirectUrl
+      redirectTo: finalRedirectUrl
     });
   } catch (inviteError) {
     console.error('Error al enviar email de invitación por Supabase:', inviteError.message);

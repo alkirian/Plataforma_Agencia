@@ -42,11 +42,13 @@ export const handleCreateInvitation = async (req, res, next) => {
       });
     }
 
+    const origin = req.headers.origin || req.get('origin') || req.headers.referer || 'http://localhost:5173/';
     const invitation = await createInvitation({
       agencyId: profile.agency_id,
       email,
       role,
-      invitedBy: profile.id
+      invitedBy: profile.id,
+      redirectUrl: origin
     });
 
     res.status(201).json({
