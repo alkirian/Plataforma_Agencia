@@ -28,7 +28,10 @@ const corsOptions = {
     // Permitir llamadas sin origen (ej: curl, scripts internos del cron o apps móviles)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    // Permitir automáticamente cualquier subdominio de Vercel (*.vercel.app) para previsualizaciones y producción
+    const isVercel = origin.endsWith('.vercel.app') || origin === 'https://vercel.app';
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || isVercel || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       callback(new Error('Bloqueado por políticas CORS de producción.'));
