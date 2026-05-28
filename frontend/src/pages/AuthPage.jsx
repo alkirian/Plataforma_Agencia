@@ -24,6 +24,7 @@ export const AuthPage = () => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [pendingInvitation, setPendingInvitation] = useState(null);
   const [userHasAgency, setUserHasAgency] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email', 'google'
 
   // Mouse Parallax coordinates
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -119,6 +120,7 @@ export const AuthPage = () => {
       const checkResult = await checkEmail(data.email);
       setUserEmail(data.email);
       setUserHasAgency(checkResult.hasAgency);
+      setLoginMethod(checkResult.loginMethod || 'email');
 
       if (checkResult.exists) {
         setFlowState('login');
@@ -141,6 +143,7 @@ export const AuthPage = () => {
       setValue('email', data.email);
       setPendingInvitation(null);
       setFlowState('register_choice');
+      setLoginMethod('email');
       toast('El validador de cuentas no respondió. Iniciando flujo de registro.', { icon: 'ℹ️' });
     }
   };
@@ -333,6 +336,7 @@ export const AuthPage = () => {
     setUserEmail('');
     setPendingInvitation(null);
     setUserHasAgency(false);
+    setLoginMethod('email');
     reset();
     clearErrors();
   };
@@ -837,26 +841,40 @@ export const AuthPage = () => {
                       </div>
                     )}
 
-                    <div>
-                      <input
-                        type="password"
-                        placeholder="Ingresa tu contraseña"
-                        className={inputClass}
-                        {...register('password', {
-                          required: 'La contraseña es obligatoria',
-                          minLength: { value: 6, message: 'Debe tener al menos 6 caracteres' },
-                        })}
-                      />
-                      {errors.password && <p className={errorClass}>{errors.password.message}</p>}
-                    </div>
+                    {loginMethod === 'google' ? (
+                      <div className="rounded-xl bg-[#7C5CFC]/5 border border-[#7C5CFC]/20 p-4 text-left flex flex-col gap-2.5 backdrop-blur-md">
+                        <div className="flex items-center gap-2 text-[#A088FF]">
+                          <span className="text-lg">🔐</span>
+                          <h4 className="font-extrabold text-xs">Acceso con Google Requerido</h4>
+                        </div>
+                        <p className="text-[10px] text-white/50 leading-relaxed font-semibold">
+                          Tu cuenta está asociada a Google. Por favor, haz clic en el botón <span className="font-bold text-[#A088FF]">"Entrar con Google"</span> abajo para ingresar de forma directa y segura.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <input
+                            type="password"
+                            placeholder="Ingresa tu contraseña"
+                            className={inputClass}
+                            {...register('password', {
+                              required: 'La contraseña es obligatoria',
+                              minLength: { value: 6, message: 'Debe tener al menos 6 caracteres' },
+                            })}
+                          />
+                          {errors.password && <p className={errorClass}>{errors.password.message}</p>}
+                        </div>
 
-                    <div className="text-[10px] text-white/40 text-center font-medium pl-1">
-                      ¿Te registraste con Google? Haz clic en <span className="font-bold text-[#A088FF] hover:underline cursor-pointer" onClick={handleGoogleLogin}>Continuar con Google</span> más abajo.
-                    </div>
+                        <div className="text-[10px] text-white/40 text-center font-medium pl-1">
+                          ¿Te registraste con Google? Haz clic en <span className="font-bold text-[#A088FF] hover:underline cursor-pointer" onClick={handleGoogleLogin}>Continuar con Google</span> más abajo.
+                        </div>
 
-                    <button type="submit" disabled={isSubmitting} className={primaryBtn}>
-                      {isSubmitting ? 'Verificando acceso...' : 'Iniciar Sesión'}
-                    </button>
+                        <button type="submit" disabled={isSubmitting} className={primaryBtn}>
+                          {isSubmitting ? 'Verificando acceso...' : 'Iniciar Sesión'}
+                        </button>
+                      </>
+                    )}
 
                     <div className="relative my-6 flex items-center">
                       <div className="flex-1 border-t border-white/[0.06]" />
