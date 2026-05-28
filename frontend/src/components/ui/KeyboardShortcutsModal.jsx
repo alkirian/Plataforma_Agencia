@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { XMarkIcon, CommandLineIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) => {
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { getAllShortcuts } = useAppKeyboardShortcuts();
@@ -13,6 +16,9 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
   // Usar props si están disponibles, sino usar estado interno
   const modalIsOpen = isOpenProp !== undefined ? isOpenProp : isOpen;
   const handleClose = onCloseProp || (() => setIsOpen(false));
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(modalIsOpen, backdropRef, modalPanelRef);
 
   // Escuchar el evento personalizado para mostrar el modal (solo si no se usan props)
   useEffect(() => {
@@ -53,28 +59,29 @@ const KeyboardShortcutsModal = ({ isOpen: isOpenProp, onClose: onCloseProp }) =>
       <Dialog as='div' className='relative z-50' onClose={handleClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-300'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-200'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/60' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/60' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-300'
-              enterFrom='opacity-0 scale-95'
-              enterTo='opacity-100 scale-100'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-200'
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
               <Dialog.Panel
+                ref={modalPanelRef}
                 className='w-full max-w-2xl transform overflow-hidden rounded-xl 
                                         bg-surface-900/95 border border-white/10 
                                         shadow-xl transition-all'

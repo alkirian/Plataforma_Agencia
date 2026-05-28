@@ -178,6 +178,9 @@ export const InteractiveAvatar = ({
     if (variant === 'cm') {
       return 'bg-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]';
     }
+    if (variant === 'design') {
+      return 'bg-fuchsia-500/50 shadow-[0_0_40px_rgba(217,70,239,0.4)]';
+    }
     // Variant AI (Identidad)
     if (state === 'thinking') return 'bg-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.4)]';
     if (state === 'talking') return 'bg-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.4)]';
@@ -350,6 +353,26 @@ export const InteractiveAvatar = ({
         </>
       )}
 
+      {variant === 'design' && (
+        <>
+          {/* Anillos rotativos creativos de diseñador */}
+          <motion.div
+            className='absolute -inset-5 rounded-[2rem] border border-dashed border-fuchsia-500/30 pointer-events-none'
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 25, ease: 'linear' }}
+          />
+          <motion.div
+            className='absolute -inset-7 rounded-full border border-fuchsia-500/10 pointer-events-none'
+            style={{
+              scale: isHovered ? 1.08 : 0.96,
+              rotateX: ringRotateY,
+              rotateY: ringRotateX,
+            }}
+            transition={{ duration: 0.4 }}
+          />
+        </>
+      )}
+
       {/* 3. CABEZA DEL AVATAR (Giro 3D y perspectiva) */}
       <motion.div
         className={cn(
@@ -364,7 +387,9 @@ export const InteractiveAvatar = ({
                   ? 'rounded-[2.2rem] bg-slate-950/85 border-sky-900/40'
                   : variant === 'cm'
                     ? 'rounded-[2.4rem] bg-slate-950/85 border-emerald-900/40'
-                    : 'rounded-[2.8rem] bg-slate-950/85 border-purple-900/40', // variant === 'meta'
+                    : variant === 'design'
+                      ? 'rounded-[2.6rem] bg-slate-950/85 border-fuchsia-900/40'
+                      : 'rounded-[2.8rem] bg-slate-950/85 border-purple-900/40', // variant === 'meta'
           isHovered &&
             (variant === 'ai'
               ? 'border-violet-500/40 shadow-[0_0_25px_rgba(139,92,246,0.15)]'
@@ -376,7 +401,9 @@ export const InteractiveAvatar = ({
                     ? 'border-sky-400/40 shadow-[0_0_25px_rgba(0,180,219,0.15)]'
                     : variant === 'cm'
                       ? 'border-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.15)]'
-                      : 'border-purple-400/40 shadow-[0_0_25px_rgba(168,85,247,0.15)]') // variant === 'meta'
+                      : variant === 'design'
+                        ? 'border-fuchsia-400/40 shadow-[0_0_25px_rgba(217,70,239,0.15)]'
+                        : 'border-purple-400/40 shadow-[0_0_25px_rgba(168,85,247,0.15)]') // variant === 'meta'
         )}
         style={{
           rotateX,
@@ -936,6 +963,90 @@ export const InteractiveAvatar = ({
               </div>
             </div>
           )}
+
+          {/* ======================================================== */}
+          {/* VARIANTE G: AGENTE DE DISEÑO CREATIVO (DISEÑO Y CANVAS) */}
+          {/* ======================================================== */}
+          {variant === 'design' && (
+            <div
+              className='flex flex-col items-center justify-center w-full animate-fade-in'
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* Ojos de Obturador de Cámara o Ajuste de Foco */}
+              <div
+                className='flex justify-between w-[64%] mb-4'
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                {/* Ojo Izquierdo (Visor de Enfoque de Cámara) */}
+                <div className='w-7 h-7 bg-slate-900 border border-fuchsia-500/30 rounded-full flex items-center justify-center relative shadow-[inset_0_0_8px_rgba(217,70,239,0.15)]'>
+                  {/* Líneas de esquina de enfoque */}
+                  <div className='absolute top-0.5 left-0.5 w-1.5 h-1.5 border-t border-l border-fuchsia-400/60' />
+                  <div className='absolute bottom-0.5 right-0.5 w-1.5 h-1.5 border-b border-r border-fuchsia-400/60' />
+                  
+                  <motion.div
+                    className='w-2 h-2 rounded-full bg-fuchsia-400 shadow-[0_0_8px_rgba(217,70,239,0.9)]'
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  />
+                </div>
+
+                {/* Ojo Derecho (Visor de Enfoque de Cámara) */}
+                <div className='w-7 h-7 bg-slate-900 border border-fuchsia-500/30 rounded-full flex items-center justify-center relative shadow-[inset_0_0_8px_rgba(217,70,239,0.15)]'>
+                  {/* Líneas de esquina de enfoque */}
+                  <div className='absolute top-0.5 right-0.5 w-1.5 h-1.5 border-t border-r border-fuchsia-400/60' />
+                  <div className='absolute bottom-0.5 left-0.5 w-1.5 h-1.5 border-b border-l border-fuchsia-400/60' />
+
+                  <motion.div
+                    className='w-2 h-2 rounded-full bg-fuchsia-400 shadow-[0_0_8px_rgba(217,70,239,0.9)]'
+                    animate={isBlinking ? { scaleY: 0.1 } : { scaleY: 1 }}
+                    transition={{ duration: 0.1 }}
+                  />
+                </div>
+              </div>
+
+              {/* Boca de Curva Bézier / Pluma de Vector */}
+              <div className='relative w-[75%] h-8 flex items-center justify-center z-10' style={{ transformStyle: 'preserve-3d' }}>
+                <div className='relative w-full h-full flex flex-col items-center justify-center'>
+                  <svg
+                    width='65'
+                    height='24'
+                    viewBox='0 0 65 24'
+                    fill='none'
+                    className='filter drop-shadow-[0_0_4px_rgba(217,70,239,0.7)]'
+                  >
+                    <motion.path
+                      d='M 5,15 Q 32.5,2 60,15'
+                      stroke='#d946ef'
+                      strokeWidth='3'
+                      strokeLinecap='round'
+                      animate={isHovered ? { d: 'M 5,5 Q 32.5,25 60,5' } : { d: 'M 5,15 Q 32.5,2 60,15' }}
+                      transition={{ type: 'tween', ease: 'easeInOut', duration: 0.35 }}
+                    />
+                  </svg>
+                  
+                  {/* Puntos de control Bézier (nodos editables flotantes) */}
+                  <div className='absolute inset-x-0 top-1 flex justify-between px-1 pointer-events-none'>
+                    {[0, 1, 2].map(i => (
+                      <motion.div
+                        key={i}
+                        className='w-1.5 h-1.5 bg-fuchsia-400 border border-fuchsia-600 shadow-[0_0_4px_rgba(217,70,239,0.5)] rotate-45'
+                        animate={isHovered ? { y: 6, scale: 1.25 } : { y: 0, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 120, damping: 6, delay: i * 0.1 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Etiqueta "CREATIVE" */}
+              <div className='mt-2.5 flex items-center gap-1.5'>
+                <span className='w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-ping' />
+                <span className='text-[8px] text-fuchsia-400/80 font-mono tracking-widest uppercase'>
+                  STUDIO ACTIVE
+                </span>
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
 
@@ -953,7 +1064,9 @@ export const InteractiveAvatar = ({
                   ? 'bg-purple-950/60'
                   : variant === 'cm'
                     ? 'bg-emerald-950/60'
-                    : 'bg-slate-950/40'
+                    : variant === 'design'
+                      ? 'bg-fuchsia-950/60'
+                      : 'bg-slate-950/40'
         )}
       />
     </div>

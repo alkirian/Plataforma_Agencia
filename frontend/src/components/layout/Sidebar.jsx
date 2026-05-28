@@ -16,6 +16,7 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [avatar, setAvatar] = useState(null);
   const queryClient = useQueryClient();
+  const animatedRef = useRef(false);
 
   useEffect(() => {
     if (profile) {
@@ -153,17 +154,21 @@ export const Sidebar = ({ userEmail, profile, onLogout }) => {
       item._gsapClick = handleClick;
     });
 
-    // Entrada elegante escalonada para los clientes al montar
-    gsap.fromTo(".client-item",
-      { opacity: 0, x: -15 },
-      { opacity: 1, x: 0, duration: 0.6, stagger: 0.08, ease: "power2.out", delay: 0.15 }
-    );
+    // Entrada elegante escalonada para los clientes al montar (solo se ejecuta una vez al tener clientes)
+    if (items.length > 0 && !animatedRef.current) {
+      gsap.fromTo(".client-item",
+        { opacity: 0, x: -15 },
+        { opacity: 1, x: 0, duration: 0.6, stagger: 0.08, ease: "power2.out", delay: 0.15 }
+      );
 
-    // Entrada elegante para el botón de agregar cliente
-    gsap.fromTo(".add-client",
-      { opacity: 0, scale: 0.9 },
-      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)", delay: 0.4 }
-    );
+      // Entrada elegante para el botón de agregar cliente
+      gsap.fromTo(".add-client",
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)", delay: 0.4 }
+      );
+
+      animatedRef.current = true;
+    }
 
     return () => {
       items.forEach((item) => {

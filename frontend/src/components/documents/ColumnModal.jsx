@@ -1,7 +1,8 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect, Fragment, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, FolderPlusIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { CyberButton } from '../ui';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 const COLUMN_COLORS = [
   '#3b82f6', // blue
@@ -89,28 +90,28 @@ export const ColumnModal = ({ isOpen, onClose, onSave, column = null, isEditing 
         {/* Backdrop */}
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-300'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-200'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/60' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/60' />
         </Transition.Child>
 
         {/* Modal */}
         <div className='fixed inset-0 flex items-center justify-center p-4'>
           <Transition.Child
             as={Fragment}
-            enter='ease-out duration-300'
-            enterFrom='opacity-0 scale-95 translate-y-4'
-            enterTo='opacity-100 scale-100 translate-y-0'
+            enter=''
+            enterFrom=''
+            enterTo=''
             leave='ease-in duration-200'
             leaveFrom='opacity-100 scale-100 translate-y-0'
             leaveTo='opacity-0 scale-95 translate-y-4'
           >
-            <Dialog.Panel className='w-full max-w-md bg-surface-strong border border-white/10 rounded-xl shadow-2xl'>
+            <Dialog.Panel ref={modalPanelRef} className='w-full max-w-md bg-surface-strong border border-white/10 rounded-xl shadow-2xl'>
               {/* Header */}
               <div className='flex items-center justify-between p-6 border-b border-white/10'>
                 <div className='flex items-center space-x-3'>

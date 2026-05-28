@@ -1,7 +1,8 @@
-import React, { Fragment, useMemo, useState } from 'react';
+import React, { Fragment, useMemo, useState, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 const normalizeHeader = value =>
   String(value || '')
@@ -244,6 +245,12 @@ const parseDocx = async file => {
 };
 
 export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(isOpen, backdropRef, modalPanelRef);
+
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState([]);
   const [debugInfo, setDebugInfo] = useState(null);
@@ -321,28 +328,28 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
       <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-200'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-150'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/70' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/70' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-200'
-              enterFrom='opacity-0 scale-95'
-              enterTo='opacity-100 scale-100'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-150'
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
-              <Dialog.Panel className='w-full max-w-4xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong p-5 shadow-2xl'>
+              <Dialog.Panel ref={modalPanelRef} className='w-full max-w-4xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong p-5 shadow-2xl'>
                 <div className='flex items-center justify-between'>
                   <Dialog.Title className='text-xl font-semibold text-text-primary'>
                     Importar cronograma

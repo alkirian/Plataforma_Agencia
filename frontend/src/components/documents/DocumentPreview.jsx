@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import {
@@ -9,8 +9,15 @@ import {
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 export const DocumentPreview = ({ isOpen, onClose, document, onDownload }) => {
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(isOpen, backdropRef, modalPanelRef, { animateContent: false }); // Skip inner stagger as content is mainly dynamic/rendered later
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -107,28 +114,29 @@ export const DocumentPreview = ({ isOpen, onClose, document, onDownload }) => {
       <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-300'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-200'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/75' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/75' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-300'
-              enterFrom='opacity-0 scale-95'
-              enterTo='opacity-100 scale-100'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-200'
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
               <Dialog.Panel
+                ref={modalPanelRef}
                 className='w-full max-w-2xl transform overflow-hidden rounded-xl 
                                         bg-surface-900/95 border border-white/10 
                                         shadow-xl transition-all'

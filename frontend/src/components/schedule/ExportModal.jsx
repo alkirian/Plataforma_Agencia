@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { useModalGsap } from '../../hooks/useModalGsap';
 import {
   ArrowDownTrayIcon,
   XMarkIcon,
@@ -24,6 +25,12 @@ export const ExportModal = ({
   clientName = '',
   dateRange = null,
 }) => {
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(isOpen, backdropRef, modalPanelRef);
+
   const [selectedFormat, setSelectedFormat] = useState('csv');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -91,28 +98,29 @@ export const ExportModal = ({
       <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-300'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-200'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/60' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/60' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-300'
-              enterFrom='opacity-0 scale-95'
-              enterTo='opacity-100 scale-100'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-200'
               leaveFrom='opacity-100 scale-100'
               leaveTo='opacity-0 scale-95'
             >
               <Dialog.Panel
+                ref={modalPanelRef}
                 className='w-full max-w-lg transform overflow-hidden rounded-xl 
                                         bg-surface-900/95 border border-white/10 
                                         p-6 shadow-xl transition-all'

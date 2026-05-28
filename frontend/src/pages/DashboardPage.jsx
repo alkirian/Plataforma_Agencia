@@ -13,6 +13,18 @@ import { useGSAP } from '@gsap/react';
 export const DashboardPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  // Consultamos los clientes para verificar estado de carga o error
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['clients'],
+    queryFn: getClients,
+  });
+
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isMemberModalOpen, setIsMemberModalOpen] = React.useState(false);
 
@@ -23,6 +35,10 @@ export const DashboardPage = () => {
 
   // Animaciones elásticas e interactivas premium con GSAP
   useGSAP(() => {
+    // Evitar ejecutar animaciones si el entorno está cargando, con error o los elementos no se han montado aún en el DOM
+    if (isLoading || isError) return;
+    if (!containerRef.current || !flowerDotRef.current || !springCoilRef.current) return;
+
     // 1. Revelación cinemática de las palabras en el montaje (deslizamiento y blur)
     const words = gsap.utils.toArray(".word-disena, .word-gestiona, .word-marcas, .hero-plain-word");
     gsap.fromTo(words,
@@ -115,7 +131,7 @@ export const DashboardPage = () => {
         wordMarcas.removeEventListener("mouseleave", wordMarcas._leave);
       }
     };
-  }, { scope: containerRef });
+  }, { scope: containerRef, dependencies: [isLoading, isError] });
 
   // Valores de movimiento del mouse (normalizados de -0.5 a 0.5)
   const mouseX = useMotionValue(0);
@@ -136,16 +152,7 @@ export const DashboardPage = () => {
   const geomTranslateX2 = useTransform(smoothX, [-0.5, 0.5], [12, -12]);
   const geomTranslateY2 = useTransform(smoothY, [-0.5, 0.5], [18, -18]);
 
-  // Consultamos los clientes para verificar estado de carga o error
-  const {
-    data: response,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ['clients'],
-    queryFn: getClients,
-  });
+
 
   const createClientMutation = useMutation({
     mutationFn: payload =>

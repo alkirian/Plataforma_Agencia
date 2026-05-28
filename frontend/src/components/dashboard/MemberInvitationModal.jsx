@@ -1,11 +1,18 @@
-import React, { Fragment, useState, useEffect } from 'react';
+import React, { Fragment, useState, useEffect, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { EnvelopeIcon, UserPlusIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '../../api/apiFetch';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 export const MemberInvitationModal = ({ isOpen, onClose }) => {
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(isOpen, backdropRef, modalPanelRef);
+
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [sendingInvite, setSendingInvite] = useState(false);
@@ -50,28 +57,28 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
       <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-200'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-150'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/60 backdrop-blur-sm' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/60 backdrop-blur-sm' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-250'
-              enterFrom='opacity-0 scale-95 y-4'
-              enterTo='opacity-100 scale-100 y-0'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-150'
               leaveFrom='opacity-100 scale-100 y-0'
               leaveTo='opacity-0 scale-95 y-4'
             >
-              <Dialog.Panel className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] p-6 shadow-2xl transition-all'>
+              <Dialog.Panel ref={modalPanelRef} className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] p-6 shadow-2xl transition-all'>
                 <Dialog.Title className='text-xl font-bold text-[color:var(--color-text-primary)] mb-2 flex items-center gap-2.5'>
                   <UserPlusIcon className='h-6 w-6 text-[color:var(--color-accent-blue)]' />
                   <span>Invitar Nuevo Miembro</span>

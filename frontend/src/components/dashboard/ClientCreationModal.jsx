@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from 'react';
+import React, { Fragment, useState, useEffect, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { createClient, updateClient, updateClientBrandProfile, analyzeBrandConsistency } from '../../api/clients';
 import { useMetaOAuth } from '../../hooks/useMetaOAuth';
 import { apiFetch } from '../../api/apiFetch';
+import { useModalGsap } from '../../hooks/useModalGsap';
 
 // Icons from Heroicons (Outline)
 import {
@@ -44,6 +45,12 @@ const STEPS = [
 export const ClientCreationModal = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const backdropRef = useRef(null);
+  const modalPanelRef = useRef(null);
+
+  // Call premium GSAP modal transition hook
+  useModalGsap(isOpen, backdropRef, modalPanelRef);
 
   // Control del Asistente
   const [step, setStep] = useState(1);
@@ -320,28 +327,29 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
       <Dialog as='div' className='relative z-50' onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter='ease-out duration-300'
-          enterFrom='opacity-0'
-          enterTo='opacity-100'
+          enter=''
+          enterFrom=''
+          enterTo=''
           leave='ease-in duration-200'
           leaveFrom='opacity-100'
           leaveTo='opacity-0'
         >
-          <div className='fixed inset-0 bg-black/75 backdrop-blur-md' />
+          <div ref={backdropRef} className='fixed inset-0 bg-black/75 backdrop-blur-md' />
         </Transition.Child>
 
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center p-4'>
             <Transition.Child
               as={Fragment}
-              enter='ease-out duration-300'
-              enterFrom='opacity-0 scale-95 y-4'
-              enterTo='opacity-100 scale-100 y-0'
+              enter=''
+              enterFrom=''
+              enterTo=''
               leave='ease-in duration-200'
               leaveFrom='opacity-100 scale-100 y-0'
               leaveTo='opacity-0 scale-95 y-4'
             >
               <Dialog.Panel
+                ref={modalPanelRef}
                 className={`w-full bg-[color:var(--color-surface)] border border-[color:var(--color-border-subtle)] rounded-3xl p-6 md:p-8 shadow-2xl transition-all duration-300 relative overflow-hidden ${
                   step === 2 || step === 3 ? 'max-w-2xl' : 'max-w-lg'
                 }`}
