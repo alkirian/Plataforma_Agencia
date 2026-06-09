@@ -708,52 +708,6 @@ export const CMSection = ({ clientId }) => {
   // =========================================================================
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full text-text-primary">
-      
-      {/* 1. TOP HEADER - CLEAN & HIGH-END */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-3 px-1 border-b border-slate-200 dark:border-white/5 pb-5">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-text-primary font-title">
-              CM Inteligente
-            </h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 text-accent-cyan text-[10px] font-semibold select-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse" />
-              Sincronizado
-            </span>
-          </div>
-          <p className="text-xs text-text-muted">
-            Monitoreo en tiempo real y auto-respuestas para tus redes sociales.
-          </p>
-        </div>
-
-        {/* Header Actions & Clean Stats */}
-        <div className="flex items-center gap-5 ml-auto sm:ml-0">
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 py-1.5 px-3 rounded-lg shadow-sm">
-              <span className="text-text-muted font-medium">Pendientes:</span>
-              <span className="text-accent-cyan font-bold text-sm">{pendingCount}</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 py-1.5 px-3 rounded-lg shadow-sm">
-              <span className="text-text-muted font-medium">Urgentes:</span>
-              <span className="font-bold text-sm" style={{ color: 'var(--color-accent-rose)' }}>{escalatedCount}</span>
-            </div>
-          </div>
-
-          <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-
-          {/* Action Tools */}
-          <button
-            onClick={() => setShowRulesPanel(true)}
-            className="btn-cyber flex items-center gap-2 text-xs py-2 px-4 shadow-sm cursor-pointer"
-            title="Configurar Reglas y Autopiloto"
-          >
-            <Cog6ToothIcon className="h-4 w-4 text-accent-cyan" />
-            <span>Reglas y Canales</span>
-          </button>
-        </div>
-      </div>
-
       {/* 2. MAIN WORKSPACE CONTAINER */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
