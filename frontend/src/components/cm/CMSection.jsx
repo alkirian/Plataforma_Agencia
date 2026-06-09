@@ -969,9 +969,6 @@ export const CMSection = ({ clientId }) => {
                 {/* Editor / Respuesta (Alineado a la Derecha con indicador de IA) */}
                 <div className="flex items-start gap-3 justify-end">
                   <div className="flex-1 flex flex-col items-end space-y-2">
-                    <div className="flex items-center gap-1.5 pr-1">
-                      <span className="text-[10px] text-text-muted font-medium">Escribe directamente o genera con IA</span>
-                    </div>
                     
                     <div className="w-full max-w-[85%] relative bg-surface border border-border-strong rounded-2xl rounded-tr-none p-4 shadow-xs">
                       {/* Concentric Pulse AI indicator */}
@@ -999,16 +996,6 @@ export const CMSection = ({ clientId }) => {
                         className="w-full bg-transparent border-0 resize-none text-sm text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[110px] p-0"
                         placeholder="Escribe tu respuesta real aquí directamente, o haz clic en 'Generar con IA' para que redactemos una sugerencia por ti..."
                       />
-
-                      {/* RAG metadata tag */}
-                      {!loadingDraft && activeThread.contextUsed && (
-                        <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-[10px] text-text-muted">
-                          <span className="flex items-center gap-1.5 font-mono truncate max-w-[85%]">
-                            <ShieldCheckIcon className="h-4 w-4 text-accent-blue flex-shrink-0" />
-                            <span>Validado con: <span className="text-text-primary font-bold">{activeThread.contextUsed}</span></span>
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* AI Compact Tone Bar - Only visible if there is content or status is pending */}
