@@ -514,7 +514,7 @@ export const CMSection = ({ clientId }) => {
   const getSentimentBadge = (sentiment) => {
     if (sentiment === 'positive') return <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Positivo</span>;
     if (sentiment === 'negative') return <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Queja</span>;
-    return <span className="bg-[#7C5CFC]/10 text-[#6366f1] dark:text-[#b5a1ff] px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Consulta</span>;
+    return <span className="bg-accent-blue/10 text-accent-blue px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide select-none">Consulta</span>;
   };
 
   const getConfidenceLabel = (confidence) => {
@@ -874,8 +874,8 @@ export const CMSection = ({ clientId }) => {
                           </div>
                           
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className="text-[8px] text-text-muted font-mono uppercase bg-surface-soft border border-border-subtle px-1.5 py-0.5 rounded">
-                              {thread.platform.substring(0, 2)}
+                            <span className="text-[9px] text-text-muted font-semibold bg-surface-soft border border-border-subtle px-2 py-0.5 rounded-full select-none">
+                              {thread.platform}
                             </span>
                             <span className="text-[10px] text-text-secondary">{thread.time}</span>
                           </div>
@@ -915,188 +915,156 @@ export const CMSection = ({ clientId }) => {
           {activeThread ? (
             <div className="p-6 flex flex-col flex-1 gap-6">
               
-              {/* SECCIÓN 1: EL MENSAJE RECIBIDO */}
-              <div className="bg-surface-soft/30 border border-border-subtle rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+              {/* HEADER: CONTEXTO DE LA PUBLICACIÓN */}
+              <div className="flex items-center justify-between border-b border-border-subtle pb-4">
+                <div className="flex items-center gap-3">
+                  {activeThread.postThumbnail && (
                     <img
-                      src={activeThread.user.avatar}
-                      alt={activeThread.user.name}
-                      className="w-8 h-8 rounded-full object-cover border border-border-subtle"
+                      src={activeThread.postThumbnail}
+                      alt="Post"
+                      className="w-10 h-10 rounded-lg object-cover border border-border-subtle"
                     />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-text-primary">
-                          @{activeThread.user.name}
-                        </span>
-                        <span className="text-[9px] text-text-muted font-mono uppercase bg-surface-soft border border-border-subtle px-1.5 py-0.5 rounded">
-                          {activeThread.platform}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
-                        Recibido {activeThread.time}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    {getSentimentBadge(activeThread.sentiment)}
-                  </div>
-                </div>
-
-                <div className="text-base font-semibold text-text-primary leading-relaxed pl-4 whitespace-pre-wrap select-text border-l-2 border-accent-blue py-0.5">
-                  "{activeThread.comment}"
-                </div>
-
-                {/* CONTEXTO ASOCIADO AL POST */}
-                <div className="flex items-center justify-between gap-3 pt-3.5 border-t border-border-subtle text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {activeThread.postThumbnail && (
-                      <img
-                        src={activeThread.postThumbnail}
-                        alt="Post"
-                        className="w-6 h-6 rounded object-cover border border-border-subtle flex-shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <span className="text-[10px] text-text-muted block font-semibold truncate">
-                        Publicación: {activeThread.postTitle}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {activeThread.postLink && (
-                    <a
-                      href={activeThread.postLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[10px] font-semibold text-accent-blue hover:underline transition-colors shrink-0"
-                    >
-                      <LinkIcon className="h-3 w-3" />
-                      <span>Ver original</span>
-                    </a>
                   )}
+                  <div>
+                    <span className="text-[10px] text-text-muted block font-bold uppercase tracking-wider">Publicación en {activeThread.platform}</span>
+                    <span className="text-sm font-bold text-text-primary line-clamp-1 max-w-[400px]">
+                      {activeThread.postTitle}
+                    </span>
+                  </div>
                 </div>
+                {activeThread.postLink && (
+                  <a
+                    href={activeThread.postLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-bold text-accent-blue hover:underline transition-colors shrink-0 bg-surface-soft px-3 py-1.5 rounded-lg border border-border-subtle shadow-xs"
+                  >
+                    <LinkIcon className="h-3.5 w-3.5" />
+                    <span>Ver publicación</span>
+                  </a>
+                )}
               </div>
 
-              {/* SECCIÓN 2: BORRADOR DE RESPUESTA DE LA IA */}
-              <div className="flex-1 flex flex-col gap-3 min-h-[220px]">
-                {/* Technical details block (Togglable) */}
-                {showTechDetails && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3.5 bg-surface-soft/60 border border-border-subtle rounded-xl text-[10px] text-text-muted font-mono space-y-1.5 leading-relaxed"
-                  >
-                    <div><span className="text-text-secondary font-bold">ID Interacción:</span> {activeThread.id}</div>
-                    <div><span className="text-text-secondary font-bold">Base de Conocimiento Citada:</span> {activeThread.contextUsed || 'Base de Conocimiento General'}</div>
-                    <div><span className="text-text-secondary font-bold">Sentimiento / Tag:</span> {activeThread.sentiment?.toUpperCase()} • {activeThread.tag}</div>
-                    <div><span className="text-text-secondary font-bold">Confianza Exacta:</span> {activeThread.aiConfidence || 95}%</div>
-                  </motion.div>
-                )}
+              {/* HILO DE CONVERSACIÓN (ESTILO CHAT/COMENTARIO REAL) */}
+              <div className="flex-1 overflow-y-auto space-y-6 pr-2 py-2">
+                {/* Comentario del cliente (Alineado a la Izquierda) */}
+                <div className="flex items-start gap-3">
+                  <img
+                    src={activeThread.user.avatar}
+                    alt={activeThread.user.name}
+                    className="w-9 h-9 rounded-full object-cover border border-border-subtle mt-0.5"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-text-primary">@{activeThread.user.name}</span>
+                      <span className="text-[10px] text-text-secondary">{activeThread.time}</span>
+                      {getSentimentBadge(activeThread.sentiment)}
+                    </div>
+                    <div className="bg-surface-soft border border-border-subtle rounded-2xl rounded-tl-none p-3.5 text-text-primary text-sm leading-relaxed max-w-[85%] inline-block">
+                      {activeThread.comment}
+                    </div>
+                  </div>
+                </div>
 
-                <div className="relative flex-1 flex flex-col bg-surface border border-border-strong rounded-xl p-4 min-h-[140px] shadow-sm">
-                  {/* Concentric Pulse AI indicator */}
-                  {(loadingDraft || regenerating) && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-strong/90 rounded-xl">
-                      <div className="relative w-8 h-8 flex items-center justify-center mb-2">
-                        <div className="absolute inset-0 rounded-full bg-accent-blue/10 animate-ping" />
-                        <div className="absolute w-5 h-5 rounded-full bg-accent-blue/20 animate-ping" />
-                        <div className="absolute w-3 h-3 rounded-full bg-accent-blue shadow-[0_0_8px_rgba(24,119,242,0.5)] flex items-center justify-center">
-                          <SparklesIcon className="w-2.5 h-2.5 text-white animate-spin" />
+                {/* Editor / Respuesta (Alineado a la Derecha con indicador de IA) */}
+                <div className="flex items-start gap-3 justify-end">
+                  <div className="flex-1 flex flex-col items-end space-y-2">
+                    <div className="flex items-center gap-1.5 pr-1">
+                      <span className="text-[10px] text-text-muted font-medium">Escribe directamente o genera con IA</span>
+                    </div>
+                    
+                    <div className="w-full max-w-[85%] relative bg-surface border border-border-strong rounded-2xl rounded-tr-none p-4 shadow-xs">
+                      {/* Concentric Pulse AI indicator */}
+                      {(loadingDraft || regenerating) && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-soft/90 rounded-2xl">
+                          <div className="relative w-8 h-8 flex items-center justify-center mb-2">
+                            <div className="absolute inset-0 rounded-full bg-accent-blue/10 animate-ping" />
+                            <div className="absolute w-5 h-5 rounded-full bg-accent-blue/20 animate-ping" />
+                            <div className="absolute w-3 h-3 rounded-full bg-accent-blue shadow-[0_0_8px_rgba(24,119,242,0.5)] flex items-center justify-center">
+                              <SparklesIcon className="w-2.5 h-2.5 text-white animate-spin" />
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold tracking-wider text-accent-blue uppercase animate-pulse">
+                            Generando respuesta...
+                          </span>
+                        </div>
+                      )}
+
+                      <textarea
+                        value={activeDraft}
+                        onChange={e => {
+                          setActiveDraft(e.target.value);
+                          if (!isEditing) setIsEditing(true);
+                        }}
+                        className="w-full bg-transparent border-0 resize-none text-sm text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[110px] p-0"
+                        placeholder="Escribe tu respuesta real aquí directamente, o haz clic en 'Generar con IA' para que redactemos una sugerencia por ti..."
+                      />
+
+                      {/* RAG metadata tag */}
+                      {!loadingDraft && activeThread.contextUsed && (
+                        <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-[10px] text-text-muted">
+                          <span className="flex items-center gap-1.5 font-mono truncate max-w-[85%]">
+                            <ShieldCheckIcon className="h-4 w-4 text-accent-blue flex-shrink-0" />
+                            <span>Validado con: <span className="text-text-primary font-bold">{activeThread.contextUsed}</span></span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* AI Compact Tone Bar - Only visible if there is content or status is pending */}
+                    {activeThread.status !== 'replied' && (
+                      <div className="w-full max-w-[85%] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            onClick={() => handleRegenerate('shorter')}
+                            disabled={regenerating || !activeDraft}
+                            className="text-[10px] font-semibold py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Más Corto
+                          </button>
+                          <button
+                            onClick={() => handleRegenerate('warmer')}
+                            disabled={regenerating || !activeDraft}
+                            className="text-[10px] font-semibold py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Más Empático
+                          </button>
+                          <button
+                            onClick={() => handleRegenerate('cta')}
+                            disabled={regenerating || !activeDraft}
+                            className="text-[10px] font-semibold py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Con CTA
+                          </button>
+                        </div>
+
+                        <div className="relative flex-1 sm:max-w-[180px]">
+                          <input
+                            type="text"
+                            placeholder="Ajuste de IA personalizado..."
+                            value={customAIInstruction}
+                            onChange={e => setCustomAIInstruction(e.target.value)}
+                            disabled={regenerating}
+                            className="w-full bg-surface border border-border-subtle rounded-lg px-2.5 py-1.5 text-[10px] text-text-primary focus:outline-none focus:border-accent-blue transition-colors"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && customAIInstruction.trim()) {
+                                handleRegenerate(customAIInstruction.trim());
+                                setCustomAIInstruction('');
+                              }
+                            }}
+                          />
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold tracking-wider text-accent-blue uppercase animate-pulse">
-                        Optimizando Respuesta...
-                      </span>
-                    </div>
-                  )}
-
-                  {isEditing ? (
-                    <textarea
-                      value={activeDraft}
-                      onChange={e => setActiveDraft(e.target.value)}
-                      className="w-full flex-1 bg-transparent border-0 resize-none text-sm text-text-primary leading-relaxed focus:ring-0 focus:outline-none min-h-[100px]"
-                      placeholder="Modifica el borrador de la IA aquí..."
-                    />
-                  ) : (
-                    <div className="text-sm text-text-primary leading-relaxed flex-1 font-medium select-text pr-2 whitespace-pre-wrap">
-                      {activeDraft}
-                    </div>
-                  )}
-
-                  {/* Shimmer RAG Citation Label */}
-                  {!loadingDraft && activeThread.contextUsed && (
-                    <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-[10px] text-text-muted">
-                      <span className="flex items-center gap-1.5 font-mono truncate max-w-[80%]">
-                        <ShieldCheckIcon className="h-4 w-4 text-accent-blue flex-shrink-0" />
-                        <span>Validado con: <span className="text-text-primary font-bold">{activeThread.contextUsed}</span></span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* AI Copilot Tweak Menu */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-soft/30 p-3 rounded-xl border border-border-subtle">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider mr-1">Ajustar Tono:</span>
-                    <button
-                      onClick={() => handleRegenerate('shorter')}
-                      disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
-                    >
-                      Más Corto
-                    </button>
-                    <button
-                      onClick={() => handleRegenerate('warmer')}
-                      disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
-                    >
-                      Más Empático
-                    </button>
-                    <button
-                      onClick={() => handleRegenerate('cta')}
-                      disabled={regenerating || activeThread.status === 'replied'}
-                      className="btn-cyber text-[10px] font-bold py-1.5 px-3 rounded-lg disabled:opacity-45 cursor-pointer bg-surface hover:bg-surface-soft border border-border-subtle transition-all text-text-primary shadow-xs"
-                    >
-                      Con CTA
-                    </button>
+                    )}
                   </div>
 
-                  {/* Custom Instruction input */}
-                  <div className="relative flex-1 sm:max-w-[220px]">
-                    <input
-                      type="text"
-                      placeholder="Ajuste personalizado..."
-                      value={customAIInstruction}
-                      onChange={e => setCustomAIInstruction(e.target.value)}
-                      disabled={regenerating || activeThread.status === 'replied'}
-                      className="input-cyber pr-10 py-1.5 text-[10px] w-full"
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && customAIInstruction.trim()) {
-                          handleRegenerate(customAIInstruction.trim());
-                          setCustomAIInstruction('');
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (customAIInstruction.trim()) {
-                          handleRegenerate(customAIInstruction.trim());
-                          setCustomAIInstruction('');
-                        }
-                      }}
-                      disabled={regenerating || !customAIInstruction.trim() || activeThread.status === 'replied'}
-                      className="absolute right-1 top-1 py-1 px-2 rounded bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue font-bold text-[9px] transition-colors cursor-pointer"
-                    >
-                      OK
-                    </button>
+                  <div className="w-9 h-9 rounded-full bg-accent-blue/10 border border-accent-blue/20 text-accent-blue font-bold text-xs flex items-center justify-center mt-1 select-none flex-shrink-0">
+                    IA
                   </div>
                 </div>
               </div>
 
-              {/* SECCIÓN 3: ACCIONES PRINCIPALES */}
+              {/* SECCIÓN DE ACCIONES DE ENVÍO */}
               <div className="pt-4 border-t border-border-subtle flex items-center justify-between gap-3">
                 {activeThread.status === 'replied' ? (
                   <div className="w-full bg-accent-blue/5 border border-accent-blue/20 text-accent-blue py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold">
@@ -1106,43 +1074,44 @@ export const CMSection = ({ clientId }) => {
                 ) : (
                   <>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className={`btn-cyber flex items-center gap-1 px-4 py-2.5 text-xs font-bold cursor-pointer ${
-                          isEditing 
-                            ? 'bg-accent-blue/10 border-accent-blue/30 text-accent-blue hover:bg-accent-blue/15'
-                            : ''
-                        }`}
-                      >
-                        {isEditing ? 'Fijar' : 'Editar'}
-                      </button>
-
                       {activeThread.status !== 'escalated' && (
                         <button
                           onClick={() => {
                             setThreads(prev => prev.map(t => t.id === activeThread.id ? { ...t, status: 'escalated' } : t));
                             toast.error('Comentario derivado a atención prioritaria humana.');
                           }}
-                          className="btn-cyber text-xs font-bold cursor-pointer border-error/20 text-error hover:bg-error/5"
+                          className="text-xs font-bold text-error border border-error/20 hover:bg-error/5 px-4 py-2.5 rounded-xl transition-all cursor-pointer"
                         >
                           Escalar a Humano
                         </button>
                       )}
                     </div>
 
-                    <button
-                      onClick={handleApprove}
-                      disabled={approving || regenerating}
-                      className="btn-cyber text-white px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 ml-auto cursor-pointer shadow-md hover:shadow-lg transition-all duration-200"
-                      style={{ backgroundColor: 'var(--color-accent-lavender)', borderColor: 'var(--color-border-subtle)' }}
-                    >
-                      {approving ? (
-                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckIcon className="h-4 w-4" />
-                      )}
-                      <span>Aprobar y Enviar</span>
-                    </button>
+                    <div className="flex gap-2 ml-auto">
+                      <button
+                        onClick={() => {
+                          handleRegenerate('Generar respuesta profesional adaptada al contexto del comentario');
+                        }}
+                        disabled={regenerating || loadingDraft}
+                        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-accent-blue bg-accent-blue/5 hover:bg-accent-blue/10 border border-accent-blue/20 rounded-xl transition-all cursor-pointer disabled:opacity-40"
+                      >
+                        <SparklesIcon className="h-4 w-4" />
+                        <span>Generar con IA</span>
+                      </button>
+
+                      <button
+                        onClick={handleApprove}
+                        disabled={approving || regenerating || !activeDraft.trim()}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-accent-blue hover:bg-accent-blue/90 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {approving ? (
+                          <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckIcon className="h-4 w-4" />
+                        )}
+                        <span>Enviar Respuesta</span>
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
