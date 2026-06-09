@@ -758,7 +758,7 @@ export const CMSection = ({ clientId }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* COL 1: MINIMALIST SMART INBOX (4 COLS) */}
-        <div className="lg:col-span-4 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-4 flex flex-col min-h-[580px]">
           
           {/* Header search & consolidated filters */}
           <div className="p-4 border-b border-border-subtle bg-surface-soft/30 space-y-3">
@@ -911,7 +911,7 @@ export const CMSection = ({ clientId }) => {
         </div>
 
         {/* COL 2: COPILOT WORKSPACE (8 COLS) */}
-        <div className="lg:col-span-8 flex flex-col bg-surface border border-border-subtle rounded-2xl overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-8 flex flex-col min-h-[580px]">
           {activeThread ? (
             <div className="p-6 flex flex-col flex-1 gap-6">
               
