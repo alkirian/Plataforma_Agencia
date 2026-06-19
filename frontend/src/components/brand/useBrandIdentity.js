@@ -192,7 +192,11 @@ export const useBrandIdentity = (clientId) => {
     try {
       setLoadingAssets(true);
       const assets = await getBrandAssetsWithPreview(clientId);
-      setBrandAssets(assets);
+      // Solo mostrar recursos cargados por el usuario para identidad de marca
+      const filtered = assets.filter((asset) =>
+        ['reference', 'document', 'screenshot', 'logo'].includes(asset.asset_type)
+      );
+      setBrandAssets(filtered);
     } catch (_error) {
       setBrandAssets([]);
     } finally {

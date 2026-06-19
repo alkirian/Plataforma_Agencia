@@ -2,6 +2,8 @@ import { extractBrandProfileFromContext, searchAndExtractCompanyBrand, analyzeBr
 import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
+import axios from 'axios';
+import { getInstagramFeedForBrandAnalysis } from '../services/metaAds.service.js';
 
 /**
  * Endpoint para autocompletar la identidad de marca del cliente usando IA
@@ -222,11 +224,12 @@ export const handleAnalyzeBrandConsistency = async (req, res, next) => {
       try {
         console.log(`📡 [Background Brand Analysis] Hilo asíncrono iniciado para: "${client.name}"`);
 
-        // 1. Obtener brand_assets del cliente
+        // 1. Obtener brand_assets del cliente (excluyendo posts/productos automáticos de otras secciones)
         const { data: assets, error: assetsErr } = await supabaseAdmin
           .from('brand_assets')
           .select('*')
-          .eq('client_id', clientId);
+          .eq('client_id', clientId)
+          .in('asset_type', ['reference', 'document', 'screenshot', 'logo']);
 
         let extractedTexts = [];
         let imageAssets = [];
@@ -283,8 +286,44 @@ export const handleAnalyzeBrandConsistency = async (req, res, next) => {
           }
         }
 
-        console.log(`🔍 [Background Brand Analysis] Realizando diagnóstico multimodal de coherencia para cliente: "${client.name}" con ${extractedTexts.length} textos y ${imageAssets.length} imágenes.`);
-        const consistencyReport = await analyzeBrandConsistency(currentProfile, sourceLinks, extractedTexts, imageAssets, client.name, client.industry);
+        // 1.5. Obtener los últimos 10 posts de Instagram para reforzar la identidad
+        let instagramPosts = [];
+        try {
+          console.log(`📸 [Background Brand Analysis] Recuperando últimos 10 posteos de Instagram para: "${client.name}"`);
+          instagramPosts = await getInstagramFeedForBrandAnalysis(clientId);
+          
+          if (instagramPosts && instagramPosts.length > 0) {
+            console.log(`📸 [Background Brand Analysis] Se recuperaron ${instagramPosts.length} posts de Instagram.`);
+            
+            // Descargar imágenes de posts de Instagram para el análisis visual multimodal (máximo 5 imágenes)
+            let downloadedIgImages = 0;
+            for (const post of instagramPosts) {
+              if (downloadedIgImages >= 5) break;
+              if (post.imageUrl && (post.mediaType === 'IMAGE' || post.mediaType === 'CAROUSEL_ALBUM')) {
+                try {
+                  console.log(`📥 [Background Brand Analysis] Descargando imagen de post de Instagram: ${post.id}`);
+                  const imgRes = await axios.get(post.imageUrl, { responseType: 'arraybuffer', timeout: 7000 });
+                  const base64 = Buffer.from(imgRes.data, 'binary').toString('base64');
+                  
+                  imageAssets.push({
+                    base64,
+                    mimeType: 'image/jpeg', // Formato estándar seguro
+                    fileName: `instagram_post_${post.id}.jpg`
+                  });
+                  downloadedIgImages++;
+                } catch (imgDlErr) {
+                  console.warn(`⚠️ [Background Brand Analysis] No se pudo descargar la imagen del post de Instagram ${post.id}:`, imgDlErr.message);
+                }
+              }
+            }
+            console.log(`📸 [Background Brand Analysis] Se añadieron ${downloadedIgImages} imágenes de Instagram para análisis visual.`);
+          }
+        } catch (igErr) {
+          console.error('❌ [Background Brand Analysis] Error al integrar Instagram feed:', igErr.message);
+        }
+
+        console.log(`🔍 [Background Brand Analysis] Realizando diagnóstico multimodal de coherencia para cliente: "${client.name}" con ${extractedTexts.length} textos y ${imageAssets.length} imágenes (incluyendo Instagram).`);
+        const consistencyReport = await analyzeBrandConsistency(currentProfile, sourceLinks, extractedTexts, imageAssets, client.name, client.industry, instagramPosts);
 
         // Volver a obtener el brand_info actual de la DB para no sobreescribir otros cambios del usuario
         const { data: refreshedClient } = await supabaseAdmin

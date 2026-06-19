@@ -10,24 +10,20 @@ import { useNotifications } from '../hooks/useNotifications';
 const ScheduleSection = lazy(() =>
   import('../components/schedule/ScheduleSection').then(m => ({ default: m.ScheduleSection }))
 );
-const DocumentsSection = lazy(() =>
-  import('../components/documents/DocumentsSection').then(m => ({ default: m.DocumentsSection }))
-);
 const BrandIdentitySection = lazy(() =>
   import('../components/brand/BrandIdentitySection').then(m => ({ default: m.BrandIdentitySection }))
 );
 const TrendsSection = lazy(() =>
   import('../components/trends/TrendsSection').then(m => ({ default: m.TrendsSection }))
 );
-const MetaAdsSection = lazy(() =>
-  import('../components/meta/MetaAdsSection').then(m => ({ default: m.MetaAdsSection }))
-);
+
 const CMSection = lazy(() =>
   import('../components/cm/CMSection').then(m => ({ default: m.CMSection }))
 );
 const DesignSection = lazy(() =>
   import('../components/design/DesignSection').then(m => ({ default: m.DesignSection }))
 );
+import { useAuth } from '../hooks/useAuth';
 import {
   CalendarIcon,
   FolderIcon,
@@ -44,6 +40,7 @@ import {
   ChartBarIcon,
   ChatBubbleLeftRightIcon,
   PhotoIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { InteractiveAvatar, AgentBentoCard, AgentChatPanel } from '../components/ui';
 
@@ -54,11 +51,11 @@ const clientCache = new Map();
 const agentCards = [
   {
     id: 'cm',
-    name: 'CM',
+    name: 'CM & Publicidad',
     icon: ChatBubbleLeftRightIcon,
     grad: 'linear-gradient(140deg, #0b3c2c 0%, #11998e 55%, #38ef7d 100%)',
     color: '#38ef7d',
-    stat: '0 pendientes',
+    stat: 'Gestión y Pauta Ads',
   },
   {
     id: 'trends',
@@ -69,14 +66,6 @@ const agentCards = [
     stat: '8 tendencias hoy',
   },
   {
-    id: 'documents',
-    name: 'Documentos',
-    icon: FolderIcon,
-    grad: 'linear-gradient(140deg, #000428 0%, #004e92 55%, #00b4db 100%)',
-    color: '#00b4db',
-    stat: '3 bocetos activos',
-  },
-  {
     id: 'schedule',
     name: 'Cronograma',
     icon: CalendarIcon,
@@ -84,14 +73,7 @@ const agentCards = [
     color: '#dc2430',
     stat: 'Próx. post: mañana',
   },
-  {
-    id: 'meta',
-    name: 'Meta Ads',
-    icon: ChartBarIcon,
-    grad: 'linear-gradient(140deg, #1f083d 0%, #461466 50%, #0f001f 100%)',
-    color: '#A855F7',
-    stat: 'Campaña y Analíticas',
-  },
+
   {
     id: 'identity',
     name: 'Identidad',
@@ -114,13 +96,13 @@ export const ClientDetailPage = () => {
   const { id: clientId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
+  const { profile } = useAuth();
   
-  const [activeChatAgent, setActiveChatAgent] = useState(null);
 
   const { notifications, markTrendsAsReadForClient } = useNotifications();
 
   // Si la pestaña no está definida o no es una de las reales, mostramos el Panel Bento
-  const activeTab = ['schedule', 'documents', 'identity', 'trends', 'meta', 'cm', 'design'].includes(requestedTab)
+  const activeTab = ['schedule', 'identity', 'trends', 'cm', 'design'].includes(requestedTab)
     ? requestedTab
     : null;
 
@@ -166,7 +148,6 @@ export const ClientDetailPage = () => {
     documents: false,
     identity: false,
     trends: false,
-    meta: false,
     cm: false,
     design: false,
   });
@@ -230,7 +211,6 @@ export const ClientDetailPage = () => {
       documents: false,
       identity: false,
       trends: false,
-      meta: false,
       cm: false,
       design: false,
     });
@@ -298,7 +278,7 @@ export const ClientDetailPage = () => {
         <div className='h-3 w-28 rounded bg-white/10 animate-pulse mb-4 px-1' />
 
         {/* Bento Grid Skeleton */}
-        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 grid-rows-3 sm:grid-rows-2 lg:grid-rows-2 gap-5 flex-1 w-full min-h-0 mb-2'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 auto-rows-[200px] md:auto-rows-[220px] lg:auto-rows-[240px] flex-1 w-full min-h-0 mb-2'>
           {[...Array(6)].map((_, i) => (
             <div key={i} className='flex flex-col gap-3 w-full h-full relative overflow-hidden'>
               <div className='flex-1 w-full rounded-[24px] border border-white/5 bg-white/[0.02] shadow-lg relative overflow-hidden flex flex-col p-5 justify-center items-center'>
@@ -361,7 +341,7 @@ export const ClientDetailPage = () => {
             {/* Sleek Professional Client Title Header */}
             <div className='mb-4.5 px-1 flex items-baseline justify-between gap-4'>
               <div>
-                <h1 className='text-2xl font-title font-extrabold text-white tracking-tight flex items-center gap-2.5'>
+                <h1 className='text-2xl font-title font-extrabold text-text-primary tracking-tight flex items-center gap-2.5'>
                   <span 
                     className='w-1 h-6 rounded-full' 
                     style={{ backgroundColor: client.brand_info?.card_color || '#7C5CFC' }}
@@ -379,8 +359,8 @@ export const ClientDetailPage = () => {
               Módulos del Cliente
             </div>
 
-            {/* Bento Grid - 4 Columns spanning screen width and height to fit perfectly in viewport */}
-            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 grid-rows-3 sm:grid-rows-2 lg:grid-rows-2 gap-5 flex-1 w-full min-h-0 mb-2'>
+            {/* Bento Grid - Responsive 3 Columns & 2 Rows with dynamic height adaptation */}
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-rows-2 gap-5 auto-rows-[240px] sm:auto-rows-[285px] lg:auto-rows-auto flex-1 w-full min-h-0 mb-2'>
               {cards.map((card, index) => {
                 // Calcular si esta tarjeta tiene notificaciones pendientes (ej. tendencias)
                 let hasNotification = false;
@@ -431,10 +411,10 @@ export const ClientDetailPage = () => {
              ========================================================================= */
           <motion.div
             key='active-tab-view'
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className='flex-1 flex flex-col h-full overflow-hidden'
           >
             {/* Top Back-bar */}
@@ -455,17 +435,13 @@ export const ClientDetailPage = () => {
                   <span className='text-text-primary'>
                     {activeTab === 'schedule'
                       ? 'Cronograma'
-                      : activeTab === 'documents'
-                        ? 'Documentos'
-                        : activeTab === 'trends'
-                          ? 'Tendencias'
-                          : activeTab === 'meta'
-                            ? 'Meta Ads'
-                            : activeTab === 'cm'
-                              ? 'CM Inteligente'
-                              : activeTab === 'design'
-                                ? 'Estudio de Diseño'
-                                : 'Identidad'}
+                      : activeTab === 'trends'
+                        ? 'Tendencias'
+                        : activeTab === 'cm'
+                          ? 'CM & Publicidad'
+                          : activeTab === 'design'
+                            ? 'Estudio de Diseño'
+                            : 'Identidad'}
                   </span>
                 </div>
               </div>
@@ -473,6 +449,18 @@ export const ClientDetailPage = () => {
               {/* Acciones específicas del Cronograma o indicador por defecto */}
               {activeTab === 'schedule' ? (
                 <div className='flex items-center gap-2'>
+                  <button
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent('cadence:calendar-action', { detail: { action: 'deliverables' } })
+                      )
+                    }
+                    className='flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-soft text-text-primary text-[11px] font-bold transition-all duration-200'
+                  >
+                    <PhotoIcon className='h-3.5 w-3.5 text-blue-400' />
+                    <span>Ver Entregables</span>
+                  </button>
+
                   <button
                     onClick={() =>
                       window.dispatchEvent(
@@ -569,6 +557,17 @@ export const ClientDetailPage = () => {
                 </div>
               ) : (
                 <div className='flex items-center gap-3'>
+                  {activeTab === 'cm' && (
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('cadence:open-cm-rules'));
+                      }}
+                      className='flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-subtle bg-surface hover:bg-surface-soft text-text-primary text-[11px] font-bold transition-all duration-200 cursor-pointer shadow-xs'
+                    >
+                      <ShieldCheckIcon className='h-3.5 w-3.5 text-accent-cyan' />
+                      <span>Reglas y Canales</span>
+                    </button>
+                  )}
                   <div className='flex items-center gap-1.5'>
                     <span className='h-2 w-2 rounded-full bg-emerald-500 animate-pulse' />
                     <span className='text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono'>
@@ -580,7 +579,7 @@ export const ClientDetailPage = () => {
             </div>
 
             {/* Contenedor del módulo real */}
-            <div className={`flex-1 w-full relative ${activeTab === 'identity' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <div className={`flex-1 w-full relative ${(activeTab === 'identity' || activeTab === 'schedule') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
               <Suspense
                 fallback={
                   <div className='flex-1 w-full h-full flex flex-col items-center justify-center select-none gap-4 p-8 min-h-[300px]'>
@@ -603,12 +602,7 @@ export const ClientDetailPage = () => {
                 <div style={{ display: activeTab === 'trends' ? 'block' : 'none' }}>
                   {visitedTabs.trends && <TrendsSection clientId={clientId} />}
                 </div>
-                <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
-                  {visitedTabs.documents && <DocumentsSection clientId={clientId} />}
-                </div>
-                <div style={{ display: activeTab === 'meta' ? 'block' : 'none' }}>
-                  {visitedTabs.meta && <MetaAdsSection clientId={clientId} />}
-                </div>
+
                 <div style={{ display: activeTab === 'cm' ? 'block' : 'none' }}>
                   {visitedTabs.cm && <CMSection clientId={clientId} />}
                 </div>
@@ -621,46 +615,7 @@ export const ClientDetailPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Botón flotante persistente de Aura (Mini Copiloto) */}
-      <div className="fixed bottom-6 right-6 z-40 pointer-events-auto">
-        <motion.button
-          onClick={() => setActiveChatAgent({ id: 'general', name: 'Aura' })}
-          whileHover={{ scale: 1.06 }}
-          whileTap={{ scale: 0.94 }}
-          className="relative group flex items-center gap-3 pl-3 pr-4.5 py-2.5 rounded-full bg-slate-900/90 border border-white/10 hover:border-[#7C5CFC]/30 text-white font-title font-bold text-xs shadow-2xl transition-all duration-300 backdrop-blur-md cursor-pointer"
-        >
-          {/* Glowing background blur */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#7C5CFC]/20 to-[#4ECDC4]/10 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300" />
-          
-          <div className="relative w-7 h-7 rounded-full overflow-hidden p-0.5 border border-white/10 bg-black/40">
-            <InteractiveAvatar 
-              variant="ai" 
-              state={activeChatAgent ? 'talking' : 'idle'} 
-              size="sm" 
-              className="w-full h-full" 
-              interactive={false} 
-            />
-            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-black animate-pulse" />
-          </div>
-          
-          <div className="text-left flex flex-col justify-center leading-none">
-            <span className="text-[9.5px] text-text-secondary font-medium tracking-wide uppercase">Copiloto</span>
-            <span className="text-[11px] font-black text-white mt-0.5">Consultar a Aura</span>
-          </div>
-        </motion.button>
-      </div>
 
-      {/* Panel de Chat Lateral Deslizable */}
-      <AnimatePresence>
-        {activeChatAgent && (
-          <AgentChatPanel
-            clientId={clientId}
-            agent={activeChatAgent}
-            onClose={() => setActiveChatAgent(null)}
-            client={client}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
