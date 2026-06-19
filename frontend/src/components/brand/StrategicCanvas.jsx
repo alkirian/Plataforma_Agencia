@@ -1,7 +1,6 @@
 // src/components/brand/StrategicCanvas.jsx
 import React, { useState } from 'react';
 import { ColorPaletteWidget } from './ColorPaletteWidget';
-import { CoherenciaAlerts } from './CoherenciaAlerts';
 
 export const StrategicCanvas = ({
   formData = {},
@@ -20,8 +19,9 @@ export const StrategicCanvas = ({
   activeTab,
   setActiveTab,
 }) => {
-  const [editMode, setEditMode] = useState(false);
   const [expandedChapter, setExpandedChapter] = useState('dna'); // Default open: ADN Estratégico
+  const [editingSecNum, setEditingSecNum] = useState(null); // ID de la sección siendo editada
+  const [editSecValue, setEditSecValue] = useState(''); // Valor temporal del editor
 
   // Helper to parse **bold** text within paragraphs and lists
   const parseBoldText = (text) => {
@@ -139,6 +139,67 @@ export const StrategicCanvas = ({
     return parsed;
   };
 
+  // Reconstruye el texto Markdown completo a partir del array de secciones
+  const reconstructMarkdown = (sections) => {
+    return sections.map(sec => {
+      if (sec.isChapter) {
+        return `## ${sec.title}\n${sec.contentLines.join('\n')}`;
+      } else {
+        const numPrefix = sec.num && sec.num !== 0 ? `${sec.num}. ` : '';
+        const heading = sec.title === 'Resumen Inicial' && sec.num === 0 ? '' : `### ${numPrefix}${sec.title}\n`;
+        return `${heading}${sec.contentLines.join('\n')}`;
+      }
+    }).join('\n');
+  };
+
+  // Guarda la edición de una subsección específica del brief y auto-persiste
+  const handleSaveSection = (targetSec) => {
+    const parsedSections = parseSectionsText(formData.business_description || '');
+    
+    const updatedSections = parsedSections.map(sec => {
+      const currentKey = sec.num !== null ? String(sec.num) : sec.title;
+      const targetKey = targetSec.num !== null ? String(targetSec.num) : targetSec.title;
+      if (currentKey === targetKey) {
+        return {
+          ...sec,
+          contentLines: editSecValue.split('\n')
+        };
+      }
+      return sec;
+    });
+
+    const newMarkdownText = reconstructMarkdown(updatedSections);
+    onChange('business_description', newMarkdownText);
+    setEditingSecNum(null);
+    
+    // Auto-guardado en segundo plano
+    setTimeout(() => {
+      onSave();
+    }, 100);
+  };
+
+  // Clasifica alertas/contradicciones en un capítulo en base a palabras clave
+  const getContradictionChapter = (contra) => {
+    const textToAnalyze = `${contra.title} ${contra.description}`.toLowerCase();
+    
+    if (textToAnalyze.includes('tono') || textToAnalyze.includes('voz') || textToAnalyze.includes('personalidad') || textToAnalyze.includes('copia') || textToAnalyze.includes('redacción') || textToAnalyze.includes('comunicación')) {
+      return 'voice';
+    }
+    if (textToAnalyze.includes('color') || textToAnalyze.includes('paleta') || textToAnalyze.includes('visual') || textToAnalyze.includes('estética') || textToAnalyze.includes('diseño') || textToAnalyze.includes('gráfico') || textToAnalyze.includes('logo') || textToAnalyze.includes('imagen')) {
+      return 'visual';
+    }
+    if (textToAnalyze.includes('web') || textToAnalyze.includes('sitio') || textToAnalyze.includes('landing') || textToAnalyze.includes('página')) {
+      return 'visual'; 
+    }
+    if (textToAnalyze.includes('competidor') || textToAnalyze.includes('competencia') || textToAnalyze.includes('mercado') || textToAnalyze.includes('ventaja')) {
+      return 'audit';
+    }
+    if (textToAnalyze.includes('claim') || textToAnalyze.includes('comercial') || textToAnalyze.includes('llamado') || textToAnalyze.includes('frase') || textToAnalyze.includes('acción') || textToAnalyze.includes('copyw')) {
+      return 'direction';
+    }
+    return 'dna';
+  };
+
   // Dynamic grouping logic of 16-point Strategic Brief into 5 Chapters (Pillars)
   const renderDynamicPillars = (text) => {
     if (!text || !text.trim()) {
@@ -238,6 +299,12 @@ export const StrategicCanvas = ({
         {groupedChapters.map((chap) => {
           const isExpanded = expandedChapter === chap.id;
 
+          // Filtrar alertas no resueltas de este pilar
+          const chapterContradictions = (consistencyReport?.contradictions || []).filter(c => {
+            if (resolvedConflicts?.has(c.id)) return false;
+            return getContradictionChapter(c) === chap.id;
+          });
+
           return (
             <div
               key={chap.id}
@@ -255,9 +322,16 @@ export const StrategicCanvas = ({
                 <div className='flex items-center gap-3.5 min-w-0'>
                   <span className='text-2xl flex-shrink-0'>{chap.icon}</span>
                   <div className='min-w-0'>
-                    <h4 className='text-[13px] font-black text-white tracking-wide font-title truncate'>
-                      {chap.title}
-                    </h4>
+                    <div className='flex items-center gap-2'>
+                      <h4 className='text-[13px] font-black text-white tracking-wide font-title truncate'>
+                        {chap.title}
+                      </h4>
+                      {chapterContradictions.length > 0 && (
+                        <span className='bg-amber-500/90 text-black text-[8px] font-black h-4 px-1.5 rounded-full flex items-center justify-center border border-black animate-pulse flex-shrink-0 select-none'>
+                          ⚠️ {chapterContradictions.length}
+                        </span>
+                      )}
+                    </div>
                     <p className='text-[10px] text-text-muted mt-0.5 truncate max-w-[420px]'>
                       {chap.description}
                     </p>
@@ -279,19 +353,125 @@ export const StrategicCanvas = ({
 
               {/* PILLAR BODY CONTENT (VISIBLE ONLY WHEN EXPANDED) */}
               {isExpanded && (
-                <div className='p-4 border-t border-white/[0.04] bg-slate-950/20 space-y-5 animate-fade-in max-h-[300px] overflow-y-auto scrollbar-thin'>
-                  {chap.sections.map((sec, idx) => (
-                    <div key={idx} className='space-y-2 border-b border-white/[0.03] pb-4 last:border-none last:pb-0'>
-                      {/* Section Heading Title inside Pillar */}
-                      <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest pb-1 border-b border-white/[0.03] mb-2 flex items-center gap-1.5'>
-                        <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
-                        {sec.num ? `${sec.num}. ` : ''} {sec.title}
-                      </h5>
+                <div className='p-4 border-t border-white/[0.04] bg-slate-950/20 space-y-5 animate-fade-in max-h-[340px] overflow-y-auto scrollbar-thin'>
+                  {chap.sections.map((sec, idx) => {
+                    const secKey = sec.num !== null ? String(sec.num) : sec.title;
+                    const isEditing = editingSecNum === secKey;
 
-                      {/* Render formatted markdown lines for this section */}
-                      {renderSectionBody(sec.contentLines)}
+                    return (
+                      <div key={idx} className='space-y-2 border-b border-white/[0.03] pb-4 last:border-none last:pb-0 text-left relative group/sec'>
+                        {isEditing ? (
+                          <>
+                            {/* Editor mode inline */}
+                            <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest pb-1 border-b border-white/[0.03] mb-2 flex items-center gap-1.5 select-none'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
+                              {sec.num ? `${sec.num}. ` : ''} {sec.title} (Editando)
+                            </h5>
+                            <textarea
+                              value={editSecValue}
+                              onChange={(e) => setEditSecValue(e.target.value)}
+                              className='w-full rounded-xl bg-slate-900 border border-white/10 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-[#7C5CFC] focus:ring-1 focus:ring-[#7C5CFC]/20 min-h-[120px] resize-y'
+                            />
+                            <div className='flex items-center gap-1.5 justify-end pt-1'>
+                              <button
+                                type='button'
+                                onClick={() => handleSaveSection(sec)}
+                                className='px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[9.5px] font-black uppercase tracking-wider shadow-sm transition-all'
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                type='button'
+                                onClick={() => setEditingSecNum(null)}
+                                className='px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[9.5px] font-bold transition-all'
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Preview mode default */}
+                            <div className='flex items-center justify-between gap-2 pb-1 border-b border-white/[0.03] mb-2'>
+                              <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest flex items-center gap-1.5 select-none'>
+                                <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
+                                {sec.num ? `${sec.num}. ` : ''} {sec.title}
+                              </h5>
+                              {!isAnalyzing && (
+                                <button
+                                  type='button'
+                                  onClick={() => {
+                                    setEditingSecNum(secKey);
+                                    setEditSecValue(sec.contentLines.join('\n'));
+                                  }}
+                                  className='opacity-0 group-hover/sec:opacity-100 text-accent-lavender hover:text-white text-[9.5px] font-bold transition-all px-2 py-0.5 rounded-lg border border-border-subtle bg-surface-strong/20 hover:bg-surface-strong/60 cursor-pointer select-none'
+                                >
+                                  Editar ✏️
+                                </button>
+                              )}
+                            </div>
+
+                            {renderSectionBody(sec.contentLines)}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* ALERTAS/CONTRADICCIONES DE COHERENCIA CONTEXTUALES */}
+                  {chapterContradictions.length > 0 && (
+                    <div className='mt-5 pt-4 border-t border-amber-500/20 space-y-3 text-left'>
+                      <h6 className='text-[11.5px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5 select-none'>
+                        <span>⚠️</span> Alertas de Coherencia Detectadas:
+                      </h6>
+                      
+                      {chapterContradictions.map((contra) => (
+                        <div
+                          key={contra.id}
+                          className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2'
+                        >
+                          <div className='space-y-0.5'>
+                            <h5 className='text-[11px] font-black text-white uppercase tracking-wide'>
+                              {contra.title}
+                            </h5>
+                            <p className='text-[10px] text-text-secondary leading-relaxed'>
+                              {contra.description}
+                            </p>
+                          </div>
+
+                          <div className='rounded-lg bg-black/30 p-2.5 space-y-1 border border-white/5'>
+                            <p className='text-[9.5px] text-[#4ECDC4] font-black uppercase tracking-wider leading-none select-none'>
+                              💬 Consulta al cliente:
+                            </p>
+                            <p className='text-[10px] text-white/90 leading-relaxed font-semibold italic'>
+                              "{contra.consultation_question}"
+                            </p>
+                          </div>
+
+                          {contra.suggested_fix && (
+                            <div className='rounded-lg bg-[#7C5CFC]/10 p-2.5 space-y-2 border border-[#7C5CFC]/20 text-left'>
+                              <div className='space-y-0.5'>
+                                <span className='text-[9px] font-black uppercase tracking-wider text-accent-lavender select-none'>
+                                  ✨ Propuesta Armonizada:
+                                </span>
+                                <p className='text-[10px] text-white/95 leading-relaxed font-medium'>
+                                  {contra.suggested_fix}
+                                </p>
+                              </div>
+
+                              <button
+                                type='button'
+                                onClick={() => onApplySuggestedFix(contra.id, contra.suggested_fix)}
+                                className='inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#7C5CFC] hover:bg-[#6b4dfc] text-white text-[9.5px] font-bold shadow-sm transition-all select-none'
+                              >
+                                <span>🤝</span> Armonizar Perfil
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
@@ -301,170 +481,99 @@ export const StrategicCanvas = ({
     );
   };
 
-  const hasContradictions =
-    consistencyReport?.contradictions && consistencyReport.contradictions.length > 0;
-  const contradictionsCount = hasContradictions
-    ? consistencyReport.contradictions.filter((c) => !resolvedConflicts.has(c.id)).length
-    : 0;
-
   return (
-    <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2.5 shadow-md relative overflow-hidden flex flex-col flex-1 min-h-0 h-full'>
+    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-2.5 shadow-md relative overflow-hidden flex flex-col flex-1 min-h-0 h-full'>
       <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-lavender via-accent-sage to-accent-sand' />
 
-      {/* WORKSPACE HEADER TABS */}
-      <div className='flex items-center justify-between border-b border-border-subtle pb-1 flex-shrink-0'>
-        <div className='flex items-center gap-1.5'>
-          {/* Tab 1: Brief Profile */}
-          <button
-            type='button'
-            onClick={() => setActiveTab('brief')}
-            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-              activeTab === 'brief'
-                ? 'bg-surface-strong text-white border border-border-subtle shadow-inner'
-                : 'text-text-muted hover:text-white'
-            }`}
-          >
-            🧬 Perfil de Marca
-          </button>
+      {/* WORKSPACE HEADER */}
+      <div className='flex items-center justify-between border-b border-border-subtle pb-1.5 flex-shrink-0 select-none'>
+        <h4 className='text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5 px-1 py-1'>
+          <span>🧬</span> Perfil Estratégico de Marca
+        </h4>
 
-          {/* Tab 2: Coherence Alerts */}
-          <button
-            type='button'
-            onClick={() => setActiveTab('alerts')}
-            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-              activeTab === 'alerts'
-                ? 'bg-surface-strong text-white border border-border-subtle shadow-inner'
-                : 'text-text-muted hover:text-white'
-            }`}
-          >
-            <span>⚖️ Alertas de Coherencia</span>
-            {contradictionsCount > 0 && (
-              <span className='bg-amber-500 text-black text-[8px] font-black h-4 w-4 rounded-full flex items-center justify-center border border-black animate-pulse'>
-                {contradictionsCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Global Save Button (only visible in Brief tab) */}
-        {activeTab === 'brief' && (
-          <button
-            type='button'
-            onClick={onSave}
-            disabled={saving || isAnalyzing}
-            className='inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-3.5 py-1.5 text-[9.5px] font-black uppercase tracking-wider shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
-          >
-            {saving ? (
-              <div className='flex items-center gap-1'>
-                <div className='h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-                <span>Guardando...</span>
-              </div>
-            ) : (
-              <>
-                <span>💾 Guardar</span>
-              </>
-            )}
-          </button>
-        )}
+        {/* Global Save Button */}
+        <button
+          type='button'
+          onClick={onSave}
+          disabled={saving || isAnalyzing}
+          className='inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7C5CFC] to-[#4ECDC4] hover:from-[#6b4dfc] hover:to-[#3ec3ba] text-white px-3.5 py-1.5 text-[9.5px] font-black uppercase tracking-wider shadow-md transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
+        >
+          {saving ? (
+            <div className='flex items-center gap-1'>
+              <div className='h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+              <span>Guardando...</span>
+            </div>
+          ) : (
+            <>
+              <span>💾 Guardar Todo</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* WORKSPACE CONTENT AREA */}
       <div className='flex-1 flex flex-col min-h-0 relative overflow-hidden'>
-        {activeTab === 'brief' ? (
-          <div className='flex-1 flex flex-col space-y-2.5 min-h-0 h-full overflow-hidden'>
-            {/* Aesthetic DNA palette row */}
-            <ColorPaletteWidget
-              colorPalette={formData.color_palette || []}
-              onAddColor={handleAddColor}
-              onRemoveColor={handleRemoveColor}
-              onUpdateColor={handleUpdateColor}
-              isAnalyzing={isAnalyzing}
-              consistencyScore={consistencyReport?.consistency_score}
-            />
+        <div className='flex-1 flex flex-col space-y-2.5 min-h-0 h-full overflow-hidden'>
+          {/* Aesthetic DNA palette row */}
+          <ColorPaletteWidget
+            colorPalette={formData.color_palette || []}
+            onAddColor={handleAddColor}
+            onRemoveColor={handleRemoveColor}
+            onUpdateColor={handleUpdateColor}
+            isAnalyzing={isAnalyzing}
+            consistencyScore={consistencyReport?.consistency_score}
+          />
 
-            {/* Custom styled Strategic Canvas Card */}
-            <div className='relative flex-1 min-h-0 flex flex-col rounded-xl border border-border-subtle bg-surface-strong/20 overflow-hidden'>
-              {/* Preview vs Edit toggle panel (only show if not analyzing) */}
-              {!isAnalyzing && (
-                <div className='absolute bottom-3 right-3 z-20 flex items-center gap-1.5'>
-                  <button
-                    type='button'
-                    onClick={() => setEditMode(!editMode)}
-                    className='rounded-xl bg-black/75 backdrop-blur-[2px] border border-white/10 hover:bg-black text-white hover:text-[#4ECDC4] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider shadow-md transition-all active:scale-95'
-                  >
-                    {editMode ? '👁️ Previsualizar' : '📝 Editar'}
-                  </button>
-                </div>
-              )}
-
-              {/* Strategic Brief Text Area / Preview Canvas */}
-              <div className='flex-grow overflow-hidden h-full flex flex-col'>
-                {editMode ? (
-                  <textarea
-                    value={formData.business_description || ''}
-                    onChange={(e) => onChange('business_description', e.target.value)}
-                    placeholder='El lienzo de identidad está vacío. Redacta el ADN comercial de tu marca o presiona "Analizar" en la columna de la izquierda para que el estratega IA construya un brief estratégico a partir de tus redes y capturas...'
-                    disabled={isAnalyzing}
-                    className='w-full rounded-xl bg-transparent p-3.5 text-xs text-white placeholder-text-secondary focus:outline-none focus:ring-0 leading-relaxed transition-all duration-300 flex-1 resize-none min-h-0 h-full border-none disabled:opacity-30'
-                  />
-                ) : (
-                  <div className='w-full overflow-y-auto p-4 flex-1 h-full max-h-full scroll-smooth select-text pr-2'>
-                    {renderDynamicPillars(formData.business_description)}
-                  </div>
-                )}
+          {/* Custom styled Strategic Canvas Card */}
+          <div className='relative flex-1 min-h-0 flex flex-col rounded-xl border border-border-subtle bg-surface-strong/20 overflow-hidden'>
+            {/* Strategic Brief Preview Canvas */}
+            <div className='flex-grow overflow-hidden h-full flex flex-col'>
+              <div className='w-full overflow-y-auto p-4 flex-1 h-full max-h-full scroll-smooth select-text pr-2'>
+                {renderDynamicPillars(formData.business_description)}
               </div>
+            </div>
 
-              {/* ASYNCHRONOUS BACKGROUND PROCESS OVERLAY (IN SPANISH) */}
-              {isAnalyzing && (
-                <div className='absolute inset-0 bg-[#0d0d1e]/85 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center p-6 text-center z-10 border border-white/5 animate-fade-in overflow-y-auto'>
-                  <div className='relative mb-4 flex items-center justify-center'>
-                    {/* Pulsing glow background */}
-                    <div className='absolute -inset-4 rounded-full bg-gradient-to-r from-[#7C5CFC]/30 to-[#4ECDC4]/30 opacity-75 blur-xl animate-pulse'></div>
-                    <div className='relative h-14 w-14 rounded-full border-2 border-t-[#7C5CFC] border-r-[#4ECDC4] border-b-transparent border-l-transparent animate-spin flex items-center justify-center bg-black/60 shadow-inner'>
-                      <span className='text-xl animate-bounce'>🧬</span>
-                    </div>
-                  </div>
-
-                  <div className='space-y-2 max-w-sm'>
-                    <h5 className='text-xs font-black uppercase tracking-widest text-white flex items-center justify-center gap-1.5'>
-                      <span>⚙️</span> Análisis en Segundo Plano
-                    </h5>
-
-                    <p className='text-[10px] text-text-muted leading-relaxed font-medium'>
-                      El estratega senior está recopilando datos de tus redes, sitio web e industria en internet.
-                    </p>
-
-                    <div className='inline-flex items-center gap-1.5 bg-[#7C5CFC]/10 border border-[#7C5CFC]/20 rounded-lg px-2.5 py-1 text-[9px] text-[#9b82ff] font-bold'>
-                      <span>⚡</span> Ejecución remota activa
-                    </div>
-
-                    <div className='bg-surface-strong/60 rounded-xl p-2.5 border border-white/5 space-y-1.5 mt-2'>
-                      <p className='text-[9px] text-text-secondary uppercase tracking-wider font-bold'>
-                        Etapa técnica:
-                      </p>
-                      <p className='text-[10px] text-white font-bold animate-pulse leading-normal'>
-                        {consistencyLoaderMsgs[loadingMessageIndex]}
-                      </p>
-                    </div>
-
-                    <p className='text-[9px] text-text-muted/80 leading-normal border-t border-white/5 pt-2 mt-2'>
-                      🔒 <strong className='text-white'>Puedes cerrar esta pestaña o el navegador de forma segura.</strong> El proceso continuará de fondo y el lienzo se actualizará solo.
-                    </p>
+            {/* ASYNCHRONOUS BACKGROUND PROCESS OVERLAY (IN SPANISH) */}
+            {isAnalyzing && (
+              <div className='absolute inset-0 bg-[#0d0d1e]/85 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center p-6 text-center z-10 border border-white/5 animate-fade-in overflow-y-auto'>
+                <div className='relative mb-4 flex items-center justify-center'>
+                  {/* Pulsing glow background */}
+                  <div className='absolute -inset-4 rounded-full bg-gradient-to-r from-[#7C5CFC]/30 to-[#4ECDC4]/30 opacity-75 blur-xl animate-pulse'></div>
+                  <div className='relative h-14 w-14 rounded-full border-2 border-t-[#7C5CFC] border-r-[#4ECDC4] border-b-transparent border-l-transparent animate-spin flex items-center justify-center bg-black/60 shadow-inner'>
+                    <span className='text-xl animate-bounce'>🧬</span>
                   </div>
                 </div>
-              )}
-            </div>
+
+                <div className='space-y-2 max-w-sm text-center'>
+                  <h5 className='text-xs font-black uppercase tracking-widest text-white flex items-center justify-center gap-1.5'>
+                    <span>⚙️</span> Análisis en Segundo Plano
+                  </h5>
+
+                  <p className='text-[10px] text-text-muted leading-relaxed font-medium'>
+                    El estratega senior está recopilando datos de tus redes, sitio web e industria en internet.
+                  </p>
+
+                  <div className='inline-flex items-center gap-1.5 bg-[#7C5CFC]/10 border border-[#7C5CFC]/20 rounded-lg px-2.5 py-1 text-[9px] text-[#9b82ff] font-bold'>
+                    <span>⚡</span> Ejecución remota activa
+                  </div>
+
+                  <div className='bg-surface-strong/60 rounded-xl p-2.5 border border-white/5 space-y-1.5 mt-2 w-full'>
+                    <p className='text-[9px] text-text-secondary uppercase tracking-wider font-bold'>
+                      Etapa técnica:
+                    </p>
+                    <p className='text-[10px] text-white font-bold animate-pulse leading-normal'>
+                      {consistencyLoaderMsgs[loadingMessageIndex]}
+                    </p>
+                  </div>
+
+                  <p className='text-[9px] text-text-muted/80 leading-normal border-t border-white/5 pt-2 mt-2 w-full'>
+                    🔒 <strong className='text-white'>Puedes cerrar esta pestaña o el navegador de forma segura.</strong> El proceso continuará de fondo y el lienzo se actualizará solo.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          /* Tab 2: Coherence Alerts list */
-          <div className='flex-1 h-full min-h-0 overflow-hidden flex flex-col p-1.5 bg-surface-strong/20 border border-border-subtle/50 rounded-xl'>
-            <CoherenciaAlerts
-              consistencyReport={consistencyReport}
-              resolvedConflicts={resolvedConflicts}
-              onApplySuggestedFix={onApplySuggestedFix}
-            />
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

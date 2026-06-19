@@ -1,5 +1,5 @@
 // src/components/brand/SocialDock.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const SocialDock = ({ formData = {}, onChange, isAnalyzing }) => {
   const socialPlatforms = [
@@ -119,48 +119,103 @@ export const SocialDock = ({ formData = {}, onChange, isAnalyzing }) => {
     },
   ];
 
+  const [visiblePlatforms, setVisiblePlatforms] = useState(() => {
+    const defaultVisible = ['instagram_url', 'website_url'];
+    const extraPlatforms = ['tiktok_url', 'linkedin_url', 'facebook_url', 'youtube_url'];
+    const activeExtras = extraPlatforms.filter(id => formData[id] && formData[id].trim() !== '');
+    return [...defaultVisible, ...activeExtras];
+  });
+
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  useEffect(() => {
+    const extraPlatforms = ['tiktok_url', 'linkedin_url', 'facebook_url', 'youtube_url'];
+    const activeExtras = extraPlatforms.filter(id => formData[id] && formData[id].trim() !== '');
+    setVisiblePlatforms(prev => {
+      const merged = new Set([...prev, ...activeExtras]);
+      return Array.from(merged);
+    });
+  }, [formData]);
+
+  const handleAddPlatform = (id) => {
+    if (!visiblePlatforms.includes(id)) {
+      setVisiblePlatforms(prev => [...prev, id]);
+    }
+    setShowAddMenu(false);
+  };
+
+  const handleRemovePlatform = (id) => {
+    onChange(id, ''); // Limpiar valor en el form
+    setVisiblePlatforms(prev => prev.filter(p => p !== id));
+  };
+
+  const unusedPlatforms = socialPlatforms.filter(p => !visiblePlatforms.includes(p.id));
+  const renderedPlatforms = socialPlatforms.filter(p => visiblePlatforms.includes(p.id));
+
   return (
-    <div className='rounded-2xl border border-border-subtle bg-surface p-3 space-y-2 shadow-md relative overflow-hidden flex-shrink-0'>
-      <div className='text-left'>
+    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-3.5 shadow-md relative overflow-hidden flex-shrink-0 text-left'>
+      <div className='flex items-center justify-between'>
         <h3 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
           <span>🔌</span> Canales de Marca
         </h3>
+
+        {unusedPlatforms.length > 0 && (
+          <div className='relative'>
+            <button
+              type='button'
+              disabled={isAnalyzing}
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className='text-[9.5px] font-bold text-accent-lavender hover:text-white px-2 py-1 rounded-lg border border-border-subtle bg-surface-strong/30 hover:bg-surface-strong/60 transition-all select-none disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              + Añadir canal
+            </button>
+
+            {showAddMenu && (
+              <div className='absolute right-0 mt-1.5 w-32 rounded-xl bg-slate-950 border border-white/10 p-1.5 z-40 shadow-2xl animate-fade-in text-left'>
+                {unusedPlatforms.map((platform) => (
+                  <button
+                    key={platform.id}
+                    type='button'
+                    onClick={() => handleAddPlatform(platform.id)}
+                    className='w-full text-left px-2 py-1.5 text-[10px] text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-all font-semibold'
+                  >
+                    {platform.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className='grid grid-cols-2 gap-1.5'>
-        {socialPlatforms.map((platform) => {
+      <div className='grid grid-cols-2 gap-2'>
+        {renderedPlatforms.map((platform) => {
           const value = formData[platform.id] || '';
           const isConnected = value.trim().length > 0;
+          const isDefault = platform.id === 'instagram_url' || platform.id === 'website_url';
 
           return (
             <div
               key={platform.id}
-              className={`rounded-xl border transition-all duration-200 p-1.5 flex items-center gap-1.5 ${
+              className={`rounded-xl border transition-all duration-200 p-2 flex items-center gap-2 relative group/item ${
                 isConnected
                   ? platform.activeStyle
-                  : 'border-border-subtle bg-surface-strong/30 hover:border-white/10'
+                  : 'border-border-subtle bg-surface-strong/20 hover:border-white/10'
               }`}
             >
               <div
-                className={`p-1.5 rounded-lg bg-black/40 ${
+                className={`p-1.5 rounded-lg bg-black/35 ${
                   isConnected ? platform.activeText : 'text-text-muted'
                 }`}
               >
                 {platform.icon}
               </div>
 
-              <div className='flex-1 space-y-0.5 text-left min-w-0'>
-                <div className='flex items-center justify-between gap-1'>
-                  <span className='text-[9px] font-bold uppercase tracking-wider text-text-primary truncate'>
+              <div className='flex-1 space-y-0.5 min-w-0 pr-4'>
+                <div className='flex items-center gap-1 justify-between'>
+                  <span className='text-[9.5px] font-bold uppercase tracking-wider text-text-primary truncate'>
                     {platform.label}
                   </span>
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                      isConnected
-                        ? 'bg-emerald-500 shadow-[0_0_8px_#10B981]'
-                        : 'bg-white/10'
-                    }`}
-                  />
                 </div>
                 <input
                   type='text'
@@ -168,9 +223,21 @@ export const SocialDock = ({ formData = {}, onChange, isAnalyzing }) => {
                   onChange={(e) => onChange(platform.id, e.target.value)}
                   placeholder={platform.placeholder}
                   disabled={isAnalyzing}
-                  className='w-full bg-transparent p-0 text-[11px] text-white placeholder-text-secondary border-none focus:ring-0 focus:outline-none truncate disabled:opacity-50 disabled:cursor-not-allowed'
+                  className='w-full bg-transparent p-0 text-[11px] text-white placeholder-text-secondary border-none focus:ring-0 focus:outline-none truncate disabled:opacity-50 disabled:cursor-not-allowed font-medium'
                 />
               </div>
+
+              {/* Botón de eliminación para canales opcionales (no fijos) */}
+              {!isDefault && !isAnalyzing && (
+                <button
+                  type='button'
+                  onClick={() => handleRemovePlatform(platform.id)}
+                  className='absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-75 hover:!opacity-100 text-text-muted hover:text-red-400 text-[10px] font-bold transition-all p-1 cursor-pointer select-none'
+                  title={`Eliminar canal de ${platform.label}`}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           );
         })}

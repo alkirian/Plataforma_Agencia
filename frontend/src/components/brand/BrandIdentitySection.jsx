@@ -73,17 +73,6 @@ export const BrandIdentitySection = ({ clientId }) => {
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-3 items-start flex-1 overflow-hidden h-full'>
         {/* ================= COLUMNA IZQUIERDA: DOCK, BIBLIOTECA Y BOTÓN (5/12) ================= */}
         <div className='lg:col-span-5 space-y-2 overflow-y-auto max-h-full pr-1 pb-2 flex flex-col justify-start'>
-          {/* GUÍA DE ONBOARDING */}
-          <div className='rounded-2xl border border-border-subtle bg-gradient-to-br from-[#121228] to-[#1a1a3b] p-2.5 space-y-1 relative overflow-hidden shadow-md border-l-[3.5px] border-l-[#7C5CFC] text-left flex-shrink-0'>
-            <div className='absolute top-0 right-0 p-2 text-2xl opacity-10 pointer-events-none'>🧬</div>
-            <h3 className='text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5'>
-              <span>ℹ️</span> Identidad de Marca
-            </h3>
-            <p className='text-[10.5px] text-text-muted leading-relaxed'>
-              Conecta los canales oficiales y sube manuales o capturas. Al pulsar <strong>Analizar</strong>, la IA asimilará el material y consolidará tu perfil de marca en la Casilla Única.
-            </p>
-          </div>
-
           {/* SOCIAL NETWORK GRID CHANNELS */}
           <SocialDock
             formData={formData}
