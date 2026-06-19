@@ -153,7 +153,7 @@ export const SocialDock = ({ formData = {}, onChange, isAnalyzing }) => {
   const renderedPlatforms = socialPlatforms.filter(p => visiblePlatforms.includes(p.id));
 
   return (
-    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-3.5 shadow-md relative overflow-hidden flex-shrink-0 text-left'>
+    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-3.5 shadow-md relative overflow-visible flex-shrink-0 text-left'>
       <div className='flex items-center justify-between'>
         <h3 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
           <span>🔌</span> Canales de Marca

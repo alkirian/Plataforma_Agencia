@@ -482,7 +482,7 @@ export const StrategicCanvas = ({
   };
 
   return (
-    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-2.5 shadow-md relative overflow-hidden flex flex-col flex-1 min-h-0 h-full'>
+    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-2.5 shadow-md relative overflow-visible flex flex-col flex-1 min-h-0 h-full'>
       <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-lavender via-accent-sage to-accent-sand' />
 
       {/* WORKSPACE HEADER */}
@@ -512,8 +512,8 @@ export const StrategicCanvas = ({
       </div>
 
       {/* WORKSPACE CONTENT AREA */}
-      <div className='flex-1 flex flex-col min-h-0 relative overflow-hidden'>
-        <div className='flex-1 flex flex-col space-y-2.5 min-h-0 h-full overflow-hidden'>
+      <div className='flex-1 flex flex-col min-h-0 relative overflow-visible'>
+        <div className='flex-1 flex flex-col space-y-2.5 min-h-0 h-full overflow-visible'>
           {/* Aesthetic DNA palette row */}
           <ColorPaletteWidget
             colorPalette={formData.color_palette || []}

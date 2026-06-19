@@ -120,7 +120,7 @@ export const BrandIdentitySection = ({ clientId }) => {
         </div>
 
         {/* ================= COLUMNA DERECHA: LIENZO ESTRATÉGICO Y ALERTAS (7/12) ================= */}
-        <div className='lg:col-span-7 space-y-2 h-full flex flex-col justify-start overflow-hidden'>
+        <div className='lg:col-span-7 space-y-2 h-full flex flex-col justify-start overflow-visible'>
           <StrategicCanvas
             formData={formData}
             onChange={handleChange}
