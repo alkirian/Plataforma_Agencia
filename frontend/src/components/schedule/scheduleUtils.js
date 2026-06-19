@@ -50,3 +50,18 @@ export const normalizePlatform = channel => {
   if (c === 'LI' || c.includes('LINKEDIN')) return 'LinkedIn';
   return 'Instagram';
 };
+
+/**
+ * Infiere el formato sugerido de publicación basado en los tipos de archivos cargados
+ * @param {FileList|Array} files 
+ * @returns {string}
+ */
+export const inferFormatFromFiles = files => {
+  if (!files?.length) return 'Post';
+  if (files.length > 1) return 'Carrusel';
+  const type = files[0]?.type || '';
+  if (type.startsWith('video/')) return 'Video';
+  if (type.startsWith('image/')) return 'Imagen';
+  return 'Post';
+};
+
