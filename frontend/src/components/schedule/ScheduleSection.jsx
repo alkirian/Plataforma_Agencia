@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SparklesIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { ShareApprovalModal } from './ShareApprovalModal';
 import { getCurrentDate } from '../../utils/dateHelpers';
 import QuickTaskPopover from './QuickTaskPopover';
 
@@ -10,13 +9,16 @@ import QuickTaskPopover from './QuickTaskPopover';
 import FullCalendarWrapper from './FullCalendarWrapper';
 import { useCalendarEvents } from '../../hooks/useCalendarEvents';
 
-// Componentes existentes
-import { AIContentGenerator } from './AIContentGenerator';
-import { ScheduleImportModal } from './ScheduleImportModal';
-import { AgentChatPanel } from '../ui';
-import { aiGenerationManager } from '../../utils/aiGenerationManager';
+// Componentes estáticos y utilidades
 import { DeliverableGallery } from '../documents/DeliverableGallery';
-import { EventModal } from './EventModal';
+
+// Componentes pesados cargados perezosamente (Lazy Loading)
+const ShareApprovalModal = React.lazy(() => import('./ShareApprovalModal').then(module => ({ default: module.ShareApprovalModal })));
+const AIContentGenerator = React.lazy(() => import('./AIContentGenerator').then(module => ({ default: module.AIContentGenerator })));
+const ScheduleImportModal = React.lazy(() => import('./ScheduleImportModal').then(module => ({ default: module.ScheduleImportModal })));
+const EventModal = React.lazy(() => import('./EventModal').then(module => ({ default: module.EventModal })));
+const AgentChatPanel = React.lazy(() => import('../ui').then(module => ({ default: module.AgentChatPanel })));
+const ExportModal = React.lazy(() => import('./ExportModal').then(module => ({ default: module.ExportModal })));
 
 // Utilidades centralizadas
 import { inferFormatFromFiles } from './scheduleUtils';
@@ -26,6 +28,7 @@ import '../../styles/fullcalendar-custom.css';
 import { getClientById } from '../../api/clients';
 import { uploadScheduleAsset } from '../../api/schedule';
 import { useAuth } from '../../hooks/useAuth';
+import { useLanguage } from '../../hooks';
 
 
 /**
@@ -34,6 +37,7 @@ import { useAuth } from '../../hooks/useAuth';
  */
 export const ScheduleSection = ({ clientId }) => {
   const { profile } = useAuth();
+  const { lang, t } = useLanguage();
   const isReadOnly = profile?.role === 'client';
 
   // Estados del componente
@@ -48,22 +52,8 @@ export const ScheduleSection = ({ clientId }) => {
   const [isDeliverablesOpen, setIsDeliverablesOpen] = useState(false);
   const [isCalendarDragOver, setIsCalendarDragOver] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [modalInitialDate, setModalInitialDate] = useState(null);
-
-  const [isAiGenerating, setIsAiGenerating] = useState(() => aiGenerationManager.isGenerating(clientId));
-  const [aiIdeasCount, setAiIdeasCount] = useState(() => aiGenerationManager.getIdeas(clientId).length);
-
-  useEffect(() => {
-    setIsAiGenerating(aiGenerationManager.isGenerating(clientId));
-    setAiIdeasCount(aiGenerationManager.getIdeas(clientId).length);
-
-    const unsubscribe = aiGenerationManager.subscribe(() => {
-      setIsAiGenerating(aiGenerationManager.isGenerating(clientId));
-      setAiIdeasCount(aiGenerationManager.getIdeas(clientId).length);
-    });
-
-    return unsubscribe;
-  }, [clientId]);
 
   // Estados para el nuevo popover
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
@@ -89,7 +79,7 @@ export const ScheduleSection = ({ clientId }) => {
   }, [events]);
 
   // Calcular estadísticas basadas en eventos visibles del calendario (simplificado a los 3 estados principales)
-  const calculateVisibleStats = () => {
+  const visibleStats = useMemo(() => {
     const total = events.length;
     const byStatus = {
       'en-diseño': 0,
@@ -126,9 +116,7 @@ export const ScheduleSection = ({ clientId }) => {
       total,
       byStatus,
     };
-  };
-
-  const visibleStats = calculateVisibleStats();
+  }, [events]);
 
   // Cargar datos iniciales - memoizar loadInitialData
   const loadInitialData = useCallback(async () => {
@@ -138,9 +126,9 @@ export const ScheduleSection = ({ clientId }) => {
         setClient(clientResponse.data);
       }
     } catch (err) {
-      toast.error('Error al cargar datos del cliente');
+      toast.error(lang === 'es' ? 'Error al cargar datos del cliente' : 'Error loading client data');
     }
-  }, [clientId, loadEvents]);
+  }, [clientId, loadEvents, lang]);
 
   useEffect(() => {
     loadInitialData();
@@ -201,7 +189,7 @@ export const ScheduleSection = ({ clientId }) => {
   const handleClearMonthSchedule = useCallback(async () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const monthsNames = [
+    const monthsNames = lang === 'es' ? [
       'Enero',
       'Febrero',
       'Marzo',
@@ -214,8 +202,21 @@ export const ScheduleSection = ({ clientId }) => {
       'Octubre',
       'Noviembre',
       'Diciembre',
+    ] : [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    const monthLabel = `${monthsNames[month]} de ${year}`;
+    const monthLabel = lang === 'es' ? `${monthsNames[month]} de ${year}` : `${monthsNames[month]} ${year}`;
 
     // Contar cuántos eventos hay en este mes actualmente en local
     const eventsInMonth = events.filter(event => {
@@ -224,11 +225,17 @@ export const ScheduleSection = ({ clientId }) => {
     });
 
     if (eventsInMonth.length === 0) {
-      toast.error('No hay eventos programados en este mes para limpiar.');
+      toast.error(
+        lang === 'es'
+          ? 'No hay eventos programados en este mes para limpiar.'
+          : 'No scheduled events found in this month to clear.'
+      );
       return;
     }
 
-    const confirmMessage = `¿Estás seguro de que deseas eliminar todas las ${eventsInMonth.length} tareas programadas para ${monthLabel}? Esta acción no se puede deshacer y borrará también los archivos multimedia asociados.`;
+    const confirmMessage = lang === 'es'
+      ? `¿Estás seguro de que deseas eliminar todas las ${eventsInMonth.length} tareas programadas para ${monthLabel}? Esta acción no se puede deshacer y borrará también los archivos multimedia asociados.`
+      : `Are you sure you want to delete all ${eventsInMonth.length} scheduled tasks for ${monthLabel}? This action cannot be undone and will also delete associated media files.`;
 
     if (window.confirm(confirmMessage)) {
       try {
@@ -237,14 +244,20 @@ export const ScheduleSection = ({ clientId }) => {
         // El error ya es manejado por el hook
       }
     }
-  }, [currentDate, events, clearMonthEvents]);
+  }, [currentDate, events, clearMonthEvents, lang]);
 
   const handleClearAllSchedule = useCallback(async () => {
     if (events.length === 0) {
-      toast.error('No hay eventos en el cronograma para eliminar.');
+      toast.error(
+        lang === 'es'
+          ? 'No hay eventos en el cronograma para eliminar.'
+          : 'No events in schedule to delete.'
+      );
       return;
     }
-    const confirmMessage = `¿Estás seguro de que deseas eliminar TODOS los ${events.length} eventos del cronograma? Esta acción no se puede deshacer.`;
+    const confirmMessage = lang === 'es'
+      ? `¿Estás seguro de que deseas eliminar TODOS los ${events.length} eventos del cronograma? Esta acción no se puede deshacer.`
+      : `Are you sure you want to delete ALL ${events.length} events from the schedule? This action cannot be undone.`;
     if (window.confirm(confirmMessage)) {
       try {
         await clearAllEvents();
@@ -252,7 +265,7 @@ export const ScheduleSection = ({ clientId }) => {
         // El error ya es manejado por el hook
       }
     }
-  }, [events, clearAllEvents]);
+  }, [events, clearAllEvents, lang]);
 
   // Sincronizar vista del calendario con el Header principal
   useEffect(() => {
@@ -283,6 +296,8 @@ export const ScheduleSection = ({ clientId }) => {
         setIsImportOpen(true);
       } else if (action === 'share') {
         setIsShareModalOpen(true);
+      } else if (action === 'export') {
+        setIsExportModalOpen(true);
       } else if (action === 'clear') {
         handleClearAllSchedule();
       } else if (action === 'ai-gen') {
@@ -330,7 +345,7 @@ export const ScheduleSection = ({ clientId }) => {
       const maxSizeBytes = 250 * 1024 * 1024;
       const oversized = files.find(file => file.size > maxSizeBytes);
       if (oversized) {
-        toast.error(`${oversized.name} supera 250MB.`);
+        toast.error(lang === 'es' ? `${oversized.name} supera 250MB.` : `${oversized.name} exceeds 250MB.`);
         return;
       }
 
@@ -352,7 +367,7 @@ export const ScheduleSection = ({ clientId }) => {
           channel: 'IG',
           status: 'en-diseño',
           scheduled_at: dropDate.toISOString(),
-          description: `Formato: ${format}\nArchivos: ${files.length}`,
+          description: lang === 'es' ? `Formato: ${format}\nArchivos: ${files.length}` : `Format: ${format}\nFiles: ${files.length}`,
         });
 
         for (let i = 0; i < files.length; i++) {
@@ -375,13 +390,15 @@ export const ScheduleSection = ({ clientId }) => {
         setSelectedEvent(eventLike);
         setIsModalOpen(true);
         toast.success(
-          `Contenido anclado al calendario (${files.length} archivo${files.length > 1 ? 's' : ''}).`
+          lang === 'es'
+            ? `Contenido anclado al calendario (${files.length} archivo${files.length > 1 ? 's' : ''}).`
+            : `Content anchored to calendar (${files.length} file${files.length > 1 ? 's' : ''}).`
         );
       } catch (error) {
-        toast.error(error.message || 'No se pudo anclar el contenido al calendario.');
+        toast.error(error.message || (lang === 'es' ? 'No se pudo anclar el contenido al calendario.' : 'Could not anchor content to calendar.'));
       }
     },
-    [clientId, createEvent, currentDate]
+    [clientId, createEvent, currentDate, lang]
   );
 
   // Handler para crear tareas desde el QuickTaskPopover
@@ -389,16 +406,16 @@ export const ScheduleSection = ({ clientId }) => {
     async taskData => {
       try {
         await createEvent(taskData);
-        toast.success('Tarea creada exitosamente');
+        toast.success(lang === 'es' ? 'Tarea creada exitosamente' : 'Task created successfully');
         setIsQuickTaskOpen(false);
         setQuickTaskDate(null);
         setClickCoords(null);
       } catch (error) {
-        toast.error('Error al crear la tarea');
+        toast.error(lang === 'es' ? 'Error al crear la tarea' : 'Error creating task');
         throw error;
       }
     },
-    [createEvent]
+    [createEvent, lang]
   );
 
   // Handler para cerrar el QuickTaskPopover
@@ -424,9 +441,9 @@ export const ScheduleSection = ({ clientId }) => {
                 prompt:
                   imagePrompt ||
                   [
-                    `Imagen para el post "${eventData.title}".`,
+                    lang === 'es' ? `Imagen para el post "${eventData.title}".` : `Image for the post "${eventData.title}".`,
                     eventData.description || eventData.copy || '',
-                    `Canal: ${eventData.channel || 'IG'}.`,
+                    lang === 'es' ? `Canal: ${eventData.channel || 'IG'}.` : `Channel: ${eventData.channel || 'IG'}.`,
                   ]
                     .filter(Boolean)
                     .join(' '),
@@ -442,22 +459,28 @@ export const ScheduleSection = ({ clientId }) => {
           }
         }
 
-        const imageMessage = generatedImages
-          ? ` y ${generatedImages} imagen${generatedImages > 1 ? 'es' : ''} generada${generatedImages > 1 ? 's' : ''}`
-          : '';
-        toast.success(`${items.length} piezas creadas en el calendario${imageMessage}`);
+        const imageMessage = lang === 'es'
+          ? (generatedImages ? ` y ${generatedImages} imagen${generatedImages > 1 ? 'es' : ''} generada${generatedImages > 1 ? 's' : ''}` : '')
+          : (generatedImages ? ` and ${generatedImages} image${generatedImages > 1 ? 's' : ''} generated` : '');
+        toast.success(
+          lang === 'es'
+            ? `${items.length} piezas creadas en el calendario${imageMessage}`
+            : `${items.length} items created in the calendar${imageMessage}`
+        );
 
         if (failedImages) {
           toast.error(
-            `${failedImages} imagen${failedImages > 1 ? 'es' : ''} no se pudieron generar.`
+            lang === 'es'
+              ? `${failedImages} imagen${failedImages > 1 ? 'es' : ''} no se pudieron generar.`
+              : `${failedImages} image${failedImages > 1 ? 's' : ''} could not be generated.`
           );
         }
       } catch (error) {
-        toast.error('No se pudieron crear todas las piezas');
+        toast.error(lang === 'es' ? 'No se pudieron crear todas las piezas' : 'Could not create all items');
         throw error;
       }
     },
-    [clientId, createEvent]
+    [clientId, createEvent, lang]
   );
 
   const handleImportRows = useCallback(
@@ -494,8 +517,19 @@ export const ScheduleSection = ({ clientId }) => {
     );
   }
 
+  if (!client || (loading && events.length === 0)) {
+    return (
+      <div className='w-full h-full flex flex-col items-center justify-center min-h-[400px] gap-3 select-none'>
+        <div className='w-8 h-8 border-2 border-slate-300 border-t-slate-800 dark:border-white/10 dark:border-t-white rounded-full animate-spin'></div>
+        <span className='text-xs text-text-muted font-medium'>
+          {lang === 'es' ? 'Cargando cronograma...' : 'Loading schedule...'}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className='calendar-container h-full'>
+    <div className='calendar-container h-full relative'>
       {/* Header rediseñado con mejor jerarquía sólida */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -582,14 +616,6 @@ export const ScheduleSection = ({ clientId }) => {
             >
               <SparklesIcon className={`w-5 h-5 ${isChatOpen ? 'text-white' : 'text-purple-400'}`} />
               <span>Copiloto Aura</span>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setIsAIGeneratorOpen(true)}
-              className='px-6 py-3 bg-surface-soft hover:bg-white/10 text-text-primary font-semibold rounded-xl border border-white/10 transition-colors duration-200'
-            >
-              Generar con IA
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -776,10 +802,12 @@ export const ScheduleSection = ({ clientId }) => {
 
                 <div className='space-y-1.5'>
                   <h3 className='text-lg font-extrabold text-text-primary tracking-wide uppercase font-sans'>
-                    ¡Suelta tus archivos aquí!
+                    {lang === 'es' ? '¡Suelta tus archivos aquí!' : 'Drop your files here!'}
                   </h3>
                   <p className='text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto'>
-                    Las imágenes o videos se anclarán y previsualizarán de forma automática en este día del calendario.
+                    {lang === 'es'
+                      ? 'Las imágenes o videos se anclarán y previsualizarán de forma automática en este día del calendario.'
+                      : 'Images or videos will be anchored and previewed automatically on this calendar day.'}
                   </p>
                 </div>
               </motion.div>
@@ -801,59 +829,29 @@ export const ScheduleSection = ({ clientId }) => {
             className='flex-1 min-h-0'
             clientName={client?.name || ''}
             isChatOpen={isChatOpen}
+            readOnly={isReadOnly}
           />
         </div>
       </motion.div>
 
       {/* Modales */}
-      <EventModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedEvent(null);
-        }}
-        selectedEvent={selectedEvent}
-        clientId={clientId}
-        isReadOnly={isReadOnly}
-        createEvent={createEvent}
-        updateEvent={updateEvent}
-        deleteEvent={deleteEvent}
-        loadEvents={loadEvents}
-        initialDate={modalInitialDate}
-      />
-
-      {/* Botón flotante para Generar con IA premium - Emerald style */}
-      <motion.button
-        initial={{ scale: 0, y: 50 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.4 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsAIGeneratorOpen(true)}
-        className='fixed bottom-20 md:bottom-8 right-6 z-40 h-12 rounded-full px-5 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-500/30 text-emerald-300 hover:border-emerald-400 hover:text-white shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 font-semibold text-sm hover:from-emerald-500/25 hover:via-teal-500/25 hover:to-cyan-500/25 relative'
-        style={{
-          boxShadow: '0 8px 32px rgba(16, 185, 129, 0.15)',
-        }}
-        title='Generar cronograma completo con IA'
-      >
-        {isAiGenerating ? (
-          <>
-            <div className='w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0' />
-            <span>Generando...</span>
-          </>
-        ) : (
-          <>
-            <SparklesIcon className='h-5 w-5 animate-pulse text-emerald-400 shrink-0' />
-            <span>Generar IA</span>
-          </>
-        )}
-
-        {aiIdeasCount > 0 && !isAiGenerating && (
-          <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse">
-            {aiIdeasCount}
-          </span>
-        )}
-      </motion.button>
+      <React.Suspense fallback={null}>
+        <EventModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEvent(null);
+          }}
+          selectedEvent={selectedEvent}
+          clientId={clientId}
+          isReadOnly={isReadOnly}
+          createEvent={createEvent}
+          updateEvent={updateEvent}
+          deleteEvent={deleteEvent}
+          loadEvents={loadEvents}
+          initialDate={modalInitialDate}
+        />
+      </React.Suspense>
 
       {/* QuickTaskPopover - Nuevo sistema de creación de tareas */}
       <QuickTaskPopover
@@ -865,28 +863,37 @@ export const ScheduleSection = ({ clientId }) => {
         onCreateTask={handleCreateQuickTask}
       />
 
-      <AIContentGenerator
-        isOpen={isAIGeneratorOpen}
-        onClose={() => setIsAIGeneratorOpen(false)}
-        clientId={clientId}
-        currentDate={currentDate}
-        existingEvents={events}
-        onCreateItems={handleCreateAIItems}
-        clientName={client?.name}
-      />
+      <React.Suspense fallback={null}>
+        <AIContentGenerator
+          isOpen={isAIGeneratorOpen}
+          onClose={() => setIsAIGeneratorOpen(false)}
+          clientId={clientId}
+          currentDate={currentDate}
+          existingEvents={events}
+          onCreateItems={handleCreateAIItems}
+          clientName={client?.name}
+        />
 
-      <ScheduleImportModal
-        isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
-        onImport={handleImportRows}
-      />
+        <ScheduleImportModal
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImport={handleImportRows}
+        />
 
-      <ShareApprovalModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        clientId={clientId}
-        clientName={client?.name || ''}
-      />
+        <ShareApprovalModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          clientId={clientId}
+          clientName={client?.name || ''}
+        />
+
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          events={events}
+          clientName={client?.name || ''}
+        />
+      </React.Suspense>
 
       {/* Notificación flotante de Ajustes del Cliente */}
       <AnimatePresence>
@@ -896,26 +903,32 @@ export const ScheduleSection = ({ clientId }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className='fixed bottom-6 left-6 z-50 max-w-sm rounded-2xl border border-[#fe0979]/30 bg-[#161517]/95 p-4 shadow-[0_8px_32px_rgba(254,9,121,0.2)] backdrop-blur-md flex items-start gap-3.5'
+            className='absolute bottom-6 left-6 z-50 max-w-sm rounded-2xl border border-[#fe0979]/30 bg-[#161517]/95 p-4 shadow-[0_8px_32px_rgba(254,9,121,0.2)] backdrop-blur-md flex items-start gap-3.5'
           >
             <div className='flex-shrink-0 w-8 h-8 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center text-[#fe0979] animate-pulse'>
               💬
             </div>
             <div className='flex-1 min-w-0'>
               <h4 className='text-xs font-bold text-white uppercase tracking-wider'>
-                Ajustes Solicitados
+                {lang === 'es' ? 'Ajustes Solicitados' : 'Requested Adjustments'}
               </h4>
               <p className='text-xs text-gray-300 mt-1 leading-relaxed font-sans'>
-                El cliente ha solicitado {feedbackEventsCount} ajuste{feedbackEventsCount > 1 ? 's' : ''} en las publicaciones de este mes.
+                {lang === 'es'
+                  ? `El cliente ha solicitado ${feedbackEventsCount} ajuste${feedbackEventsCount > 1 ? 's' : ''} en las publicaciones de este mes.`
+                  : `The client has requested ${feedbackEventsCount} adjustment${feedbackEventsCount > 1 ? 's' : ''} on this month's publications.`}
               </p>
             </div>
             <button
               onClick={() => {
-                toast.success('Los ajustes están destacados con la etiqueta "Ajuste Solicitado" en rojo.');
+                toast.success(
+                  lang === 'es'
+                    ? 'Los ajustes están destacados con la etiqueta "Ajuste Solicitado" en rojo.'
+                    : 'Adjustments are highlighted with a red "Requested Adjustment" badge.'
+                );
               }}
               className='text-[10px] font-bold text-[#fe0979] hover:underline self-center px-1 py-0.5'
             >
-              Ver
+              {lang === 'es' ? 'Ver' : 'View'}
             </button>
           </motion.div>
         )}
@@ -924,12 +937,14 @@ export const ScheduleSection = ({ clientId }) => {
       {/* Copiloto Aura Chat Panel */}
       <AnimatePresence>
         {isChatOpen && (
-          <AgentChatPanel
-            clientId={clientId}
-            agent={{ id: 'schedule' }}
-            onClose={() => setIsChatOpen(false)}
-            client={client}
-          />
+          <React.Suspense fallback={null}>
+            <AgentChatPanel
+              clientId={clientId}
+              agent={{ id: 'schedule' }}
+              onClose={() => setIsChatOpen(false)}
+              client={client}
+            />
+          </React.Suspense>
         )}
       </AnimatePresence>
 
@@ -958,7 +973,7 @@ export const ScheduleSection = ({ clientId }) => {
                 <div className='flex items-center space-x-2 text-primary-400'>
                   <PhotoIcon className='h-5 w-5 text-blue-400' />
                   <h3 className='font-bold text-text-primary text-base'>
-                    Galería de Entregables y Multimedia
+                    {lang === 'es' ? 'Galería de Entregables y Multimedia' : 'Deliverables & Media Gallery'}
                   </h3>
                 </div>
                 <button

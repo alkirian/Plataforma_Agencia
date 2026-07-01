@@ -75,9 +75,30 @@ export const deleteClient = clientId => {
   });
 };
 
+export const getTrashClients = () => {
+  return apiFetch('/clients/trash');
+};
+
+export const restoreClient = clientId => {
+  return apiFetch(`/clients/${clientId}/restore`, {
+    method: 'POST',
+  });
+};
+
 export const analyzeBrandConsistency = (clientId, currentProfile, sourceLinks) => {
   return apiFetch(`/clients/${clientId}/brand-profile/analyze-consistency`, {
     method: 'POST',
     body: JSON.stringify({ currentProfile, sourceLinks }),
+  });
+};
+
+export const getBrandDnaChatHistory = (clientId) => {
+  return apiFetch(`/clients/${clientId}/brand-profile/chat-history`);
+};
+
+export const updateBrandProfileWithChat = (clientId, payload) => {
+  return apiFetch(`/clients/${clientId}/brand-profile/chat-update`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 };

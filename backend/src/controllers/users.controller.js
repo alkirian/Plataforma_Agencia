@@ -37,7 +37,7 @@ export const registerUser = async (req, res, next) => {
 export const handleCompleteProfile = async (req, res, next) => {
   try {
     const userId = req.user.id; // Obtenemos el ID del usuario desde el middleware
-    const { fullName, agencyName, inviteCode, agencyType } = req.body;
+    const { fullName, agencyName, inviteCode, agencyType, selectedRole } = req.body;
 
     if (!fullName) {
       return res.status(400).json({ success: false, message: 'El nombre completo es requerido.' });
@@ -48,7 +48,8 @@ export const handleCompleteProfile = async (req, res, next) => {
       fullName, 
       agencyName, 
       inviteCode, 
-      agencyType: agencyType || 'agency' 
+      agencyType: agencyType || 'agency',
+      selectedRole
     });
 
     res.status(201).json({

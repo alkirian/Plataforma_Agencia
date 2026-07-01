@@ -18,6 +18,7 @@ export const handleRunTrends = async (req, res, next) => {
     const { data: profile, error: profileErr } = await supabaseAuth
       .from('profiles')
       .select('agency_id')
+      .eq('id', req.user.id)
       .single();
 
     if (profileErr || !profile?.agency_id) {
@@ -45,7 +46,7 @@ export const handleRunTrends = async (req, res, next) => {
 
 /**
  * POST /api/v1/trends/run/:clientId
- * Dispara el análisis para un cliente específico.
+ * Dispara el análisis para un cliente específico de forma síncrona.
  */
 export const handleRunTrendsForClient = async (req, res, next) => {
   try {
@@ -65,18 +66,13 @@ export const handleRunTrendsForClient = async (req, res, next) => {
 
     const { customKeywords } = req.body || {};
 
-    // También async para no bloquear
-    runTrendsForClient(client, customKeywords, true)
-      .then(report => {
-        console.log(`[trends] Reporte generado para cliente ${clientId}:`, report?.id);
-      })
-      .catch(err => {
-        console.error(`[trends] Error generando reporte para ${clientId}:`, err.message);
-      });
+    // Ejecutar síncronamente esperando la respuesta para retornarla de inmediato
+    const report = await runTrendsForClient(client, customKeywords, true);
 
-    return res.status(202).json({
+    return res.status(200).json({
       success: true,
-      message: `Análisis de tendencias iniciado para ${client.name}. Los resultados estarán disponibles en unos momentos.`,
+      message: `Análisis de tendencias completado con éxito para ${client.name}.`,
+      data: report
     });
   } catch (error) {
     next(error);
@@ -93,7 +89,7 @@ export const handleGetTrendReports = async (req, res, next) => {
     const { clientId } = req.params;
     const limit = Math.max(1, Math.min(30, Number(req.query.limit) || 7));
 
-    const reports = await getTrendReports({ clientId, limit, token });
+    const reports = await getTrendReports({ clientId, limit, token, userId: req.user.id });
     return res.status(200).json({ success: true, data: reports });
   } catch (error) {
     next(error);
@@ -107,7 +103,7 @@ export const handleGetTrendReports = async (req, res, next) => {
 export const handleGetLatestTrendReports = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    const reports = await getLatestTrendReports({ token });
+    const reports = await getLatestTrendReports({ token, userId: req.user.id });
     return res.status(200).json({ success: true, data: reports });
   } catch (error) {
     next(error);

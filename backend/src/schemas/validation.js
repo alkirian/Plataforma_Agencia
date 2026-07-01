@@ -10,7 +10,10 @@ export const clientSchema = z.object({
     .max(50, 'La industria no puede exceder 50 caracteres')
     .optional()
     .nullable()
-    .default(null)
+    .default(null),
+  logo_url: z.string()
+    .optional()
+    .nullable()
 });
 
 export const scheduleItemSchema = z.object({
@@ -27,7 +30,13 @@ export const scheduleItemSchema = z.object({
     .optional()
     .nullable(),
   scheduled_at: z.string()
-    .datetime('Fecha y hora deben estar en formato ISO 8601'),
+    .transform(val => {
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(val);
+      const dateToParse = isDateOnly ? `${val}T12:00:00Z` : val;
+      const dt = new Date(dateToParse);
+      return isNaN(dt.getTime()) ? val : dt.toISOString();
+    })
+    .pipe(z.string().datetime('Fecha y hora deben estar en formato ISO 8601')),
   status: z.enum(['pendiente', 'en-diseño', 'en-progreso', 'aprobado', 'publicado', 'cancelado', 'Pendiente', 'En Diseño', 'En Progreso', 'Aprobado', 'Publicado', 'Cancelado'])
     .default('pendiente'),
   priority: z.enum(['baja', 'media', 'alta', 'urgente', 'low', 'medium', 'high', 'Baja', 'Media', 'Alta', 'Urgente'])

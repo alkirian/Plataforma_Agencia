@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { ArrowUpTrayIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
 import toast from 'react-hot-toast';
+import { useLanguage, useEscapeClose } from '../../hooks';
 import { getCurrentDate } from '../../utils/dateHelpers';
 import { toDateInputValue, normalizeFormat, normalizePlatform, inferFormatFromFiles } from './scheduleUtils';
 import {
@@ -27,6 +28,8 @@ export const EventModal = ({
   loadEvents,
   initialDate,
 }) => {
+  useEscapeClose(isOpen, onClose);
+  const { lang, t } = useLanguage();
   // Estados locales del formulario
   const [formData, setFormData] = useState({
     title: '',
@@ -173,13 +176,13 @@ export const EventModal = ({
       const maxSizeBytes = 250 * 1024 * 1024;
       const oversized = files.find(file => file.size > maxSizeBytes);
       if (oversized) {
-        toast.error(`${oversized.name} supera los 250MB.`);
+        toast.error(lang === 'es' ? `${oversized.name} supera los 250MB.` : `${oversized.name} exceeds 250MB.`);
         return;
       }
 
       if (selectedEvent?.id) {
         // Post existente: subir de inmediato
-        const uploadToast = toast.loading('Subiendo archivo multimedia...');
+        const uploadToast = toast.loading(lang === 'es' ? 'Subiendo archivo multimedia...' : 'Uploading media file...');
         try {
           for (let i = 0; i < files.length; i++) {
             const newAsset = await uploadScheduleAsset(clientId, selectedEvent.id, files[i], {
@@ -190,11 +193,11 @@ export const EventModal = ({
             newAsset.preview_url = localUrl;
             setEventAssets(prev => [...prev, newAsset]);
           }
-          toast.success('Archivo subido con éxito.', { id: uploadToast });
+          toast.success(lang === 'es' ? 'Archivo subido con éxito.' : 'File uploaded successfully.', { id: uploadToast });
           const updatedAssets = await getScheduleItemAssetsWithPreview(clientId, selectedEvent.id);
           setEventAssets(updatedAssets);
         } catch (err) {
-          toast.error(err.message || 'Error al subir archivo.', { id: uploadToast });
+          toast.error(err.message || (lang === 'es' ? 'Error al subir archivo.' : 'Error uploading file.'), { id: uploadToast });
         }
       } else {
         // Nuevo post: guardar en pendingFiles temporalmente
@@ -207,10 +210,14 @@ export const EventModal = ({
           preview_url: URL.createObjectURL(file),
         }));
         setPendingFiles(prev => [...prev, ...filesWithPreview]);
-        toast.success(`${files.length} archivo(s) agregado(s).`);
+        toast.success(
+          lang === 'es'
+            ? `${files.length} archivo(s) agregado(s).`
+            : `${files.length} file(s) added.`
+        );
       }
     },
-    [clientId, selectedEvent, eventAssets]
+    [clientId, selectedEvent, eventAssets, lang]
   );
 
   const handleModalDrop = useCallback(
@@ -231,21 +238,21 @@ export const EventModal = ({
         if (assetToRemove.preview_url && assetToRemove.preview_url.startsWith('blob:')) {
           URL.revokeObjectURL(assetToRemove.preview_url);
         }
-        toast.success('Archivo removido.');
+        toast.success(lang === 'es' ? 'Archivo removido.' : 'File removed.');
       } else {
-        if (window.confirm('¿Estás seguro de que deseas eliminar este archivo de forma permanente?')) {
-          const deleteToast = toast.loading('Eliminando archivo...');
+        if (window.confirm(lang === 'es' ? '¿Estás seguro de que deseas eliminar este archivo de forma permanente?' : 'Are you sure you want to permanently delete this file?')) {
+          const deleteToast = toast.loading(lang === 'es' ? 'Eliminando archivo...' : 'Deleting file...');
           try {
             await deleteScheduleItemAsset(clientId, assetToRemove.id);
             setEventAssets(prev => prev.filter(a => a.id !== assetToRemove.id));
-            toast.success('Archivo eliminado.', { id: deleteToast });
+            toast.success(lang === 'es' ? 'Archivo eliminado.' : 'File deleted.', { id: deleteToast });
           } catch (err) {
-            toast.error(err.message || 'Error al eliminar archivo.', { id: deleteToast });
+            toast.error(err.message || (lang === 'es' ? 'Error al eliminar archivo.' : 'Error deleting file.'), { id: deleteToast });
           }
         }
       }
     },
-    [clientId]
+    [clientId, lang]
   );
 
   // Handler para guardar / actualizar
@@ -254,7 +261,7 @@ export const EventModal = ({
       e.preventDefault();
       try {
         if (!formData.title || !formData.date) {
-          toast.error('Completa título y fecha');
+          toast.error(lang === 'es' ? 'Completa título y fecha' : 'Complete title and date');
           return;
         }
 
@@ -275,11 +282,11 @@ export const EventModal = ({
 
         if (selectedEvent?.id) {
           await updateEvent(selectedEvent.id, eventData);
-          toast.success('Evento actualizado');
+          toast.success(lang === 'es' ? 'Evento actualizado' : 'Event updated');
         } else {
           const created = await createEvent(eventData);
           if (pendingFiles.length > 0) {
-            const uploadToast = toast.loading('Subiendo archivos al nuevo post...');
+            const uploadToast = toast.loading(lang === 'es' ? 'Subiendo archivos al nuevo post...' : 'Uploading files to new post...');
             try {
               for (let i = 0; i < pendingFiles.length; i++) {
                 await uploadScheduleAsset(clientId, created.id, pendingFiles[i].file, {
@@ -287,9 +294,9 @@ export const EventModal = ({
                   sort_order: i,
                 });
               }
-              toast.success('¡Archivos asociados al nuevo post con éxito!', { id: uploadToast });
+              toast.success(lang === 'es' ? '¡Archivos asociados al nuevo post con éxito!' : 'Files associated with the new post successfully!', { id: uploadToast });
             } catch (_uploadErr) {
-              toast.error('Post creado, pero no se pudieron cargar todos los archivos.', {
+              toast.error(lang === 'es' ? 'Post creado, pero no se pudieron cargar todos los archivos.' : 'Post created, but not all files could be uploaded.', {
                 id: uploadToast,
               });
             }
@@ -308,7 +315,7 @@ export const EventModal = ({
     async itemId => {
       if (!itemId) return;
       setIsPublishing(true);
-      const publishToast = toast.loading('Publicando en redes sociales...');
+      const publishToast = toast.loading(lang === 'es' ? 'Publicando en redes sociales...' : 'Publishing on social media...');
       try {
         // Guardar cambios locales primero antes de publicar
         const timeVal = formData.time || '09:00';
@@ -329,25 +336,25 @@ export const EventModal = ({
 
         const res = await publishScheduleItem(clientId, itemId);
         if (res?.success) {
-          toast.success(res.message || '¡Publicado con éxito en las redes sociales!', { id: publishToast });
+          toast.success(res.message || (lang === 'es' ? '¡Publicado con éxito en las redes sociales!' : 'Published successfully on social media!'), { id: publishToast });
           await loadEvents();
           onClose();
         } else {
-          throw new Error(res?.message || 'Error al publicar.');
+          throw new Error(res?.message || (lang === 'es' ? 'Error al publicar.' : 'Error publishing.'));
         }
       } catch (err) {
         console.error(err);
-        toast.error(err.message || 'Error al publicar en redes sociales.', { id: publishToast, duration: 6000 });
+        toast.error(err.message || (lang === 'es' ? 'Error al publicar en redes sociales.' : 'Error publishing on social media.'), { id: publishToast, duration: 6000 });
       } finally {
         setIsPublishing(false);
       }
     },
-    [clientId, loadEvents, formData, updateEvent, onClose]
+    [clientId, loadEvents, formData, updateEvent, onClose, lang]
   );
 
   // Handler para eliminar evento
   const handleDeleteEvent = useCallback(async () => {
-    if (selectedEvent && window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+    if (selectedEvent && window.confirm(lang === 'es' ? '¿Estás seguro de que quieres eliminar este evento?' : 'Are you sure you want to delete this event?')) {
       try {
         await deleteEvent(selectedEvent.id);
         onClose();
@@ -355,19 +362,19 @@ export const EventModal = ({
         // El hook correspondiente maneja el error
       }
     }
-  }, [selectedEvent, deleteEvent, onClose]);
+  }, [selectedEvent, deleteEvent, onClose, lang]);
 
   // Generar idea contextual para esta fecha
   const handleGenerateEventIdea = useCallback(async () => {
     if (!formData.date) {
-      toast.error('Elegi una fecha antes de generar con IA.');
+      toast.error(lang === 'es' ? 'Elegi una fecha antes de generar con IA.' : 'Choose a date before generating with AI.');
       return;
     }
 
     const selectedDay = new Date(`${formData.date}T12:00:00`);
     const dateLabel = Number.isNaN(selectedDay.getTime())
       ? formData.date
-      : selectedDay.toLocaleDateString('es-ES', {
+      : selectedDay.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
@@ -378,20 +385,22 @@ export const EventModal = ({
     try {
       const response = await generateIdeas(clientId, {
         userPrompt: [
-          `Genera una unica idea de posteo para la fecha exacta ${dateLabel}.`,
+          lang === 'es' ? `Genera una unica idea de posteo para la fecha exacta ${dateLabel}.` : `Generate a single post idea for the exact date ${dateLabel}.`,
           formData.title?.trim()
-            ? `Tema inicial o titulo del usuario: ${formData.title.trim()}.`
+            ? (lang === 'es' ? `Tema inicial o titulo del usuario: ${formData.title.trim()}.` : `Initial topic or user title: ${formData.title.trim()}.`)
             : '',
-          formData.copy?.trim() ? `Copy o borrador actual: ${formData.copy.trim()}.` : '',
-          `Canal preferido: ${formData.channel || 'IG'}.`,
-          'La idea debe incluir titulo, copy completo, formato sugerido, objetivo y CTA.',
+          formData.copy?.trim() ? (lang === 'es' ? `Copy o borrador actual: ${formData.copy.trim()}.` : `Current copy or draft: ${formData.copy.trim()}.`) : '',
+          lang === 'es' ? `Canal preferido: ${formData.channel || 'IG'}.` : `Preferred channel: ${formData.channel || 'IG'}.`,
+          lang === 'es'
+            ? 'La idea debe incluir titulo, copy completo, formato sugerido, objetivo y CTA.'
+            : 'The idea must include a title, complete copy, suggested format, goal, and CTA.',
         ]
           .filter(Boolean)
           .join(' '),
         monthContext: [
-          `Fecha objetivo exacta: ${formData.date}`,
-          `Canal seleccionado: ${formData.channel || 'IG'}`,
-          'Generacion desde modal de creacion de evento puntual.',
+          `Target date: ${formData.date}`,
+          `Channel: ${formData.channel || 'IG'}`,
+          'Generation from specific event creation modal.',
         ],
         quantity: 1,
         targetDate: formData.date,
@@ -399,7 +408,7 @@ export const EventModal = ({
 
       const idea = Array.isArray(response) ? response[0] : response?.ideas?.[0];
       if (!idea) {
-        toast.error('La IA no devolvio una idea para esta fecha.');
+        toast.error(lang === 'es' ? 'La IA no devolvio una idea para esta fecha.' : 'The AI did not return an idea for this date.');
         return;
       }
 
@@ -415,13 +424,13 @@ export const EventModal = ({
         status: idea.status || prev.status || 'en-diseño',
         date: formData.date,
       }));
-      toast.success('Idea generada para esta fecha.');
+      toast.success(lang === 'es' ? 'Idea generada para esta fecha.' : 'Idea generated for this date.');
     } catch (error) {
-      toast.error(error.message || 'No se pudo generar contenido con IA.');
+      toast.error(error.message || (lang === 'es' ? 'No se pudo generar contenido con IA.' : 'Could not generate content with AI.'));
     } finally {
       setIsGeneratingEventAI(false);
     }
-  }, [clientId, formData]);
+  }, [clientId, formData, lang]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -461,7 +470,7 @@ export const EventModal = ({
                         setFormData(prev => ({ ...prev, title: e.target.value }))
                       }
                       className='bg-transparent border-none p-0 text-xl md:text-2xl font-bold text-white placeholder-white/20 focus:outline-none focus:ring-0 transition-all font-semibold w-full'
-                      placeholder='Título de la publicación...'
+                      placeholder={lang === 'es' ? 'Título de la publicación...' : 'Publication title...'}
                       required
                       disabled={isReadOnly}
                     />
@@ -474,16 +483,16 @@ export const EventModal = ({
                       disabled={isReadOnly}
                     >
                       <option value='en-diseño' className='bg-[#161517] text-white'>
-                        En Diseño
+                        {lang === 'es' ? 'En Diseño' : 'In Design'}
                       </option>
                       <option value='en-progreso' className='bg-[#161517] text-white'>
-                        En Producción
+                        {lang === 'es' ? 'En Producción' : 'In Production'}
                       </option>
                       <option value='aprobado' className='bg-[#161517] text-white'>
-                        Aprobado
+                        {lang === 'es' ? 'Aprobado' : 'Approved'}
                       </option>
                       <option value='Publicado' className='bg-[#161517] text-white'>
-                        Publicado
+                        {lang === 'es' ? 'Publicado' : 'Published'}
                       </option>
                     </select>
                   </div>
@@ -500,7 +509,7 @@ export const EventModal = ({
                         {isGeneratingEventAI ? (
                           <>
                             <span className='h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white' />
-                            <span>Generando...</span>
+                            <span>{lang === 'es' ? 'Generando...' : 'Generating...'}</span>
                           </>
                         ) : (
                           <>
@@ -517,7 +526,7 @@ export const EventModal = ({
                                 d='M9.75 3.75 11 7l3.25 1.25L11 9.5l-1.25 3.25L8.5 9.5 5.25 8.25 8.5 7l1.25-3.25ZM17 12l.8 2.2L20 15l-2.2.8L17 18l-.8-2.2L14 15l2.2-.8L17 12Z'
                               />
                             </svg>
-                            <span>Generar Idea con IA</span>
+                            <span>{lang === 'es' ? 'Generar Idea con IA' : 'Generate Idea with AI'}</span>
                           </>
                         )}
                       </motion.button>
@@ -564,7 +573,7 @@ export const EventModal = ({
                             d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
                           />
                         </svg>
-                        Ajustes Solicitados por el Cliente
+                        {lang === 'es' ? 'Ajustes Solicitados por el Cliente' : 'Adjustments Requested by the Client'}
                       </div>
                       <p className='text-xs text-gray-300 italic leading-relaxed pl-6'>
                         "{selectedEvent.extendedProps.client_feedback}"
@@ -579,7 +588,7 @@ export const EventModal = ({
                       {/* Copy de la Publicación */}
                       <div className='space-y-1.5'>
                         <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                          Copy de la Publicación
+                          {t.schedule.copyLabel || (lang === 'es' ? 'Copy de la Publicación' : 'Publication Copy')}
                         </label>
                         <div className='relative rounded-xl border border-white/10 bg-[#1e1c20]/15 focus-within:border-emerald-500/40 focus-within:bg-[#1e1c20]/30 transition-all p-2.5'>
                           <textarea
@@ -588,7 +597,7 @@ export const EventModal = ({
                             value={formData.copy}
                             onChange={e => setFormData(prev => ({ ...prev, copy: e.target.value }))}
                             className='w-full bg-transparent px-1.5 py-0.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all resize-none min-h-[220px] pr-2 custom-scrollbar font-sans leading-relaxed border-none focus:ring-0'
-                            placeholder='Escribe el copy con emojis y hashtags aquí...'
+                            placeholder={t.schedule.copyPlaceholder || (lang === 'es' ? 'Escribe el copy con emojis y hashtags aquí...' : 'Write your copy with emojis and hashtags here...')}
                             disabled={isReadOnly}
                           />
                           <div className='absolute bottom-1 right-2 text-[8px] text-gray-500 font-mono'>
@@ -603,7 +612,7 @@ export const EventModal = ({
                       {/* Instrucciones Visuales */}
                       <div className='space-y-1.5'>
                         <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                          Instrucciones Visuales / Titulares de Placa
+                          {lang === 'es' ? 'Instrucciones Visuales / Titulares de Placa' : 'Visual Instructions / Graphic Headings'}
                         </label>
                         <div className='relative rounded-xl border border-white/10 bg-[#1e1c20]/15 focus-within:border-emerald-500/40 focus-within:bg-[#1e1c20]/30 transition-all p-2.5'>
                           <textarea
@@ -611,7 +620,7 @@ export const EventModal = ({
                             value={formData.description || ''}
                             onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                             className='w-full bg-transparent px-1.5 py-0.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all resize-none min-h-[90px] pr-2 custom-scrollbar font-sans leading-relaxed border-none focus:ring-0'
-                            placeholder='Instrucciones para el diseñador o texto a incluir en la placa (ej: "Colocar foto del producto en el centro y título grande: ¡50% OFF!")'
+                            placeholder={lang === 'es' ? 'Instrucciones para el diseñador o texto a incluir en la placa (ej: "Colocar foto del producto en el centro y título grande: ¡50% OFF!")' : 'Instructions for the designer or text to include in the graphic (e.g.: "Place product photo in the center and large title: 50% OFF!")'}
                             disabled={isReadOnly}
                           />
                         </div>
@@ -620,7 +629,7 @@ export const EventModal = ({
                       {/* Foto / Video / Contenido Visual */}
                       <div className='space-y-1.5'>
                         <label className='block text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
-                          Foto / Video / Contenido Visual
+                          {lang === 'es' ? 'Foto / Video / Contenido Visual' : 'Photo / Video / Visual Content'}
                         </label>
                         <div
                           onDragOver={isReadOnly ? undefined : handleModalDragOver}
@@ -647,14 +656,14 @@ export const EventModal = ({
                               <div className='flex items-center justify-between'>
                                 <span className='text-xs font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider'>
                                   <SparklesIcon className='w-4 h-4 animate-pulse text-rose-400' />
-                                  <span>Generar Imagen con IA</span>
+                                  <span>{lang === 'es' ? 'Generar Imagen con IA' : 'Generate Image with AI'}</span>
                                 </span>
                                 <button
                                   type='button'
                                   onClick={() => setIsEventAIGenOpen(false)}
                                   className='text-xs text-gray-400 hover:text-white transition-colors font-semibold'
                                 >
-                                  Cancelar
+                                  {t.common.cancel}
                                 </button>
                               </div>
 
@@ -665,7 +674,7 @@ export const EventModal = ({
                                     value={eventAIPrompt}
                                     onChange={e => setEventAIPrompt(e.target.value)}
                                     className='w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-gray-500 focus:border-rose-400 focus:outline-none transition-all resize-none leading-relaxed'
-                                    placeholder="Describe la imagen que quieres generar en detalle (e.g. 'Infografía moderna en tonos pastel sobre cómo cuidar la salud'...)"
+                                    placeholder={lang === 'es' ? "Describe la imagen que quieres generar en detalle (e.g. 'Infografía moderna en tonos pastel sobre cómo cuidar la salud'...)" : "Describe the image you want to generate in detail (e.g. 'Modern infographic in pastel tones about caring for health'...)"}
                                   />
                                 </div>
 
@@ -704,7 +713,7 @@ export const EventModal = ({
                                         let targetId = selectedEvent?.id;
                                         if (!targetId) {
                                           if (!formData.title) {
-                                            toast.error('Por favor escribe un título antes de generar con IA.');
+                                            toast.error(lang === 'es' ? 'Por favor escribe un título antes de generar con IA.' : 'Please write a title before generating with AI.');
                                             setIsGeneratingEventImage(false);
                                             return;
                                           }
@@ -738,11 +747,11 @@ export const EventModal = ({
                                           aspectRatio: eventAIAspectRatio,
                                         });
                                         setEventAssets(prev => [...prev, newAsset]);
-                                        toast.success('¡Imagen generada e incorporada!');
+                                        toast.success(lang === 'es' ? '¡Imagen generada e incorporada!' : 'Image generated and added!');
                                         setIsEventAIGenOpen(false);
                                       } catch (err) {
                                         console.error(err);
-                                        toast.error(err.message || 'Error al generar imagen');
+                                        toast.error(err.message || (lang === 'es' ? 'Error al generar imagen' : 'Error generating image'));
                                       } finally {
                                         setIsGeneratingEventImage(false);
                                       }
@@ -752,7 +761,7 @@ export const EventModal = ({
                                     {isGeneratingEventImage ? (
                                       <>
                                         <span className='h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent' />
-                                        <span>Generando...</span>
+                                        <span>{lang === 'es' ? 'Generando...' : 'Generating...'}</span>
                                       </>
                                     ) : (
                                       <>

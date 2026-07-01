@@ -8,9 +8,53 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Shadcn UI base colors mapping to CSS variables
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)'
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)'
+        },
+        primary: {
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)'
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)'
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)'
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+          cyan: 'var(--color-accent-cyan)', // #67E8F9
+          blue: 'var(--color-accent-blue)', // #60A5FA
+          violet: 'var(--color-accent-violet)', // #A78BFA
+        },
+        destructive: {
+          DEFAULT: 'var(--destructive)',
+          foreground: 'var(--destructive-foreground)'
+        },
+        border: {
+          DEFAULT: 'var(--border)',
+          border: 'var(--border)', // generates border-border
+          subtle: 'var(--color-border-subtle)',
+          strong: 'var(--color-border-strong)'
+        },
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+
         // Design tokens (mapped to CSS variables for fine-grain tuning)
         app: {
           bg: 'var(--color-app-bg)', // #0B1020 base
+          sidebar: 'var(--color-app-sidebar)',
           gradientStart: 'var(--color-app-gradient-start)',
           gradientEnd: 'var(--color-app-gradient-end)'
         },
@@ -19,18 +63,10 @@ export default {
           soft: 'var(--color-surface-soft)', // rgba(15,23,42,0.5)
           strong: 'var(--color-surface-strong)' // rgba(15,23,42,0.8)
         },
-        border: {
-          subtle: 'var(--color-border-subtle)',
-          strong: 'var(--color-border-strong)'
-        },
         text: {
           primary: 'var(--color-text-primary)', // #E5E7EB
           muted: 'var(--color-text-muted)', // #94A3B8
-        },
-        accent: {
-          cyan: 'var(--color-accent-cyan)', // #67E8F9
-          blue: 'var(--color-accent-blue)', // #60A5FA
-          violet: 'var(--color-accent-violet)', // #A78BFA
+          secondary: 'var(--color-text-secondary)',
         },
         brand: {
           50: '#EEF2FF',

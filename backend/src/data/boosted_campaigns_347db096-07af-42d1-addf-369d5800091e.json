@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cam_sim_1781038118161",
+    "name": "Pauta - Instagram - ¡Tu bienestar e...",
+    "status": "ACTIVE",
+    "objective": "OUTCOME_TRAFFIC",
+    "spend": 0,
+    "budget": 10,
+    "durationDays": 7,
+    "impressions": 0,
+    "clicks": 0,
+    "ctr": 0,
+    "cpc": 0,
+    "conversions": 0,
+    "createdAt": "2026-06-09T20:48:38.161Z",
+    "isSimulated": true
+  }
+]

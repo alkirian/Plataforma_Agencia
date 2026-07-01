@@ -94,7 +94,7 @@ export const registerNewAgency = async ({ email, password, fullName, agencyName,
  * @param {string} [profileData.inviteCode] - El código de invitación opcional.
  * @returns {Promise<object>} Los datos de la nueva agencia.
  */
-export const completeUserProfile = async ({ userId, fullName, agencyName, inviteCode, agencyType = 'agency' }) => {
+export const completeUserProfile = async ({ userId, fullName, agencyName, inviteCode, agencyType = 'agency', selectedRole }) => {
   // 1) Obtener el correo del usuario desde Auth
   const { data: authUser, error: authUserError } = await supabaseAdmin.auth.admin.getUser(userId);
   if (authUserError) {
@@ -115,7 +115,7 @@ export const completeUserProfile = async ({ userId, fullName, agencyName, invite
   } else if (inviteCode) {
     // Si tiene código de enlace de invitación compartido, aceptarlo
     try {
-      const inviteLinkResult = await acceptInviteLink(userId, email, inviteCode);
+      const inviteLinkResult = await acceptInviteLink(userId, email, inviteCode, selectedRole);
       agencyId = inviteLinkResult.agencyId;
       
       // Actualizar el nombre completo en su perfil

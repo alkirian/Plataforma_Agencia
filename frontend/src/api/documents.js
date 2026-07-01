@@ -19,7 +19,10 @@ export const getDocumentsForClient = clientId => {
  */
 export const uploadDocument = async (clientId, file) => {
   const fileExt = file.name.split('.').pop();
-  const fileName = `${clientId}/${Date.now()}.${fileExt}`;
+  const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID 
+    ? crypto.randomUUID() 
+    : 'doc-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+  const fileName = `${clientId}/${uniqueId}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file);
 
@@ -70,4 +73,17 @@ export const downloadDocument = async docData => {
   URL.revokeObjectURL(url);
 
   return { success: true };
+};
+
+/**
+ * Solicita al backend descargar un archivo o recurso multimedia desde un enlace.
+ * @param {string} clientId - El UUID del cliente.
+ * @param {string} url - El enlace a descargar (YouTube, Pinterest, etc.).
+ * @returns {Promise<object>} El registro del documento creado.
+ */
+export const downloadDocumentFromLink = (clientId, url) => {
+  return apiFetch(`/clients/${clientId}/documents/download-link`, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
 };

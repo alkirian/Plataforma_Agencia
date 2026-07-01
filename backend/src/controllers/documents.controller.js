@@ -1,6 +1,6 @@
 // src/controllers/documents.controller.js
 import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
-import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById } from '../services/documents.service.js';
+import { processDocument, getDocumentsByClient, createDocument, deleteDocumentById, downloadMediaFromLink } from '../services/documents.service.js';
 import { getUserAgencyId } from '../helpers/userHelpers.js';
 
 export const handleProcessDocument = async (req, res, next) => {
@@ -135,5 +135,62 @@ export const handleDeleteDocument = async (req, res, next) => {
   } catch (error) {
     console.error('❌ Error in deleteDocument controller:', error);
     next(error);
+  }
+};
+
+export const handleDownloadLink = async (req, res, next) => {
+  try {
+    const { clientId } = req.params;
+    const { url } = req.body || {};
+    const token = req.token || req.headers.authorization?.split(' ')[1];
+
+    if (!clientId || !url) {
+      return res.status(400).json({ success: false, message: 'Faltan campos requeridos (clientId, url).' });
+    }
+
+    // 1. Validar que el cliente pertenece a la misma organización del usuario (prevenir IDOR)
+    const supabaseAuth = createAuthenticatedClient(token);
+    const { data: client, error: clientErr } = await supabaseAuth
+      .from('clients')
+      .select('id, agency_id')
+      .eq('id', clientId)
+      .maybeSingle();
+
+    if (clientErr || !client) {
+      console.warn(`⚠️ [downloader] Acceso denegado o cliente inexistente para ${clientId}`);
+      return res.status(403).json({ success: false, message: 'Acceso denegado o cliente inexistente.' });
+    }
+
+    console.log(`📥 [downloader] Iniciando descarga de enlace para cliente ${clientId}: ${url}`);
+
+    // 2. Resolver y descargar el contenido de la URL (YouTube, Pinterest, etc.) y subirlo a Storage
+    const uploadedMetadata = await downloadMediaFromLink(url, clientId);
+
+    // 3. Crear el registro en la base de datos
+    const documentData = {
+      client_id: clientId,
+      agency_id: client.agency_id,
+      file_name: uploadedMetadata.file_name,
+      storage_path: uploadedMetadata.storage_path,
+      file_type: uploadedMetadata.file_type,
+      file_size: uploadedMetadata.file_size,
+      ai_status: 'pending',
+    };
+
+    console.log('💾 [downloader] Insertando documento descargado en BD:', documentData);
+    const createdDocument = await createDocument(documentData);
+
+    // 4. Ejecutar el procesamiento asíncrono en segundo plano (RAG/Embeddings) si corresponde
+    if (createdDocument) {
+      processDocument(createdDocument.id, token)
+        .catch(err => {
+          console.error(`[ERROR] Fallo en el procesamiento RAG del documento descargado ${createdDocument.id}:`, err.message);
+        });
+    }
+
+    res.status(201).json({ success: true, data: createdDocument });
+  } catch (error) {
+    console.error('❌ [downloader] Error en handleDownloadLink:', error.message);
+    res.status(500).json({ success: false, message: error.message || 'Error interno al descargar el enlace.' });
   }
 };

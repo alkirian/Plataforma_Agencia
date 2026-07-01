@@ -1,6 +1,7 @@
 // src/components/brand/ColorPaletteWidget.jsx
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../../hooks';
 
 export const ColorPaletteWidget = ({
   colorPalette = [],
@@ -10,12 +11,13 @@ export const ColorPaletteWidget = ({
   isAnalyzing,
   consistencyScore,
 }) => {
+  const { t } = useLanguage();
   const [editingIdx, setEditingIdx] = useState(null);
   const [editingHex, setEditingHex] = useState('');
 
   const handleCopyColor = (hexColor) => {
     navigator.clipboard.writeText(hexColor);
-    toast.success(`📋 ¡Hexadecimal ${hexColor} copiado!`, { id: 'copy-color-toast' });
+    toast.success(t.brand.copiedHexToast.replace('{hex}', hexColor), { id: 'copy-color-toast' });
   };
 
   const handleColorChange = (e) => {
@@ -38,10 +40,10 @@ export const ColorPaletteWidget = ({
       <div className='flex items-center justify-between gap-4'>
         <div className='text-left space-y-0.5'>
           <h5 className='text-[10px] font-black text-text-primary uppercase tracking-widest flex items-center gap-1.5'>
-            <span>🎨</span> Paleta de Colores de Marca
+            <span>🎨</span> {t.brand.colorPaletteTitle}
           </h5>
           <p className='text-[9px] text-text-muted leading-none'>
-            Colores visuales del negocio. Haz clic en un color para cambiarlo o editarlo.
+            {t.brand.colorPaletteDesc}
           </p>
         </div>
 
@@ -53,11 +55,11 @@ export const ColorPaletteWidget = ({
                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                 : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
             }`}>
-              📊 Coherencia: {consistencyScore}%
+              📊 {t.brand.consistencyDiagnosis}: {consistencyScore}%
             </div>
           ) : (
             <div className='px-2 py-0.5 rounded-lg text-[8.5px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-text-secondary'>
-              ✨ Identidad Activa
+              ✨ {t.brand.activeIdentity}
             </div>
           )}
         </div>
@@ -81,12 +83,12 @@ export const ColorPaletteWidget = ({
               onDoubleClick={() => handleCopyColor(color)}
               style={{ backgroundColor: color }}
               className='h-8 w-8 rounded-full border border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.3)] cursor-pointer active:scale-95 transition-all duration-200 focus:outline-none relative flex items-center justify-center hover:scale-105'
-              title={`Haga clic para editar color. Doble clic para copiar: ${color}`}
+              title={`${t.brand.editColorHelp}: ${color}`}
             >
               {/* Tooltip showing hex on hover */}
               {editingIdx !== idx && (
                 <span className='absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 bg-black/90 backdrop-blur-[2px] text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-white/10 shadow-lg whitespace-nowrap transition-transform duration-200 pointer-events-none z-30'>
-                  Editar: {color}
+                  {t.brand.editingLabel}: {color}
                 </span>
               )}
             </button>
@@ -95,7 +97,7 @@ export const ColorPaletteWidget = ({
             {editingIdx === idx && (
               <div className='absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 bg-[#0c0c16] border border-white/10 rounded-2xl p-2.5 flex flex-col gap-2 z-40 shadow-2xl animate-fade-in w-48 text-left'>
                 <div className='flex items-center justify-between border-b border-white/5 pb-1.5'>
-                  <span className='text-[8.5px] font-black uppercase text-text-muted tracking-wider'>Editar Color</span>
+                  <span className='text-[8.5px] font-black uppercase text-text-muted tracking-wider'>{t.brand.editColorLabel}</span>
                   <button
                     type='button'
                     onClick={() => setEditingIdx(null)}
@@ -122,7 +124,7 @@ export const ColorPaletteWidget = ({
                       htmlFor={`popover-picker-${idx}`}
                       className='w-full h-7 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[9.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all select-none'
                     >
-                      🎨 Paleta
+                      {t.brand.paletteSelector}
                     </label>
                   </div>
                 </div>
@@ -151,7 +153,7 @@ export const ColorPaletteWidget = ({
                     }}
                     className='flex-1 h-6 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[9px] font-black uppercase tracking-wider transition-all shadow-sm'
                   >
-                    Guardar
+                    {t.common.save}
                   </button>
                   <button
                     type='button'
@@ -161,7 +163,7 @@ export const ColorPaletteWidget = ({
                     }}
                     className='h-6 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-[9px] font-bold transition-all'
                   >
-                    Borrar
+                    {t.common.delete}
                   </button>
                 </div>
               </div>
@@ -184,7 +186,7 @@ export const ColorPaletteWidget = ({
               className='h-8 px-3 rounded-full border border-dashed border-border-subtle bg-surface-strong/30 hover:bg-surface-strong/60 hover:border-white/15 text-text-muted hover:text-white text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-all duration-200 shadow-inner'
             >
               <span>+</span>
-              <span>Añadir Color</span>
+              <span>{t.brand.colorAdd}</span>
             </label>
           </div>
         )}

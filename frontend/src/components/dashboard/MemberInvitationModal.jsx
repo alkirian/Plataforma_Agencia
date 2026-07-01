@@ -5,13 +5,16 @@ import toast from 'react-hot-toast';
 import { EnvelopeIcon, UserPlusIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '../../api/apiFetch';
 import { useModalGsap } from '../../hooks/useModalGsap';
+import { useLanguage, useEscapeClose } from '../../hooks';
 
 export const MemberInvitationModal = ({ isOpen, onClose }) => {
   const backdropRef = useRef(null);
   const modalPanelRef = useRef(null);
+  const { lang, t } = useLanguage();
 
   // Call premium GSAP modal transition hook
   useModalGsap(isOpen, backdropRef, modalPanelRef);
+  useEscapeClose(isOpen, onClose);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
@@ -29,7 +32,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
   const handleSendInvitation = async e => {
     e.preventDefault();
     if (!inviteEmail.trim()) {
-      toast.error('Por favor ingresa un correo electrónico.');
+      toast.error(lang === 'es' ? 'Por favor ingresa un correo electrónico.' : 'Please enter an email address.');
       return;
     }
 
@@ -43,10 +46,10 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
         }),
       });
 
-      toast.success('¡Invitación enviada exitosamente!');
+      toast.success(t.dashboard.inviteSuccess || '¡Invitación enviada exitosamente!');
       onClose();
     } catch (err) {
-      toast.error(err.message || 'Error al enviar la invitación.');
+      toast.error(err.message || (lang === 'es' ? 'Error al enviar la invitación.' : 'Error sending invitation.'));
     } finally {
       setSendingInvite(false);
     }
@@ -78,14 +81,13 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
               leaveFrom='opacity-100 scale-100 y-0'
               leaveTo='opacity-0 scale-95 y-4'
             >
-              <Dialog.Panel ref={modalPanelRef} className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] p-6 shadow-2xl transition-all'>
+              <Dialog.Panel ref={modalPanelRef} className='w-full max-w-md rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] p-6 shadow-2xl'>
                 <Dialog.Title className='text-xl font-bold text-[color:var(--color-text-primary)] mb-2 flex items-center gap-2.5'>
                   <UserPlusIcon className='h-6 w-6 text-[color:var(--color-accent-blue)]' />
-                  <span>Invitar Nuevo Miembro</span>
+                  <span>{t.dashboard.inviteTitle || 'Invitar Nuevo Miembro'}</span>
                 </Dialog.Title>
                 <p className='text-xs text-[color:var(--color-text-muted)] mb-5'>
-                  Envía una invitación por correo electrónico para que se unan a tu agencia con un
-                  rol específico.
+                  {t.dashboard.inviteDesc || 'Envía una invitación por correo electrónico para que se unan a tu agencia con un rol específico.'}
                 </p>
 
                 <form onSubmit={handleSendInvitation} className='space-y-4'>
@@ -94,7 +96,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                       htmlFor='member-email'
                       className='block text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-muted)]'
                     >
-                      Correo Electrónico
+                      {t.dashboard.emailLabel || 'Correo Electrónico'}
                     </label>
                     <div className='relative'>
                       <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
@@ -103,7 +105,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                       <input
                         type='email'
                         id='member-email'
-                        placeholder='colaborador@email.com'
+                        placeholder={t.dashboard.emailPlaceholder || 'colaborador@email.com'}
                         value={inviteEmail}
                         onChange={e => setInviteEmail(e.target.value)}
                         required
@@ -115,36 +117,29 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
 
                   <div className='space-y-2'>
                     <label className='block text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-muted)]'>
-                      Rol Asignado
+                      {t.dashboard.roleLabel || 'Rol Asignado'}
                     </label>
-                    <div className='grid grid-cols-2 gap-3'>
-                      <button
-                        type='button'
-                        onClick={() => setInviteRole('member')}
-                        className={`px-4 py-3 text-xs font-bold rounded-xl border transition-all duration-200 flex flex-col items-center gap-1 ${
-                          inviteRole === 'member'
-                            ? 'bg-[color:var(--color-accent-blue)]/10 border-[color:var(--color-accent-blue)] text-[color:var(--color-accent-blue)] shadow-md'
-                            : 'bg-[color:var(--color-surface-soft)] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
-                        }`}
-                        disabled={sendingInvite}
-                      >
-                        <span className='text-sm'>👤</span>
-                        <span>Miembro</span>
-                      </button>
-                      <button
-                        type='button'
-                        onClick={() => setInviteRole('admin')}
-                        className={`px-4 py-3 text-xs font-bold rounded-xl border transition-all duration-200 flex flex-col items-center gap-1 ${
-                          inviteRole === 'admin'
-                            ? 'bg-[color:var(--color-accent-rose)]/10 border-[color:var(--color-accent-rose)] text-[color:var(--color-accent-rose)] shadow-md'
-                            : 'bg-[color:var(--color-surface-soft)] border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
-                        }`}
-                        disabled={sendingInvite}
-                      >
-                        <ShieldCheckIcon className='h-4 w-4' />
-                        <span>Administrador</span>
-                      </button>
-                    </div>
+                    <select
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value)}
+                      className='w-full bg-[color:var(--color-surface-soft)] border border-[color:var(--color-border-subtle)] rounded-xl px-4 py-3 text-xs text-[color:var(--color-text-primary)] font-bold focus:border-[color:var(--color-border-strong)] focus:outline-none transition-colors'
+                      disabled={sendingInvite}
+                    >
+                      <option value='CM'>CM (Community Manager)</option>
+                      <option value='diseñador'>{lang === 'es' ? 'Diseñador' : 'Designer'}</option>
+                      <option value='creativo'>{lang === 'es' ? 'Creativo' : 'Creative'}</option>
+                      <option value='cuentas'>{lang === 'es' ? 'Cuentas' : 'Accounts'}</option>
+                      <option value='admin'>{lang === 'es' ? 'Administrador' : 'Administrator'}</option>
+                      <option value='member'>{lang === 'es' ? 'Miembro General' : 'General Member'}</option>
+                    </select>
+                    <p className='text-[10px] text-[color:var(--color-text-muted)] mt-1 px-1 leading-relaxed font-medium'>
+                      {inviteRole === 'CM' && (lang === 'es' ? 'Acceso al inbox de CM y Meta Ads en modo lectura.' : 'Read-only access to CM inbox and Meta Ads.')}
+                      {inviteRole === 'diseñador' && (lang === 'es' ? 'Acceso completo al Estudio de Diseño y lectura al Cronograma.' : 'Full access to Design Studio and read-only access to Schedule.')}
+                      {inviteRole === 'creativo' && (lang === 'es' ? 'Acceso de escritura al Cronograma, copies, voz de marca e Identidad.' : 'Write access to Schedule, copies, brand voice and Identity.')}
+                      {inviteRole === 'cuentas' && (lang === 'es' ? 'Gestión de clientes, cronograma, identidad y diseños. Sin invitación.' : 'Management of clients, schedule, identity and designs. No team settings access.')}
+                      {inviteRole === 'admin' && (lang === 'es' ? 'Privilegios de administrador. Acceso total a la agencia y equipo.' : 'Administrator privileges. Full access to the agency and team.')}
+                      {inviteRole === 'member' && (lang === 'es' ? 'Rol por defecto. Acceso básico de lectura/escritura.' : 'Default role. Basic read/write access.')}
+                    </p>
                   </div>
 
                   <div className='flex justify-end gap-3 pt-4 border-t border-[color:var(--color-border-subtle)] mt-6'>
@@ -154,7 +149,7 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                       className='btn-cyber border border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)]'
                       disabled={sendingInvite}
                     >
-                      Cancelar
+                      {t.common.cancel}
                     </button>
                     <button
                       type='submit'
@@ -164,11 +159,11 @@ export const MemberInvitationModal = ({ isOpen, onClose }) => {
                       {sendingInvite ? (
                         <>
                           <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                          <span>Invitando…</span>
+                          <span>{t.dashboard.inviting || 'Enviando...'}</span>
                         </>
                       ) : (
                         <>
-                          <span>Enviar Invitación</span>
+                          <span>{t.dashboard.sendInviteBtn || 'Enviar Invitación'}</span>
                         </>
                       )}
                     </button>

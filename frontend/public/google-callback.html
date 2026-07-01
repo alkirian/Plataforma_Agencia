@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sincronizando con Google Ads...</title>
+  <style>
+    body {
+      background-color: #07070f;
+      color: #3b82f6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .spinner {
+      border: 3px solid rgba(59, 130, 246, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #3b82f6;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p style="font-size: 13px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase;">
+    Vinculando Google Ads con Cadence...
+  </p>
+
+  <script>
+    // 1. Extraer el parámetro "code" de la URL (?code=...)
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    
+    if (code) {
+      // 2. Enviar el código de vuelta a la ventana principal de Cadence
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'GOOGLE_OAUTH_SUCCESS',
+          code: code
+        }, window.location.origin);
+      }
+    } else {
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'GOOGLE_OAUTH_ERROR',
+          error: error || 'No se recibió el código de autorización de Google.'
+        }, window.location.origin);
+      }
+    }
+    
+    // 3. Cerrar el popup inmediatamente
+    window.close();
+  </script>
+</body>
+</html>

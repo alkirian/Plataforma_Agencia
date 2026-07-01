@@ -1,5 +1,6 @@
 // src/controllers/metaAds.controller.js
 import * as metaAdsService from '../services/metaAds.service.js';
+import { sendConversionEvent } from '../services/metaCapi.service.js';
 
 /**
  * Verifica y obtiene el estado de integración de Meta de un cliente.
@@ -239,6 +240,174 @@ export const handleGetCommentAIDraft = async (req, res) => {
       status: 'success',
       data: result
     });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Recupera publicaciones orgánicas de Facebook e Instagram del cliente.
+ */
+export const handleGetClientPosts = async (req, res) => {
+  const { clientId } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    const posts = await metaAdsService.getClientPosts(clientId, token);
+    res.status(200).json({
+      status: 'success',
+      data: posts
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Promociona / pauta una publicación orgánica (boosting).
+ */
+export const handleBoostPost = async (req, res) => {
+  const { clientId } = req.params;
+  const boostData = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    const result = await metaAdsService.boostPost(clientId, boostData, token);
+    res.status(200).json({
+      status: 'success',
+      message: 'Publicación promocionada correctamente.',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Recupera las reglas de optimización de anuncios de un cliente.
+ */
+export const handleGetOptimizationRules = async (req, res) => {
+  const { clientId } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    const rules = await metaAdsService.getOptimizationRules(clientId, token);
+    res.status(200).json({
+      status: 'success',
+      data: rules
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Guarda o actualiza las reglas de optimización de anuncios de un cliente.
+ */
+export const handleSaveOptimizationRules = async (req, res) => {
+  const { clientId } = req.params;
+  const rulesData = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    const result = await metaAdsService.saveOptimizationRules(clientId, rulesData, token);
+    res.status(200).json({
+      status: 'success',
+      message: 'Reglas de optimización actualizadas correctamente.',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Envía un evento de conversión de prueba (CAPI) para validar configuración.
+ */
+export const handleTestMetaCapi = async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const result = await sendConversionEvent(clientId, 'Lead', {
+      email: 'test-capi-cadence@example.com',
+      phone: '+5491123456789',
+      ipAddress: req.ip || '127.0.0.1',
+      userAgent: req.headers['user-agent'] || 'Cadence-CAPI-Test-Client'
+    }, {
+      eventSourceUrl: `${req.protocol}://${req.get('host')}/clients/${clientId}/cm`
+    });
+
+    if (result.success) {
+      res.status(200).json({
+        status: 'success',
+        message: 'Evento de prueba enviado con éxito a la API de Conversiones.',
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        status: 'error',
+        message: 'Meta rechazó el evento de conversión.',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Endpoint para disparar un evento de conversión a Meta CAPI.
+ */
+export const handleSendClientConversionEvent = async (req, res) => {
+  const { clientId } = req.params;
+  const { eventName, userData, customData } = req.body;
+
+  if (!eventName) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'El nombre del evento (eventName) es requerido.'
+    });
+  }
+
+  try {
+    const result = await sendConversionEvent(clientId, eventName, {
+      email: userData?.email,
+      phone: userData?.phone,
+      ipAddress: userData?.ipAddress || req.ip || '127.0.0.1',
+      userAgent: userData?.userAgent || req.headers['user-agent']
+    }, customData || {});
+
+    if (result.success) {
+      res.status(200).json({
+        status: 'success',
+        message: `Evento de conversión '${eventName}' procesado con éxito.`,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        status: 'error',
+        message: 'Fallo al procesar evento de conversión.',
+        error: result.error
+      });
+    }
   } catch (error) {
     res.status(500).json({
       status: 'error',

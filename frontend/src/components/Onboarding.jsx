@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@api/apiFetch';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
+import { useLanguage } from '../hooks';
 
 // Premium styling constants
 const inputClass =
@@ -11,6 +12,7 @@ const primaryBtn =
   'relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#7C5CFC] to-[#FF6B6B] px-5 py-3 font-extrabold text-white text-sm shadow-[0_0_20px_rgba(124,92,252,0.25)] hover:shadow-[0_0_30px_rgba(124,92,252,0.45)] transition-all duration-300 hover:opacity-95 active:scale-[0.98] cursor-pointer';
 
 export const Onboarding = ({ session, onProfileComplete }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [agencyName, setAgencyName] = useState('');
@@ -18,6 +20,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
   const [step, setStep] = useState('choice'); // 'choice', 'details'
   const [invitation, setInvitation] = useState(null);
   const [checkingInvitation, setCheckingInvitation] = useState(true);
+  const [selectedRole, setSelectedRole] = useState('CM');
 
   // Dynamic Base URL
   const API_URL = getApiUrl();
@@ -119,7 +122,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
       // 1. Intentar completar perfil mediante backend Express
       try {
         let url = `${API_URL}/users/complete-profile`;
-        let bodyData = { fullName, agencyName, inviteCode: pendingCode, agencyType };
+        let bodyData = { fullName, agencyName, inviteCode: pendingCode, agencyType, selectedRole };
 
         // Si existe invitación directa por email
         if (invitation && !invitation.isLinkInvite) {
@@ -171,6 +174,9 @@ export const Onboarding = ({ session, onProfileComplete }) => {
           });
           if (rpcErr) throw rpcErr;
           createdAgencyId = rpcRes?.agencyId;
+
+          // Actualizar rol en Supabase directamente
+          await supabase.from('profiles').update({ role: selectedRole }).eq('id', session.user.id);
         } else {
           // Crear nueva agencia/negocio y perfil admin
           const { data: newAgencyId, error: rpcErr } = await supabase.rpc('create_new_agency_and_admin', {
@@ -205,9 +211,9 @@ export const Onboarding = ({ session, onProfileComplete }) => {
         localStorage.removeItem('pending_invite_code');
 
         if (invitation) {
-          toast.success('¡Te has unido exitosamente!');
+          toast.success(t.onboarding.successJoin);
         } else {
-          toast.success(agencyType === 'agency' ? '¡Agencia creada exitosamente!' : '¡Negocio y marca inicializados!', { icon: '✨' });
+          toast.success(agencyType === 'agency' ? t.onboarding.successCreateAgency : t.onboarding.successInitBrand, { icon: '✨' });
         }
         onProfileComplete();
       }
@@ -223,7 +229,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
       <div className="min-h-screen text-text-primary flex items-center justify-center p-6 bg-[#07070E]">
         <div className="relative flex flex-col items-center justify-center">
           <div className="w-10 h-10 border-4 border-[#7C5CFC]/30 border-b-[#7C5CFC] rounded-full animate-spin mb-4" />
-          <div className="text-text-muted font-black uppercase text-[10px] tracking-[0.2em] animate-pulse">Buscando invitaciones...</div>
+          <div className="text-text-muted font-black uppercase text-[10px] tracking-[0.2em] animate-pulse">{t.onboarding.searchingInvites}</div>
         </div>
       </div>
     );
@@ -256,12 +262,12 @@ export const Onboarding = ({ session, onProfileComplete }) => {
             R
           </div>
           <h2 className="text-2xl font-title font-black text-white tracking-tight mb-2">
-            {step === 'choice' ? '¿Cómo usarás Cadence?' : 'Completa tu registro'}
+            {step === 'choice' ? t.onboarding.howWillUse : t.onboarding.completeRegistration}
           </h2>
           <p className="text-xs text-text-muted/80 font-medium">
             {step === 'choice' 
-              ? 'Elige la estructura que mejor se adapte a ti' 
-              : '¡Bienvenido! Solo un paso más para empezar a trabajar.'}
+              ? t.onboarding.chooseStructure 
+              : t.onboarding.welcomeStepMore}
           </p>
         </div>
 
@@ -302,10 +308,10 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                     </div>
                     <div className="text-left">
                       <h4 className="text-sm font-black text-white group-hover:text-[#7C5CFC] transition-colors leading-tight mb-1">
-                        Agencia de Marketing
+                        {t.onboarding.marketingAgencyOption}
                       </h4>
                       <p className="text-[11.5px] leading-relaxed text-text-muted">
-                        Para profesionales, agencias o equipos que gestionan múltiples marcas de clientes independientes.
+                        {t.onboarding.marketingAgencyDesc}
                       </p>
                     </div>
                   </div>
@@ -335,10 +341,10 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                     </div>
                     <div className="text-left">
                       <h4 className="text-sm font-black text-white group-hover:text-[#4ECDC4] transition-colors leading-tight mb-1">
-                        Negocio Propio / Marca
+                        {t.onboarding.ownBusinessOption}
                       </h4>
                       <p className="text-[11.5px] leading-relaxed text-text-muted">
-                        Para creadores, empresas o marcas únicas que planifican y gestionan su propio contenido interno.
+                        {t.onboarding.ownBusinessDesc}
                       </p>
                     </div>
                   </div>
@@ -362,11 +368,18 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                   <div className="flex items-center gap-3">
                     <span className="text-2xl animate-pulse">✨</span>
                     <div>
-                      <h4 className="font-extrabold text-white text-xs">¡Invitación Encontrada!</h4>
+                      <h4 className="font-extrabold text-white text-xs">{t.onboarding.invitationFound}</h4>
                       <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
-                        Has sido invitado a unirte a la agencia{' '}
-                        <span className="font-black text-[#7C5CFC]">{invitation.agencyName}</span>. 
-                        Solo ingresa tu nombre completo para ingresar.
+                        {(() => {
+                          const parts = t.onboarding.invitationFoundDesc.split('{name}');
+                          return (
+                            <>
+                              {parts[0]}
+                              <span className="font-black text-[#7C5CFC]">{invitation.agencyName}</span>
+                              {parts[1]}
+                            </>
+                          );
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -376,7 +389,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
               <form onSubmit={handleCompleteProfile} className="space-y-4 text-left">
                 <div>
                   <label htmlFor="fullName" className="mb-1.5 block text-[10px] font-black text-text-muted uppercase tracking-wider pl-1">
-                    Tu nombre completo
+                    {t.onboarding.fullNameLabel}
                   </label>
                   <input
                     id="fullName"
@@ -384,15 +397,35 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
                     className={inputClass}
-                    placeholder="Ej: Juan Pérez"
+                    placeholder={t.onboarding.fullNamePlaceholder}
                     required
                   />
                 </div>
 
+                {invitation && invitation.isLinkInvite && (
+                  <div>
+                    <label htmlFor="userRole" className="mb-1.5 block text-[10px] font-black text-text-muted uppercase tracking-wider pl-1">
+                      {t.onboarding.roleLabel}
+                    </label>
+                    <select
+                      id="userRole"
+                      value={selectedRole}
+                      onChange={e => setSelectedRole(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] text-white focus:border-[#7C5CFC]/60 focus:bg-white/[0.04] focus:outline-none transition-all duration-300 text-sm font-medium cursor-pointer"
+                      required
+                    >
+                      <option value="CM" className="bg-[#07070E]">{t.onboarding.roleCm}</option>
+                      <option value="diseñador" className="bg-[#07070E]">{t.onboarding.roleDesigner}</option>
+                      <option value="creativo" className="bg-[#07070E]">{t.onboarding.roleCreative}</option>
+                      <option value="cuentas" className="bg-[#07070E]">{t.onboarding.roleAccounts}</option>
+                    </select>
+                  </div>
+                )}
+
                 {!invitation && (
                   <div>
                     <label htmlFor="agencyName" className="mb-1.5 block text-[10px] font-black text-text-muted uppercase tracking-wider pl-1">
-                      {agencyType === 'agency' ? 'Nombre de tu agencia' : 'Nombre de tu negocio / marca'}
+                      {agencyType === 'agency' ? t.onboarding.agencyNameInputLabel : t.onboarding.brandNameInputLabel}
                     </label>
                     <input
                       id="agencyName"
@@ -400,7 +433,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                       value={agencyName}
                       onChange={e => setAgencyName(e.target.value)}
                       className={inputClass}
-                      placeholder={agencyType === 'agency' ? 'Ej: Mi Agencia Digital' : 'Ej: Café Central'}
+                      placeholder={agencyType === 'agency' ? t.onboarding.agencyNameInputPlaceholder : t.onboarding.brandNameInputPlaceholder}
                       required
                     />
                   </div>
@@ -417,14 +450,14 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Procesando...
+                      {t.onboarding.processing}
                     </span>
                   ) : invitation ? (
-                    'Aceptar Invitación y Unirse'
+                    t.onboarding.acceptInviteJoin
                   ) : agencyType === 'agency' ? (
-                    'Crear Agencia Digital'
+                    t.onboarding.createAgencyBtn
                   ) : (
-                    'Inicializar Espacio de Marca'
+                    t.onboarding.initBrandSpaceBtn
                   )}
                 </button>
 
@@ -436,7 +469,7 @@ export const Onboarding = ({ session, onProfileComplete }) => {
                       onClick={() => setStep('choice')}
                       className="text-xs font-bold text-text-muted hover:text-text-primary transition-colors underline"
                     >
-                      Elegir otro rol
+                      {t.onboarding.chooseOtherRoleBtn}
                     </button>
                   </div>
                 )}

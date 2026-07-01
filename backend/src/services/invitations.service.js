@@ -9,8 +9,8 @@ export const createInvitation = async ({ agencyId, email, role, invitedBy, redir
   if (!normalizedEmail) {
     throw new Error('El correo electrónico es requerido.');
   }
-  if (!['admin', 'member'].includes(role)) {
-    throw new Error('El rol debe ser "admin" o "member".');
+  if (!['admin', 'member', 'diseñador', 'creativo', 'CM', 'cuentas'].includes(role)) {
+    throw new Error('El rol debe ser "admin", "member", "diseñador", "creativo", "CM" o "cuentas".');
   }
 
   // 1) Verificar si el usuario ya existe y ya pertenece a esta agencia
@@ -389,11 +389,12 @@ export const resolveInviteLink = async (code) => {
 /**
  * Une a un usuario autenticado a la agencia asociada al código del enlace.
  */
-export const acceptInviteLink = async (userId, email, code) => {
+export const acceptInviteLink = async (userId, email, code, overrideRole) => {
   const trimmedCode = String(code || '').trim().toLowerCase();
   
   // 1) Resolver e indicar error si es inválido
   const inviteInfo = await resolveInviteLink(trimmedCode);
+  const finalRole = overrideRole || inviteInfo.role;
 
   // 2) Incrementar los usos de este enlace
   const { error: incrementError } = await supabaseAdmin
@@ -435,7 +436,7 @@ export const acceptInviteLink = async (userId, email, code) => {
       .from('profiles')
       .update({
         agency_id: inviteInfo.agencyId,
-        role: inviteInfo.role
+        role: finalRole
       })
       .eq('id', userId);
 
@@ -449,7 +450,7 @@ export const acceptInviteLink = async (userId, email, code) => {
       .insert({
         id: userId,
         agency_id: inviteInfo.agencyId,
-        role: inviteInfo.role,
+        role: finalRole,
         full_name: 'Miembro Invitado'
       });
 

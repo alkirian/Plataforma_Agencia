@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../api/apiFetch';
 import { InteractiveAvatar } from '../ui/InteractiveAvatar';
 import { toast } from 'react-hot-toast';
+import { cmCache } from '../cm/cmCache';
 import {
   CurrencyDollarIcon,
   EyeIcon,
@@ -18,12 +19,16 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMetaOAuth } from '../../hooks/useMetaOAuth';
 
-export const MetaAdsSection = ({ clientId }) => {
-  const [loading, setLoading] = useState(true);
-  const [fetchingData, setFetchingData] = useState(false);
-  const [integration, setIntegration] = useState(null);
-  const [insights, setInsights] = useState(null);
+export const MetaAdsSection = ({ clientId, isEmbedded = false }) => {
   const [dateRange, setDateRange] = useState('last_30d');
+  
+  const cachedIntegration = cmCache.get(clientId).metaIntegration;
+  const cachedInsights = cmCache.getMetaInsights(clientId, dateRange);
+
+  const [loading, setLoading] = useState(!cachedIntegration);
+  const [fetchingData, setFetchingData] = useState(!cachedInsights && !!cachedIntegration);
+  const [integration, setIntegration] = useState(cachedIntegration || null);
+  const [insights, setInsights] = useState(cachedInsights || null);
 
   // Form states
   const [adAccountId, setAdAccountId] = useState('');
@@ -32,16 +37,26 @@ export const MetaAdsSection = ({ clientId }) => {
   // Hook de Autenticación de Meta unificado
   const {
     connecting,
+    setConnecting,
     oauthStep,
     setOauthStep,
     adAccountsList,
+    setAdAccountsList,
     pagesList,
+    setPagesList,
     selectedAccountId,
     setSelectedAccountId,
     selectedPageId,
     setSelectedPageId,
     tempAccessToken,
+    setTempAccessToken,
     handleFacebookOAuth,
+    qrMode,
+    setQrMode,
+    qrLoading,
+    startQrFlow,
+    deviceUserCode,
+    deviceStatus,
   } = useMetaOAuth(clientId, 'oauth-toast');
 
   // Tooltip graph state
@@ -49,11 +64,18 @@ export const MetaAdsSection = ({ clientId }) => {
 
   // 1. Cargar estado de la integración
   const loadIntegration = async () => {
-    try {
+    const cached = cmCache.get(clientId).metaIntegration;
+    if (cached) {
+      setIntegration(cached);
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+
+    try {
       const res = await apiFetch(`/clients/${clientId}/meta-integration`);
       setIntegration(res.data);
-      if (res.data) {
+      if (res.data && res.data.meta_ad_account_id) {
         await loadInsights();
       }
     } catch (err) {
@@ -66,8 +88,15 @@ export const MetaAdsSection = ({ clientId }) => {
 
   // 2. Cargar analíticas de Meta Ads
   const loadInsights = async () => {
-    try {
+    const cached = cmCache.getMetaInsights(clientId, dateRange);
+    if (cached) {
+      setInsights(cached);
+      setFetchingData(false);
+    } else {
       setFetchingData(true);
+    }
+
+    try {
       const res = await apiFetch(
         `/clients/${clientId}/meta-integration/campaigns?dateRange=${dateRange}`
       );
@@ -83,6 +112,20 @@ export const MetaAdsSection = ({ clientId }) => {
   useEffect(() => {
     loadIntegration();
   }, [clientId, dateRange]);
+
+  // Sincronizar integración con la caché
+  useEffect(() => {
+    if (!loading) {
+      cmCache.setMetaIntegration(clientId, integration);
+    }
+  }, [integration, clientId, loading]);
+
+  // Sincronizar insights con la caché
+  useEffect(() => {
+    if (insights) {
+      cmCache.setMetaInsights(clientId, dateRange, insights);
+    }
+  }, [insights, clientId, dateRange]);
 
   // 3. Flujo OAuth Real / Simulación Interactiva centralizado en useMetaOAuth hook.
 
@@ -162,6 +205,8 @@ export const MetaAdsSection = ({ clientId }) => {
       setPageId('');
       setAccessToken('');
       setOauthStep('connect');
+      cmCache.clear(clientId);
+      window.location.reload();
     } catch (err) {
       toast.error('Error al desconectar la cuenta.');
     } finally {
@@ -183,9 +228,9 @@ export const MetaAdsSection = ({ clientId }) => {
   // =========================================================================
   // VISTA 1: FORMULARIO DE CONEXIÓN O SELECTOR OAUTH (SI NO ESTÁ INTEGRADO)
   // =========================================================================
-  if (!integration) {
+  if (!integration || !integration.meta_ad_account_id) {
     return (
-      <div className='p-6 md:p-8 max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[80vh]'>
+      <div className={isEmbedded ? 'w-full max-w-4xl mx-auto flex flex-col items-center justify-center py-4' : 'p-6 md:p-8 max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[80vh]'}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -209,14 +254,85 @@ export const MetaAdsSection = ({ clientId }) => {
           </div>
 
           <AnimatePresence mode='wait'>
-            {oauthStep === 'connect' ? (
+            {qrMode ? (
+              /* VISTA DEVICE LOGIN — el usuario escribe el código en facebook.com/device */
+              <motion.div
+                key='device-view'
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className='space-y-5 max-w-md mx-auto relative z-10 text-center flex flex-col items-center'
+              >
+                <div className='bg-surface border border-purple-500/20 p-4 rounded-2xl flex items-start gap-3 text-left w-full'>
+                  <SparklesIcon className='h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5' />
+                  <p className='text-[11px] text-purple-200 leading-relaxed'>
+                    Abre <strong className='text-white'>facebook.com/device</strong> en tu celular e ingresa el siguiente código para vincular tu cuenta.
+                  </p>
+                </div>
+
+                {qrLoading ? (
+                  <div className='w-full h-28 bg-surface rounded-2xl flex items-center justify-center border border-border-subtle'>
+                    <ArrowPathIcon className='h-7 w-7 animate-spin text-purple-400' />
+                  </div>
+                ) : (
+                  <div className='w-full flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-br from-purple-900/40 to-indigo-900/30 border-2 border-purple-500/40 rounded-2xl py-5 px-6 shadow-xl shadow-purple-900/20'>
+                    {/* Código QR con user_code pre-completado */}
+                    <div className='relative p-2 bg-white rounded-2xl shadow-md border-2 border-purple-500/20 overflow-hidden flex-shrink-0'>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&color=0b0b14&data=${encodeURIComponent('https://www.facebook.com/device?user_code=' + deviceUserCode)}`}
+                        alt="Código QR de Conexión"
+                        className='w-28 h-28 rounded-xl select-none'
+                      />
+                    </div>
+                    {/* Código de texto */}
+                    <div className='flex-1 text-center sm:text-left'>
+                      <p className='text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1'>Tu código de acceso</p>
+                      <p className='text-3xl font-black tracking-[0.2em] text-white select-all font-mono'>{deviceUserCode || '------'}</p>
+                      <p className='text-[9px] text-purple-300/70 mt-2 leading-relaxed'>
+                        Escanea el código QR con la cámara de tu celular para abrir Facebook con el código ya pre-completado de forma automática.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <a
+                  href='https://www.facebook.com/device'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-bold text-sm py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2'
+                >
+                  <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
+                    <path d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' />
+                  </svg>
+                  Abrir facebook.com/device
+                </a>
+
+                <div className='flex flex-col items-center gap-1'>
+                  <div className='flex items-center gap-2'>
+                    <span className='h-2.5 w-2.5 rounded-full bg-yellow-400 animate-ping' />
+                    <span className='text-xs font-bold text-text-primary'>Esperando que ingreses el código...</span>
+                  </div>
+                  <span className='text-[10px] text-text-muted max-w-xs'>
+                    Esta pantalla avanzará automáticamente cuando autorices en tu celular.
+                  </span>
+                </div>
+
+                <button
+                  type='button'
+                  onClick={() => setQrMode(false)}
+                  className='w-full border border-border-subtle bg-surface hover:bg-surface-soft text-text-secondary font-bold text-xs py-3 rounded-xl transition-all duration-200'
+                >
+                  Cancelar y Volver
+                </button>
+              </motion.div>
+            ) : oauthStep === 'connect' ? (
               /* PASO A: BOTÓN DE CONEXIÓN AUTOMÁTICA O MANUAL */
               <motion.div
                 key='oauth-connect'
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className='space-y-6 max-w-md mx-auto relative z-10 text-center'
+                className='space-y-4 max-w-md mx-auto relative z-10 text-center'
               >
                 {/* Botón Principal OAuth Premium */}
                 <button
@@ -233,6 +349,23 @@ export const MetaAdsSection = ({ clientId }) => {
                     </svg>
                   )}
                   <span>Conectar Cuenta con Facebook Login</span>
+                </button>
+
+                {/* Botón para conectar desde el celular vía Device Login */}
+                <button
+                  type='button'
+                  onClick={startQrFlow}
+                  disabled={connecting || qrLoading}
+                  className='w-full border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 font-bold text-sm py-3.5 rounded-xl transition-all duration-200 shadow-lg flex items-center justify-center gap-2 transform hover:scale-[1.01]'
+                >
+                  {qrLoading ? (
+                    <ArrowPathIcon className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth={2}>
+                      <path strokeLinecap='round' strokeLinejoin='round' d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' />
+                    </svg>
+                  )}
+                  <span>Conectar desde el Celular (sin contraseña)</span>
                 </button>
 
                 <div className='flex items-center justify-between text-[10px] font-bold text-text-muted uppercase tracking-widest my-4'>
@@ -431,52 +564,85 @@ export const MetaAdsSection = ({ clientId }) => {
   const clicksAreaPath = getAreaPath('clicks', maxClicks);
 
   return (
-    <div className='p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full'>
+    <div className={isEmbedded ? 'flex flex-col gap-6 w-full' : 'p-6 md:p-8 flex flex-col gap-6 max-w-[1600px] mx-auto w-full'}>
       {/* 1. HEADER DEL DASHBOARD (Compacto y Simplificado) */}
-      <div className='bg-app-sidebar border border-border-subtle p-3 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 relative overflow-hidden backdrop-blur-xl'>
-        <div className='flex items-center gap-3'>
-          <div className='p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/25 flex-shrink-0'>
-            <InteractiveAvatar variant='meta' size='sm' />
+      {isEmbedded ? (
+        <div className='bg-surface border border-border-subtle p-3.5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 relative overflow-hidden backdrop-blur-xl'>
+          <div className='flex items-center gap-2'>
+            <span className='h-2 w-2 rounded-full bg-purple-500 animate-pulse' />
+            <span className='text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono'>
+              Analíticas de Publicidad y Campañas Vinculadas
+            </span>
           </div>
-          <div>
-            <h3 className='text-sm font-extrabold text-text-primary font-title'>
-              Cuenta de Meta Conectada
-            </h3>
+          <div className='flex items-center gap-2 w-full sm:w-auto justify-end'>
+            {/* Selector de periodo */}
+            <select
+              value={dateRange}
+              onChange={e => setDateRange(e.target.value)}
+              className='bg-surface border border-border-subtle rounded-xl px-3 py-1.5 text-xs font-bold text-text-secondary focus:outline-none transition-colors cursor-pointer'
+            >
+              <option value='last_7d'>Últimos 7 días</option>
+              <option value='last_30d'>Últimos 30 días</option>
+              <option value='last_90d'>Últimos 90 días</option>
+            </select>
+
+            {/* Botón de Refrescar */}
+            <button
+              onClick={loadInsights}
+              disabled={fetchingData}
+              className='p-2 border border-border-subtle bg-surface hover:bg-surface-soft text-text-muted hover:text-text-primary rounded-xl transition-all duration-200 cursor-pointer'
+              title='Sincronizar ahora'
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${fetchingData ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
+      ) : (
+        <div className='bg-app-sidebar border border-border-subtle p-3 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 relative overflow-hidden backdrop-blur-xl'>
+          <div className='flex items-center gap-3'>
+            <div className='p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/25 flex-shrink-0'>
+              <InteractiveAvatar variant='meta' size='sm' />
+            </div>
+            <div>
+              <h3 className='text-sm font-extrabold text-text-primary font-title'>
+                Cuenta de Meta Conectada
+              </h3>
+            </div>
+          </div>
 
-        <div className='flex items-center gap-3 w-full md:w-auto justify-end'>
-          {/* Selector de periodo */}
-          <select
-            value={dateRange}
-            onChange={e => setDateRange(e.target.value)}
-            className='bg-surface border border-border-subtle rounded-xl px-3 py-2 text-xs font-bold text-text-secondary focus:outline-none transition-colors'
-          >
-            <option value='last_7d'>Últimos 7 días</option>
-            <option value='last_30d'>Últimos 30 días</option>
-            <option value='last_90d'>Últimos 90 días</option>
-          </select>
+          <div className='flex items-center gap-3 w-full md:w-auto justify-end'>
+            {/* Selector de periodo */}
+            <select
+              value={dateRange}
+              onChange={e => setDateRange(e.target.value)}
+              className='bg-surface border border-border-subtle rounded-xl px-3 py-2 text-xs font-bold text-text-secondary focus:outline-none transition-colors'
+            >
+              <option value='last_7d'>Últimos 7 días</option>
+              <option value='last_30d'>Últimos 30 días</option>
+              <option value='last_90d'>Últimos 90 días</option>
+            </select>
 
-          {/* Botón de Refrescar */}
-          <button
-            onClick={loadInsights}
-            disabled={fetchingData}
-            className='p-2 border border-border-subtle bg-surface hover:bg-surface-soft text-text-muted hover:text-text-primary rounded-xl transition-all duration-200'
-            title='Sincronizar ahora'
-          >
-            <ArrowPathIcon className={`h-4 w-4 ${fetchingData ? 'animate-spin' : ''}`} />
-          </button>
+            {/* Botón de Refrescar */}
+            <button
+              onClick={loadInsights}
+              disabled={fetchingData}
+              className='p-2 border border-border-subtle bg-surface hover:bg-surface-soft text-text-muted hover:text-text-primary rounded-xl transition-all duration-200'
+              title='Sincronizar ahora'
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${fetchingData ? 'animate-spin' : ''}`} />
+            </button>
 
-          {/* Botón Desconectar */}
-          <button
-            onClick={handleDisconnect}
-            className='flex items-center gap-1.5 px-3 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 text-red-400 font-bold text-xs rounded-xl transition-all duration-200'
-          >
-            <TrashIcon className='h-3.5 w-3.5' />
-            <span className='hidden sm:inline'>Desconectar</span>
-          </button>
+            {/* Botón Desconectar */}
+            <button
+              onClick={handleDisconnect}
+              className='flex items-center gap-1.5 px-3 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 text-red-400 font-bold text-xs rounded-xl transition-all duration-200'
+            >
+              <TrashIcon className='h-3.5 w-3.5' />
+              <span className='hidden sm:inline'>Desconectar</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2. KPI CARDS GRID */}
       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>

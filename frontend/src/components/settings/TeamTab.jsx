@@ -17,6 +17,24 @@ import { Input } from '../ui/Input';
 import { CyberButton } from '../ui/Button';
 import { sqlSetupCode } from '../../constants/settingsSqlTemplates';
 
+const getRoleBadgeStyle = (roleStr) => {
+  const r = String(roleStr || '').toLowerCase();
+  switch (r) {
+    case 'admin':
+      return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+    case 'cuentas':
+      return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+    case 'creativo':
+      return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+    case 'diseñador':
+      return 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
+    case 'cm':
+      return 'bg-pink-500/10 text-pink-400 border border-pink-500/20';
+    default:
+      return 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20';
+  }
+};
+
 export const TeamTab = ({ profile, session, t, lang }) => {
   const [members, setMembers] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
@@ -351,15 +369,9 @@ export const TeamTab = ({ profile, session, t, lang }) => {
                           </div>
                         </div>
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
-                            member.role === 'admin'
-                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                              : 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
-                          }`}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${getRoleBadgeStyle(member.role)}`}
                         >
-                          {member.role === 'admin'
-                            ? t.team.adminRole
-                            : t.team.memberRole}
+                          {member.role}
                         </span>
                       </div>
                     ))}
@@ -450,30 +462,26 @@ export const TeamTab = ({ profile, session, t, lang }) => {
                         <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2'>
                           {t.team.roleLabel}
                         </label>
-                        <div className='grid grid-cols-2 gap-2'>
-                          <button
-                            type='button'
-                            onClick={() => setInviteRole('member')}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition ${
-                              inviteRole === 'member'
-                                ? 'bg-surface border-border-strong text-text-primary'
-                                : 'bg-surface-strong border-transparent text-text-muted hover:border-border-subtle'
-                            }`}
-                          >
-                            {t.team.memberRole}
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => setInviteRole('admin')}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition ${
-                              inviteRole === 'admin'
-                                ? 'bg-surface border-border-strong text-text-primary'
-                                : 'bg-surface-strong border-transparent text-text-muted hover:border-border-subtle'
-                            }`}
-                          >
-                            Admin
-                          </button>
-                        </div>
+                        <select
+                          value={inviteRole}
+                          onChange={e => setInviteRole(e.target.value)}
+                          className='w-full bg-surface border border-border-subtle rounded-xl px-3 py-2.5 text-xs text-text-primary font-semibold focus:border-border-strong focus:outline-none transition-colors'
+                        >
+                          <option value='CM'>CM (Community Manager)</option>
+                          <option value='diseñador'>{lang === 'es' ? 'Diseñador' : 'Designer'}</option>
+                          <option value='creativo'>{lang === 'es' ? 'Creativo' : 'Creative'}</option>
+                          <option value='cuentas'>{lang === 'es' ? 'Cuentas' : 'Account Manager'}</option>
+                          <option value='admin'>Admin</option>
+                          <option value='member'>{lang === 'es' ? 'Miembro General' : 'General Member'}</option>
+                        </select>
+                        <p className='text-[10.5px] text-text-muted mt-2 px-1 leading-relaxed font-medium'>
+                          {inviteRole === 'CM' && (lang === 'es' ? 'Acceso al inbox de CM y Meta Ads en modo lectura.' : 'Read-only access to CM inbox and Meta Ads.')}
+                          {inviteRole === 'diseñador' && (lang === 'es' ? 'Acceso completo al Estudio de Diseño y lectura al Cronograma.' : 'Full access to Design Studio and read-only to Schedule.')}
+                          {inviteRole === 'creativo' && (lang === 'es' ? 'Acceso de escritura al Cronograma, copies, voz de marca e Identidad.' : 'Write access to Schedule, copywriting, brand voice and Identity.')}
+                          {inviteRole === 'cuentas' && (lang === 'es' ? 'Gestión de clientes, cronograma, identidad y diseños. Sin invitación.' : 'Manage clients, schedule, identity, and designs. No team invite.')}
+                          {inviteRole === 'admin' && (lang === 'es' ? 'Privilegios de administrador. Acceso total a la agencia y equipo.' : 'Administrator privileges. Full access to agency and team.')}
+                          {inviteRole === 'member' && (lang === 'es' ? 'Rol por defecto. Acceso básico de lectura/escritura.' : 'Default role. Basic read/write access.')}
+                        </p>
                       </div>
 
                       <button

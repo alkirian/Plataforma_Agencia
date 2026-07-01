@@ -1,26 +1,29 @@
 // src/components/trends/TrendsSection.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowTrendingUpIcon,
   ArrowPathIcon,
   BoltIcon,
-  MagnifyingGlassIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { runTrendsForClient, getTrendReports } from '../../api/trends.js';
-import { apiFetch } from '../../api/apiFetch.js';
+import { useLanguage } from '../../hooks';
 
 // Shared modular refactored components
 import { groupReportsByDate } from './trendsHelpers.js';
-import { CreateEventModal } from './CreateEventModal.jsx';
-import { ReportView } from './ReportView.jsx';
+
+// Lazy loading de componentes pesados de reportes
+const CreateEventModal = lazy(() => import('./CreateEventModal.jsx').then(m => ({ default: m.CreateEventModal })));
+const ReportView = lazy(() => import('./ReportView.jsx').then(m => ({ default: m.ReportView })));
 
 // ─────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────
 
-const EmptyState = ({ onRun, isRunning }) => (
+const EmptyState = ({ onRun, isRunning, t }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -29,10 +32,9 @@ const EmptyState = ({ onRun, isRunning }) => (
     <div className='w-16 h-16 rounded-xl bg-slate-800/60 border border-white/[0.08] flex items-center justify-center mb-6'>
       <ArrowTrendingUpIcon className='h-8 w-8 text-slate-400' />
     </div>
-    <h3 className='text-base font-bold text-white mb-2'>Sin reportes generados</h3>
+    <h3 className='text-base font-bold text-white mb-2'>{t.trends.emptyTitle}</h3>
     <p className='text-xs text-slate-400 max-w-sm mb-8 leading-relaxed'>
-      El sistema genera reportes automáticamente cada mañana, o puedes iniciar un análisis sobre tu
-      marca en este instante.
+      {t.trends.emptyDesc}
     </p>
     <button
       onClick={onRun}
@@ -44,121 +46,77 @@ const EmptyState = ({ onRun, isRunning }) => (
       ) : (
         <BoltIcon className='h-4 w-4' />
       )}
-      {isRunning ? 'Buscando tendencias...' : 'Generar tendencias ahora'}
+      {isRunning ? t.trends.emptyActionBtnLoading : t.trends.emptyActionBtn}
     </button>
   </motion.div>
 );
-
-const HistoryItem = ({ report, isActive, onClick }) => {
-  const title =
-    report.title || `Análisis: ${(report.keywords || []).slice(0, 2).join(', ') || 'General'}`;
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 hover:translate-x-1 flex flex-col gap-1.5 ${
-        isActive
-          ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/30 text-white shadow-lg shadow-blue-500/[0.02]'
-          : 'border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-white'
-      }`}
-    >
-      <div className='flex items-center gap-2 w-full'>
-        {isActive && (
-          <span className='w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0' />
-        )}
-        <p
-          className={`text-[11px] font-extrabold leading-snug line-clamp-2 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-355 group-hover:text-white'}`}
-        >
-          {title}
-        </p>
-      </div>
-      <div className='flex items-center justify-between gap-2 w-full'>
-        <span className='text-[9px] text-slate-500 font-semibold truncate max-w-[80%] uppercase tracking-wider'>
-          {(report.keywords || []).slice(0, 2).join(' · ')}
-        </span>
-        <span className='text-[9px] text-slate-500 whitespace-nowrap font-medium bg-slate-950/40 px-1.5 py-0.5 rounded border border-white/[0.03]'>
-          {new Date(report.generated_at).toLocaleTimeString('es-AR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}{' '}
-          hs
-        </span>
-      </div>
-    </button>
-  );
-};
 
 // ─────────────────────────────────────────────
 // Main Section Component
 // ─────────────────────────────────────────────
 
-export const TrendsSection = ({ clientId }) => {
-  const [reports, setReports] = useState([]);
-  const [client, setClient] = useState(null);
+export const TrendsSection = ({ clientId, client }) => {
+  const { t, lang } = useLanguage();
+  const queryClient = useQueryClient();
   const [activeReportId, setActiveReportId] = useState(null);
+  const [activeInsightId, setActiveInsightId] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [pollingActive, setPollingActive] = useState(false);
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customKeywords, setCustomKeywords] = useState('');
+  const [expandedDates, setExpandedDates] = useState({});
 
-  // Cargar info del cliente
-  const fetchClientInfo = useCallback(async () => {
-    try {
-      const allReports = await getTrendReports(clientId, 15);
-      setReports(allReports);
-      if (allReports.length > 0) setActiveReportId(allReports[0].id);
+  // TanStack React Query for shared, cached trend reports
+  const { data: reports = [], isLoading, refetch } = useQuery({
+    queryKey: ['agencyTrendReports'],
+    queryFn: () => getTrendReports(clientId, 15),
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
+    refetchOnWindowFocus: false,
+  });
 
-      // Fetch client details
-      const cResp = await apiFetch(`/clients/${clientId}`);
-      setClient(cResp?.data ?? cResp ?? null);
-    } catch (e) {
-      console.error('Error fetching client trend data', e);
+  // Set the first report as active if none is selected
+  useEffect(() => {
+    if (reports.length > 0 && !activeReportId) {
+      setActiveReportId(reports[0].id);
     }
-  }, [clientId]);
+  }, [reports, activeReportId]);
 
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      await fetchClientInfo();
-      setIsLoading(false);
-    };
-    load();
-  }, [fetchClientInfo]);
+  // Group reports by date for the history sidebar
+  const groupedReports = groupReportsByDate(reports);
 
-  // Polling mientras el análisis corre
+  // Expand the first date group automatically on load
   useEffect(() => {
-    if (!pollingActive) return;
-    const interval = setInterval(async () => {
-      const allReports = await getTrendReports(clientId, 15);
-      setReports(allReports);
-      if (allReports.length > 0) {
-        if (!activeReportId || !allReports.find(r => r.id === activeReportId)) {
-          setActiveReportId(allReports[0].id);
-        }
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [pollingActive, clientId, activeReportId]);
+    const dates = Object.keys(groupedReports);
+    if (dates.length > 0 && Object.keys(expandedDates).length === 0) {
+      setExpandedDates({ [dates[0]]: true });
+    }
+  }, [groupedReports, expandedDates]);
+
+  const toggleDateGroup = (dateGroup) => {
+    setExpandedDates(prev => ({
+      ...prev,
+      [dateGroup]: !prev[dateGroup]
+    }));
+  };
 
   const handleRun = async () => {
     setIsRunning(true);
-    setPollingActive(true);
     try {
-      await runTrendsForClient(clientId, customKeywords);
-      toast.success(
-        'Análisis de tendencias iniciado. Buscando información del último mes...',
-        { duration: 4500 }
-      );
-
-      setTimeout(() => {
-        setPollingActive(false);
-        setIsRunning(false);
-      }, 45000);
+      const response = await runTrendsForClient(clientId);
+      const newReport = response?.data || response;
+      
+      toast.success(t.trends.successAnalysis, { duration: 3000 });
+      
+      await queryClient.invalidateQueries({ queryKey: ['agencyTrendReports'] });
+      await refetch();
+      
+      if (newReport?.id) {
+        setActiveReportId(newReport.id);
+      }
     } catch (e) {
-      toast.error('Error: ' + e.message);
+      console.error(e);
+      toast.error(t.trends.errorScan + e.message, { duration: 5000 });
+    } finally {
       setIsRunning(false);
-      setPollingActive(false);
     }
   };
 
@@ -167,16 +125,67 @@ export const TrendsSection = ({ clientId }) => {
     setIsModalOpen(true);
   };
 
-  // Reporte activo
   const activeReport = reports.find(r => r.id === activeReportId) || reports[0] || null;
   const hasReports = reports.length > 0;
 
-  // Agrupado de historial por fecha
-  const groupedReports = groupReportsByDate(reports);
+  // Deduplicate active report's insights based on newer reports
+  const getUniqueInsightsForReport = (report, allReports) => {
+    if (!report) return [];
+    const reportIndex = allReports.findIndex(r => r.id === report.id);
+    if (reportIndex === -1) return report.insights || [];
+
+    // Newer reports have index < reportIndex
+    const newerReports = allReports.slice(0, reportIndex);
+    const newerKeys = new Set();
+    newerReports.forEach(r => {
+      (r.insights || []).forEach(ins => {
+        if (ins.title) newerKeys.add(ins.title.trim().toLowerCase());
+        if (ins.source_url) {
+          try {
+            const url = ins.source_url.trim().toLowerCase();
+            newerKeys.add(url);
+            // Also add pathname for laxer matching
+            const urlObj = new URL(ins.source_url);
+            if (urlObj.pathname && urlObj.pathname !== '/') {
+              newerKeys.add(urlObj.pathname.toLowerCase());
+            }
+          } catch {
+            newerKeys.add(ins.source_url.trim().toLowerCase());
+          }
+        }
+      });
+    });
+
+    return (report.insights || []).filter(ins => {
+      const titleKey = ins.title?.trim().toLowerCase();
+      let urlKey = ins.source_url?.trim().toLowerCase();
+      let pathKey = null;
+      if (ins.source_url) {
+        try {
+          const urlObj = new URL(ins.source_url);
+          if (urlObj.pathname && urlObj.pathname !== '/') {
+            pathKey = urlObj.pathname.toLowerCase();
+          }
+        } catch {}
+      }
+      const isDuplicate = newerKeys.has(titleKey) || 
+                          (urlKey && newerKeys.has(urlKey)) || 
+                          (pathKey && newerKeys.has(pathKey));
+      return !isDuplicate;
+    });
+  };
+
+  const deduplicatedInsights = useMemo(() => {
+    return activeReport ? getUniqueInsightsForReport(activeReport, reports) : [];
+  }, [activeReport, reports]);
+
+  const reportToShow = useMemo(() => {
+    return activeReport ? { ...activeReport, insights: deduplicatedInsights } : null;
+  }, [activeReport, deduplicatedInsights]);
 
   return (
     <div className='w-full max-w-full py-6 px-4 sm:px-6 md:px-8 xl:px-12 space-y-6'>
-      {/* Header & Search override */}
+      {/* Header & Actions */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,47 +196,36 @@ export const TrendsSection = ({ clientId }) => {
             <ArrowTrendingUpIcon className='h-5 w-5 text-blue-400' />
           </div>
           <div>
-            <h1 className='text-xl font-bold text-white'>Monitoreo de Tendencias</h1>
+            <h1 className='text-xl font-bold text-white'>{t.trends.monitoringTitle}</h1>
             <p className='text-xs text-slate-400'>
-              Escaneo inteligente diario de mercado · Segmentado por tus pilares e industria
+              {t.trends.monitoringDesc}
             </p>
           </div>
-          {pollingActive && (
+          {isRunning && (
             <motion.div
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.5, repeat: Infinity }}
               className='flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10'
             >
               <span className='w-1.5 h-1.5 rounded-full bg-blue-500' />
-              Escaneando fuentes...
+              {t.trends.scanningSources}
             </motion.div>
           )}
         </div>
 
-        {/* Input custom keywords & Run button */}
+        {/* Global trigger button */}
         <div className='flex items-center gap-3 flex-wrap w-full sm:w-auto'>
-          <div className='relative w-full sm:w-64'>
-            <MagnifyingGlassIcon className='absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500' />
-            <input
-              type='text'
-              value={customKeywords}
-              onChange={e => setCustomKeywords(e.target.value)}
-              placeholder='Buscar conceptos customizados...'
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors'
-              disabled={isRunning}
-            />
-          </div>
           <button
             onClick={handleRun}
             disabled={isRunning}
-            className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5'
+            className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-md'
           >
             {isRunning ? (
               <ArrowPathIcon className='h-4 w-4 animate-spin' />
             ) : (
               <BoltIcon className='h-4 w-4' />
             )}
-            {isRunning ? 'Escaneando...' : 'Buscar Tendencias'}
+            {isRunning ? t.trends.scanningBtn : t.trends.searchBtn}
           </button>
         </div>
       </motion.div>
@@ -237,42 +235,89 @@ export const TrendsSection = ({ clientId }) => {
         <div className='flex items-center justify-center py-32'>
           <div className='flex flex-col items-center gap-4'>
             <div className='w-8 h-8 rounded-full border-2 border-slate-500 border-t-transparent animate-spin' />
-            <p className='text-sm text-slate-400'>Recuperando reportes de tendencias...</p>
+            <p className='text-sm text-slate-400'>{t.trends.loadingReports}</p>
           </div>
         </div>
       ) : !hasReports ? (
-        <EmptyState onRun={handleRun} isRunning={isRunning} />
+        <EmptyState onRun={handleRun} isRunning={isRunning} t={t} />
       ) : (
-        <div className='grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start'>
+        <div className='grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 items-start'>
           {/* Grouped History Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            className='rounded-xl border border-white/[0.06] bg-[#121A2C]/20 p-4 space-y-4 lg:sticky lg:top-24 max-h-[75vh] overflow-y-auto'
+            className='rounded-xl border border-white/[0.06] bg-[#121A2C]/20 p-3.5 space-y-3 lg:sticky lg:top-24 max-h-[70vh] overflow-y-auto custom-scrollbar'
           >
             <p className='text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 border-b border-white/[0.04] pb-2'>
-              Historial de Búsquedas
+              {t.trends.searchHistory}
             </p>
 
-            <div className='space-y-4'>
-              {Object.keys(groupedReports).map(dateGroup => (
-                <div key={dateGroup} className='space-y-1'>
-                  <h4 className='text-[10px] font-bold text-blue-400 uppercase tracking-wider px-1 py-0.5'>
-                    {dateGroup}
-                  </h4>
+            <div className='space-y-2.5'>
+              {Object.keys(groupedReports).map(dateGroup => {
+                const isExpanded = !!expandedDates[dateGroup];
+                return (
+                  <div key={dateGroup} className='space-y-1'>
+                    <button
+                      onClick={() => toggleDateGroup(dateGroup)}
+                      className='w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] font-bold text-blue-400 uppercase tracking-wider hover:bg-white/[0.03] transition-colors text-left'
+                    >
+                      <span>{dateGroup}</span>
+                      <ChevronDownIcon className={`h-3 w-3 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
 
-                  <div className='space-y-1 pl-0.5 border-l border-white/[0.03]'>
-                    {groupedReports[dateGroup].map(report => (
-                      <HistoryItem
-                        key={report.id}
-                        report={report}
-                        isActive={report.id === (activeReportId || reports[0]?.id)}
-                        onClick={() => setActiveReportId(report.id)}
-                      />
-                    ))}
+                    {isExpanded && (
+                      <div className='pl-2 space-y-1 border-l border-white/[0.03] mt-1 ml-1'>
+                        {groupedReports[dateGroup].map(report => {
+                          const uniqueInsights = getUniqueInsightsForReport(report, reports);
+                          const isReportActive = report.id === activeReportId;
+                          
+                          return (
+                            <div key={report.id} className='space-y-1'>
+                              {/* If there are multiple scans in the same day, display timestamp header */}
+                              {groupedReports[dateGroup].length > 1 && (
+                                <div className='text-[8px] font-bold text-slate-500 uppercase tracking-widest px-2 py-1 select-none'>
+                                  🕒 {t.trends.scanLabel} {new Date(report.generated_at).toLocaleTimeString(lang === 'es' ? 'es-AR' : 'en-US', { hour: '2-digit', minute: '2-digit' })} {lang === 'es' ? 'hs' : ''}
+                                </div>
+                              )}
+                              
+                              <div className='space-y-0.5'>
+                                {uniqueInsights.length === 0 ? (
+                                  <p className='text-[9px] text-slate-650 italic px-2 py-1 select-none'>
+                                    {t.trends.noNews}
+                                  </p>
+                                ) : (
+                                  uniqueInsights.map(ins => {
+                                    const isInsightActive = isReportActive && activeInsightId === ins.id;
+                                    return (
+                                      <button
+                                        key={ins.id}
+                                        onClick={() => {
+                                          setActiveReportId(report.id);
+                                          setActiveInsightId(ins.id);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 rounded-lg text-[10.5px] leading-snug transition-all font-medium block truncate ${
+                                          isInsightActive
+                                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/35 shadow-xs font-bold'
+                                            : isReportActive
+                                              ? 'text-slate-300 hover:bg-white/[0.03] hover:text-white border border-transparent'
+                                              : 'text-slate-500 hover:text-slate-350 border border-transparent'
+                                        }`}
+                                        title={ins.title}
+                                      >
+                                        • {ins.title}
+                                      </button>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
 
@@ -280,19 +325,27 @@ export const TrendsSection = ({ clientId }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className='min-w-0 bg-[#0F172A]/20 border border-white/[0.04] rounded-2xl p-6 lg:p-8'
+            className='w-full min-w-0'
           >
             <AnimatePresence mode='wait'>
-              {activeReport ? (
-                <ReportView
-                  key={activeReport.id}
-                  report={activeReport}
-                  client={client}
-                  onCreateEvent={handleCreateEvent}
-                />
+              {reportToShow ? (
+                <Suspense fallback={
+                  <div className='flex items-center justify-center py-20'>
+                    <div className='w-6 h-6 rounded-full border-2 border-slate-500 border-t-transparent animate-spin' />
+                  </div>
+                }>
+                  <ReportView
+                    key={reportToShow.id}
+                    report={reportToShow}
+                    client={client}
+                    activeInsightId={activeInsightId}
+                    onCloseActiveInsight={() => setActiveInsightId(null)}
+                    onCreateEvent={handleCreateEvent}
+                  />
+                </Suspense>
               ) : (
-                <div className='text-center py-20 text-xs text-slate-400'>
-                  Selecciona un reporte del historial para ver el análisis estratégico de mercado.
+                <div className='text-center py-20 text-xs text-slate-450 select-none'>
+                  {t.trends.noActiveReport}
                 </div>
               )}
             </AnimatePresence>
@@ -303,15 +356,17 @@ export const TrendsSection = ({ clientId }) => {
       {/* Event Drafting Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <CreateEventModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setSelectedInsight(null);
-            }}
-            insight={selectedInsight}
-            clientId={clientId}
-          />
+          <Suspense fallback={null}>
+            <CreateEventModal
+              isOpen={isModalOpen}
+              onClose={() => {
+                setIsModalOpen(false);
+                setSelectedInsight(null);
+              }}
+              insight={selectedInsight}
+              clientId={clientId}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>

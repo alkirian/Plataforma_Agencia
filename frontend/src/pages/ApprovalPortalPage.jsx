@@ -19,14 +19,15 @@ import {
   sharedFeedbackPost,
   sharedRevertPost,
 } from '../api/shared.js';
+import { useLanguage } from '../hooks';
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const formatPostDate = iso => {
+const formatPostDate = (iso, lang) => {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('es-AR', {
+  return d.toLocaleDateString(lang === 'es' ? 'es-AR' : 'en-US', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -54,6 +55,7 @@ const channelBadge = ch => {
 // Post Card Component
 // ─────────────────────────────────────────────
 const PostCard = ({ item, token, onUpdateItem }) => {
+  const { t, lang } = useLanguage();
   const [feedbackText, setFeedbackText] = useState('');
   const [isExpandingFeedback, setIsExpandingFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,11 +69,11 @@ const PostCard = ({ item, token, onUpdateItem }) => {
     try {
       const resp = await sharedApprovePost(token, item.id);
       if (resp.success) {
-        toast.success('¡Post aprobado con éxito!', { icon: '✅' });
+        toast.success(lang === 'es' ? '¡Post aprobado con éxito!' : 'Post approved successfully!', { icon: '✅' });
         onUpdateItem(item.id, { status: 'Aprobado', client_feedback: '' });
       }
     } catch (err) {
-      toast.error('Error al aprobar: ' + err.message);
+      toast.error((lang === 'es' ? 'Error al aprobar: ' : 'Error approving: ') + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -85,13 +87,13 @@ const PostCard = ({ item, token, onUpdateItem }) => {
     try {
       const resp = await sharedFeedbackPost(token, item.id, feedbackText.trim());
       if (resp.success) {
-        toast.success('Feedback de ajuste enviado.');
+        toast.success(lang === 'es' ? 'Feedback de ajuste enviado.' : 'Adjustment feedback sent.');
         onUpdateItem(item.id, { status: 'En Diseño', client_feedback: feedbackText.trim() });
         setFeedbackText('');
         setIsExpandingFeedback(false);
       }
     } catch (err) {
-      toast.error('Error al enviar feedback: ' + err.message);
+      toast.error((lang === 'es' ? 'Error al enviar feedback: ' : 'Error sending feedback: ') + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -102,11 +104,11 @@ const PostCard = ({ item, token, onUpdateItem }) => {
     try {
       const resp = await sharedRevertPost(token, item.id);
       if (resp.success) {
-        toast.success('Aprobación revertida.', { icon: '🔄' });
+        toast.success(lang === 'es' ? 'Aprobación revertida.' : 'Approval reverted.', { icon: '🔄' });
         onUpdateItem(item.id, { status: 'En Diseño', client_feedback: '' });
       }
     } catch (err) {
-      toast.error('Error al deshacer aprobación: ' + err.message);
+      toast.error((lang === 'es' ? 'Error al deshacer aprobación: ' : 'Error undoing approval: ') + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +129,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
       <div className='flex items-center justify-between gap-3 flex-wrap'>
         <span className='flex items-center gap-1.5 text-xs text-text-muted capitalize'>
           <CalendarDaysIcon className='h-4 w-4 text-text-muted' />
-          {formatPostDate(item.scheduled_at)}
+          {formatPostDate(item.scheduled_at, lang)}
         </span>
         <span
           className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${chBadge.cls}`}
@@ -142,10 +144,10 @@ const PostCard = ({ item, token, onUpdateItem }) => {
       {/* Copy / Text */}
       <div className='rounded-xl bg-surface-soft/40 border border-border-subtle/30 p-4'>
         <p className='text-xs text-text-muted font-semibold uppercase tracking-wider mb-2'>
-          Copia del Post
+          {lang === 'es' ? 'Copia del Post' : 'Post Copy'}
         </p>
         <p className='text-sm text-text-primary whitespace-pre-line leading-relaxed'>
-          {item.description || 'Sin copia redactada.'}
+          {item.description || (lang === 'es' ? 'Sin copia redactada.' : 'No copy drafted.')}
         </p>
       </div>
 
@@ -154,7 +156,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
         <div className='space-y-2'>
           <p className='text-[10px] text-text-muted font-bold uppercase tracking-wider flex items-center gap-1'>
             <PaperClipIcon className='h-3 w-3' />
-            Material de Diseño / Referencia
+            {lang === 'es' ? 'Material de Diseño / Referencia' : 'Design Material / Reference'}
           </p>
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
             {item.assets.map((asset, i) => (
@@ -177,7 +179,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
                   </div>
                 )}
                 <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-semibold text-white'>
-                  Ver pantalla completa
+                  {lang === 'es' ? 'Ver pantalla completa' : 'View full screen'}
                 </div>
               </a>
             ))}
@@ -191,7 +193,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
           <ChatBubbleLeftRightIcon className='h-4 w-4 text-[#7c5cfc] dark:text-[#A19EA6] mt-0.5 flex-shrink-0' />
           <div>
             <p className='text-[10px] text-[#7c5cfc] dark:text-[#A19EA6] font-bold uppercase tracking-wider mb-0.5'>
-              Ajustes Solicitados
+              {lang === 'es' ? 'Ajustes Solicitados' : 'Requested Adjustments'}
             </p>
             <p className='text-xs text-text-primary leading-relaxed italic'>
               "{item.client_feedback}"
@@ -206,7 +208,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
           <div className='flex flex-col gap-2'>
             <div className='w-full py-2.5 rounded-xl bg-[#8FA89B]/10 border border-[#8FA89B]/30 flex items-center justify-center gap-2 text-xs font-bold text-[#8FA89B]'>
               <SolidCheckCircleIcon className='h-5 w-5' />
-              Post Aprobado para Publicar
+              {lang === 'es' ? 'Post Aprobado para Publicar' : 'Post Approved to Publish'}
             </div>
             <button
               disabled={isSubmitting}
@@ -216,7 +218,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
               {isSubmitting ? (
                 <ArrowPathIcon className='h-3.5 w-3.5 animate-spin' />
               ) : (
-                'Deshacer Aprobación'
+                lang === 'es' ? 'Deshacer Aprobación' : 'Undo Approval'
               )}
             </button>
           </div>
@@ -229,7 +231,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
                 onClick={() => setIsExpandingFeedback(true)}
                 className='flex-1 py-2 px-4 rounded-xl border border-border-strong hover:border-text-primary text-xs font-semibold text-text-primary transition-all duration-150'
               >
-                Solicitar Ajustes
+                {t.approvalPortal.rejectAction}
               </button>
             )}
 
@@ -245,7 +247,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
                 ) : (
                   <CheckCircleIcon className='h-4 w-4 text-[#8FA89B]' />
                 )}
-                Aprobar Post
+                {t.approvalPortal.approveAction}
               </button>
             )}
           </div>
@@ -264,7 +266,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
               <textarea
                 value={feedbackText}
                 onChange={e => setFeedbackText(e.target.value)}
-                placeholder='Describe qué cambios o ajustes de copia/diseño te gustaría solicitar...'
+                placeholder={t.approvalPortal.commentPlaceholder}
                 className='input-cyber w-full py-2.5 px-3 text-xs h-20 resize-none'
                 required
               />
@@ -277,14 +279,14 @@ const PostCard = ({ item, token, onUpdateItem }) => {
                   }}
                   className='px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors'
                 >
-                  Cancelar
+                  {lang === 'es' ? 'Cancelar' : 'Cancel'}
                 </button>
                 <button
                   type='submit'
                   disabled={isSubmitting || !feedbackText.trim()}
                   className='btn-cyber bg-[#7c5cfc] text-white hover:bg-[#60A5FA] px-4 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 border-transparent'
                 >
-                  Enviar Comentarios
+                  {t.approvalPortal.saveComment}
                 </button>
               </div>
             </motion.form>
@@ -299,6 +301,7 @@ const PostCard = ({ item, token, onUpdateItem }) => {
 // Main Page Component
 // ─────────────────────────────────────────────
 export const ApprovalPortalPage = () => {
+  const { t, lang } = useLanguage();
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -312,11 +315,11 @@ export const ApprovalPortalPage = () => {
       setData(res);
       setError(null);
     } catch (err) {
-      setError(err.message || 'El enlace de aprobación no es válido o ha expirado.');
+      setError(err.message || t.approvalPortal.shareExpired);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     fetchDetails();
@@ -343,7 +346,9 @@ export const ApprovalPortalPage = () => {
       <div className='min-h-screen bg-app flex items-center justify-center'>
         <div className='flex flex-col items-center gap-3'>
           <div className='w-8 h-8 rounded-full border-2 border-border-strong border-t-transparent animate-spin' />
-          <p className='text-xs text-text-muted'>Cargando cronograma compartido...</p>
+          <p className='text-xs text-text-muted'>
+            {lang === 'es' ? 'Cargando cronograma compartido...' : 'Loading shared calendar...'}
+          </p>
         </div>
       </div>
     );
@@ -356,10 +361,11 @@ export const ApprovalPortalPage = () => {
           <div className='w-12 h-12 rounded-full bg-[#fe0979]/10 border border-[#fe0979]/30 flex items-center justify-center mx-auto'>
             <ExclamationCircleIcon className='h-6 w-6 text-[#fe0979]' />
           </div>
-          <h2 className='text-lg font-bold text-text-primary'>Enlace No Válido</h2>
+          <h2 className='text-lg font-bold text-text-primary'>
+            {lang === 'es' ? 'Enlace No Válido' : 'Invalid Link'}
+          </h2>
           <p className='text-xs text-text-muted leading-relaxed'>
-            {error}. Comunícate con tu agencia de publicidad para solicitar un nuevo enlace de
-            aprobación vigente.
+            {error}. {lang === 'es' ? 'Comunícate con tu agencia de publicidad para solicitar un nuevo enlace de aprobación vigente.' : 'Please contact your advertising agency to request a new valid approval link.'}
           </p>
         </div>
       </div>
@@ -391,13 +397,13 @@ export const ApprovalPortalPage = () => {
             </div>
             <div>
               <h1 className='text-sm font-bold text-text-primary flex items-center gap-1.5'>
-                Portal de Aprobaciones
+                {t.approvalPortal.title}
                 <span className='px-2 py-0.5 rounded-full bg-surface-soft border border-border-subtle text-[10px] text-text-muted font-normal'>
-                  Cliente
+                  {lang === 'es' ? 'Cliente' : 'Client'}
                 </span>
               </h1>
               <p className='text-[10px] text-text-muted mt-0.5'>
-                Revisión de calendario · Desarrollado por{' '}
+                {lang === 'es' ? 'Revisión de calendario · Desarrollado por' : 'Calendar review · Powered by'}{' '}
                 <span className='font-semibold text-text-primary'>{agency.name}</span>
               </p>
             </div>
@@ -406,7 +412,7 @@ export const ApprovalPortalPage = () => {
           <div className='flex items-center gap-2'>
             <span className='w-1.5 h-1.5 rounded-full bg-[#8FA89B] animate-pulse' />
             <span className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
-              Conexión Segura
+              {lang === 'es' ? 'Conexión Segura' : 'Secure Connection'}
             </span>
           </div>
         </div>
@@ -418,23 +424,22 @@ export const ApprovalPortalPage = () => {
         <div className='rounded-2xl border border-border-subtle bg-surface-soft/40 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
           <div>
             <span className='text-[10px] font-bold text-[#9BA1BA] uppercase tracking-wider'>
-              Marca
+              {lang === 'es' ? 'Marca' : 'Brand'}
             </span>
             <h2 className='text-xl font-black text-text-primary mt-0.5'>{client.name}</h2>
-            <p className='text-xs text-text-muted mt-0.5'>{client.industry || 'Industria'}</p>
           </div>
 
           {/* Summary Stats */}
           <div className='flex items-center gap-4'>
             <div className='bg-surface-soft border border-border-subtle px-4 py-2 rounded-xl text-center'>
               <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
-                Pendientes
+                {lang === 'es' ? 'Pendientes' : 'Pending'}
               </p>
               <p className='text-lg font-black text-text-primary mt-0.5'>{pendingCount}</p>
             </div>
             <div className='bg-surface-soft border border-border-subtle px-4 py-2 rounded-xl text-center'>
               <p className='text-[10px] text-text-muted font-semibold uppercase tracking-wider'>
-                Aprobados
+                {lang === 'es' ? 'Aprobados' : 'Approved'}
               </p>
               <p className='text-lg font-black text-[#8FA89B] mt-0.5'>{approvedCount}</p>
             </div>
@@ -451,7 +456,7 @@ export const ApprovalPortalPage = () => {
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >
-            Todos ({items.length})
+            {lang === 'es' ? 'Todos' : 'All'} ({items.length})
           </button>
           <button
             onClick={() => setActiveFilter('pending')}
@@ -461,7 +466,7 @@ export const ApprovalPortalPage = () => {
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >
-            Pendientes ({pendingCount})
+            {lang === 'es' ? 'Pendientes' : 'Pending'} ({pendingCount})
           </button>
           <button
             onClick={() => setActiveFilter('approved')}
@@ -471,7 +476,7 @@ export const ApprovalPortalPage = () => {
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-soft'
             }`}
           >
-            Aprobados ({approvedCount})
+            {lang === 'es' ? 'Aprobados' : 'Approved'} ({approvedCount})
           </button>
         </div>
 
@@ -483,7 +488,7 @@ export const ApprovalPortalPage = () => {
             ))
           ) : (
             <div className='col-span-full py-16 text-center text-xs text-text-muted bg-surface-soft/20 border border-dashed border-border-subtle rounded-2xl'>
-              No hay publicaciones en esta sección.
+              {lang === 'es' ? 'No hay publicaciones en esta sección.' : 'There are no publications in this section.'}
             </div>
           )}
         </motion.div>

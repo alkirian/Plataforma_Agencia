@@ -15,8 +15,10 @@ import { CyberButton } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import { getApiUrl } from '@api/apiFetch';
+import { useLanguage } from '../hooks';
 
 export const JoinPage = () => {
+  const { t, lang } = useLanguage();
   const { code } = useParams();
   const navigate = useNavigate();
 
@@ -63,13 +65,13 @@ export const JoinPage = () => {
         const result = await res.json();
 
         if (!res.ok) {
-          throw new Error(result.message || 'Código de invitación no válido o expirado.');
+          throw new Error(result.message || t.auth.invalidInviteDesc);
         }
 
         setInviteInfo(result.data);
       } catch (err) {
         console.error(err);
-        setError(err.message || 'Error de conexión.');
+        setError(err.message || (lang === 'es' ? 'Error de conexión.' : 'Connection error.'));
       } finally {
         setLoading(false);
       }
@@ -92,7 +94,7 @@ export const JoinPage = () => {
         });
         if (rpcErr) throw rpcErr;
 
-        toast.success('¡Te has unido exitosamente a la agencia!');
+        toast.success(t.onboarding.successJoin);
         localStorage.removeItem('pending_invite_code');
         setTimeout(() => {
           window.location.href = '/dashboard';
@@ -114,10 +116,10 @@ export const JoinPage = () => {
 
       const result = await res.json();
       if (!res.ok) {
-        throw new Error(result.message || 'Error al unirse a la agencia.');
+        throw new Error(result.message || (lang === 'es' ? 'Error al unirse a la agencia.' : 'Error joining the agency.'));
       }
 
-      toast.success('¡Te has unido exitosamente a la agencia!');
+      toast.success(t.onboarding.successJoin);
 
       // Limpiar códigos pendientes
       localStorage.removeItem('pending_invite_code');
@@ -135,7 +137,7 @@ export const JoinPage = () => {
   // 3) Redirigir a registro/login guardando el código en localStorage
   const handleRedirectToAuth = () => {
     localStorage.setItem('pending_invite_code', code);
-    toast.success('Código guardado. Completa tu acceso para unirte.');
+    toast.success(t.auth.codeSavedToast);
 
     // Redirige al home donde está el AuthPage
     setTimeout(() => {
@@ -149,7 +151,7 @@ export const JoinPage = () => {
         <div className='text-center space-y-4'>
           <div className='h-10 w-10 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto'></div>
           <p className='text-xs text-text-muted animate-pulse font-medium'>
-            Resolviendo invitación de la agencia...
+            {t.auth.resolvingInvite}
           </p>
         </div>
       </div>
@@ -168,12 +170,11 @@ export const JoinPage = () => {
           <Card hover={false} className='border-red-500/20 dark:border-red-500/30 bg-red-500/5 dark:bg-red-950/10 backdrop-blur-md'>
             <CardHeader className='text-center border-b border-red-500/10 pb-4'>
               <ExclamationTriangleIcon className='h-12 w-12 text-red-500 mx-auto mb-2 animate-bounce' />
-              <CardTitle className='text-red-600 dark:text-red-400 text-xl font-bold'>Invitación Inválida</CardTitle>
+              <CardTitle className='text-red-600 dark:text-red-400 text-xl font-bold'>{t.auth.invalidInviteTitle}</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4 pt-6 text-center'>
               <p className='text-sm text-text-muted leading-relaxed'>
-                El enlace de ingreso que estás utilizando ha expirado, fue revocado por el
-                administrador de la agencia o no existe.
+                {t.auth.invalidInviteDesc}
               </p>
               <div className='pt-2'>
                 <CyberButton
@@ -181,7 +182,7 @@ export const JoinPage = () => {
                   variant='secondary'
                   className='w-full'
                 >
-                  Volver a la Página de Inicio
+                  {t.auth.backToHome}
                 </CyberButton>
               </div>
             </CardContent>
@@ -200,7 +201,7 @@ export const JoinPage = () => {
                 CADENCE
               </h2>
               <p className='text-xs text-text-muted mt-1 uppercase tracking-widest'>
-                Colaboración de Contenidos
+                {t.auth.contentCollaboration}
               </p>
             </div>
 
@@ -216,12 +217,20 @@ export const JoinPage = () => {
 
                 <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 uppercase tracking-wider mb-2'>
                   <UserGroupIcon className='h-3.5 w-3.5' />
-                  Invitación de Equipo
+                  {t.auth.teamInvitation}
                 </span>
 
                 <h3 className='text-xl font-bold text-text-primary px-2'>
-                  ¡Te han invitado a unirte a{' '}
-                  <span className='text-primary-600 dark:text-primary-400'>{inviteInfo?.agencyName}</span>!
+                  {(() => {
+                    const parts = t.auth.invitedToJoin.split('{name}');
+                    return (
+                      <>
+                        {parts[0]}
+                        <span className='text-primary-600 dark:text-primary-400'>{inviteInfo?.agencyName}</span>
+                        {parts[1]}
+                      </>
+                    );
+                  })()}
                 </h3>
               </div>
 
@@ -230,15 +239,22 @@ export const JoinPage = () => {
                   <div className='flex items-center gap-3'>
                     <ShieldCheckIcon className='h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0' />
                     <span>
-                      Te unirás con el rol de{' '}
-                      <strong className='text-text-primary capitalize'>{inviteInfo?.role}</strong>.
+                      {(() => {
+                        const parts = t.auth.joinRoleDesc.split('{role}');
+                        return (
+                          <>
+                            {parts[0]}
+                            <strong className='text-text-primary capitalize'>{inviteInfo?.role}</strong>
+                            {parts[1]}
+                          </>
+                        );
+                      })()}
                     </span>
                   </div>
                   <div className='flex items-center gap-3'>
                     <BuildingOfficeIcon className='h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0' />
                     <span>
-                      Tendrás acceso a ver los clientes, documentos y cronogramas de contenido de la
-                      agencia.
+                      {t.auth.joinAccessDesc}
                     </span>
                   </div>
                 </div>
@@ -248,7 +264,7 @@ export const JoinPage = () => {
                   <div className='space-y-3'>
                     <div className='text-xs text-text-muted text-center flex items-center justify-center gap-1.5 p-2 border border-dashed border-border-subtle rounded-xl bg-surface-soft/30'>
                       <span className='h-2 w-2 rounded-full bg-emerald-500 inline-block'></span>
-                      Sesión activa:{' '}
+                      {t.auth.activeSession}{' '}
                       <span className='font-semibold text-text-primary'>{session.user.email}</span>
                     </div>
 
@@ -258,27 +274,26 @@ export const JoinPage = () => {
                       loading={accepting}
                       className='w-full'
                     >
-                      Aceptar Invitación y Unirse ahora
+                      {t.auth.acceptInviteJoinNow}
                     </CyberButton>
                   </div>
                 ) : (
                   <div className='space-y-3'>
                     <p className='text-xs text-text-muted text-center leading-relaxed'>
-                      Necesitas crear una cuenta o iniciar sesión con tu correo para vincularte a la
-                      agencia.
+                      {t.auth.joinNeedAccountDesc}
                     </p>
                     <div className='grid grid-cols-2 gap-3'>
                       <button
                         onClick={handleRedirectToAuth}
                         className='px-4 py-2.5 text-xs font-semibold rounded-xl bg-primary-500/10 border border-primary-500/20 text-primary-400 hover:bg-primary-500/20 transition w-full'
                       >
-                        Crear Cuenta nueva
+                        {t.auth.createNewAccount}
                       </button>
                       <button
                         onClick={handleRedirectToAuth}
                         className='px-4 py-2.5 text-xs font-semibold rounded-xl bg-surface border border-border-subtle text-text-primary hover:bg-surface-strong transition w-full flex items-center justify-center gap-1'
                       >
-                        Iniciar Sesión <ArrowRightIcon className='h-3 w-3' />
+                        {lang === 'es' ? 'Iniciar Sesión' : 'Log In'} <ArrowRightIcon className='h-3 w-3' />
                       </button>
                     </div>
                   </div>

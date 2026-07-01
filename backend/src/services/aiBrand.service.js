@@ -296,7 +296,7 @@ const searchWithTavily = async (query) => {
  * @param {Array} sourceLinks - Enlaces de fuentes provistos por el usuario.
  * @returns {Promise<object>} Reporte estructurado de consistencia con conflictos y resoluciones sugeridas.
  */
-export const analyzeBrandConsistency = async (currentProfile, sourceLinks = [], extractedTexts = [], imageAssets = [], clientName = '', clientIndustry = '') => {
+export const analyzeBrandConsistency = async (currentProfile, sourceLinks = [], extractedTexts = [], imageAssets = [], clientName = '', clientIndustry = '', instagramPosts = []) => {
   console.log('🤖 [OpenAI Brand Alignment] Iniciando análisis de consistencia y perfilado multimodal...');
 
   let gatheredInfoText = '';
@@ -366,15 +366,46 @@ export const analyzeBrandConsistency = async (currentProfile, sourceLinks = [], 
     gatheredInfoText += `\n\n=== TEXTOS EXTRAÍDOS DE ARCHIVOS DE REFERENCIA Y BRIEFS ===\n` + extractedTexts.join('\n\n---\n\n');
   }
 
+  if (instagramPosts && instagramPosts.length > 0) {
+    gatheredInfoText += `\n\n=== ÚLTIMOS 10 POSTEOS DE INSTAGRAM ===\n`;
+    instagramPosts.forEach((post, idx) => {
+      gatheredInfoText += `\n[Post ${idx + 1}]
+- ID: ${post.id}
+- Tipo: ${post.mediaType || 'Desconocido'}
+- Fecha: ${post.createdAt || 'Desconocido'}
+- Enlace: ${post.permalink || 'Sin enlace'}
+- Likes: ${post.likesCount || 0}
+- Comentarios Totales: ${post.commentsCount || 0}
+- Caption (Texto del Post):
+"""
+${post.caption || 'Sin texto'}
+"""
+- Comentarios Recientes de los Clientes:
+${post.comments && post.comments.length > 0 
+  ? post.comments.map(c => `  * @${c.username || 'usuario'}: "${c.text}"`).join('\n')
+  : '  (No hay comentarios disponibles o legibles)'}
+----------------------------------------\n`;
+    });
+  }
+
   if (!gatheredInfoText.trim() && (!imageAssets || imageAssets.length === 0)) {
-    gatheredInfoText = 'No se encontraron enlaces de fuentes activas ni archivos con información pública detectable. Genera la mejor inferencia en base a los datos actuales del formulario y realiza una búsqueda general.';
+    gatheredInfoText = 'No se encontraron enlaces de fuentes activas ni archivos con información pública detectable. Por lo tanto, mantén todas las secciones como información pendiente a menos que se indique lo contrario en los datos actuales del cliente.';
   }
 
   const systemPrompt = `Actúas como un estratega senior de branding, identidad de marca y comunicación digital.
-Tu tarea es realizar una auditoría de marca exhaustiva y estructurar el ADN estratégico del cliente comparando los datos actuales provistos con la información capturada en tiempo real de sus canales digitales en la web y los manuales o capturas de referencia provistos.
+Tu tarea es realizar una auditoría de marca exhaustiva y estructurar el ADN estratégico del cliente comparando los datos actuales provistos con la información capturada en tiempo real de sus canales digitales en la web y los manuales o capturas de referencia provistos (incluyendo las publicaciones recientes de Instagram y comentarios de los clientes si están disponibles).
 
-Antes de sacar conclusiones, debes estudiar toda la información disponible y organizar el análisis de forma profesional en español.
-No inventes información que no esté respaldada por los datos entregados. Si falta información importante, indícalo claramente y especifica qué preguntas habría que hacerle al cliente.
+Antes de sacar conclusiones, debes estudiar toda la información disponible (redes sociales, comentarios de clientes, imágenes visuales de los posteos) y organizar el análisis de forma profesional en español.
+Si hay publicaciones de Instagram o comentarios provistos:
+- Analiza minuciosamente los comentarios de los clientes para identificar sus demandas recurrentes, dudas frecuentes (ej: envíos, talles, precios), quejas o elogios, y úsalo para robustecer el Público Objetivo y Tono de Voz.
+- Evalúa el estilo de comunicación de las publicaciones (copies, hashtags, uso de emojis, formalidad) y el tipo de publicación (imágenes, carruseles, reels/videos) que genera mayor interacción.
+- Analiza visualmente las imágenes provistas en Base64 de las publicaciones de Instagram para detectar la paleta de colores cromáticos reales que utiliza la marca y su consistencia estética.
+
+REGLA CRÍTICA DE VERACIDAD (CERO ALUCINACIONES):
+No inventes, alucines ni rellenes con clichés de marketing información que no esté directamente respaldada por las fuentes provistas (redes, web escrapeada, posts, comentarios o archivos de texto).
+Si para alguno de los 16 apartados estratégicos listados a continuación no dispones de información real, concreta y explícita de la marca, debes colocar EXACTAMENTE el siguiente texto como contenido exclusivo de ese apartado:
+*⚠️ [Información pendiente: Faltan detalles sobre este punto. Habla con el asistente de ADN de marca para completarlo.]*
+Por ejemplo, si no se mencionan competidores en las fuentes, bajo el apartado '### 10. Competencia y diferenciación' debes escribir únicamente esa línea de advertencia. No inventes competidores de forma creativa.
 
 Objetivo del análisis:
 Construir una visión clara de la identidad actual de la marca, detectar fortalezas, debilidades, oportunidades de mejora y proponer una dirección estratégica para mejorar su comunicación visual, verbal y comercial.
@@ -382,7 +413,7 @@ Construir una visión clara de la identidad actual de la marca, detectar fortale
 Debes devolver estrictamente un objeto JSON válido con los campos especificados abajo. No agregues preámbulo ni markdown fuera del JSON.
 
 Tus tareas principales son:
-1. En el campo "brand_profile_text", generar una auditoría e identidad de marca EXTREMADAMENTE COMPLETA, DETALLADA y de gran extensión (de al menos 800 a 1800 palabras) utilizando títulos y subtítulos Markdown claros. Debes seguir y estructurar rigurosamente los siguientes puntos:
+1. En el campo "brand_profile_text", generar la identidad de marca estructurada en base a la información real utilizando títulos y subtítulos Markdown claros. Debes seguir y estructurar rigurosamente los siguientes puntos:
 
 ### 1. Resumen general de la marca
 Explicación de qué hace la empresa, cómo se presenta actualmente y propuesta principal.
@@ -435,7 +466,7 @@ Lista de preguntas estratégicas importantes para completar y refinar la identid
 ### Síntesis Ejecutiva
 Una síntesis final contundente de la identidad de marca recomendada.
 
-Formato: Presenta el análisis del perfil ("brand_profile_text") en secciones de Markdown muy ricas en contenido, con explicaciones muy descriptivas en cada punto. Sé específico, profesional y crítico, pero constructivo. Evita respuestas genéricas.
+Formato: Presenta el análisis del perfil ("brand_profile_text") en secciones de Markdown muy ricas en contenido, con explicaciones muy descriptivas en cada punto. Sé específico y veraz. Si falta información en una sección, coloca la advertencia de información pendiente indicada arriba.
 
 2. En el campo "contradictions", identificar las contradicciones de temas, estilo, tono o visuales entre los diferentes canales públicos del cliente y sus archivos/capturas cargadas. Redacta consultas claras y sugerencias para resolver cada discrepancia de manera colaborativa con el usuario.`;
 
@@ -511,5 +542,64 @@ Escribe tu respuesta estrictamente en este formato JSON:
     };
   }
 };
+
+/**
+ * Interactúa de forma conversacional con el cliente para refinar y completar su ADN de marca.
+ * @param {string} currentBusinessDescription - El markdown actual del perfil de marca.
+ * @param {string} userPrompt - El mensaje enviado por el usuario.
+ * @param {Array} chatHistory - Historial corto previo.
+ * @returns {Promise<object>} JSON con la respuesta conversacional ("reply") y el markdown actualizado ("updated_business_description").
+ */
+export const processBrandDnaChat = async (currentBusinessDescription, userPrompt, chatHistory = []) => {
+  const systemPrompt = `Actúas como un estratega de marca senior interactuando con un cliente para refinar y completar su ADN de marca.
+Recibes:
+1. El perfil actual de marca (el markdown con 16 secciones).
+2. El mensaje del usuario, que contiene respuestas para completar las secciones vacías o modificar datos existentes.
+3. El historial corto de la conversación actual.
+
+Reglas cruciales:
+1. NO inventes ni alucines información. Si el usuario te da una respuesta muy corta, por ejemplo: "Vendemos café", actualiza la sección correspondiente de forma profesional y escueta: "El negocio se dedica a la venta de café". No asumas detalles no provistos por el usuario (como que es de especialidad, orgánico, etc.).
+2. Si la sección que se está respondiendo estaba vacía o contenía la advertencia "*⚠️ [Información pendiente...]*", reemplázala por la información provista por el usuario, redactada de forma profesional, clara y concisa en español.
+3. Si el usuario modifica algo que ya existía, actualízalo de acuerdo a lo que dice.
+4. Conserva el formato markdown rígido de 16 secciones. No elimines secciones ni alteres los encabezados (ej. '### 1. Resumen general de la marca', '### 2. Identidad percibida actual', etc.).
+5. Devuelve estrictamente un objeto JSON válido con los siguientes campos (no incluyas preámbulos ni markdown fuera del JSON):
+   {
+     "reply": "Tu respuesta conversacional en español. Debe ser amigable, confirmar qué sección actualizaste y sugerir cuál es la siguiente pregunta estratégica para rellenar las secciones que aún tengan la advertencia de información pendiente.",
+     "updated_business_description": "El markdown completo con las 16 secciones actualizadas con la nueva información."
+   }`;
+
+  const formattedHistory = (chatHistory || [])
+    .map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.content}`)
+    .join('\n');
+
+  const userPromptText = `PERFIL DE MARCA ACTUAL (MARKDOWN):
+"""
+${currentBusinessDescription || ''}
+"""
+
+HISTORIAL DE CHAT:
+"""
+${formattedHistory}
+"""
+
+NUEVO MENSAJE DEL USUARIO:
+"${userPrompt}"
+
+Por favor, procesa esta respuesta, actualiza el perfil en el markdown de forma precisa y devuelve el JSON requerido.`;
+
+  console.log('🤖 [OpenAI Brand DNA Chat] Procesando mensaje de usuario con GPT-4o-mini...');
+  const jsonText = await callOpenAIJSON(systemPrompt, userPromptText);
+
+  try {
+    const parsedData = JSON.parse(jsonText);
+    console.log('✅ [OpenAI Brand DNA Chat] Mensaje procesado y perfil actualizado.');
+    return parsedData;
+  } catch (parseError) {
+    console.error('❌ [OpenAI Brand DNA Chat] Error al parsear el JSON:', jsonText);
+    throw new Error('La respuesta de la IA no pudo ser interpretada como una actualización válida del perfil.');
+  }
+};
+
+
 
 

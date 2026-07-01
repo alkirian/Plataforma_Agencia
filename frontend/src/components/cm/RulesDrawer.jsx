@@ -5,6 +5,7 @@ import {
   ShieldCheckIcon,
   LinkIcon,
 } from '@heroicons/react/24/outline';
+import { useLanguage } from '../../hooks';
 
 export const RulesDrawer = ({
   showRulesPanel,
@@ -20,6 +21,8 @@ export const RulesDrawer = ({
   handleDeleteTikTok,
   handleDeleteGoogleIntegration,
 }) => {
+  const { t } = useLanguage();
+
   return (
     <AnimatePresence>
       {showRulesPanel && (
@@ -43,22 +46,22 @@ export const RulesDrawer = ({
             <div className="flex justify-between items-center border-b border-border-subtle pb-4">
               <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5 font-title">
                 <ShieldCheckIcon className="h-5 w-5 text-accent-cyan" />
-                <span>Reglas y Canales</span>
+                <span>{t.cm.rulesAndChannels}</span>
               </h4>
               <button
                 onClick={() => setShowRulesPanel(false)}
                 className="btn-cyber px-3 py-1.5 text-[10px] font-bold transition-all cursor-pointer bg-surface-strong border border-border-subtle text-text-primary hover:bg-surface-soft"
               >
-                Cerrar
+                {t.common.close}
               </button>
             </div>
 
             {/* Tone Card Reference */}
             <div className="bg-surface-strong/30 border border-border-subtle p-4 rounded-xl space-y-1.5">
-              <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider block select-none">Tono de Voz Activo</span>
-              <p className="text-xs text-text-primary font-bold">Cálido, Cercano & Empático</p>
+              <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider block select-none">{t.cm.activeVoice}</span>
+              <p className="text-xs text-text-primary font-bold">{t.cm.voiceDescription}</p>
               <div className="text-[10px] text-text-muted leading-relaxed select-none">
-                Utiliza siempre emojis amistosos, saluda de manera personalizada y mantén un lenguaje optimista y servicial.
+                {t.cm.voiceSubDesc}
               </div>
             </div>
 
@@ -66,7 +69,7 @@ export const RulesDrawer = ({
             <div className="space-y-4 border-t border-border-subtle pt-4">
               <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 flex items-center gap-1.5 select-none">
                 <LinkIcon className="h-3.5 w-3.5 text-accent-cyan" />
-                <span>Integraciones Multicanal</span>
+                <span>{t.cm.multiChannelIntegrations}</span>
               </h5>
 
               <div className="space-y-3">
@@ -81,16 +84,16 @@ export const RulesDrawer = ({
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-text-primary">Facebook / Instagram</span>
-                        <span className="text-[9px] text-text-muted leading-tight">Canal de auto-respuestas CM</span>
+                        <span className="text-[9px] text-text-muted leading-tight">{t.cm.cmAutoReplyChannel}</span>
                       </div>
                     </div>
                     {integration ? (
                       <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
-                        Activo
+                        {t.cm.activeStatus}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
-                        Inactivo
+                        {t.cm.inactiveStatus}
                       </span>
                     )}
                   </div>
@@ -98,7 +101,7 @@ export const RulesDrawer = ({
                     <div className="pt-2.5 border-t border-border-subtle flex items-center justify-between gap-1 text-[9px]">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-text-muted font-semibold truncate max-w-[130px]">
-                          Pág: {integration.page_name || 'Sin nombre'}
+                          {t.cm.pageLabel}: {integration.page_name || t.cm.noName}
                         </span>
                         <span className="text-text-muted font-mono truncate max-w-[130px] opacity-75">
                           ID: {integration.page_id ? `${integration.page_id.substring(0, 6)}...` : 'N/A'}
@@ -108,7 +111,7 @@ export const RulesDrawer = ({
                         onClick={handleDisconnect}
                         className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                       >
-                        Desconectar
+                        {t.cm.disconnectBtn}
                       </button>
                     </div>
                   )}
@@ -125,16 +128,16 @@ export const RulesDrawer = ({
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-text-primary">LinkedIn Profile</span>
-                        <span className="text-[9px] text-text-muted leading-tight">Publicación directa multicanal</span>
+                        <span className="text-[9px] text-text-muted leading-tight">{t.cm.linkedinDesc}</span>
                       </div>
                     </div>
                     {linkedinIntegration ? (
                       <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
-                        Sincronizado
+                        {t.cm.syncedStatus}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
-                        Inactivo
+                        {t.cm.inactiveStatus}
                       </span>
                     )}
                   </div>
@@ -152,7 +155,7 @@ export const RulesDrawer = ({
                         onClick={handleDeleteLinkedIn}
                         className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                       >
-                        Desconectar
+                        {t.cm.disconnectBtn}
                       </button>
                     </div>
                   ) : (
@@ -164,7 +167,7 @@ export const RulesDrawer = ({
                         <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                         </svg>
-                        <span>Conectar LinkedIn</span>
+                        <span>{t.cm.connectLinkedIn}</span>
                       </button>
                     </div>
                   )}
@@ -181,16 +184,16 @@ export const RulesDrawer = ({
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-text-primary">TikTok Business</span>
-                        <span className="text-[9px] text-text-muted leading-tight">Publicación directa de videos</span>
+                        <span className="text-[9px] text-text-muted leading-tight">{t.cm.tiktokDesc}</span>
                       </div>
                     </div>
                     {tiktokIntegration ? (
                       <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
-                        Sincronizado
+                        {t.cm.syncedStatus}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
-                        Inactivo
+                        {t.cm.inactiveStatus}
                       </span>
                     )}
                   </div>
@@ -208,7 +211,7 @@ export const RulesDrawer = ({
                         onClick={handleDeleteTikTok}
                         className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                       >
-                        Desconectar
+                        {t.cm.disconnectBtn}
                       </button>
                     </div>
                   ) : (
@@ -220,7 +223,7 @@ export const RulesDrawer = ({
                         <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
                           <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.6-4.08-1.4-1.18-.78-2.07-1.9-2.57-3.19-.03 1.11-.02 2.22-.02 3.33v8.3c.02 1.39-.33 2.82-1.13 3.96-.8 1.16-2.05 1.99-3.46 2.3-1.45.31-3.03.11-4.37-.5-1.37-.62-2.48-1.75-3.09-3.13-.61-1.42-.64-3.07-.12-4.5.5-1.39 1.53-2.61 2.88-3.3 1.43-.72 3.12-.86 4.63-.4v4.07c-.9-.28-1.92-.19-2.73.35-.8.54-1.3 1.49-1.33 2.46.03.97.55 1.91 1.36 2.44.82.52 1.88.57 2.75.14.88-.43 1.47-1.33 1.52-2.3.01-3.12 0-6.24 0-9.36.03-3.38.01-6.76.02-10.15z" />
                         </svg>
-                        <span>Conectar TikTok</span>
+                        <span>{t.cm.connectTikTok}</span>
                       </button>
                     </div>
                   )}
@@ -237,16 +240,16 @@ export const RulesDrawer = ({
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-text-primary">Google Ads</span>
-                        <span className="text-[9px] text-text-muted leading-tight">Auditoría y pauta en Google</span>
+                        <span className="text-[9px] text-text-muted leading-tight">{t.cm.googleDesc}</span>
                       </div>
                     </div>
                     {googleIntegration ? (
                       <span className="px-2 py-0.5 rounded-full bg-accent-cyan/10 text-accent-cyan text-[8px] font-bold uppercase tracking-wider select-none">
-                        Sincronizado
+                        {t.cm.syncedStatus}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-surface-strong border border-border-subtle text-text-muted text-[8px] font-bold uppercase tracking-wider select-none">
-                        Inactivo
+                        {t.cm.inactiveStatus}
                       </span>
                     )}
                   </div>
@@ -264,13 +267,13 @@ export const RulesDrawer = ({
                         onClick={handleDeleteGoogleIntegration}
                         className="btn-cyber px-2.5 py-1 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-[9px] font-bold transition-all cursor-pointer flex-shrink-0"
                       >
-                        Desconectar
+                        {t.cm.disconnectBtn}
                       </button>
                     </div>
                   ) : (
                     <div className="pt-0.5">
                       <span className="text-[9px] text-text-muted block italic">
-                        Vincula Google Ads desde la pestaña de Publicidad
+                        {t.cm.linkGoogleAdsPrompt}
                       </span>
                     </div>
                   )}
@@ -282,7 +285,7 @@ export const RulesDrawer = ({
             <div className="bg-surface-strong/30 border border-border-subtle p-4 rounded-xl flex items-start gap-2.5 mt-auto">
               <ShieldCheckIcon className="h-4.5 w-4.5 text-accent-cyan flex-shrink-0 mt-0.5" />
               <div className="text-[10px] text-text-muted leading-relaxed">
-                <span className="font-bold text-text-secondary">Seguridad RAG:</span> El CM Inteligente está restringido a responder únicamente en base a los documentos cargados en tu sección "Documentos". Nunca inventará links o datos que no estén explícitamente verificados.
+                <span className="font-bold text-text-secondary">{t.cm.ragSecurityTitle}</span> {t.cm.ragSecurityDesc}
               </div>
             </div>
 

@@ -1,12 +1,14 @@
-// src/components/trends/CreateEventModal.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowPathIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { createScheduleItem } from '../../api/schedule.js';
 import { generateCopyFromTrend } from '../../api/ai.js';
+import { getClients } from '../../api/clients.js';
+import { useEscapeClose } from '../../hooks';
 
 export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
+  useEscapeClose(isOpen, onClose);
   const [title, setTitle] = useState('');
   const [copy, setCopy] = useState('');
   const [creativeIdea, setCreativeIdea] = useState('');
@@ -16,12 +18,34 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
   const [priority, setPriority] = useState('medium');
   const [scheduledAt, setScheduledAt] = useState('');
 
+  const [clients, setClients] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState(clientId || '');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
-  // Trigger AI copy generation when insight or channel changes
+  // Load clients if clientId is not provided
   useEffect(() => {
-    if (!insight) return;
+    if (!clientId && isOpen) {
+      getClients()
+        .then(res => {
+          const list = res?.data ?? res ?? [];
+          setClients(list);
+          if (list.length > 0) {
+            setSelectedClientId(list[0].id);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching clients list:', err);
+        });
+    } else {
+      setSelectedClientId(clientId || '');
+    }
+  }, [clientId, isOpen]);
+
+  // Trigger AI copy generation when insight, client, or channel changes
+  useEffect(() => {
+    if (!insight || !isOpen) return;
 
     // Set fallback/initial values first
     setTitle(`Idea: ${insight.title.slice(0, 45)}`);
@@ -45,9 +69,10 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 
     // Call AI to generate professional copy and creative idea
     const fetchAICopy = async () => {
+      if (!selectedClientId) return;
       setIsGeneratingAI(true);
       try {
-        const response = await generateCopyFromTrend(clientId, {
+        const response = await generateCopyFromTrend(selectedClientId, {
           trendTitle: insight.title,
           trendDescription: insight.description,
           suggestedAction: insight.suggested_action,
@@ -68,12 +93,16 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
     };
 
     fetchAICopy();
-  }, [insight, clientId, channel]);
+  }, [insight, selectedClientId, channel, isOpen]);
 
   if (!isOpen || !insight) return null;
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!selectedClientId) {
+      toast.error('Por favor, selecciona un cliente para esta publicación.');
+      return;
+    }
     if (!title.trim() || !scheduledAt) {
       toast.error('Por favor, completa el título y la fecha.');
       return;
@@ -81,7 +110,7 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
 
     setIsSubmitting(true);
     try {
-      await createScheduleItem(clientId, {
+      await createScheduleItem(selectedClientId, {
         title: title.trim(),
         copy: copy.trim(),
         creative_idea: creativeIdea.trim(),
@@ -107,28 +136,28 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className='w-full max-w-2xl bg-[#0F172A] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]'
+        className='w-full max-w-2xl bg-surface border border-border-subtle rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]'
       >
         {/* Header */}
-        <div className='px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-slate-900/40'>
+        <div className='px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-strong/30'>
           <div>
-            <h3 className='text-sm font-bold text-white flex items-center gap-2'>
+            <h3 className='text-sm font-bold text-text-primary flex items-center gap-2'>
               <span>📅</span> Calendarizar Contenido Sugerido
             </h3>
-            <p className='text-[10px] text-slate-400 mt-0.5'>
+            <p className='text-[10px] text-text-muted mt-0.5'>
               La IA redactará contenido específico adaptado al tono de tu cliente
             </p>
           </div>
           <button
             onClick={onClose}
-            className='text-slate-400 hover:text-white text-sm transition-colors'
+            className='text-text-muted hover:text-text-primary text-sm transition-colors'
           >
             ✕
           </button>
         </div>
 
         {/* AI Processing Status Banner */}
-        <div className='px-6 py-2.5 bg-[#1E293B]/60 border-b border-white/[0.04] flex items-center justify-between text-[11px]'>
+        <div className='px-6 py-2.5 bg-surface-strong border-b border-border-subtle flex items-center justify-between text-[11px]'>
           {isGeneratingAI ? (
             <div className='flex items-center gap-2 text-blue-400 font-medium'>
               <span className='w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping' />
@@ -140,21 +169,43 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
               <span>✨ ¡Borrador optimizado con IA y alineado con la identidad de marca!</span>
             </div>
           )}
-          <span className='text-[9px] text-slate-500 font-bold uppercase'>OpenAI GPT-4o</span>
+          <span className='text-[9px] text-text-muted font-bold uppercase'>OpenAI GPT-4o</span>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className='p-6 space-y-4 overflow-y-auto flex-1'>
+          {/* Client Selector (only if clientId was not passed) */}
+          {!clientId && (
+            <div>
+              <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
+                Cliente Destinatario
+              </label>
+              <select
+                value={selectedClientId}
+                onChange={e => setSelectedClientId(e.target.value)}
+                className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none transition-colors cursor-pointer appearance-none'
+                required
+              >
+                <option value="" disabled className="bg-surface text-text-primary">-- Selecciona un cliente --</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id} className="bg-surface text-text-primary">
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Title */}
           <div>
-            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+            <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
               Título de la Publicación
             </label>
             <input
               type='text'
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors'
+              className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none transition-colors'
               placeholder='Ej. Post sobre tendencia de mercado'
               required
             />
@@ -163,46 +214,46 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
           {/* Grid: Channel, Priority & Scheduled Date */}
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
             <div>
-              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
                 Red Social / Canal
               </label>
               <select
                 value={channel}
                 onChange={e => setChannel(e.target.value)}
-                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer'
+                className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none transition-colors cursor-pointer'
               >
-                <option value='IG'>Instagram</option>
-                <option value='TikTok'>TikTok</option>
-                <option value='LinkedIn'>LinkedIn</option>
-                <option value='YT'>YouTube</option>
-                <option value='FB'>Facebook</option>
-                <option value='Twitter'>X / Twitter</option>
+                <option value='IG' className="bg-surface text-text-primary">Instagram</option>
+                <option value='TikTok' className="bg-surface text-text-primary">TikTok</option>
+                <option value='LinkedIn' className="bg-surface text-text-primary">LinkedIn</option>
+                <option value='YT' className="bg-surface text-text-primary">YouTube</option>
+                <option value='FB' className="bg-surface text-text-primary">Facebook</option>
+                <option value='Twitter' className="bg-surface text-text-primary">X / Twitter</option>
               </select>
             </div>
             <div>
-              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
                 Prioridad
               </label>
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value)}
-                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors cursor-pointer'
+                className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none transition-colors cursor-pointer'
               >
-                <option value='low'>Baja</option>
-                <option value='medium'>Media</option>
-                <option value='high'>Alta</option>
-                <option value='urgente'>Urgente</option>
+                <option value='low' className="bg-surface text-text-primary">Baja</option>
+                <option value='medium' className="bg-surface text-text-primary">Media</option>
+                <option value='high' className="bg-surface text-text-primary">Alta</option>
+                <option value='urgente' className="bg-surface text-text-primary">Urgente</option>
               </select>
             </div>
             <div>
-              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+              <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
                 Fecha y Hora
               </label>
               <input
                 type='datetime-local'
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
-                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors'
+                className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none transition-colors'
                 required
               />
             </div>
@@ -211,7 +262,7 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
           {/* Social Media Post Copy */}
           <div>
             <div className='flex items-center justify-between mb-1.5'>
-              <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider'>
+              <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider'>
                 Copia / Copy de Redes Sociales (Redactado por IA)
               </label>
               {isGeneratingAI && (
@@ -223,54 +274,54 @@ export const CreateEventModal = ({ isOpen, onClose, insight, clientId }) => {
             <textarea
               value={copy}
               onChange={e => setCopy(e.target.value)}
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition-colors h-28 resize-none leading-relaxed'
+              className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-text-primary focus:outline-none transition-colors h-28 resize-none leading-relaxed'
               placeholder='El copy completo listo para publicar...'
             />
           </div>
 
           {/* Creative Idea / Visual Focus */}
           <div>
-            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+            <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
               Idea Creativa / Enfoque de Diseño Visual (Sugerido por IA)
             </label>
             <textarea
               value={creativeIdea}
               onChange={e => setCreativeIdea(e.target.value)}
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none transition-colors h-16 resize-none leading-relaxed'
+              className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none transition-colors h-16 resize-none leading-relaxed'
               placeholder='Detalle visual o idea del formato del video/imagen...'
             />
           </div>
 
           {/* Strategic Goal / Objective */}
           <div>
-            <label className='block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5'>
+            <label className='block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5'>
               Objetivo Estratégico de la Publicación
             </label>
             <input
               type='text'
               value={goal}
               onChange={e => setGoal(e.target.value)}
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors'
+              className='w-full bg-surface border border-border-subtle focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none transition-colors'
               placeholder='Ej. Aumentar alcance orgánico'
             />
           </div>
 
           {/* Context original read-only */}
-          <div className='p-3 bg-slate-950/60 rounded-xl border border-white/[0.03] space-y-1'>
-            <span className='text-[9px] font-bold text-slate-500 uppercase tracking-wide'>
+          <div className='p-3 bg-surface-strong/50 rounded-xl border border-border-subtle space-y-1'>
+            <span className='text-[9px] font-bold text-text-muted uppercase tracking-wide'>
               Contexto de la Tendencia (Original)
             </span>
-            <p className='text-[10px] text-slate-400 leading-relaxed font-normal truncate'>
+            <p className='text-[10px] text-text-secondary leading-relaxed font-normal truncate'>
               {insight.description}
             </p>
           </div>
 
           {/* Actions */}
-          <div className='flex items-center justify-end gap-3 pt-3 border-t border-white/[0.06] mt-4'>
+          <div className='flex items-center justify-end gap-3 pt-3 border-t border-border-subtle mt-4'>
             <button
               type='button'
               onClick={onClose}
-              className='px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors'
+              className='px-4 py-2 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors'
             >
               Cancelar
             </button>

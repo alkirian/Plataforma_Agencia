@@ -1,6 +1,8 @@
 // src/components/brand/StrategicCanvas.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ColorPaletteWidget } from './ColorPaletteWidget';
+import { useLanguage } from '../../hooks';
 
 export const StrategicCanvas = ({
   formData = {},
@@ -16,10 +18,12 @@ export const StrategicCanvas = ({
   handleAddColor,
   handleRemoveColor,
   handleUpdateColor,
-  activeTab,
-  setActiveTab,
+  autosaveStatus = 'idle',
+  onOpenDnaAssistant,
 }) => {
-  const [expandedChapter, setExpandedChapter] = useState('dna'); // Default open: ADN Estratégico
+  const { t, lang } = useLanguage();
+  const [editMode, setEditMode] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [editingSecNum, setEditingSecNum] = useState(null); // ID de la sección siendo editada
   const [editSecValue, setEditSecValue] = useState(''); // Valor temporal del editor
 
@@ -88,7 +92,7 @@ export const StrategicCanvas = ({
     );
   };
 
-  // 1. Parses raw markdown text into an structured list of sections
+  // Parses raw markdown text into an structured list of sections
   const parseSectionsText = (text) => {
     if (!text || !text.trim()) return [];
     const lines = text.split('\n');
@@ -96,39 +100,18 @@ export const StrategicCanvas = ({
     let currentSection = null;
 
     lines.forEach((line) => {
-      const trimmed = line.trim();
-
-      if (trimmed.startsWith('### ')) {
+      const match = line.match(/^##\s+(\d+)\.\s+(.*)$/);
+      if (match) {
         if (currentSection) {
           parsed.push(currentSection);
         }
-        const title = trimmed.replace('### ', '');
-        const matchNum = title.match(/^(\d+)\.\s+(.*)/);
         currentSection = {
-          num: matchNum ? parseInt(matchNum[1], 10) : parsed.length + 1,
-          title: matchNum ? matchNum[2].replace(/\*\*/g, '') : title,
-          contentLines: [],
-        };
-      } else if (trimmed.startsWith('## ')) {
-        if (currentSection) {
-          parsed.push(currentSection);
-        }
-        const title = trimmed.replace('## ', '');
-        currentSection = {
-          num: null,
-          title: title,
-          isChapter: true,
-          contentLines: [],
+          num: parseInt(match[1], 10),
+          title: match[2],
+          contentLines: []
         };
       } else if (currentSection) {
         currentSection.contentLines.push(line);
-      } else {
-        // Collect initial text before first heading
-        currentSection = {
-          num: 0,
-          title: 'Resumen Inicial',
-          contentLines: [line],
-        };
       }
     });
 
@@ -139,27 +122,17 @@ export const StrategicCanvas = ({
     return parsed;
   };
 
-  // Reconstruye el texto Markdown completo a partir del array de secciones
+  const parsedSections = useMemo(() => parseSectionsText(formData.business_description || ''), [formData.business_description]);
+
+  // Reconstructs the complete markdown text from structured sections array
   const reconstructMarkdown = (sections) => {
-    return sections.map(sec => {
-      if (sec.isChapter) {
-        return `## ${sec.title}\n${sec.contentLines.join('\n')}`;
-      } else {
-        const numPrefix = sec.num && sec.num !== 0 ? `${sec.num}. ` : '';
-        const heading = sec.title === 'Resumen Inicial' && sec.num === 0 ? '' : `### ${numPrefix}${sec.title}\n`;
-        return `${heading}${sec.contentLines.join('\n')}`;
-      }
-    }).join('\n');
+    return sections.map(sec => `## ${sec.num}. ${sec.title}\n${sec.contentLines.join('\n')}`).join('\n\n');
   };
 
-  // Guarda la edición de una subsección específica del brief y auto-persiste
-  const handleSaveSection = (targetSec) => {
-    const parsedSections = parseSectionsText(formData.business_description || '');
-    
+  // Saves inline strategic section and auto-persists in background
+  const handleSaveSection = (secNum) => {
     const updatedSections = parsedSections.map(sec => {
-      const currentKey = sec.num !== null ? String(sec.num) : sec.title;
-      const targetKey = targetSec.num !== null ? String(targetSec.num) : targetSec.title;
-      if (currentKey === targetKey) {
+      if (sec.num === secNum) {
         return {
           ...sec,
           contentLines: editSecValue.split('\n')
@@ -172,13 +145,13 @@ export const StrategicCanvas = ({
     onChange('business_description', newMarkdownText);
     setEditingSecNum(null);
     
-    // Auto-guardado en segundo plano
+    // Auto-save call
     setTimeout(() => {
       onSave();
     }, 100);
   };
 
-  // Clasifica alertas/contradicciones en un capítulo en base a palabras clave
+  // Classifies contradictions to respective chapters based on keywords
   const getContradictionChapter = (contra) => {
     const textToAnalyze = `${contra.title} ${contra.description}`.toLowerCase();
     
@@ -200,73 +173,50 @@ export const StrategicCanvas = ({
     return 'dna';
   };
 
-  // Dynamic grouping logic of 16-point Strategic Brief into 5 Chapters (Pillars)
-  const renderDynamicPillars = (text) => {
-    if (!text || !text.trim()) {
-      return (
-        <div className='flex flex-col items-center justify-center text-center py-20 px-4 text-text-muted select-none'>
-          <span className='text-3xl block mb-2'>📝</span>
-          <p className='text-xs font-black text-text-primary block mb-0.5 uppercase tracking-wider font-title'>
-            Perfil Estratégico Vacío
-          </p>
-          <p className='text-[10px] text-text-muted leading-relaxed max-w-[260px] mx-auto'>
-            Escribe el ADN estratégico del negocio o presiona el botón <strong>"Analizar"</strong> para extraer el perfil automáticamente de internet.
-          </p>
-        </div>
-      );
-    }
+  const getChaptersList = (text) => {
+    if (!text || !text.trim()) return [];
 
     const parsedSections = parseSectionsText(text);
+    if (parsedSections.length < 3) return [];
 
-    // Fallback: If AI hasn't structured the headings yet, render raw paragraphs cleanly
-    if (parsedSections.length < 3) {
-      return (
-        <div className='bg-surface-strong/30 border border-white/5 rounded-xl p-4 text-left leading-relaxed text-[12.5px] text-text-secondary select-text whitespace-pre-wrap'>
-          {parseBoldText(text)}
-        </div>
-      );
-    }
-
-    // Chapters definition (Pillars)
     const chapters = [
       {
         id: 'dna',
-        title: 'ADN Estratégico de la Marca',
+        title: t.brand.chapters?.dna?.title || 'ADN Estratégico',
         icon: '🏛️',
-        description: 'Resumen, propuesta de valor única y definición del cliente ideal.',
+        description: t.brand.chapters?.dna?.description || 'Resumen, propuesta de valor única y público objetivo.',
         sectionNums: [1, 3, 4],
       },
       {
         id: 'voice',
-        title: 'Personalidad y Voz de la Comunicación',
+        title: t.brand.chapters?.voice?.title || 'Personalidad y Voz',
         icon: '🎭',
-        description: 'Tono emocional de marca, rasgos de personalidad y directrices de copia.',
+        description: t.brand.chapters?.voice?.description || 'Tono de marca, rasgos y directrices de redacción.',
         sectionNums: [2, 5, 6],
       },
       {
         id: 'visual',
-        title: 'Canales Digitales e Identidad Visual',
+        title: t.brand.chapters?.visual?.title || 'Identidad Visual',
         icon: '🎨',
-        description: 'Vibra estética, paleta de colores y diagnósticos web y de redes.',
+        description: t.brand.chapters?.visual?.description || 'Estilo de diseño, paleta y diagnósticos de canales.',
         sectionNums: [7, 8, 9],
       },
       {
         id: 'audit',
-        title: 'Diagnóstico de Mercado y Competencia',
+        title: t.brand.chapters?.audit?.title || 'Auditoría de Mercado',
         icon: '🎯',
-        description: 'Benchmarking, competidores, fortalezas, debilidades y oportunidades.',
+        description: t.brand.chapters?.audit?.description || 'Benchmarking, competidores directos y fortalezas.',
         sectionNums: [10, 11, 12, 13],
       },
       {
         id: 'direction',
-        title: 'Dirección Comercial y Frases Clave',
+        title: t.brand.chapters?.direction?.title || 'Dirección Comercial',
         icon: '🚀',
-        description: 'Línea de acción recomendada, Claims comerciales, copies y preguntas.',
+        description: t.brand.chapters?.direction?.description || 'Plan estratégico comercial, Claims y copys clave.',
         sectionNums: [14, 15, 16],
       },
     ];
 
-    // Assign parsed sections to corresponding chapters
     const assignedNums = chapters.flatMap((c) => c.sectionNums);
     
     const groupedChapters = chapters.map((chap) => {
@@ -279,7 +229,6 @@ export const StrategicCanvas = ({
       };
     }).filter((chap) => chap.sections.length > 0);
 
-    // Collect leftovers (generic headers, chapter 0 or other metadata)
     const leftoverSections = parsedSections.filter(
       (sec) => sec.num === null || sec.num === 0 || !assignedNums.includes(sec.num)
     );
@@ -287,233 +236,96 @@ export const StrategicCanvas = ({
     if (leftoverSections.length > 0) {
       groupedChapters.push({
         id: 'other',
-        title: 'Otros Aspectos Estratégicos',
+        title: t.brand.chapters?.other?.title || 'Otros Aspectos',
         icon: '📝',
-        description: 'Información y notas de referencia adicionales del negocio.',
+        description: t.brand.chapters?.other?.description || 'Información de soporte complementaria.',
         sections: leftoverSections,
       });
     }
 
-    return (
-      <div className='space-y-3 pb-6'>
-        {groupedChapters.map((chap) => {
-          const isExpanded = expandedChapter === chap.id;
+    return groupedChapters;
+  };
 
-          // Filtrar alertas no resueltas de este pilar
-          const chapterContradictions = (consistencyReport?.contradictions || []).filter(c => {
-            if (resolvedConflicts?.has(c.id)) return false;
-            return getContradictionChapter(c) === chap.id;
-          });
+  const groupedChapters = getChaptersList(formData.business_description || '');
 
-          return (
-            <div
-              key={chap.id}
-              className={`rounded-xl border transition-all duration-300 overflow-hidden ${
-                isExpanded
-                  ? 'border-[#7C5CFC]/30 bg-[#0d0d1e]/50 shadow-[0_4px_20px_rgba(124,92,252,0.06)]'
-                  : 'border-white/5 bg-[#0b0b14]/20 hover:bg-[#121225]/30'
-              }`}
-            >
-              {/* ACCORDION PILLAR HEADER */}
-              <div
-                onClick={() => setExpandedChapter(isExpanded ? null : chap.id)}
-                className='w-full flex items-center justify-between p-3.5 cursor-pointer select-none text-left'
-              >
-                <div className='flex items-center gap-3.5 min-w-0'>
-                  <span className='text-2xl flex-shrink-0'>{chap.icon}</span>
-                  <div className='min-w-0'>
-                    <div className='flex items-center gap-2'>
-                      <h4 className='text-[13px] font-black text-white tracking-wide font-title truncate'>
-                        {chap.title}
-                      </h4>
-                      {chapterContradictions.length > 0 && (
-                        <span className='bg-amber-500/90 text-black text-[8px] font-black h-4 px-1.5 rounded-full flex items-center justify-center border border-black animate-pulse flex-shrink-0 select-none'>
-                          ⚠️ {chapterContradictions.length}
-                        </span>
-                      )}
-                    </div>
-                    <p className='text-[10px] text-text-muted mt-0.5 truncate max-w-[420px]'>
-                      {chap.description}
-                    </p>
-                  </div>
-                </div>
+  // Filter unresolved contradictions
+  const activeContradictions = (consistencyReport?.contradictions || []).filter(
+    (c) => !resolvedConflicts?.has(c.id)
+  );
 
-                {/* Interactive dropdown arrow */}
-                <svg
-                  className={`w-4 h-4 text-text-muted transition-transform duration-300 flex-shrink-0 ${
-                    isExpanded ? 'transform rotate-180 text-white' : ''
-                  }`}
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M19 9l-7 7-7-7' />
-                </svg>
-              </div>
-
-              {/* PILLAR BODY CONTENT (VISIBLE ONLY WHEN EXPANDED) */}
-              {isExpanded && (
-                <div className='p-4 border-t border-white/[0.04] bg-slate-950/20 space-y-5 animate-fade-in max-h-[340px] overflow-y-auto scrollbar-thin'>
-                  {chap.sections.map((sec, idx) => {
-                    const secKey = sec.num !== null ? String(sec.num) : sec.title;
-                    const isEditing = editingSecNum === secKey;
-
-                    return (
-                      <div key={idx} className='space-y-2 border-b border-white/[0.03] pb-4 last:border-none last:pb-0 text-left relative group/sec'>
-                        {isEditing ? (
-                          <>
-                            {/* Editor mode inline */}
-                            <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest pb-1 border-b border-white/[0.03] mb-2 flex items-center gap-1.5 select-none'>
-                              <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
-                              {sec.num ? `${sec.num}. ` : ''} {sec.title} (Editando)
-                            </h5>
-                            <textarea
-                              value={editSecValue}
-                              onChange={(e) => setEditSecValue(e.target.value)}
-                              className='w-full rounded-xl bg-slate-900 border border-white/10 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-[#7C5CFC] focus:ring-1 focus:ring-[#7C5CFC]/20 min-h-[120px] resize-y'
-                            />
-                            <div className='flex items-center gap-1.5 justify-end pt-1'>
-                              <button
-                                type='button'
-                                onClick={() => handleSaveSection(sec)}
-                                className='px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[9.5px] font-black uppercase tracking-wider shadow-sm transition-all'
-                              >
-                                Guardar
-                              </button>
-                              <button
-                                type='button'
-                                onClick={() => setEditingSecNum(null)}
-                                className='px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[9.5px] font-bold transition-all'
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            {/* Preview mode default */}
-                            <div className='flex items-center justify-between gap-2 pb-1 border-b border-white/[0.03] mb-2'>
-                              <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest flex items-center gap-1.5 select-none'>
-                                <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
-                                {sec.num ? `${sec.num}. ` : ''} {sec.title}
-                              </h5>
-                              {!isAnalyzing && (
-                                <button
-                                  type='button'
-                                  onClick={() => {
-                                    setEditingSecNum(secKey);
-                                    setEditSecValue(sec.contentLines.join('\n'));
-                                  }}
-                                  className='opacity-0 group-hover/sec:opacity-100 text-accent-lavender hover:text-white text-[9.5px] font-bold transition-all px-2 py-0.5 rounded-lg border border-border-subtle bg-surface-strong/20 hover:bg-surface-strong/60 cursor-pointer select-none'
-                                >
-                                  Editar ✏️
-                                </button>
-                              )}
-                            </div>
-
-                            {renderSectionBody(sec.contentLines)}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* ALERTAS/CONTRADICCIONES DE COHERENCIA CONTEXTUALES */}
-                  {chapterContradictions.length > 0 && (
-                    <div className='mt-5 pt-4 border-t border-amber-500/20 space-y-3 text-left'>
-                      <h6 className='text-[11.5px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5 select-none'>
-                        <span>⚠️</span> Alertas de Coherencia Detectadas:
-                      </h6>
-                      
-                      {chapterContradictions.map((contra) => (
-                        <div
-                          key={contra.id}
-                          className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2'
-                        >
-                          <div className='space-y-0.5'>
-                            <h5 className='text-[11px] font-black text-white uppercase tracking-wide'>
-                              {contra.title}
-                            </h5>
-                            <p className='text-[10px] text-text-secondary leading-relaxed'>
-                              {contra.description}
-                            </p>
-                          </div>
-
-                          <div className='rounded-lg bg-black/30 p-2.5 space-y-1 border border-white/5'>
-                            <p className='text-[9.5px] text-[#4ECDC4] font-black uppercase tracking-wider leading-none select-none'>
-                              💬 Consulta al cliente:
-                            </p>
-                            <p className='text-[10px] text-white/90 leading-relaxed font-semibold italic'>
-                              "{contra.consultation_question}"
-                            </p>
-                          </div>
-
-                          {contra.suggested_fix && (
-                            <div className='rounded-lg bg-[#7C5CFC]/10 p-2.5 space-y-2 border border-[#7C5CFC]/20 text-left'>
-                              <div className='space-y-0.5'>
-                                <span className='text-[9px] font-black uppercase tracking-wider text-accent-lavender select-none'>
-                                  ✨ Propuesta Armonizada:
-                                </span>
-                                <p className='text-[10px] text-white/95 leading-relaxed font-medium'>
-                                  {contra.suggested_fix}
-                                </p>
-                              </div>
-
-                              <button
-                                type='button'
-                                onClick={() => onApplySuggestedFix(contra.id, contra.suggested_fix)}
-                                className='inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#7C5CFC] hover:bg-[#6b4dfc] text-white text-[9.5px] font-bold shadow-sm transition-all select-none'
-                              >
-                                <span>🤝</span> Armonizar Perfil
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
+  const scrollToChapter = (chapId) => {
+    const el = document.getElementById(`chapter-${chapId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
-    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-2.5 shadow-md relative overflow-visible flex flex-col flex-1 min-h-0 h-full'>
+    <div className='rounded-2xl border border-border-subtle bg-surface p-3.5 space-y-2.5 shadow-md relative overflow-hidden flex flex-col flex-1 min-h-0 h-full text-left'>
       <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-lavender via-accent-sage to-accent-sand' />
 
       {/* WORKSPACE HEADER */}
       <div className='flex items-center justify-between border-b border-border-subtle pb-1.5 flex-shrink-0 select-none'>
         <h4 className='text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5 px-1 py-1'>
-          <span>🧬</span> Perfil Estratégico de Marca
+          <span>🧬</span> {t.brand.strategicProfileTitle || 'ADN Estratégico'}
         </h4>
 
-        {/* Global Save Button */}
-        <button
-          type='button'
-          onClick={onSave}
-          disabled={saving || isAnalyzing}
-          className='inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#7C5CFC] to-[#4ECDC4] hover:from-[#6b4dfc] hover:to-[#3ec3ba] text-white px-3.5 py-1.5 text-[9.5px] font-black uppercase tracking-wider shadow-md transition-all duration-300 disabled:opacity-50 active:scale-[0.98]'
-        >
-          {saving ? (
-            <div className='flex items-center gap-1'>
-              <div className='h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-              <span>Guardando...</span>
-            </div>
-          ) : (
-            <>
-              <span>💾 Guardar Todo</span>
-            </>
+        {/* Read / Edit Switch & Copilot Warning indicator */}
+        <div className='flex items-center gap-3'>
+          {/* Active Copilot Warnings Badge */}
+          {activeContradictions.length > 0 && (
+            <button
+              type='button'
+              onClick={() => setIsCopilotOpen(true)}
+              className='flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[9.5px] font-black uppercase tracking-wider animate-pulse transition-all shadow-xs cursor-pointer'
+            >
+              <span>⚠️</span>
+              <span>{activeContradictions.length} {lang === 'es' ? 'Alertas' : 'Alerts'}</span>
+            </button>
           )}
-        </button>
+
+          {/* Asistente de ADN */}
+          <button
+            type='button'
+            onClick={onOpenDnaAssistant}
+            className='flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#7C5CFC]/10 hover:bg-[#7C5CFC]/20 border border-[#7C5CFC]/30 text-[#9b82ff] text-[9.5px] font-black uppercase tracking-wider transition-all shadow-xs cursor-pointer'
+          >
+            <span>💬</span>
+            <span>{lang === 'es' ? 'Asistente de ADN' : 'DNA Assistant'}</span>
+          </button>
+
+          {/* Toggle Switch */}
+          <div className='flex items-center gap-1 bg-surface-soft p-0.5 rounded-xl border border-border-subtle'>
+            <button
+              type='button'
+              onClick={() => setEditMode(false)}
+              className={`px-3 py-1.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                !editMode
+                  ? 'bg-[#7C5CFC]/20 text-[#9b82ff] border border-[#7C5CFC]/30 shadow-xs'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              👁️ {lang === 'es' ? 'Lectura' : 'Read'}
+            </button>
+            <button
+              type='button'
+              onClick={() => setEditMode(true)}
+              className={`px-3 py-1.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                editMode
+                  ? 'bg-[#7C5CFC]/20 text-[#9b82ff] border border-[#7C5CFC]/30 shadow-xs'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              ✍️ {lang === 'es' ? 'Edición' : 'Edit'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* WORKSPACE CONTENT AREA */}
-      <div className='flex-1 flex flex-col min-h-0 relative overflow-visible'>
+      <div className='flex-grow flex flex-col min-h-0 relative overflow-visible'>
         <div className='flex-1 flex flex-col space-y-2.5 min-h-0 h-full overflow-visible'>
+          
           {/* Aesthetic DNA palette row */}
           <ColorPaletteWidget
             colorPalette={formData.color_palette || []}
@@ -524,20 +336,151 @@ export const StrategicCanvas = ({
             consistencyScore={consistencyReport?.consistency_score}
           />
 
-          {/* Custom styled Strategic Canvas Card */}
-          <div className='relative flex-1 min-h-0 flex flex-col rounded-xl border border-border-subtle bg-surface-strong/20 overflow-hidden'>
-            {/* Strategic Brief Preview Canvas */}
-            <div className='flex-grow overflow-hidden h-full flex flex-col'>
-              <div className='w-full overflow-y-auto p-4 flex-1 h-full max-h-full scroll-smooth select-text pr-2'>
-                {renderDynamicPillars(formData.business_description)}
-              </div>
+          {/* Continuous Strategic Canvas Grid */}
+          <div className='relative flex-grow min-h-0 flex flex-row rounded-xl border border-border-subtle bg-surface-strong/20 overflow-hidden'>
+            
+            {/* Left: Continuous Strategic Brief Scroll */}
+            <div className='flex-grow overflow-y-auto p-4 scroll-smooth pr-3 min-h-0 h-full select-text' id='strategic-canvas-scrollable'>
+              {!formData.business_description || !formData.business_description.trim() ? (
+                <div className='flex flex-col items-center justify-center text-center py-20 px-4 text-text-muted select-none h-full'>
+                  <span className='text-3xl block mb-2'>📝</span>
+                  <p className='text-xs font-black text-text-primary block mb-0.5 uppercase tracking-wider font-title'>
+                    {t.brand.emptyProfileTitle || 'Perfil Estratégico Vacío'}
+                  </p>
+                  <p className='text-[10px] text-text-muted leading-relaxed max-w-[260px] mx-auto'>
+                    {lang === 'es' ? (
+                      <>Escribe el ADN estratégico del negocio o presiona el botón <strong>"Analizar"</strong> para extraer el perfil automáticamente de internet.</>
+                    ) : (
+                      <>Write the strategic DNA of the business or press the <strong>"Analyze"</strong> button to automatically extract the profile from the internet.</>
+                    )}
+                  </p>
+                </div>
+              ) : groupedChapters.length < 3 ? (
+                <div className='bg-surface-strong/30 border border-white/5 rounded-xl p-4 text-left leading-relaxed text-[12.5px] text-text-secondary select-text whitespace-pre-wrap'>
+                  {parseBoldText(formData.business_description)}
+                </div>
+              ) : (
+                <div className='space-y-4 pb-6'>
+                  {groupedChapters.map((chap) => (
+                    <div
+                      key={chap.id}
+                      id={`chapter-${chap.id}`}
+                      className='rounded-xl border border-white/5 bg-[#0b0b14]/25 p-4 space-y-4 shadow-sm text-left'
+                    >
+                      {/* Pillar Header */}
+                      <div className='flex items-center gap-3 pb-3 border-b border-white/5 select-none'>
+                        <span className='text-2xl flex-shrink-0'>{chap.icon}</span>
+                        <div className='min-w-0'>
+                          <h4 className='text-[13px] font-black text-white tracking-wide font-title'>
+                            {chap.title}
+                          </h4>
+                          <p className='text-[10px] text-text-muted mt-0.5 leading-relaxed truncate max-w-[460px]'>
+                            {chap.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Pillar Sections */}
+                      <div className='space-y-5 pt-1'>
+                        {chap.sections.map((sec, idx) => {
+                          const secKey = sec.num !== null ? String(sec.num) : sec.title;
+                          const isEditing = editingSecNum === secKey;
+                          const isPending = (sec.contentLines || []).some(line => line.includes('⚠️ [Información pendiente'));
+
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`space-y-2 border-b border-white/[0.03] pb-4 last:border-none last:pb-0 text-left relative group/sec transition-all duration-200 ${
+                                isPending 
+                                  ? 'bg-amber-500/[0.01] border border-amber-500/10 p-3 rounded-xl shadow-xs' 
+                                  : ''
+                              }`}
+                            >
+                              {isEditing ? (
+                                <>
+                                  <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest pb-1 border-b border-white/[0.03] mb-2 flex items-center gap-1.5 select-none'>
+                                    <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
+                                    {sec.num ? `${sec.num}. ` : ''} {sec.title} ({t.brand.editingLabel || 'Editando'})
+                                  </h5>
+                                  <textarea
+                                    value={editSecValue}
+                                    onChange={(e) => setEditSecValue(e.target.value)}
+                                    className='w-full rounded-xl bg-slate-900 border border-white/10 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-[#7C5CFC] focus:ring-1 focus:ring-[#7C5CFC]/20 min-h-[120px] resize-y'
+                                  />
+                                  <div className='flex items-center gap-1.5 justify-end pt-1 select-none'>
+                                    <button
+                                      type='button'
+                                      onClick={() => handleSaveSection(sec)}
+                                      className='px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[9.5px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer'
+                                    >
+                                      {t.common.save}
+                                    </button>
+                                    <button
+                                      type='button'
+                                      onClick={() => setEditingSecNum(null)}
+                                      className='px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[9.5px] font-bold transition-all cursor-pointer'
+                                    >
+                                      {t.common.cancel || 'Cancelar'}
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className='flex items-center justify-between gap-2 pb-1 border-b border-white/[0.03] mb-2 select-none'>
+                                    <h5 className='text-[12.5px] font-black text-[#4ECDC4] uppercase tracking-widest flex items-center gap-1.5'>
+                                      <span className='h-1.5 w-1.5 rounded-full bg-[#7C5CFC]' />
+                                      {sec.num ? `${sec.num}. ` : ''} {sec.title}
+                                    </h5>
+                                    {editMode && !isAnalyzing && (
+                                      <button
+                                        type='button'
+                                        onClick={() => {
+                                          setEditingSecNum(secKey);
+                                          setEditSecValue(sec.contentLines.join('\n'));
+                                        }}
+                                        className='opacity-0 group-hover/sec:opacity-100 text-accent-lavender hover:text-white text-[9.5px] font-bold transition-all px-2 py-0.5 rounded-lg border border-border-subtle bg-surface-strong/20 hover:bg-surface-strong/60 cursor-pointer'
+                                      >
+                                        {lang === 'es' ? 'Editar ✏_' : 'Edit ✏_'}
+                                      </button>
+                                    )}
+                                  </div>
+                                  {renderSectionBody(sec.contentLines)}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* ASYNCHRONOUS BACKGROUND PROCESS OVERLAY (IN SPANISH) */}
+            {/* Right: Lateral navigation dots index (Visible only if chapters loaded) */}
+            {groupedChapters.length > 0 && (
+              <div className='w-10 border-l border-white/5 bg-black/15 flex flex-col items-center py-4 gap-4 flex-shrink-0 select-none h-full justify-start'>
+                {groupedChapters.map((chap) => (
+                  <button
+                    key={chap.id}
+                    type='button'
+                    onClick={() => scrollToChapter(chap.id)}
+                    className='w-7 h-7 rounded-full flex items-center justify-center text-xs hover:bg-white/10 transition-colors group relative cursor-pointer active:scale-90'
+                  >
+                    <span>{chap.icon}</span>
+                    {/* Tooltip on hover */}
+                    <span className='absolute right-full mr-2 scale-0 group-hover:scale-100 bg-black/95 text-white text-[9px] font-bold px-2 py-1 rounded border border-white/10 shadow-lg whitespace-nowrap transition-all duration-150 z-30 pointer-events-none'>
+                      {chap.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ASYNCHRONOUS BACKGROUND PROCESS OVERLAY */}
             {isAnalyzing && (
-              <div className='absolute inset-0 bg-[#0d0d1e]/85 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center p-6 text-center z-10 border border-white/5 animate-fade-in overflow-y-auto'>
-                <div className='relative mb-4 flex items-center justify-center'>
-                  {/* Pulsing glow background */}
+              <div className='absolute inset-0 bg-[#0d0d1e]/85 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center p-6 text-center z-40 border border-white/5 animate-fade-in overflow-y-auto'>
+                <div className='relative mb-4 flex items-center justify-center select-none'>
                   <div className='absolute -inset-4 rounded-full bg-gradient-to-r from-[#7C5CFC]/30 to-[#4ECDC4]/30 opacity-75 blur-xl animate-pulse'></div>
                   <div className='relative h-14 w-14 rounded-full border-2 border-t-[#7C5CFC] border-r-[#4ECDC4] border-b-transparent border-l-transparent animate-spin flex items-center justify-center bg-black/60 shadow-inner'>
                     <span className='text-xl animate-bounce'>🧬</span>
@@ -545,33 +488,120 @@ export const StrategicCanvas = ({
                 </div>
 
                 <div className='space-y-2 max-w-sm text-center'>
-                  <h5 className='text-xs font-black uppercase tracking-widest text-white flex items-center justify-center gap-1.5'>
-                    <span>⚙️</span> Análisis en Segundo Plano
+                  <h5 className='text-xs font-black uppercase tracking-widest text-white flex items-center justify-center gap-1.5 select-none'>
+                    <span>⚙️</span> {t.brand.bgAnalysisTitle || 'Análisis en Segundo Plano'}
                   </h5>
 
-                  <p className='text-[10px] text-text-muted leading-relaxed font-medium'>
-                    El estratega senior está recopilando datos de tus redes, sitio web e industria en internet.
+                  <p className='text-[10px] text-text-muted leading-relaxed font-medium select-none'>
+                    {t.brand.bgAnalysisDesc}
                   </p>
 
-                  <div className='inline-flex items-center gap-1.5 bg-[#7C5CFC]/10 border border-[#7C5CFC]/20 rounded-lg px-2.5 py-1 text-[9px] text-[#9b82ff] font-bold'>
-                    <span>⚡</span> Ejecución remota activa
+                  <div className='inline-flex items-center gap-1.5 bg-[#7C5CFC]/10 border border-[#7C5CFC]/20 rounded-lg px-2.5 py-1 text-[9px] text-[#9b82ff] font-bold select-none'>
+                    <span>⚡</span> {t.brand.activeRemoteExecution || 'Ejecución activa'}
                   </div>
 
-                  <div className='bg-surface-strong/60 rounded-xl p-2.5 border border-white/5 space-y-1.5 mt-2 w-full'>
+                  <div className='bg-surface-strong/60 rounded-xl p-2.5 border border-white/5 space-y-1.5 mt-2 w-full select-none'>
                     <p className='text-[9px] text-text-secondary uppercase tracking-wider font-bold'>
-                      Etapa técnica:
+                      {t.brand.technicalStage || 'Etapa técnica:'}:
                     </p>
                     <p className='text-[10px] text-white font-bold animate-pulse leading-normal'>
                       {consistencyLoaderMsgs[loadingMessageIndex]}
                     </p>
                   </div>
 
-                  <p className='text-[9px] text-text-muted/80 leading-normal border-t border-white/5 pt-2 mt-2 w-full'>
-                    🔒 <strong className='text-white'>Puedes cerrar esta pestaña o el navegador de forma segura.</strong> El proceso continuará de fondo y el lienzo se actualizará solo.
+                  <p className='text-[9px] text-text-muted/80 leading-normal border-t border-white/5 pt-2 mt-2 w-full select-none'>
+                    {t.brand.bgAnalysisFooter}
                   </p>
                 </div>
               </div>
             )}
+
+            {/* COPILOT DRAWER (SLIDE-OUT ALERTS PANEL) */}
+            <AnimatePresence>
+              {isCopilotOpen && (
+                <>
+                  {/* Backdrop overlay */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.6 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsCopilotOpen(false)}
+                    className='absolute inset-0 bg-black z-40 cursor-pointer'
+                  />
+                  {/* Slideout Panel */}
+                  <motion.div
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className='absolute top-0 right-0 h-full w-80 sm:w-96 bg-[#090910] border-l border-white/10 z-50 p-4 shadow-2xl flex flex-col overflow-hidden text-left'
+                  >
+                    <div className='flex items-center justify-between pb-3 border-b border-white/10 mb-4 flex-shrink-0 select-none'>
+                      <h5 className='text-[11.5px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5'>
+                        <span>⚠️</span> {t.brand.discrepanciesDetected || 'Alertas de Coherencia'}
+                      </h5>
+                      <button
+                        type='button'
+                        onClick={() => setIsCopilotOpen(false)}
+                        className='text-text-muted hover:text-white text-[11px] font-bold px-1 select-none cursor-pointer'
+                      >
+                        {t.common.close || 'Cerrar'}
+                      </button>
+                    </div>
+
+                    <div className='flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin'>
+                      {activeContradictions.map((contra) => (
+                        <div key={contra.id} className='p-3.5 rounded-xl border border-white/5 bg-white/[0.01] space-y-3'>
+                          <div className='space-y-1 text-left'>
+                            <span className='text-[8.5px] font-black uppercase text-amber-400 tracking-wider select-none'>
+                              {lang === 'es' ? 'Punto en Conflicto' : 'Conflict Area'}
+                            </span>
+                            <h6 className='text-[11px] font-bold text-white leading-snug'>
+                              {contra.title}
+                            </h6>
+                            <p className='text-[10px] text-text-muted leading-relaxed'>
+                              {contra.description}
+                            </p>
+                          </div>
+
+                          <div className='rounded-lg bg-black/35 p-2.5 space-y-1 border border-white/5 text-left'>
+                            <p className='text-[9px] text-[#4ECDC4] font-black uppercase tracking-wider leading-none select-none'>
+                              {lang === 'es' ? 'Consulta al cliente:' : 'Client consultation:'}
+                            </p>
+                            <p className='text-[10px] text-white/90 leading-relaxed font-semibold italic'>
+                              "{contra.consultation_question}"
+                            </p>
+                          </div>
+
+                          <div className='rounded-lg bg-[#7C5CFC]/10 p-2.5 space-y-2 border border-[#7C5CFC]/20 text-left'>
+                            <div className='space-y-0.5'>
+                              <span className='text-[9px] font-black uppercase tracking-wider text-accent-lavender select-none'>
+                                ✨ {t.brand.harmonized || 'Propuesta:'}
+                              </span>
+                              <p className='text-[10px] text-white/95 leading-relaxed font-medium'>
+                                {contra.suggested_fix}
+                              </p>
+                            </div>
+                            <button
+                              type='button'
+                              onClick={() => {
+                                onApplySuggestedFix(contra.id, contra.suggested_fix);
+                                if (activeContradictions.length <= 1) {
+                                  setIsCopilotOpen(false);
+                                }
+                              }}
+                              className='w-full inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-[#7C5CFC] hover:bg-[#6b4dfc] text-white text-[9.5px] font-bold shadow-xs transition-all cursor-pointer'
+                            >
+                              <span>🤝</span> {t.brand.harmonizeProfile || 'Armonizar Perfil'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

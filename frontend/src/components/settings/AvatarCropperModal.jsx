@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useEscapeClose } from '../../hooks';
 
 export const AvatarCropperModal = ({ onClose, rawImageSrc, onCropSave, t }) => {
+  useEscapeClose(!!rawImageSrc, onClose);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);

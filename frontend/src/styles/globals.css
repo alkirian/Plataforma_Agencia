@@ -73,6 +73,28 @@
 
     /* --- Tokens de Modales y Backdrop Blur --- */
     --backdrop-blur-val: blur(12px);
+
+    /* --- Shadcn UI Mappings (Dark mode default) --- */
+    --background: var(--color-app-bg);
+    --foreground: var(--color-text-primary);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-text-primary);
+    --popover: var(--color-surface-soft);
+    --popover-foreground: var(--color-text-primary);
+    --primary: var(--color-accent-lavender);
+    --primary-foreground: #ffffff;
+    --secondary: var(--color-surface-soft);
+    --secondary-foreground: var(--color-text-primary);
+    --muted: var(--color-surface-strong);
+    --muted-foreground: var(--color-text-muted);
+    --accent: var(--color-surface-soft);
+    --accent-foreground: var(--color-text-primary);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: var(--color-border-subtle);
+    --input: var(--color-surface-strong);
+    --ring: var(--color-accent-lavender);
+    --radius: 0.75rem;
   }
 
   [data-theme='light'] {
@@ -129,6 +151,27 @@
 
     /* --- Tokens de Modales y Backdrop Blur --- */
     --backdrop-blur-val: blur(12px);
+
+    /* --- Shadcn UI Mappings (Light mode) --- */
+    --background: var(--color-app-bg);
+    --foreground: var(--color-text-primary);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-text-primary);
+    --popover: var(--color-surface-soft);
+    --popover-foreground: var(--color-text-primary);
+    --primary: var(--color-accent-lavender);
+    --primary-foreground: #ffffff;
+    --secondary: var(--color-surface-soft);
+    --secondary-foreground: var(--color-text-primary);
+    --muted: var(--color-surface-strong);
+    --muted-foreground: var(--color-text-muted);
+    --accent: var(--color-surface-soft);
+    --accent-foreground: var(--color-text-primary);
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: var(--color-border-subtle);
+    --input: var(--color-surface-strong);
+    --ring: var(--color-accent-lavender);
   }
 
   body {
@@ -394,3 +437,19 @@
   will-change: transform, opacity;
   transform: translateZ(0);
 }
+
+/* Transición animada al cambiar de tema (Wave Transition) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+

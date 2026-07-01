@@ -1,5 +1,7 @@
 // src/services/metaAds.service.js
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 import { createAuthenticatedClient, supabaseAdmin } from '../config/supabaseClient.js';
 
 // Caché en memoria para los análisis de comentarios generados por OpenAI (Rate Limit protection)
@@ -208,16 +210,19 @@ export const getClientAdInsights = async (clientId, token, dateRange = 'last_30d
     .eq('client_id', clientId)
     .single();
 
-  // Si no está integrado o hay error, o el token es de prueba explícito 'mock_token', devolver Mock
-  if (error || !integration || integration.access_token === 'mock_token' || integration.meta_ad_account_id === 'act_mock') {
-    return generateMockAdInsights();
+  // Si no está conectado, retornar nulo. Solo si el token es de prueba explícito 'mock_token', devolver Mock.
+  if (error || !integration) {
+    return null;
+  }
+  if (integration.access_token === 'mock_token' || integration.meta_ad_account_id === 'act_mock') {
+    return mergeMockAndSimulatedInsights(clientId);
   }
 
   const { meta_ad_account_id, access_token } = integration;
 
   try {
     // 2. Consultar la API de campañas reales de Meta
-    const url = `https://graph.facebook.com/v19.0/${meta_ad_account_id}/campaigns`;
+    const url = `https://graph.facebook.com/v25.0/${meta_ad_account_id}/campaigns`;
     const response = await axios.get(url, {
       params: {
         access_token,
@@ -261,7 +266,7 @@ export const getClientAdInsights = async (clientId, token, dateRange = 'last_30d
     const totalConversions = campaigns.reduce((acc, c) => acc + c.conversions, 0);
 
     // Obtener insights agregados por día para el gráfico (se consulta la cuenta publicitaria directamente)
-    const insightsUrl = `https://graph.facebook.com/v19.0/${meta_ad_account_id}/insights`;
+    const insightsUrl = `https://graph.facebook.com/v25.0/${meta_ad_account_id}/insights`;
     const insightsResponse = await axios.get(insightsUrl, {
       params: {
         access_token,
@@ -312,7 +317,7 @@ export const exchangeShortLivedToken = async (shortLivedToken) => {
   }
 
   try {
-    const url = 'https://graph.facebook.com/v19.0/oauth/access_token';
+    const url = 'https://graph.facebook.com/v25.0/oauth/access_token';
     const response = await axios.get(url, {
       params: {
         grant_type: 'fb_exchange_token',
@@ -342,7 +347,7 @@ export const getUserAdAccounts = async (accessToken) => {
   }
 
   try {
-    const url = 'https://graph.facebook.com/v19.0/me/adaccounts';
+    const url = 'https://graph.facebook.com/v25.0/me/adaccounts';
     const response = await axios.get(url, {
       params: {
         access_token: accessToken,
@@ -385,7 +390,7 @@ export const getUserPagesAndInstagramAccounts = async (accessToken) => {
   }
 
   try {
-    const url = 'https://graph.facebook.com/v19.0/me/accounts';
+    const url = 'https://graph.facebook.com/v25.0/me/accounts';
     const response = await axios.get(url, {
       params: {
         access_token: accessToken,
@@ -587,7 +592,7 @@ const getPageAccessToken = async (pageId, userAccessToken) => {
     return userAccessToken;
   }
   try {
-    const response = await axios.get(`https://graph.facebook.com/v19.0/${pageId}`, {
+    const response = await axios.get(`https://graph.facebook.com/v25.0/${pageId}`, {
       params: {
         fields: 'access_token',
         access_token: userAccessToken
@@ -611,7 +616,7 @@ const getPageAccessToken = async (pageId, userAccessToken) => {
 const fetchFacebookComments = async (pageId, pageAccessToken) => {
   const rawFacebookComments = [];
   try {
-    const url = `https://graph.facebook.com/v19.0/${pageId}/feed`;
+    const url = `https://graph.facebook.com/v25.0/${pageId}/feed`;
     const response = await axios.get(url, {
       params: {
         access_token: pageAccessToken,
@@ -648,7 +653,7 @@ const fetchInstagramComments = async (igAccountId, accessToken) => {
   const rawInstagramComments = [];
   if (!igAccountId) return rawInstagramComments;
   try {
-    const igUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
+    const igUrl = `https://graph.facebook.com/v25.0/${igAccountId}/media`;
     const igResponse = await axios.get(igUrl, {
       params: {
         access_token: accessToken,
@@ -712,8 +717,11 @@ export const getClientComments = async (clientId, token) => {
     .eq('client_id', clientId)
     .single();
 
-  // Si no está integrado o hay error, devolvemos fallback mock premium
-  if (intErr || !integration || integration.access_token === 'mock_token' || integration.meta_page_id?.includes('mock')) {
+  // Si no está conectado, retornar array vacío. Solo si el token es de prueba explícito 'mock_token', devolver Mock.
+  if (intErr || !integration) {
+    return [];
+  }
+  if (integration.access_token === 'mock_token' || integration.meta_page_id?.includes('mock')) {
     return getMockComments();
   }
 
@@ -725,7 +733,7 @@ export const getClientComments = async (clientId, token) => {
   // Descubrir cuenta de Instagram vinculada
   let igAccountId = null;
   try {
-    const pageInfoRes = await axios.get(`https://graph.facebook.com/v19.0/${pageId}`, {
+    const pageInfoRes = await axios.get(`https://graph.facebook.com/v25.0/${pageId}`, {
       params: {
         access_token: accessToken,
         fields: 'instagram_business_account{id,username,name}'
@@ -900,7 +908,7 @@ export const replyToComment = async (clientId, commentId, replyText, platform, t
   try {
     const isInstagram = platform?.toLowerCase() === 'instagram';
     const endpointSuffix = isInstagram ? 'replies' : 'comments';
-    const url = `https://graph.facebook.com/v19.0/${commentId}/${endpointSuffix}`;
+    const url = `https://graph.facebook.com/v25.0/${commentId}/${endpointSuffix}`;
     const response = await axios.post(url, {
       message: replyText
     }, {
@@ -951,21 +959,23 @@ export const publishPostToMeta = async (clientId, copy, mediaUrl, platform, toke
     try {
       if (mediaUrl) {
         // Publicar foto con pie de foto
-        const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/photos`, null, {
-          params: {
-            url: mediaUrl,
-            caption: copy || '',
-            access_token: pageAccessToken
-          }
+        const body = new URLSearchParams();
+        body.append('url', mediaUrl);
+        body.append('caption', copy || '');
+        body.append('access_token', pageAccessToken);
+
+        const res = await axios.post(`https://graph.facebook.com/v25.0/${pageId}/photos`, body, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
         results.facebook = { success: true, id: res.data.id || res.data.post_id };
       } else {
         // Publicar solo texto en el muro
-        const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, null, {
-          params: {
-            message: copy || '',
-            access_token: pageAccessToken
-          }
+        const body = new URLSearchParams();
+        body.append('message', copy || '');
+        body.append('access_token', pageAccessToken);
+
+        const res = await axios.post(`https://graph.facebook.com/v25.0/${pageId}/feed`, body, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
         results.facebook = { success: true, id: res.data.id };
       }
@@ -983,7 +993,7 @@ export const publishPostToMeta = async (clientId, copy, mediaUrl, platform, toke
     try {
       // Descubrir cuenta de Instagram vinculada en vivo
       let igAccountId = null;
-      const pageInfoRes = await axios.get(`https://graph.facebook.com/v19.0/${pageId}`, {
+      const pageInfoRes = await axios.get(`https://graph.facebook.com/v25.0/${pageId}`, {
         params: {
           access_token: accessToken,
           fields: 'instagram_business_account{id}'
@@ -1002,12 +1012,13 @@ export const publishPostToMeta = async (clientId, copy, mediaUrl, platform, toke
       }
 
       // 1. Crear contenedor de media
-      const containerRes = await axios.post(`https://graph.facebook.com/v19.0/${igAccountId}/media`, null, {
-        params: {
-          image_url: mediaUrl,
-          caption: copy || '',
-          access_token: accessToken
-        }
+      const bodyMedia = new URLSearchParams();
+      bodyMedia.append('image_url', mediaUrl);
+      bodyMedia.append('caption', copy || '');
+      bodyMedia.append('access_token', accessToken);
+
+      const containerRes = await axios.post(`https://graph.facebook.com/v25.0/${igAccountId}/media`, bodyMedia, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
       const containerId = containerRes.data.id;
@@ -1016,11 +1027,12 @@ export const publishPostToMeta = async (clientId, copy, mediaUrl, platform, toke
       }
 
       // 2. Publicar contenedor de media en el grid
-      const publishRes = await axios.post(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, null, {
-        params: {
-          creation_id: containerId,
-          access_token: accessToken
-        }
+      const bodyPublish = new URLSearchParams();
+      bodyPublish.append('creation_id', containerId);
+      bodyPublish.append('access_token', accessToken);
+
+      const publishRes = await axios.post(`https://graph.facebook.com/v25.0/${igAccountId}/media_publish`, bodyPublish, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
       results.instagram = { success: true, id: publishRes.data.id };
@@ -1218,5 +1230,701 @@ export const handleMetaWebhookEvent = async (body) => {
     }
   } catch (err) {
     console.error('❌ Error general al procesar webhook de Meta:', err.message);
+  }
+};
+
+// =========================================================================
+// SERVICIOS UNIFICADOS DE PUBLICIDAD (ADS, ORGANIC POSTS & BOOSTING)
+// =========================================================================
+
+const getBoostDataFilePath = (clientId) => {
+  const dirPath = path.join(process.cwd(), 'src', 'data');
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+  return path.join(dirPath, `boosted_campaigns_${clientId}.json`);
+};
+
+/**
+ * Combina las métricas base simuladas con las campañas creadas en Sandbox de forma dinámica.
+ */
+const mergeMockAndSimulatedInsights = (clientId) => {
+  const baseInsights = generateMockAdInsights();
+  
+  try {
+    const filePath = getBoostDataFilePath(clientId);
+    if (fs.existsSync(filePath)) {
+      const fileData = fs.readFileSync(filePath, 'utf8');
+      const simulatedCampaigns = JSON.parse(fileData);
+      
+      if (simulatedCampaigns.length > 0) {
+        const updatedSimulated = simulatedCampaigns.map(c => {
+          const hoursActive = (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60);
+          const daysActive = Math.min(c.durationDays, Math.max(0.05, hoursActive / 24));
+          
+          const spend = Math.min(c.budget * c.durationDays, c.budget * daysActive);
+          const impressions = Math.floor(spend * 200);
+          const clicks = Math.floor(spend * 12);
+          const ctr = impressions > 0 ? parseFloat(((clicks / impressions) * 100).toFixed(2)) : 0;
+          const cpc = clicks > 0 ? parseFloat((spend / clicks).toFixed(2)) : 0;
+          const conversions = Math.floor(spend * 0.8);
+
+          return {
+            ...c,
+            spend: parseFloat(spend.toFixed(2)),
+            impressions,
+            clicks,
+            ctr,
+            cpc,
+            conversions
+          };
+        });
+
+        // Sumar todo a los totales de insights
+        baseInsights.campaigns = [...updatedSimulated, ...baseInsights.campaigns];
+        
+        const totalSimSpend = updatedSimulated.reduce((acc, c) => acc + c.spend, 0);
+        const totalSimImpressions = updatedSimulated.reduce((acc, c) => acc + c.impressions, 0);
+        const totalSimClicks = updatedSimulated.reduce((acc, c) => acc + c.clicks, 0);
+        const totalSimConversions = updatedSimulated.reduce((acc, c) => acc + c.conversions, 0);
+
+        baseInsights.totals.spend += totalSimSpend;
+        baseInsights.totals.impressions += totalSimImpressions;
+        baseInsights.totals.clicks += totalSimClicks;
+        baseInsights.totals.conversions += totalSimConversions;
+        
+        baseInsights.totals.ctr = parseFloat((baseInsights.campaigns.reduce((acc, c) => acc + c.ctr, 0) / baseInsights.campaigns.length).toFixed(2));
+        baseInsights.totals.cpc = parseFloat((baseInsights.campaigns.reduce((acc, c) => acc + c.cpc, 0) / baseInsights.campaigns.length).toFixed(2));
+
+        // Agregar al gráfico histórico
+        const now = new Date();
+        updatedSimulated.forEach(sim => {
+          const simDateStr = sim.createdAt.split('T')[0];
+          const histIndex = baseInsights.dailyHistory.findIndex(h => h.date === simDateStr);
+          if (histIndex !== -1) {
+            baseInsights.dailyHistory[histIndex].spend += sim.spend;
+            baseInsights.dailyHistory[histIndex].clicks += sim.clicks;
+            baseInsights.dailyHistory[histIndex].impressions += sim.impressions;
+            baseInsights.dailyHistory[histIndex].ctr = baseInsights.dailyHistory[histIndex].impressions > 0
+              ? parseFloat(((baseInsights.dailyHistory[histIndex].clicks / baseInsights.dailyHistory[histIndex].impressions) * 100).toFixed(2))
+              : 0;
+          } else {
+            baseInsights.dailyHistory.push({
+              date: simDateStr,
+              spend: sim.spend,
+              clicks: sim.clicks,
+              impressions: sim.impressions,
+              ctr: sim.ctr
+            });
+          }
+        });
+        
+        baseInsights.dailyHistory.sort((a, b) => a.date.localeCompare(b.date));
+      }
+    }
+  } catch (err) {
+    console.error('Error fusionando pautas simuladas:', err.message);
+  }
+
+  return baseInsights;
+};
+
+/**
+ * Obtiene las publicaciones orgánicas del feed de la página de Facebook e Instagram del cliente.
+ */
+export const getClientPosts = async (clientId, token) => {
+  const supabase = createAuthenticatedClient(token);
+
+  // 1. Obtener la integración de Meta del cliente
+  const { data: integration, error: intErr } = await supabase
+    .from('client_meta_integrations')
+    .select('meta_page_id, access_token')
+    .eq('client_id', clientId)
+    .single();
+
+  if (intErr || !integration || integration.access_token === 'mock_token' || integration.meta_page_id?.includes('mock')) {
+    return getMockPosts();
+  }
+
+  const { meta_page_id: pageId, access_token: accessToken } = integration;
+  const pageAccessToken = await getPageAccessToken(pageId, accessToken);
+
+  // Descubrir cuenta de Instagram vinculada
+  let igAccountId = null;
+  try {
+    const pageInfoRes = await axios.get(`https://graph.facebook.com/v25.0/${pageId}`, {
+      params: {
+        access_token: accessToken,
+        fields: 'instagram_business_account{id}'
+      }
+    });
+    if (pageInfoRes.data?.instagram_business_account?.id) {
+      igAccountId = pageInfoRes.data.instagram_business_account.id;
+    }
+  } catch (igDiscoverErr) {
+    console.warn('No se pudo verificar la cuenta de Instagram vinculada para listar posts:', igDiscoverErr.message);
+  }
+
+  try {
+    const postsList = [];
+
+    // A. Obtener posts de Facebook feed
+    try {
+      const fbUrl = `https://graph.facebook.com/v25.0/${pageId}/feed`;
+      const fbRes = await axios.get(fbUrl, {
+        params: {
+          access_token: pageAccessToken,
+          limit: 15,
+          fields: 'id,message,created_time,permalink_url,full_picture,shares,likes.summary(true),reactions.summary(true),comments.summary(true)'
+        }
+      });
+      const fbItems = fbRes.data.data || [];
+      fbItems.forEach(item => {
+        if (!item.message && !item.full_picture) return; // Omitir vacíos
+        const totalLikes = item.reactions?.summary?.total_count 
+          ?? item.likes?.summary?.total_count 
+          ?? item.likes?.data?.length 
+          ?? item.reactions?.data?.length 
+          ?? 0;
+        console.log(`[FB POST DEBUG] ID: ${item.id}, likes:`, item.likes, 'reactions:', item.reactions, 'resolved:', totalLikes);
+        postsList.push({
+          id: item.id,
+          platform: 'Facebook',
+          caption: item.message || 'Publicación sin texto',
+          createdAt: item.created_time,
+          permalink: item.permalink_url,
+          imageUrl: item.full_picture || null,
+          likesCount: totalLikes,
+          commentsCount: item.comments?.summary?.total_count ?? 0,
+          sharesCount: item.shares?.count ?? 0
+        });
+      });
+    } catch (fbErr) {
+      console.warn('Error al recuperar posts orgánicos de Facebook:', fbErr.message);
+    }
+
+    // B. Obtener media de Instagram
+    if (igAccountId) {
+      try {
+        const igUrl = `https://graph.facebook.com/v25.0/${igAccountId}/media`;
+        const igRes = await axios.get(igUrl, {
+          params: {
+            access_token: accessToken,
+            limit: 15,
+            fields: 'id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count'
+          }
+        });
+        const igItems = igRes.data.data || [];
+        igItems.forEach(item => {
+          console.log(`[IG POST DEBUG] ID: ${item.id}, like_count:`, item.like_count, 'item_keys:', Object.keys(item));
+          postsList.push({
+            id: item.id,
+            platform: 'Instagram',
+            caption: item.caption || 'Publicación de Instagram',
+            createdAt: item.timestamp,
+            permalink: item.permalink,
+            imageUrl: item.media_url || null,
+            likesCount: item.like_count ?? 0,
+            commentsCount: item.comments_count ?? 0,
+            sharesCount: 0
+          });
+        });
+      } catch (igErr) {
+        console.warn('Error al recuperar posts orgánicos de Instagram:', igErr.message);
+      }
+    }
+
+    if (postsList.length === 0) {
+      return getMockPosts();
+    }
+
+    postsList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return postsList;
+  } catch (err) {
+    console.error('Error recuperando posts orgánicos:', err.message);
+    return getMockPosts();
+  }
+};
+
+const getMockPosts = () => {
+  return [
+    {
+      id: 'fb_post_mock_1',
+      platform: 'Facebook',
+      caption: 'Café orgánico recién tostado para empezar la semana con toda la energía. Te esperamos en nuestro local en Palermo para que disfrutes de tu taza perfecta. ☕️✨',
+      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      permalink: 'https://facebook.com',
+      imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600',
+      likesCount: 34,
+      commentsCount: 5,
+      sharesCount: 2
+    },
+    {
+      id: 'ig_post_mock_2',
+      platform: 'Instagram',
+      caption: '¿Ya probaste nuestro nuevo Cinnamon Roll con el Flat White de la casa? La combinación ideal para tu merienda de hoy. 🥐❤️ #cafe #palermo #cinnamonrolls',
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      permalink: 'https://instagram.com',
+      imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600',
+      likesCount: 128,
+      commentsCount: 14,
+      sharesCount: 8
+    },
+    {
+      id: 'ig_post_mock_3',
+      platform: 'Instagram',
+      caption: 'Detrás de cada taza hay un gran trabajo de selección y tostado de granos de especialidad. Amamos lo que hacemos. ☕️🌿',
+      createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+      permalink: 'https://instagram.com',
+      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600',
+      likesCount: 89,
+      commentsCount: 3,
+      sharesCount: 4
+    },
+    {
+      id: 'fb_post_mock_4',
+      platform: 'Facebook',
+      caption: '¡Se viene el finde y nuestro patio lo sabe! Vení a relajarte con un buen cold brew helado. Abierto de 8 a 20 hs. ☀️🧊',
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+      permalink: 'https://facebook.com',
+      imageUrl: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600',
+      likesCount: 42,
+      commentsCount: 2,
+      sharesCount: 1
+    }
+  ];
+};
+
+/**
+ * Promociona / pauta un post orgánico creando la estructura en Meta Ads (o simulado en Sandbox).
+ */
+export const boostPost = async (clientId, boostData, token) => {
+  const { postId, platform, campaignName, objective, dailyBudget, durationDays, targetLocation, targetInterests } = boostData;
+  const supabase = createAuthenticatedClient(token);
+
+  // 1. Obtener la integración de Meta del cliente
+  const { data: integration, error: intErr } = await supabase
+    .from('client_meta_integrations')
+    .select('meta_ad_account_id, meta_page_id, access_token')
+    .eq('client_id', clientId)
+    .single();
+
+  const isMock = intErr || !integration || integration.access_token === 'mock_token' || integration.meta_ad_account_id === 'act_mock';
+
+  if (!isMock) {
+    try {
+      const { meta_ad_account_id: adAccountId, meta_page_id: pageId, access_token: accessToken } = integration;
+
+      // A. Crear Ad Creative
+      const objectStoryId = postId.includes('_') ? postId : `${pageId}_${postId}`;
+      console.log(`Creating Ad Creative for post story: ${objectStoryId}`);
+
+      const creativeUrl = `https://graph.facebook.com/v25.0/${adAccountId}/adcreatives`;
+      const creativeRes = await axios.post(creativeUrl, {
+        name: `Creative - ${campaignName}`,
+        object_story_id: objectStoryId
+      }, {
+        params: { access_token: accessToken }
+      });
+
+      const creativeId = creativeRes.data.id;
+      if (!creativeId) {
+        throw new Error('No se pudo crear el Ad Creative en Meta.');
+      }
+
+      // B. Crear Campaña
+      const campaignUrl = `https://graph.facebook.com/v25.0/${adAccountId}/campaigns`;
+      const campaignRes = await axios.post(campaignUrl, {
+        name: campaignName,
+        objective: objective || 'OUTCOME_TRAFFIC',
+        status: 'ACTIVE',
+        special_ad_categories: ['NONE']
+      }, {
+        params: { access_token: accessToken }
+      });
+
+      const campaignId = campaignRes.data.id;
+      if (!campaignId) {
+        throw new Error('No se pudo crear la campaña en Meta.');
+      }
+
+      // C. Crear Adset
+      const adsetUrl = `https://graph.facebook.com/v25.0/${adAccountId}/adsets`;
+      const startTime = new Date().toISOString();
+      const endTime = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const adsetRes = await axios.post(adsetUrl, {
+        name: `Adset - ${campaignName}`,
+        campaign_id: campaignId,
+        daily_budget: Math.round(parseFloat(dailyBudget) * 100), // En centavos
+        billing_event: 'IMPRESSIONS',
+        optimization_goal: objective === 'OUTCOME_LEADS' ? 'LEAD_GENERATION' : 'LINK_CLICKS',
+        targeting: {
+          geo_locations: {
+            countries: [targetLocation || 'AR']
+          }
+        },
+        start_time: startTime,
+        end_time: endTime,
+        status: 'ACTIVE'
+      }, {
+        params: { access_token: accessToken }
+      });
+
+      const adsetId = adsetRes.data.id;
+      if (!adsetId) {
+        throw new Error('No se pudo crear el Adset en Meta.');
+      }
+
+      // D. Crear Ad
+      const adUrl = `https://graph.facebook.com/v25.0/${adAccountId}/ads`;
+      const adRes = await axios.post(adUrl, {
+        name: `Ad - ${campaignName}`,
+        adset_id: adsetId,
+        creative: { creative_id: creativeId },
+        status: 'ACTIVE'
+      }, {
+        params: { access_token: accessToken }
+      });
+
+      return {
+        success: true,
+        campaignId,
+        adsetId,
+        adId: adRes.data.id,
+        isMock: false
+      };
+    } catch (apiError) {
+      console.warn('Falla de API real de Meta al pautar:', apiError.response?.data || apiError.message);
+      console.log('Procediendo con Simulación Sandbox por restricciones de la cuenta.');
+    }
+  }
+
+  // FLUJO DE SIMULACIÓN SANDBOX (MOCK/FALLBACK)
+  const newCampaign = {
+    id: `cam_sim_${Date.now()}`,
+    name: campaignName,
+    status: 'ACTIVE',
+    objective: objective || 'OUTCOME_TRAFFIC',
+    spend: 0.00,
+    budget: parseFloat(dailyBudget),
+    durationDays: parseInt(durationDays, 10),
+    impressions: 0,
+    clicks: 0,
+    ctr: 0.00,
+    cpc: 0.00,
+    conversions: 0,
+    createdAt: new Date().toISOString(),
+    isSimulated: true
+  };
+
+  try {
+    const filePath = getBoostDataFilePath(clientId);
+    let currentBoosts = [];
+    if (fs.existsSync(filePath)) {
+      const fileData = fs.readFileSync(filePath, 'utf8');
+      currentBoosts = JSON.parse(fileData);
+    }
+    currentBoosts.push(newCampaign);
+    fs.writeFileSync(filePath, JSON.stringify(currentBoosts, null, 2), 'utf8');
+  } catch (fsErr) {
+    console.error('Error guardando campaña simulada localmente:', fsErr.message);
+  }
+
+  return {
+    success: true,
+    campaignId: newCampaign.id,
+    isMock: true,
+    data: newCampaign
+  };
+};
+
+/**
+ * Recupera las reglas de optimización de anuncios del cliente.
+ */
+export const getOptimizationRules = async (clientId, token) => {
+  const supabase = createAuthenticatedClient(token);
+  const { data, error } = await supabase
+    .from('client_meta_integrations')
+    .select('auto_optimize_ads, max_cpa_usd, min_roas, optimize_action, meta_pixel_id, meta_capi_token')
+    .eq('client_id', clientId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Error al recuperar reglas de optimización: ${error.message}`);
+  }
+
+  return data || {
+    auto_optimize_ads: false,
+    max_cpa_usd: null,
+    min_roas: null,
+    optimize_action: 'notify_only',
+    meta_pixel_id: null,
+    meta_capi_token: null
+  };
+};
+
+/**
+ * Guarda o actualiza las reglas de optimización de anuncios del cliente.
+ */
+export const saveOptimizationRules = async (clientId, rulesData, token) => {
+  const supabase = createAuthenticatedClient(token);
+  const { auto_optimize_ads, max_cpa_usd, min_roas, optimize_action, meta_pixel_id, meta_capi_token } = rulesData;
+
+  const { data, error } = await supabase
+    .from('client_meta_integrations')
+    .update({
+      auto_optimize_ads,
+      max_cpa_usd: max_cpa_usd !== '' && max_cpa_usd !== null ? parseFloat(max_cpa_usd) : null,
+      min_roas: min_roas !== '' && min_roas !== null ? parseFloat(min_roas) : null,
+      optimize_action: optimize_action || 'notify_only',
+      meta_pixel_id: meta_pixel_id || null,
+      meta_capi_token: meta_capi_token || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('client_id', clientId)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Error al guardar reglas de optimización: ${error.message}`);
+  }
+
+  return data;
+};
+
+const getMockInstagramFeedForBrandAnalysis = () => {
+  return [
+    {
+      id: 'ig_post_mock_1',
+      platform: 'Instagram',
+      caption: 'Nuestra nueva línea de suéteres y bufandas en lana merino ya está disponible en tienda y web. 🍂 Diseñados con una paleta cálida inspirada en la naturaleza patagónica. #slowfashion #merinowool #hechoenargentina',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1574169208507-84376144848b?w=600',
+      permalink: 'https://instagram.com/p/mock1',
+      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      likesCount: 342,
+      commentsCount: 18,
+      comments: [
+        { text: 'Qué belleza el color terracota! Tienen en talle L?', username: 'sofia_martinez' },
+        { text: 'Se pueden probar en el local de Palermo?', username: 'luli_decor' },
+        { text: 'Hacen envíos a Córdoba?', username: 'agustin_cba' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_2',
+      platform: 'Instagram',
+      caption: '¿Ya conocés el proceso detrás de nuestro café de especialidad? ☕️✨ Tostamos granos de origen único en pequeños lotes semanales para conservar cada nota de sabor. Pasá por Palermo a probarlo. #cafe #tostadodeespecialidad #buenosaires',
+      mediaType: 'VIDEO',
+      imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600',
+      permalink: 'https://instagram.com/p/mock2',
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 521,
+      commentsCount: 22,
+      comments: [
+        { text: 'El flat white que tomé ayer fue el mejor de mi vida!', username: 'gourmet_ba' },
+        { text: '¿Venden los granos en bolsa de 1/4 kg para llevar?', username: 'nahuel_v' },
+        { text: 'Tienen opciones de leche vegetal?', username: 'julieta.fit' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_3',
+      platform: 'Instagram',
+      caption: 'Espacios que inspiran calma. 🌿 Diseñamos este rincón de lectura integrando maderas claras, textiles de lino y plantas de interior. ¿Qué les parece el resultado? #interiordesign #deco #nordicstyle #hogar',
+      mediaType: 'CAROUSEL_ALBUM',
+      imageUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600',
+      permalink: 'https://instagram.com/p/mock3',
+      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 412,
+      commentsCount: 15,
+      comments: [
+        { text: '¿De dónde es la alfombra tejida? Me encantó!', username: 'deco_home' },
+        { text: 'Hermoso diseño, transmite mucha paz.', username: 'marina_s' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_4',
+      platform: 'Instagram',
+      caption: 'Lunes con aroma a pan recién horneado. 🥖🥐 Arrancá tu semana con nuestros clásicos croissants de masa madre. Calentitos a partir de las 8 AM. #masamadre #croissants #bakery #desayuno',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600',
+      permalink: 'https://instagram.com/p/mock4',
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 289,
+      commentsCount: 9,
+      comments: [
+        { text: 'Guardame dos para mañana temprano por favor!', username: 'pedro_p' },
+        { text: 'Son los más ricos de la zona 💜', username: 'caro_b' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_5',
+      platform: 'Instagram',
+      caption: 'Paleta neutral y texturas orgánicas para vestir tu mesa este fin de semana. 🍽️ Vajilla de cerámica artesanal y manteles de puro algodón rustico. #ceramica #tablesetting #crafts',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1518047601542-79f18c655718?w=600',
+      permalink: 'https://instagram.com/p/mock5',
+      createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 198,
+      commentsCount: 6,
+      comments: [
+        { text: '¿Tienen platos playos en stock o es por pedido?', username: 'elena_m' },
+        { text: 'Amo la cerámica artesanal de este taller.', username: 'claudia_deco' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_6',
+      platform: 'Instagram',
+      caption: 'Nos mudamos al mundo digital. 💻 Ahora podés ver todo nuestro catálogo online y comprar con envío rápido a todo el país. Link en Bio. #ecommerce #shoponline #novedad',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600',
+      permalink: 'https://instagram.com/p/mock6',
+      createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 173,
+      commentsCount: 12,
+      comments: [
+        { text: 'No puedo entrar al link, ¿me lo pasan por privado?', username: 'facundo_g' },
+        { text: 'Aceptan MercadoPago?', username: 'vale_r' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_7',
+      platform: 'Instagram',
+      caption: 'Verde que te quiero verde. 🌿 Añadí un toque de vida a tus oficinas con nuestra selección de suculentas y plantas de sombra de fácil cuidado. #plants #office #interiorjungle',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600',
+      permalink: 'https://instagram.com/p/mock7',
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 245,
+      commentsCount: 8,
+      comments: [
+        { text: '¿Qué plantas recomiendan para un living con poca luz?', username: 'sergio_k' },
+        { text: 'Precios de los potus por favor.', username: 'maria_verde' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_8',
+      platform: 'Instagram',
+      caption: 'Detalles que hacen la diferencia. 🧵 Elegimos botones de madera recuperada para nuestra nueva línea ecológica. Moda con conciencia social y ambiental. #sustentable #ecofriendly #fashion',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600',
+      permalink: 'https://instagram.com/p/mock8',
+      createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 312,
+      commentsCount: 14,
+      comments: [
+        { text: 'Excelente iniciativa, felicitaciones por cuidar el planeta!', username: 'gaston_eco' },
+        { text: '¿Dónde se pueden ver las certificaciones ecológicas?', username: 'lucia_s' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_9',
+      platform: 'Instagram',
+      caption: 'Arrancá el día liviano. 🥭 Bowls de yogurt artesanal con frutas de estación y granola orgánica de la casa. ¡Desayuno completo y nutritivo! #healthyfood #desayunosaludable #fruitbowl',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600',
+      permalink: 'https://instagram.com/p/mock9',
+      createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 421,
+      commentsCount: 19,
+      comments: [
+        { text: 'Se ve riquísimo! Hacen envíos por Rappi?', username: 'nico_h' },
+        { text: '¿La granola tiene azúcar agregada?', username: 'nutri_fit' }
+      ]
+    },
+    {
+      id: 'ig_post_mock_10',
+      platform: 'Instagram',
+      caption: 'Moda que resiste al tiempo. 🧥 Nuestras gabardinas están confeccionadas con telas impermeables de alta durabilidad. Un clásico que te va a acompañar por años. #gabardinas #abrigos #estilotemporal',
+      mediaType: 'IMAGE',
+      imageUrl: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600',
+      permalink: 'https://instagram.com/p/mock10',
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      likesCount: 356,
+      commentsCount: 25,
+      comments: [
+        { text: '¿Qué colores tienen disponibles en stock?', username: 'romina_l' },
+        { text: 'El calce es espectacular, me compré una ayer.', username: 'paula_d' },
+        { text: '¿Tienen tabla de medidas en la web?', username: 'julian_v' }
+      ]
+    }
+  ];
+};
+
+export const getInstagramFeedForBrandAnalysis = async (clientId) => {
+  try {
+    const { data: integration, error: intErr } = await supabaseAdmin
+      .from('client_meta_integrations')
+      .select('meta_page_id, access_token')
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    if (intErr || !integration || integration.access_token === 'mock_token' || integration.meta_page_id?.includes('mock')) {
+      console.log('🔗 [Brand Instagram] Usando fallback de posts simulados de Instagram para el análisis.');
+      return getMockInstagramFeedForBrandAnalysis();
+    }
+
+    const { meta_page_id: pageId, access_token: accessToken } = integration;
+
+    // Descubrir cuenta de Instagram vinculada
+    let igAccountId = null;
+    try {
+      const pageInfoRes = await axios.get(`https://graph.facebook.com/v25.0/${pageId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'instagram_business_account{id}'
+        }
+      });
+      if (pageInfoRes.data?.instagram_business_account?.id) {
+        igAccountId = pageInfoRes.data.instagram_business_account.id;
+      }
+    } catch (igDiscoverErr) {
+      console.warn('⚠️ [Brand Instagram] No se pudo verificar la cuenta de Instagram vinculada en Meta:', igDiscoverErr.message);
+    }
+
+    if (!igAccountId) {
+      console.log('🔗 [Brand Instagram] No se encontró cuenta de Instagram vinculada. Retornando posts simulados.');
+      return getMockInstagramFeedForBrandAnalysis();
+    }
+
+    const igUrl = `https://graph.facebook.com/v25.0/${igAccountId}/media`;
+    const igRes = await axios.get(igUrl, {
+      params: {
+        access_token: accessToken,
+        limit: 10,
+        fields: 'id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count,comments{text,username}'
+      }
+    });
+
+    const igItems = igRes.data.data || [];
+    const processedPosts = igItems.map(item => {
+      const rawComments = item.comments?.data || [];
+      const comments = rawComments.map(c => ({
+        text: c.text,
+        username: c.username
+      }));
+
+      return {
+        id: item.id,
+        platform: 'Instagram',
+        caption: item.caption || '',
+        mediaType: item.media_type,
+        imageUrl: item.media_url || null,
+        permalink: item.permalink || `https://instagram.com/p/${item.id}`,
+        createdAt: item.timestamp,
+        likesCount: item.like_count ?? 0,
+        commentsCount: item.comments_count ?? 0,
+        comments
+      };
+    });
+
+    if (processedPosts.length === 0) {
+      return getMockInstagramFeedForBrandAnalysis();
+    }
+
+    return processedPosts;
+  } catch (err) {
+    console.error('⚠️ [Brand Instagram] Error recuperando feed de Instagram real. Usando fallback:', err.message);
+    return getMockInstagramFeedForBrandAnalysis();
   }
 };

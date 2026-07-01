@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   CommandLineIcon,
   UserGroupIcon,
@@ -7,32 +9,40 @@ import {
   PaintBrushIcon,
   LanguageIcon,
   SparklesIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { KeyboardShortcutsModal } from '../components/ui/KeyboardShortcutsModal';
 import { CadenceLogosPreview } from '../components/ui/CadenceLogosPreview';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 
-// Importación de submódulos y constantes refactoreadas
-import { translations } from '../constants/settingsTranslations';
+import { useLanguage, useTheme } from '../hooks';
 import { sqlAvatarSetup } from '../constants/settingsSqlTemplates';
 import { ProfileTab } from '../components/settings/ProfileTab';
 import { AppearanceTab } from '../components/settings/AppearanceTab';
 import { LanguageTab } from '../components/settings/LanguageTab';
 import { ShortcutsTab } from '../components/settings/ShortcutsTab';
 import { TeamTab } from '../components/settings/TeamTab';
+import { TrashTab } from '../components/settings/TrashTab';
 import { AvatarCropperModal } from '../components/settings/AvatarCropperModal';
 
 export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
   const [isKeyboardModalOpen, setIsKeyboardModalOpen] = useState(false);
 
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   // Idioma
-  const [lang, setLang] = useState(() => localStorage.getItem('cadence-lang') || 'es');
-  const t = translations[lang];
+  const { lang, changeLanguage, t } = useLanguage();
 
   // Tema
-  const [theme, setTheme] = useState(() => localStorage.getItem('cadence-theme') || 'dark');
+  const { theme, handleThemeChange } = useTheme();
 
   // Datos de Perfil
   const [fullName, setFullName] = useState('');
@@ -53,24 +63,11 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
     }
   }, [profile]);
 
-  // Sincronizar Tema
-  const handleThemeChange = nextTheme => {
-    setTheme(nextTheme);
-    localStorage.setItem('cadence-theme', nextTheme);
-    if (nextTheme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      document.documentElement.classList.add('dark');
-    }
-    toast.success(nextTheme === 'light' ? 'Modo Claro activado' : 'Modo Oscuro activado');
-  };
+
 
   // Sincronizar Idioma
   const handleLangChange = nextLang => {
-    setLang(nextLang);
-    localStorage.setItem('cadence-lang', nextLang);
+    changeLanguage(nextLang);
     toast.success(nextLang === 'es' ? 'Idioma cambiado a Español' : 'Language set to English');
   };
 
@@ -173,6 +170,7 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
     { id: 'language', label: t.tabs.language, icon: LanguageIcon },
     { id: 'shortcuts', label: t.tabs.shortcuts, icon: CommandLineIcon },
     { id: 'team', label: t.tabs.team, icon: UserGroupIcon },
+    ...(profile?.role === 'admin' ? [{ id: 'trash', label: lang === 'es' ? 'Papelera' : 'Trash', icon: TrashIcon }] : []),
     { id: 'brand', label: t.tabs.brand, icon: SparklesIcon },
   ];
 
@@ -196,7 +194,10 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
                 <button
                   key={item.id}
                   type='button'
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSearchParams({ tab: item.id });
+                  }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition duration-200 flex-shrink-0 md:flex-shrink w-auto md:w-full border ${
                     isActive
                       ? 'bg-surface border-border-strong text-text-primary shadow-sm'
@@ -268,6 +269,13 @@ export const SettingsPage = ({ profile, session, onProfileUpdate }) => {
                 <TeamTab
                   profile={profile}
                   session={session}
+                  t={t}
+                  lang={lang}
+                />
+              )}
+
+              {activeTab === 'trash' && profile?.role === 'admin' && (
+                <TrashTab
                   t={t}
                   lang={lang}
                 />

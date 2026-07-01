@@ -7,6 +7,8 @@ import {
   updateClientBrandProfile,
   updateClient,
   deleteClient,
+  getTrashClients,
+  restoreClient,
 } from '../services/clients.service.js';
 import { getActivityFeedByClient } from '../services/activity.service.js';
 import { getUserAgencyId, getUserProfile } from '../helpers/userHelpers.js';
@@ -158,6 +160,15 @@ export const handleDeleteClient = async (req, res, next) => {
     const token = req.headers.authorization.split(' ')[1];
     const { clientId } = req.params;
 
+    // Verificar que el usuario sea administrador
+    const userProfile = await getUserProfile(req.user.id);
+    if (!userProfile || userProfile.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado. Solo los administradores pueden eliminar clientes.',
+      });
+    }
+
     const deleted = await deleteClient(clientId, token, req.user.id);
     if (!deleted) {
       return res.status(404).json({
@@ -168,7 +179,57 @@ export const handleDeleteClient = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Cliente eliminado correctamente.'
+      message: 'Cliente enviado a la papelera correctamente.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleGetTrashClients = async (req, res, next) => {
+  try {
+    const userProfile = await getUserProfile(req.user.id);
+    if (!userProfile || userProfile.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado. Solo los administradores pueden ver la papelera.',
+      });
+    }
+
+    const trashClients = await getTrashClients(userProfile.agency_id);
+    res.status(200).json({
+      success: true,
+      data: trashClients
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleRestoreClient = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+    const { clientId } = req.params;
+
+    const userProfile = await getUserProfile(req.user.id);
+    if (!userProfile || userProfile.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No autorizado. Solo los administradores pueden restaurar clientes.',
+      });
+    }
+
+    const restored = await restoreClient(clientId, token, req.user.id);
+    if (!restored) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cliente no encontrado o no se pudo restaurar.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Cliente restaurado correctamente.'
     });
   } catch (error) {
     next(error);

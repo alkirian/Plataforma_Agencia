@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../config/supabaseClient.js';
+import { getClientComments } from './metaAds.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
@@ -13,7 +14,96 @@ const createAuthenticatedClient = (token) => {
   });
 };
 
-const fetchWithTimeout = async (url, options = {}, timeout = 90000) => {
+function fixTruncatedJSON(jsonString) {
+  let inString = false;
+  let isEscaped = false;
+  const stack = [];
+  let cleanString = "";
+
+  for (let i = 0; i < jsonString.length; i++) {
+    const char = jsonString[i];
+    cleanString += char;
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === '\\') {
+        isEscaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+        isEscaped = false;
+      } else if (char === '{' || char === '[') {
+        stack.push(char);
+      } else if (char === '}') {
+        if (stack[stack.length - 1] === '{') {
+          stack.pop();
+        }
+      } else if (char === ']') {
+        if (stack[stack.length - 1] === '[') {
+          stack.pop();
+        }
+      }
+    }
+  }
+
+  if (inString && isEscaped) {
+    cleanString = cleanString.slice(0, -1);
+  }
+
+  if (inString) {
+    cleanString += '"';
+  }
+
+  cleanString = cleanString.trim().replace(/,\s*$/, '');
+
+  while (stack.length > 0) {
+    const openChar = stack.pop();
+    if (openChar === '{') {
+      cleanString += '}';
+    } else if (openChar === '[') {
+      cleanString += ']';
+    }
+  }
+
+  return cleanString;
+}
+
+export const robustJSONParse = (text) => {
+  if (typeof text !== 'string') return text;
+  
+  let cleanedText = text.trim();
+  if (cleanedText.startsWith('```json')) {
+    cleanedText = cleanedText.substring(7);
+  } else if (cleanedText.startsWith('```')) {
+    cleanedText = cleanedText.substring(3);
+  }
+  if (cleanedText.endsWith('```')) {
+    cleanedText = cleanedText.substring(0, cleanedText.length - 3);
+  }
+  cleanedText = cleanedText.trim();
+
+  try {
+    return JSON.parse(cleanedText);
+  } catch (err) {
+    console.warn('⚠️ [robustJSONParse] Falló parsing directo, intentando reparar JSON truncado/inválido...', err.message);
+    try {
+      const repaired = fixTruncatedJSON(cleanedText);
+      const finalized = repaired.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match, p1) => {
+        return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"';
+      });
+      return JSON.parse(finalized);
+    } catch (secondErr) {
+      console.error('❌ [robustJSONParse] Falla crítica al decodificar JSON:', text);
+      throw err;
+    }
+  }
+};
+
+const fetchWithTimeout = async (url, options = {}, timeout = 120000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -123,7 +213,7 @@ const chatResponseSchema = {
 };
 
 
-const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, model = 'gpt-4o-mini', temperature = 0.65, maxTokens = 4500 }) => {
+export const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, model = 'gpt-4o', temperature = 0.65, maxTokens = 4500 }) => {
   // --- GOOGLE GEMINI INTEGRATION ---
   if (model.startsWith('gemini-')) {
     if (!geminiApiKey) {
@@ -144,9 +234,23 @@ const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, mod
       if (msg.role === 'system') {
         systemInstructionText = msg.content;
       } else {
+        const parts = [];
+        if (typeof msg.content === 'string') {
+          parts.push({ text: msg.content });
+        } else if (Array.isArray(msg.content)) {
+          for (const part of msg.content) {
+            if (part.type === 'text') {
+              parts.push({ text: part.text });
+            } else if (part.type === 'image_url') {
+              parts.push({ text: `[Imagen adjunta: ${part.image_url?.url || ''}]` });
+            }
+          }
+        } else {
+          parts.push({ text: String(msg.content || '') });
+        }
         contents.push({
           role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
+          parts
         });
       }
     }
@@ -209,10 +313,16 @@ const callLLM = async ({ systemPrompt, userPrompt, messages, responseSchema, mod
     messages: messages || [
       ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
       ...(userPrompt ? [{ role: 'user', content: userPrompt }] : [])
-    ],
-    temperature,
-    max_tokens: maxTokens,
+    ]
   };
+
+  // Modern OpenAI models (like gpt-5, o1, o3) use max_completion_tokens and do not support custom temperature
+  if (model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3')) {
+    bodyPayload.max_completion_tokens = maxTokens;
+  } else {
+    bodyPayload.max_tokens = maxTokens;
+    bodyPayload.temperature = temperature;
+  }
 
   if (responseSchema) {
     bodyPayload.response_format = {
@@ -440,11 +550,25 @@ Reglas obligatorias:
     },
   }, null, 2);
 
-  const llmResponse = await callLLM({
-    systemPrompt,
-    userPrompt: userPromptForModel,
-    responseSchema: scheduleIdeasSchema
-  });
+  // Intentar con gpt-4o, con fallback automático a Gemini si falla
+  let llmResponse;
+  try {
+    llmResponse = await callLLM({
+      systemPrompt,
+      userPrompt: userPromptForModel,
+      responseSchema: scheduleIdeasSchema,
+      model: 'gpt-4o'
+    });
+  } catch (openaiError) {
+    console.warn('[generateScheduleIdeas] OpenAI falló, intentando con Gemini como fallback:', openaiError.message);
+    if (!geminiApiKey) throw openaiError;
+    llmResponse = await callLLM({
+      systemPrompt,
+      userPrompt: userPromptForModel,
+      responseSchema: scheduleIdeasSchema,
+      model: 'gemini-2.0-flash'
+    });
+  }
 
   const ideas = JSON.parse(llmResponse);
   const rawIdeas = Array.isArray(ideas) ? ideas : Array.isArray(ideas?.ideas) ? ideas.ideas : [];
@@ -473,7 +597,7 @@ Reglas obligatorias:
 /**
  * Maneja conversaciones de chat con el cliente usando RAG
  */
-export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token, agentId, model }) => {
+export const handleChatConversation = async ({ clientId, userPrompt, chatHistory, token, agentId, model, uploadedImageUrl }) => {
   // Validar acceso al cliente vía RLS
   const supabaseAuth = createAuthenticatedClient(token);
   const { data: client, error: clientErr } = await supabaseAuth
@@ -493,65 +617,135 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
     return { response, command: null };
   }
 
-  // 1) Obtener contexto unificado del Cronograma (Siempre cargado para Aura)
+  // Lanzar consultas independientes en paralelo para reducir latencia
+  const schedulePromise = (async () => {
+    try {
+      const res = await supabaseAuth
+        .from('schedule_items')
+        .select('id, title, scheduled_at, channel, status')
+        .eq('client_id', clientId)
+        .order('scheduled_at', { ascending: true })
+        .limit(40);
+      return res;
+    } catch (e) {
+      console.warn('⚠️ Error al cargar cronograma en chat de Aura:', e.message);
+      return { data: [] };
+    }
+  })();
+
+  const trendsPromise = (async () => {
+    try {
+      const res = await supabaseAuth
+        .from('trend_reports')
+        .select('title, summary, insights')
+        .eq('client_id', clientId)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return res;
+    } catch (e) {
+      console.warn('⚠️ Error al cargar tendencias en chat de Aura:', e.message);
+      return { data: null };
+    }
+  })();
+
+  const metaPromise = (async () => {
+    try {
+      const res = await supabaseAuth
+        .from('client_meta_integrations')
+        .select('meta_ad_account_id, status')
+        .eq('client_id', clientId)
+        .maybeSingle();
+      return res;
+    } catch (e) {
+      console.warn('⚠️ Error al cargar integración de Meta en chat de Aura:', e.message);
+      return { data: null };
+    }
+  })();
+
+  // Omitir embedding si el mensaje es corto y conversacional (evita llamada externa lenta a OpenAI)
+  const isShortConversational = (text) => {
+    const clean = text.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+    const shortWords = ['hola', 'buen dia', 'buenas', 'hello', 'hi', 'ok', 'okay', 'dale', 'de una', 'procede', 'confirmar', 'descartar', 'gracias', 'grx', 'chau', 'adios', 'bye', 'si', 'no', 'entendido'];
+    return clean.length < 15 || shortWords.includes(clean);
+  };
+
+  const skipEmbedding = isShortConversational(userPrompt);
+  const embeddingPromise = skipEmbedding 
+    ? Promise.resolve(null) 
+    : embedText(userPrompt).catch((err) => {
+        console.warn('Error al generar embedding para RAG:', err.message);
+        return null;
+      });
+
+  // Consultar comentarios de redes sociales
+  const commentsPromise = (async () => {
+    try {
+      const comments = await getClientComments(clientId, token);
+      return comments || [];
+    } catch (e) {
+      console.warn('⚠️ Error al cargar comentarios en chat de Aura:', e.message);
+      return [];
+    }
+  })();
+
+  let scheduleResult, trendsResult, metaResult, queryEmbedding, commentsResult;
+
+  try {
+    const results = await Promise.all([
+      schedulePromise,
+      trendsPromise,
+      metaPromise,
+      embeddingPromise,
+      commentsPromise
+    ]);
+    scheduleResult = results[0];
+    trendsResult = results[1];
+    metaResult = results[2];
+    queryEmbedding = results[3];
+    commentsResult = results[4];
+  } catch (err) {
+    console.error('Error al resolver consultas paralelas en chat de Aura:', err);
+  }
+
+  // 1) Contexto unificado del Cronograma
   let scheduleContext = '';
-  try {
-    const { data: scheduleItems } = await supabaseAuth
-      .from('schedule_items')
-      .select('id, title, scheduled_at, channel, status')
-      .eq('client_id', clientId)
-      .order('scheduled_at', { ascending: true })
-      .limit(40);
-    
-    if (scheduleItems && scheduleItems.length > 0) {
-      scheduleContext = `\n📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO (Últimas 40):\n` +
-        scheduleItems.map(item => `- ID: "${item.id}", Título: "${item.title}", Canal: "${item.channel || 'IG'}", Fecha: "${item.scheduled_at?.slice(0, 10)}", Estado: "${item.status}"`).join('\n');
-    } else {
-      scheduleContext = '\n📅 CRONOGRAMA DE PUBLICACIONES: El calendario de publicaciones está actualmente vacío para este cliente.';
-    }
-  } catch (e) {
-    console.warn('Error al cargar items para prompt de Aura:', e);
+  if (scheduleResult && scheduleResult.data && scheduleResult.data.length > 0) {
+    scheduleContext = `\n📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO (Últimas 40):\n` +
+      scheduleResult.data.map(item => `- ID: "${item.id}", Título: "${item.title}", Canal: "${item.channel || 'IG'}", Fecha: "${item.scheduled_at?.slice(0, 10)}", Estado: "${item.status}"`).join('\n');
+  } else {
+    scheduleContext = '\n📅 CRONOGRAMA DE PUBLICACIONES: El calendario de publicaciones está actualmente vacío para este cliente.';
   }
 
-  // 2) Obtener contexto de los últimos reportes de Tendencias detectados en el mercado
+  // 2) Contexto de Reportes de Tendencias
   let trendsContext = '';
-  try {
-    const { data: latestReport } = await supabaseAuth
-      .from('trend_reports')
-      .select('title, summary, insights')
-      .eq('client_id', clientId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (latestReport) {
-      const insightsStr = (latestReport.insights || [])
-        .map(ins => `- [TENDENCIA] "${ins.title}": ${ins.description} (Acción recomendada: ${ins.suggested_action})`)
-        .join('\n');
-      trendsContext = `\n🔥 ÚLTIMAS TENDENCIAS DETECTADAS EN EL MERCADO PARA EL CLIENTE:\n- Reporte: "${latestReport.title}"\n- Resumen: "${latestReport.summary}"\n- Insights de Tendencias Recientes:\n${insightsStr || 'Ninguno'}`;
-    } else {
-      trendsContext = '\n🔥 TENDENCIAS DE MERCADO: Aún no se han escaneado tendencias para este cliente hoy.';
-    }
-  } catch (e) {
-    console.warn('Error al cargar tendencias en prompt de Aura:', e);
+  if (trendsResult && trendsResult.data) {
+    const latestReport = trendsResult.data;
+    const insightsStr = (latestReport.insights || [])
+      .map(ins => `- [TENDENCIA] "${ins.title}": ${ins.description} (Acción recomendada: ${ins.suggested_action})`)
+      .join('\n');
+    trendsContext = `\n🔥 ÚLTIMAS TENDENCIAS DETECTADAS EN EL MERCADO PARA EL CLIENTE:\n- Reporte: "${latestReport.title}"\n- Resumen: "${latestReport.summary}"\n- Insights de Tendencias Recientes:\n${insightsStr || 'Ninguno'}`;
+  } else {
+    trendsContext = '\n🔥 TENDENCIAS DE MERCADO: Aún no se han escaneado tendencias para este cliente hoy.';
   }
 
-  // 3) Obtener contexto del estado de integración de Meta Ads
+  // 3) Contexto de Meta Ads
   let metaContext = '';
-  try {
-    const { data: metaIntegration } = await supabaseAuth
-      .from('client_meta_integrations')
-      .select('meta_ad_account_id, status')
-      .eq('client_id', clientId)
-      .maybeSingle();
+  if (metaResult && metaResult.data) {
+    const metaIntegration = metaResult.data;
+    metaContext = `\n📊 INTEGRACIÓN Y ANALÍTICAS DE META ADS:\n- Estado de Conexión: "${metaIntegration.status}"\n- ID Cuenta Publicitaria vinculada: "${metaIntegration.meta_ad_account_id}"\n- Nota: Tienes acceso autorizado a optimizar la pauta de anuncios y audiencias de esta cuenta.`;
+  } else {
+    metaContext = '\n📊 INTEGRACIÓN DE META ADS: La cuenta publicitaria de Meta Ads todavía no ha sido conectada por el usuario.';
+  }
 
-    if (metaIntegration) {
-      metaContext = `\n📊 INTEGRACIÓN Y ANALÍTICAS DE META ADS:\n- Estado de Conexión: "${metaIntegration.status}"\n- ID Cuenta Publicitaria vinculada: "${metaIntegration.meta_ad_account_id}"\n- Nota: Tienes acceso autorizado a optimizar la pauta de anuncios y audiencias de esta cuenta.`;
-    } else {
-      metaContext = '\n📊 INTEGRACIÓN DE META ADS: La cuenta publicitaria de Meta Ads todavía no ha sido conectada por el usuario.';
-    }
-  } catch (e) {
-    console.warn('Error al cargar integración de Meta en prompt de Aura:', e);
+  // 4) Contexto de Comentarios de Social Inbox
+  let commentsContext = '';
+  if (commentsResult && commentsResult.length > 0) {
+    commentsContext = `\n💬 COMENTARIOS RECIENTES DE CLIENTES EN REDES SOCIALES (Social Inbox):\n` +
+      commentsResult.map(c => `- ID: "${c.id}", Usuario: "@${c.username}", Red: "${c.platform}", Post: "${c.post_title}", Mensaje: "${c.text}", Estado: "${c.status}"`).join('\n') +
+      `\nNota: Si el usuario te pide responder a un comentario específico, propón un comando de tipo "reply_comment" con el ID del comentario, la plataforma y el texto de tu respuesta redactada.`;
+  } else {
+    commentsContext = '\n💬 COMENTARIOS DE REDES SOCIALES: No hay comentarios recientes pendientes de respuesta en este momento.';
   }
 
   // Formatear el ADN estratégico e Identidad de Marca del cliente
@@ -572,24 +766,23 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
 - Temas a Evitar: ${Array.isArray(brandInfo.avoid_topics) ? brandInfo.avoid_topics.join(', ') : 'Ninguno'}
 `;
 
-  // Embedding de la consulta para RAG documental
-  const queryEmbedding = await embedText(userPrompt);
-
-  // Buscar chunks relevantes de documentos del cliente de forma segura usando el token autenticado
+  // Buscar chunks relevantes de documentos si hay embedding
   let matches = [];
-  try {
-    const { data, error: matchErr } = await supabaseAuth.rpc('match_document_chunks', {
-      query_embedding: queryEmbedding,
-      match_client_id: clientId,
-      match_count: 5,
-    });
-    if (!matchErr) {
-      matches = data || [];
-    } else {
-      console.warn('[ai] No se pudo usar contexto documental (RPC Err):', matchErr.message);
+  if (queryEmbedding && queryEmbedding.length > 0) {
+    try {
+      const { data, error: matchErr } = await supabaseAuth.rpc('match_document_chunks', {
+        query_embedding: queryEmbedding,
+        match_client_id: clientId,
+        match_count: 5,
+      });
+      if (!matchErr) {
+        matches = data || [];
+      } else {
+        console.warn('[ai] No se pudo usar contexto documental (RPC Err):', matchErr.message);
+      }
+    } catch (error) {
+      console.warn('[ai] Error al buscar chunks de documentos:', error.message);
     }
-  } catch (error) {
-    console.warn('[ai] Error al buscar chunks de documentos:', error.message);
   }
   const topContext = (matches || []).map(m => m.content).join('\n---\n');
 
@@ -599,11 +792,20 @@ export const handleChatConversation = async ({ clientId, userPrompt, chatHistory
     : [];
 
   // Inyectar directrices de expertise y personalidad del Agente Compañero
-  const agentContextPrompt = `Te llamas "Aura". Eres la Directora Estratégica de la agencia y una compañera de marketing más del equipo. Hablas de forma totalmente natural, cercana, fresca y humana (como si estuvieras chateando por Slack o WhatsApp con un colega de confianza). 
+  const agentContextPrompt = `Te llamas "Aura". Eres la Directora Estratégica de la agencia y la principal Asesora y Consultora de Marketing del usuario. Hablas de forma totalmente natural, cercana, fresca y humana (como si estuvieras chateando por Slack o WhatsApp con un colega de confianza).
 NO hables como un robot corporativo frío ni uses esquemas tipográficos exageradamente perfectos con interminables viñetas en negrita o bloques gigantes de texto formateado. Escribe oraciones naturales, fluidas, con exclamaciones cálidas y emoticonos oportunos (como 🙌, 🔥, 😉, de una!, dale!).
-Adopta el comportamiento y tono de la persona que te habla (si te hablan corto y casual, responde corto, ágil y al grano; si te hablan más formal, sé profesional pero mantén siempre la calidez humana).
+Adopta el comportamiento y tono de la persona que te habla.
 
-Tu gran superpoder es que puedes controlar y armar cada rincón del Cronograma/Calendario del cliente. De forma proactiva puedes proponer crear eventos, reprogramarlos, cambiar su estado o eliminarlos usando los comandos correspondientes. Si el usuario te da una orden como "3 posteos sobre X, 2 fotos y 2 videos", actúa al instante como su mano derecha: sugiérele las fechas ideales del mes, los formatos y redacta copies brutales listos para publicar, invitando a confirmar las tarjetas con un solo click.
+🧠 TU ROL DE ASESORA Y CONSULTORA ESTRATÉGICA:
+- Actúas como el puente y compañero interactivo entre el usuario y la plataforma web. Tienes la facultad de sugerir y programar publicaciones, responder comentarios de redes sociales y actualizar la identidad/ADN de marca del negocio.
+- Si el usuario te plantea una duda, un problema de su negocio (ej. "no vendo", "tengo poco engagement", "mis campañas no funcionan") o te pide feedback sobre cómo comunicar:
+  1. Analiza el ADN de su marca (Industria, Público objetivo, Tono de voz, Valores) y el contexto de sus anuncios/cronograma.
+  2. Ofrece un diagnóstico honesto, profesional y empático. Diles qué podría estar fallando en su comunicación actual.
+  3. Presenta propuestas y planes concretos para mejorar sus campañas en Meta Ads o cambiar su tono/estilo de comunicación para conectar mejor con la audiencia.
+  4. Si tu propuesta requiere cambiar o afinar su identidad de marca actual (como re-definir su tono o público objetivo), explícaselo y proponle al instante un comando de tipo "update_brand_profile" con las sugerencias para que lo apruebe con un click.
+
+Tu gran superpoder es que puedes controlar y armar cada rincón del Cronograma/Calendario del cliente. De forma proactiva puedes proponer crear eventos, reprogramarlos, cambiar su estado o eliminarlos usando los comandos correspondientes. Si el usuario te da una orden o aprueba una idea tuya, actúa al instante como su mano derecha: sugiérele las fechas ideales del mes, los formatos y redacta copies brutales listos para publicar, invitando a confirmar las tarjetas con un solo click.
+Siempre que realices o sugieras un cambio estructural o de identidad, hazlo a través de un comando explícito de tipo "update_brand_profile", "create", "reply_comment", etc., para que el usuario pueda aplicarlo haciendo clic en 'Aprobar'.
 
 🚨 REGLA DE COHERENCIA Y CONSULTA ACTIVA (IMPORTANTÍSIMO):
 - Ante cualquier pedido sobre un "producto nuevo", "lanzamiento reciente", "servicio recién anunciado" u otro tema específico de este cliente:
@@ -620,6 +822,7 @@ ${brandIdentityContext}
 ${scheduleContext}
 ${trendsContext}
 ${metaContext}
+${commentsContext}
 
 📂 CONTEXTO DOCUMENTAL DE RAG (Briefs cargados):
 ${topContext || 'Sin documentos relevantes.'}
@@ -665,22 +868,54 @@ REGLAS DE COMANDO:
 - Rellena con "" (string vacio) todos los campos de cada objeto en "commands" que no apliquen a la acción elegida.
 - Sé extremadamente exacto con los UUIDs de las publicaciones que lees en la sección 📅 CRONOGRAMA DE PUBLICACIONES ACTUALES EN EL CALENDARIO. No inventes IDs.`;
 
+  let userContent = userPrompt;
+  if (uploadedImageUrl) {
+    userContent = [
+      { type: 'text', text: userPrompt },
+      { type: 'image_url', image_url: { url: uploadedImageUrl } }
+    ];
+  }
+
   const messages = [
     { role: 'system', content: systemPrompt },
     ...conversationHistory,
-    { role: 'user', content: userPrompt }
+    { role: 'user', content: userContent }
   ];
 
-  const responseContent = await callLLM({
-    messages,
-    responseSchema: chatResponseSchema,
-    model: model || 'gpt-4o-mini',
-    temperature: 0.7,
-    maxTokens: 1200
-  });
+  let responseContent;
+  let modelUsed = model || 'gpt-5';
+  let isFallback = false;
 
   try {
-    const parsed = JSON.parse(responseContent);
+    responseContent = await callLLM({
+      messages,
+      responseSchema: chatResponseSchema,
+      model: modelUsed,
+      temperature: 0.7,
+      maxTokens: 4000
+    });
+  } catch (err) {
+    const isGemini = modelUsed.startsWith('gemini-');
+    const isGPT5 = modelUsed.startsWith('gpt-5');
+
+    if ((isGemini || isGPT5) && openaiApiKey && modelUsed !== 'gpt-4o-mini') {
+      console.warn(`⚠️ [${modelUsed} Chat Error] ${err.message}. Intentando fallback automático a gpt-4o-mini...`);
+      modelUsed = 'gpt-4o-mini';
+      isFallback = true;
+      responseContent = await callLLM({
+        messages,
+        responseSchema: chatResponseSchema,
+        model: modelUsed,
+        temperature: 0.7,
+        maxTokens: 4000
+      });
+    } else {
+      throw err;
+    }
+  }
+
+  try {
+    const parsed = robustJSONParse(responseContent);
     const commands = [];
     if (parsed.hasCommands && Array.isArray(parsed.commands)) {
       for (const cmd of parsed.commands) {
@@ -723,14 +958,18 @@ REGLAS DE COMANDO:
     }
     return {
       response: parsed.response || 'No he podido generar una respuesta conversacional.',
-      commands
+      commands,
+      modelUsed,
+      isFallback
     };
 
   } catch (e) {
     console.error('Error al parsear respuesta estructurada de Aura:', responseContent, e);
     return {
       response: 'Lo siento, he tenido un problema interno al procesar mi respuesta estructurada.',
-      command: null
+      command: null,
+      modelUsed,
+      isFallback
     };
   }
 };
@@ -863,3 +1102,310 @@ export const generateCopyFromTrend = async ({ clientId, trendTitle, trendDescrip
     objective: cleanText(parsed.objective || 'Generar autoridad y conversación sobre la tendencia.')
   };
 };
+
+export const extractImageBase64 = async (url) => {
+  if (url.startsWith('data:')) {
+    const match = url.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      return { mimeType: match[1], data: match[2] };
+    }
+  }
+  const resp = await fetch(url);
+  const buffer = await resp.arrayBuffer();
+  const mimeType = resp.headers.get('content-type') || 'image/jpeg';
+  const data = Buffer.from(buffer).toString('base64');
+  return { mimeType, data };
+};
+
+export const cropToAspectRatio = async (base64Str, mimeType, aspectRatio) => {
+  if (!base64Str || base64Str.length < 100) return base64Str;
+  if (mimeType && mimeType.includes('svg')) return base64Str;
+
+  try {
+    const imgBuffer = Buffer.from(base64Str, 'base64');
+    const metadata = await sharp(imgBuffer).metadata();
+    const originalWidth = metadata.width;
+    const originalHeight = metadata.height;
+    const channels = metadata.channels || 4;
+
+    const parts = aspectRatio.split(':');
+    if (parts.length !== 2) return base64Str;
+
+    const targetW = parseFloat(parts[0]);
+    const targetH = parseFloat(parts[1]);
+    const targetRatio = targetW / targetH;
+    const currentRatio = originalWidth / originalHeight;
+
+    const ratioDiff = Math.abs(currentRatio - targetRatio) / currentRatio;
+
+    let formatExtension = 'png';
+    if (mimeType) {
+      if (mimeType.includes('jpeg') || mimeType.includes('jpg')) formatExtension = 'jpeg';
+      else if (mimeType.includes('webp')) formatExtension = 'webp';
+      else if (mimeType.includes('gif')) formatExtension = 'gif';
+    }
+
+    if (ratioDiff <= 0.03) {
+      console.log(`📏 [Sharp Crop] Relación muy similar (diff: ${(ratioDiff * 100).toFixed(1)}%). Redimensionando sutilmente.`);
+      const resizedBuffer = await sharp(imgBuffer)
+        .resize(originalWidth, Math.round(originalWidth / targetRatio))
+        .toFormat(formatExtension)
+        .toBuffer();
+      return resizedBuffer.toString('base64');
+    }
+
+    let finalW = originalWidth;
+    let finalH = Math.round(originalWidth / targetRatio);
+
+    if (finalH > 2048) {
+      finalH = 2048;
+      finalW = Math.round(finalH * targetRatio);
+    } else if (finalW > 2048) {
+      finalW = 2048;
+      finalH = Math.round(finalW / targetRatio);
+    }
+
+    console.log(`🎨 [Sharp Crop] Adaptando de ${originalWidth}x${originalHeight} a ${finalW}x${finalH} (Relación ${aspectRatio}) usando relleno.`);
+
+    const topPixels = await sharp(imgBuffer).extract({ left: 0, top: 0, width: originalWidth, height: 1 }).raw().toBuffer();
+    const bottomPixels = await sharp(imgBuffer).extract({ left: 0, top: originalHeight - 1, width: originalWidth, height: 1 }).raw().toBuffer();
+    const leftPixels = await sharp(imgBuffer).extract({ left: 0, top: 0, width: 1, height: originalHeight }).raw().toBuffer();
+    const rightPixels = await sharp(imgBuffer).extract({ left: originalWidth - 1, top: 0, width: 1, height: originalHeight }).raw().toBuffer();
+
+    const rgbColors = [];
+
+    for (let i = 0; i < 10; i++) {
+      const x = Math.floor((originalWidth - 1) * (i / 9));
+      const topIdx = x * channels;
+      rgbColors.push({
+        r: topPixels[topIdx],
+        g: topPixels[topIdx + 1],
+        b: topPixels[topIdx + 2],
+        a: channels === 4 ? topPixels[topIdx + 3] : 255
+      });
+      const botIdx = x * channels;
+      rgbColors.push({
+        r: bottomPixels[botIdx],
+        g: bottomPixels[botIdx + 1],
+        b: bottomPixels[botIdx + 2],
+        a: channels === 4 ? bottomPixels[botIdx + 3] : 255
+      });
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const y = Math.floor((originalHeight - 1) * (i / 9));
+      const leftIdx = y * channels;
+      rgbColors.push({
+        r: leftPixels[leftIdx],
+        g: leftPixels[leftIdx + 1],
+        b: leftPixels[leftIdx + 2],
+        a: channels === 4 ? leftPixels[leftIdx + 3] : 255
+      });
+      const rightIdx = y * channels;
+      rgbColors.push({
+        r: rightPixels[rightIdx],
+        g: rightPixels[rightIdx + 1],
+        b: rightPixels[rightIdx + 2],
+        a: channels === 4 ? rightPixels[rightIdx + 3] : 255
+      });
+    }
+
+    const avgR = rgbColors.reduce((sum, c) => sum + c.r, 0) / rgbColors.length;
+    const avgG = rgbColors.reduce((sum, c) => sum + c.g, 0) / rgbColors.length;
+    const avgB = rgbColors.reduce((sum, c) => sum + c.b, 0) / rgbColors.length;
+    const avgA = rgbColors.reduce((sum, c) => sum + c.a, 0) / rgbColors.length;
+
+    const varianceR = rgbColors.reduce((sum, c) => sum + Math.pow(c.r - avgR, 2), 0) / rgbColors.length;
+    const varianceG = rgbColors.reduce((sum, c) => sum + Math.pow(c.g - avgG, 2), 0) / rgbColors.length;
+    const varianceB = rgbColors.reduce((sum, c) => sum + Math.pow(c.b - avgB, 2), 0) / rgbColors.length;
+    const stdDev = Math.sqrt((varianceR + varianceG + varianceB) / 3);
+
+    let bgBuffer;
+    let isSolid = stdDev < 18 && avgA > 200;
+
+    if (isSolid) {
+      console.log(`🧼 [Sharp Crop] Fondo sólido detectado. Color de relleno: rgba(${Math.round(avgR)}, ${Math.round(avgG)}, ${Math.round(avgB)}, ${(avgA/255).toFixed(2)})`);
+    } else {
+      console.log(`🖼️ [Sharp Crop] Fondo complejo detectado. Generando relleno desenfocado.`);
+      let bgScaleFactor;
+      if (currentRatio > targetRatio) {
+        bgScaleFactor = finalH / originalHeight;
+      } else {
+        bgScaleFactor = finalW / originalWidth;
+      }
+      const bgW = Math.round(originalWidth * bgScaleFactor);
+      const bgH = Math.round(originalHeight * bgScaleFactor);
+
+      bgBuffer = await sharp(imgBuffer)
+        .resize(bgW, bgH)
+        .extract({
+          left: Math.round((bgW - finalW) / 2),
+          top: Math.round((bgH - finalH) / 2),
+          width: finalW,
+          height: finalH
+        })
+        .blur(30)
+        .toBuffer();
+    }
+
+    let fgScaleFactor;
+    if (currentRatio > targetRatio) {
+      fgScaleFactor = finalW / originalWidth;
+    } else {
+      fgScaleFactor = finalH / originalHeight;
+    }
+
+    const fgW = Math.round(originalWidth * fgScaleFactor);
+    const fgH = Math.round(originalHeight * fgScaleFactor);
+
+    const fgBuffer = await sharp(imgBuffer)
+      .resize(fgW, fgH)
+      .toBuffer();
+
+    const posX = Math.round((finalW - fgW) / 2);
+    const posY = Math.round((finalH - fgH) / 2);
+
+    let finalImageBuffer;
+    if (isSolid) {
+      finalImageBuffer = await sharp({
+        create: {
+          width: finalW,
+          height: finalH,
+          channels: 4,
+          background: { r: Math.round(avgR), g: Math.round(avgG), b: Math.round(avgB), alpha: avgA / 255 }
+        }
+      })
+      .composite([{ input: fgBuffer, left: posX, top: posY }])
+      .toFormat(formatExtension)
+      .toBuffer();
+    } else {
+      finalImageBuffer = await sharp(bgBuffer)
+        .composite([{ input: fgBuffer, left: posX, top: posY }])
+        .toFormat(formatExtension)
+        .toBuffer();
+    }
+
+    return finalImageBuffer.toString('base64');
+  } catch (err) {
+    console.error('⚠️ [Sharp Crop] Error al adaptar imagen:', err.message);
+  }
+  return base64Str;
+};
+
+export const analyzePostImageForAdaptation = async ({ imageUrl }) => {
+  if (!openaiApiKey) {
+    throw new Error('OPENAI_API_KEY no está configurada.');
+  }
+
+  const layoutDefinition = {
+    type: "object",
+    properties: {
+      texts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            text: { type: "string" },
+            color: { type: "string", description: "Approximate hex color of the text (e.g. #FFFFFF)" },
+            fontSize: { type: "string", description: "Relative approximate font size (e.g. 24px, 16px, 12px)" },
+            fontWeight: { type: "string", description: "bold | normal | medium" },
+            xPct: { type: "number", description: "Recommended X coordinate percentage (0-100) from left edge for this specific aspect ratio" },
+            yPct: { type: "number", description: "Recommended Y coordinate percentage (0-100) from top edge for this specific aspect ratio" }
+          },
+          required: ["id", "text", "color", "fontSize", "fontWeight", "xPct", "yPct"],
+          additionalProperties: false
+        }
+      },
+      logo: {
+        type: "object",
+        properties: {
+          detected: { type: "boolean" },
+          xPct: { type: "number", description: "Recommended X coordinate percentage (0-100) from left edge for this specific aspect ratio" },
+          yPct: { type: "number", description: "Recommended Y coordinate percentage (0-100) from top edge for this specific aspect ratio" }
+        },
+        required: ["detected", "xPct", "yPct"],
+        additionalProperties: false
+      }
+    },
+    required: ["texts", "logo"],
+    additionalProperties: false
+  };
+
+  const postAnalysisSchema = {
+    type: "object",
+    properties: {
+      analysis: {
+        type: "object",
+        properties: {
+          product: { type: "string" },
+          background: { type: "string" },
+          style: { type: "string" },
+          text: { type: "string" }
+        },
+        required: ["product", "background", "style", "text"],
+        additionalProperties: false
+      },
+      layers: {
+        type: "object",
+        properties: {
+          "1:1": layoutDefinition,
+          "9:16": layoutDefinition,
+          "16:9": layoutDefinition,
+          "4:5": layoutDefinition,
+          "4:3": layoutDefinition
+        },
+        required: ["1:1", "9:16", "16:9", "4:5", "4:3"],
+        additionalProperties: false
+      },
+      outpaint_prompt: { 
+        type: "string", 
+        description: "Detailed prompt for generating the background extension (outpaint), describing the lighting, textures, colors, and environment matching the original background, without mentioning any text, copy, or logos." 
+      }
+    },
+    required: ["analysis", "layers", "outpaint_prompt"],
+    additionalProperties: false
+  };
+
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `You are an expert graphic designer and advertising layout director. 
+Your task is to analyze the provided image of a finished social media post or banner and detect its layers to build an interactive canvas overlay.
+
+Since the layout must be adapted to different aspect ratios, you must generate a RECOMMENDED layer layout (texts and logo coordinates) for EACH target ratio:
+- "1:1": Square feed. Standard balanced layout.
+- "9:16": Vertical story/reel. Recompose the layout vertically (e.g., stack texts and logo vertically, centered, spaced out to fit a tall canvas).
+- "16:9": Horizontal web banner. Recompose the layout horizontally or wide (e.g. side-by-side arrangement, keeping texts grouped to one side and the logo/empty space balanced).
+- "4:5": Vertical portrait feed. Slightly taller than square, adjust coordinates accordingly.
+- "4:3": Standard feed. Slightly wider than square.
+
+For each text element (which keeps the same 'id' and 'text' content across all formats), estimate the optimal center coordinates (xPct 0-100, yPct 0-100) and styling (color, fontSize, fontWeight) appropriate for each aspect ratio so the composition looks visually balanced and professional.
+
+Respond STRICTLY with a JSON object matching the schema provided.`
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: imageUrl
+          }
+        }
+      ]
+    }
+  ];
+
+  const responseText = await callLLM({
+    messages,
+    model: 'gpt-4o-mini',
+    responseSchema: postAnalysisSchema,
+    temperature: 0.3
+  });
+
+  return robustJSONParse(responseText);
+};
+
+// nodemon-trigger-change-force-restart
+

@@ -1,6 +1,8 @@
 // src/api/schedule.js
 import { apiFetch } from './apiFetch.js';
 import { supabase } from '../supabaseClient.js';
+import * as tus from 'tus-js-client';
+
 
 // Normaliza/limpia el payload según el esquema del backend
 const normalizeSchedulePayload = (raw = {}) => {
@@ -47,7 +49,9 @@ const normalizeSchedulePayload = (raw = {}) => {
     out.scheduled_at = raw.scheduled_at.toISOString();
   } else if (typeof raw.scheduled_at === 'string') {
     // Aceptar strings ya ISO o convertibles a Date
-    const dt = new Date(raw.scheduled_at);
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw.scheduled_at);
+    const dateToParse = isDateOnly ? `${raw.scheduled_at}T12:00:00` : raw.scheduled_at;
+    const dt = new Date(dateToParse);
     out.scheduled_at = isNaN(dt.getTime()) ? raw.scheduled_at : dt.toISOString();
   }
 
@@ -240,15 +244,112 @@ export const createScheduleItemAsset = async (clientId, itemId, payload) => {
   return resp?.data ?? resp;
 };
 
+export const uploadScheduleAssetTus = async (projectId, bucketName, storagePath, file, token, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${token}`,
+        'x-upsert': 'true',
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: bucketName,
+        objectName: storagePath,
+        contentType: file.type || 'application/octet-stream',
+      },
+      onError: (error) => {
+        console.error('TUS upload failed:', error);
+        reject(error);
+      },
+      onProgress: (bytesSent, bytesTotal) => {
+        const percentage = ((bytesSent / bytesTotal) * 100).toFixed(0);
+        if (onProgress) {
+          onProgress(Number(percentage));
+        }
+      },
+      onSuccess: () => {
+        resolve({ success: true });
+      },
+    });
+
+    upload.findPreviousUploads().then((previousUploads) => {
+      if (previousUploads.length) {
+        upload.resumeFromPreviousUpload(previousUploads[0]);
+      }
+      upload.start();
+    }).catch((err) => {
+      console.warn('Error seeking previous TUS uploads, starting fresh:', err);
+      upload.start();
+    });
+  });
+};
+
 export const uploadScheduleAsset = async (clientId, itemId, file, options = {}) => {
   const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
-  const safeName = file.name.replace(/\s+/g, '-');
-  const storagePath = `${clientId}/${itemId}/${Date.now()}-${safeName}.${fileExt}`;
+  
+  // Generar un UUID o ID aleatorio seguro para que el nombre físico en storage sea 100% anónimo y discreto
+  const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID 
+    ? crypto.randomUUID() 
+    : 'asset-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+  const storagePath = `${clientId}/${itemId}/${uniqueId}.${fileExt}`;
+  const bucketName = 'content-assets';
 
-  const { error: uploadError } = await supabase.storage
-    .from('content-assets')
-    .upload(storagePath, file);
-  if (uploadError) throw uploadError;
+  // Obtener sesión activa para RLS en TUS
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  // Extraer el project ID del Supabase URL
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  const projectIdMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+  const projectId = projectIdMatch ? projectIdMatch[1] : '';
+
+  // Usar TUS para archivos mayores a 6MB (o forzado por opciones)
+  const TUS_SIZE_THRESHOLD = 6 * 1024 * 1024;
+  const shouldUseTus = file.size > TUS_SIZE_THRESHOLD || options.forceTus;
+
+  let uploadError = null;
+
+  if (shouldUseTus && projectId && token) {
+    console.log(`🚀 Usando subida resumible TUS para: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+    try {
+      await uploadScheduleAssetTus(projectId, bucketName, storagePath, file, token, options.onProgress);
+    } catch (err) {
+      console.warn('Fallo la subida resumible TUS, reintentando con subida estándar:', err);
+      uploadError = err;
+    }
+  }
+
+  // Fallback a subida estándar
+  if (!shouldUseTus || uploadError) {
+    console.log(`Usando subida estándar para: ${file.name}`);
+    const { error: stdError } = await supabase.storage
+      .from(bucketName)
+      .upload(storagePath, file, {
+        upsert: true
+      });
+    if (stdError) throw stdError;
+  }
+
+  /*
+    PREPARADO PARA ESCALA FUTURA (CLOUDFLARE R2 / S3 DIRECT UPLOAD):
+    Si en el futuro deseas cambiar a Cloudflare R2 para tener $0 en costos de descarga,
+    el flujo sería:
+    1. Obtener una URL firmada desde tu API Express:
+       const response = await apiFetch(`/clients/${clientId}/get-r2-upload-url`, {
+         method: 'POST',
+         body: JSON.stringify({ fileName: file.name, contentType: file.type })
+       });
+       const { uploadUrl, storagePath } = response.data;
+    2. Subir directamente el binario a R2:
+       await fetch(uploadUrl, {
+         method: 'PUT',
+         headers: { 'Content-Type': file.type },
+         body: file
+       });
+  */
 
   return createScheduleItemAsset(clientId, itemId, {
     file_name: file.name,
@@ -259,6 +360,7 @@ export const uploadScheduleAsset = async (clientId, itemId, file, options = {}) 
     sort_order: options.sort_order || 0,
   });
 };
+
 
 /**
  * Genera una imagen con IA a través del backend y la guarda como asset

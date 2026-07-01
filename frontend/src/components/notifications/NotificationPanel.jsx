@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useEscapeClose } from '../../hooks';
 
 export const NotificationPanel = ({
   notifications = [],
@@ -24,6 +25,7 @@ export const NotificationPanel = ({
   onClose,
   isOpen,
 }) => {
+  useEscapeClose(isOpen, onClose);
   const [selectedTab, setSelectedTab] = useState('all');
   const navigate = useNavigate();
 

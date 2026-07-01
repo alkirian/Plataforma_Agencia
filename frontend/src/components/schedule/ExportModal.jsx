@@ -17,6 +17,7 @@ import {
   exportToJSON,
   getExportSummary,
 } from '../../utils/calendarExport';
+import { useLanguage, useEscapeClose } from '../../hooks';
 
 export const ExportModal = ({
   isOpen,
@@ -25,11 +26,13 @@ export const ExportModal = ({
   clientName = '',
   dateRange = null,
 }) => {
+  const { t } = useLanguage();
   const backdropRef = useRef(null);
   const modalPanelRef = useRef(null);
 
   // Call premium GSAP modal transition hook
   useModalGsap(isOpen, backdropRef, modalPanelRef);
+  useEscapeClose(isOpen, onClose);
 
   const [selectedFormat, setSelectedFormat] = useState('csv');
   const [isExporting, setIsExporting] = useState(false);
@@ -38,7 +41,7 @@ export const ExportModal = ({
     {
       id: 'csv',
       name: 'CSV (Excel)',
-      description: 'Perfecto para análisis en Excel o Google Sheets',
+      description: t.schedule.exportModal.csvDesc,
       icon: DocumentTextIcon,
       color: 'text-green-400',
       bgColor: 'bg-green-500/10 border-green-500/30',
@@ -46,7 +49,7 @@ export const ExportModal = ({
     {
       id: 'ics',
       name: 'iCal (ICS)',
-      description: 'Importar a Google Calendar, Outlook, Apple Calendar',
+      description: t.schedule.exportModal.icsDesc,
       icon: CalendarDaysIcon,
       color: 'text-gray-400',
       bgColor: 'bg-gray-500/10 border-gray-500/30',
@@ -54,7 +57,7 @@ export const ExportModal = ({
     {
       id: 'json',
       name: 'JSON',
-      description: 'Para integraciones técnicas y backup completo',
+      description: t.schedule.exportModal.jsonDesc,
       icon: CodeBracketIcon,
       color: 'text-gray-300',
       bgColor: 'bg-gray-600/10 border-gray-600/30',
@@ -80,7 +83,7 @@ export const ExportModal = ({
           exportToJSON(events, clientName);
           break;
         default:
-          throw new Error('Formato no soportado');
+          throw new Error(t.schedule.exportModal.unsupportedFormat);
       }
 
       onClose();
@@ -121,16 +124,14 @@ export const ExportModal = ({
             >
               <Dialog.Panel
                 ref={modalPanelRef}
-                className='w-full max-w-lg transform overflow-hidden rounded-xl 
-                                        bg-surface-900/95 border border-white/10 
-                                        p-6 shadow-xl transition-all'
+                className='w-full max-w-lg transform overflow-hidden rounded-xl bg-surface/95 border border-border-subtle p-6 shadow-xl'
               >
                 {/* Header */}
                 <div className='flex items-center justify-between mb-6'>
                   <div className='flex items-center space-x-3'>
                     <ArrowDownTrayIcon className='h-6 w-6 text-primary-400' />
-                    <Dialog.Title className='text-xl font-semibold text-white'>
-                      Exportar Calendario
+                    <Dialog.Title className='text-xl font-semibold text-text-primary'>
+                      {t.schedule.exportModal.title}
                     </Dialog.Title>
                   </div>
 
@@ -138,37 +139,37 @@ export const ExportModal = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className='rounded-full p-2 text-gray-400 hover:text-white hover:bg-surface-soft 
-                               transition-colors'
+                    className='rounded-full p-2 text-text-muted hover:text-text-primary hover:bg-surface-strong 
+                                transition-colors'
                   >
                     <XMarkIcon className='h-5 w-5' />
                   </motion.button>
                 </div>
 
                 {/* Resumen de eventos */}
-                <div className='mb-6 p-4 bg-surface-soft rounded-lg border border-white/10'>
+                <div className='mb-6 p-4 bg-surface-strong rounded-lg border border-border-subtle'>
                   <div className='flex items-center space-x-2 mb-3'>
-                    <ChartBarIcon className='h-5 w-5 text-gray-400' />
-                    <h3 className='text-sm font-medium text-white'>Resumen de exportación</h3>
+                    <ChartBarIcon className='h-5 w-5 text-text-muted' />
+                    <h3 className='text-sm font-medium text-text-primary'>{t.schedule.exportModal.summaryTitle}</h3>
                   </div>
 
                   <div className='grid grid-cols-2 gap-4 text-sm'>
                     <div>
-                      <span className='text-gray-400'>Total de eventos:</span>
-                      <span className='ml-2 text-white font-medium'>{exportSummary.total}</span>
+                      <span className='text-text-secondary'>{t.schedule.exportModal.totalEvents}:</span>
+                      <span className='ml-2 text-text-primary font-medium'>{exportSummary.total}</span>
                     </div>
 
                     {clientName && (
                       <div>
-                        <span className='text-gray-400'>Cliente:</span>
-                        <span className='ml-2 text-white font-medium'>{clientName}</span>
+                        <span className='text-text-secondary'>{t.schedule.exportModal.client}:</span>
+                        <span className='ml-2 text-text-primary font-medium'>{clientName}</span>
                       </div>
                     )}
 
                     {exportSummary.dateRange && (
                       <div className='col-span-2'>
-                        <span className='text-gray-400'>Período:</span>
-                        <span className='ml-2 text-white font-medium'>
+                        <span className='text-text-secondary'>{t.schedule.exportModal.period}:</span>
+                        <span className='ml-2 text-text-primary font-medium'>
                           {exportSummary.dateRange.from} - {exportSummary.dateRange.to}
                         </span>
                       </div>
@@ -177,9 +178,9 @@ export const ExportModal = ({
 
                   {/* Estados */}
                   {Object.keys(exportSummary.byStatus).length > 0 && (
-                    <div className='mt-3 pt-3 border-t border-white/10'>
-                      <span className='text-xs text-gray-400 uppercase tracking-wide'>
-                        Por estado:
+                    <div className='mt-3 pt-3 border-t border-border-subtle'>
+                      <span className='text-xs text-text-secondary uppercase tracking-wide'>
+                        {t.schedule.exportModal.byStatus}:
                       </span>
                       <div className='flex flex-wrap gap-2 mt-2'>
                         {Object.entries(exportSummary.byStatus).map(([status, count]) => (
@@ -197,52 +198,52 @@ export const ExportModal = ({
 
                 {/* Selección de formato */}
                 <div className='mb-6'>
-                  <h3 className='text-sm font-medium text-white mb-3'>Seleccionar formato:</h3>
+                  <h3 className='text-sm font-medium text-text-primary mb-3'>{t.schedule.exportModal.selectFormat}:</h3>
                   <div className='space-y-3'>
                     {exportFormats.map(format => {
-                      const Icon = format.icon;
-                      const isSelected = selectedFormat === format.id;
+                       const Icon = format.icon;
+                       const isSelected = selectedFormat === format.id;
 
-                      return (
-                        <motion.div
-                          key={format.id}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                            isSelected
-                              ? format.bgColor
-                              : 'border-white/10 hover:border-white/20 bg-surface-soft'
-                          }`}
-                          onClick={() => setSelectedFormat(format.id)}
-                        >
-                          <div className='flex items-start space-x-3'>
-                            <Icon
-                              className={`h-6 w-6 mt-0.5 ${
-                                isSelected ? format.color : 'text-gray-400'
-                              }`}
-                            />
-                            <div className='flex-1'>
-                              <div className='flex items-center space-x-2'>
-                                <h4
-                                  className={`font-medium ${
-                                    isSelected ? 'text-white' : 'text-gray-300'
-                                  }`}
-                                >
-                                  {format.name}
-                                </h4>
-                                {isSelected && (
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className='w-2 h-2 bg-primary-500 rounded-full'
-                                  />
-                                )}
-                              </div>
-                              <p className='text-sm text-gray-400 mt-1'>{format.description}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
+                       return (
+                         <motion.div
+                           key={format.id}
+                           whileHover={{ scale: 1.02 }}
+                           whileTap={{ scale: 0.98 }}
+                           className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                             isSelected
+                               ? format.bgColor
+                               : 'border-border-subtle hover:border-border-strong bg-surface-strong'
+                           }`}
+                           onClick={() => setSelectedFormat(format.id)}
+                         >
+                           <div className='flex items-start space-x-3'>
+                             <Icon
+                               className={`h-6 w-6 mt-0.5 ${
+                                 isSelected ? format.color : 'text-gray-400'
+                               }`}
+                             />
+                             <div className='flex-1'>
+                               <div className='flex items-center space-x-2'>
+                                 <h4
+                                   className={`font-medium ${
+                                     isSelected ? 'text-white' : 'text-text-primary'
+                                   }`}
+                                 >
+                                   {format.name}
+                                 </h4>
+                                 {isSelected && (
+                                   <motion.div
+                                     initial={{ scale: 0 }}
+                                     animate={{ scale: 1 }}
+                                     className='w-2 h-2 bg-primary-500 rounded-full'
+                                   />
+                                 )}
+                               </div>
+                               <p className='text-sm text-gray-400 mt-1'>{format.description}</p>
+                             </div>
+                           </div>
+                         </motion.div>
+                       );
                     })}
                   </div>
                 </div>
@@ -253,10 +254,10 @@ export const ExportModal = ({
                     onClick={onClose}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className='px-4 py-2 text-gray-400 hover:text-white transition-colors'
+                    className='px-4 py-2 text-text-muted hover:text-text-primary transition-colors'
                     disabled={isExporting}
                   >
-                    Cancelar
+                    {t.common.cancel}
                   </motion.button>
 
                   <motion.button
@@ -274,12 +275,12 @@ export const ExportModal = ({
                           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                           className='w-4 h-4 border-2 border-white/30 border-t-white rounded-full'
                         />
-                        <span>Exportando...</span>
+                        <span>{t.schedule.exportModal.exporting}</span>
                       </>
                     ) : (
                       <>
                         <ArrowDownTrayIcon className='h-4 w-4' />
-                        <span>Exportar</span>
+                        <span>{t.schedule.exportModal.exportBtn}</span>
                       </>
                     )}
                   </motion.button>
@@ -288,7 +289,7 @@ export const ExportModal = ({
                 {events.length === 0 && (
                   <div className='mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg'>
                     <p className='text-sm text-yellow-400'>
-                      No hay eventos para exportar en el período seleccionado.
+                      {t.schedule.exportModal.noEvents}
                     </p>
                   </div>
                 )}

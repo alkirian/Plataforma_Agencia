@@ -6,6 +6,8 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { getCurrentDate } from '../../utils/dateHelpers';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ShortcutTooltip } from '../ui/Tooltip';
 import '../../styles/fullcalendar-custom.css';
 
 const getPlatformIcon = (platformStr = '') => {
@@ -92,8 +94,11 @@ const FullCalendarWrapper = ({
   headerToolbar = false, // Disable default toolbar
   className = '',
   clientName = '',
+  readOnly = false,
+  isChatOpen = false,
 }) => {
   const calendarRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [calendarLabel, setCalendarLabel] = useState('');
   // Ancla de mes/año para mantener consistencia al cambiar de vista
   const anchorYMRef = useRef(() => {
@@ -102,18 +107,111 @@ const FullCalendarWrapper = ({
   });
   const prevViewRef = useRef(null);
 
+  // Controlar el ancho del contenedor durante las transiciones del chat global para evitar lag
+  useEffect(() => {
+    const handleTransitionStart = (e) => {
+      const el = wrapperRef.current;
+      if (!el) return;
+
+      const isOpen = e.detail?.open;
+      const chatWidth = e.detail?.width || 460;
+      const currentWidth = el.clientWidth;
+
+      if (isOpen) {
+        // Chat abriéndose: bloquear al ancho actual
+        el.style.setProperty('width', `${currentWidth}px`, 'important');
+        el.style.setProperty('max-width', `${currentWidth}px`, 'important');
+      } else {
+        // Chat cerrándose: bloquear al ancho final (ancho actual + ancho del chat)
+        const targetWidth = currentWidth + chatWidth;
+        el.style.setProperty('width', `${targetWidth}px`, 'important');
+        el.style.setProperty('max-width', `${targetWidth}px`, 'important');
+      }
+    };
+
+    const handleTransitionEnd = () => {
+      const el = wrapperRef.current;
+      if (!el) return;
+
+      // Desbloquear ancho
+      el.style.removeProperty('width');
+      el.style.removeProperty('max-width');
+
+      // Forzar a FullCalendar a recalcular tamaño una sola vez al final
+      const api = calendarRef.current?.getApi();
+      if (api) {
+        api.updateSize();
+      }
+    };
+
+    window.addEventListener('cadence:chat-transition-start', handleTransitionStart);
+    window.addEventListener('cadence:chat-transition-end', handleTransitionEnd);
+
+    return () => {
+      window.removeEventListener('cadence:chat-transition-start', handleTransitionStart);
+      window.removeEventListener('cadence:chat-transition-end', handleTransitionEnd);
+    };
+  }, []);
+
+  // Backup: Actualizar tamaño del calendario al cambiar el estado del chat
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const api = calendarRef.current?.getApi();
+      if (api) {
+        api.updateSize();
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isChatOpen]);
+
+  // Funciones de navegación para la barra de herramientas personalizada
+  const handlePrev = () => {
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.prev();
+      setCalendarLabel(api.view.title);
+    }
+  };
+
+  const handleNext = () => {
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.next();
+      setCalendarLabel(api.view.title);
+    }
+  };
+
+  const handleToday = () => {
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.today();
+      setCalendarLabel(api.view.title);
+    }
+  };
+
+  const handleViewSelect = (viewName) => {
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.changeView(viewName);
+      onViewChange?.(viewName);
+      setCalendarLabel(api.view.title);
+    }
+  };
+
   // Navegar programáticamente cuando cambia currentDate
   useEffect(() => {
     if (calendarRef.current && currentDate) {
       const calendarApi = calendarRef.current.getApi();
-      // Forzar navegación a la fecha correcta
-      calendarApi.gotoDate(currentDate);
-      // Actualizar ancla al mes del currentDate
-      try {
-        anchorYMRef.current = { y: currentDate.getFullYear(), m: currentDate.getMonth() };
-        // Actualizar label también
-        setCalendarLabel(calendarApi.view.title);
-      } catch {}
+      const apiDate = calendarApi.getDate();
+      // Solo navegar si hay una diferencia real (evita loops e innecesarias reconstrucciones)
+      if (Math.abs(apiDate.getTime() - currentDate.getTime()) > 12 * 60 * 60 * 1000) {
+        calendarApi.gotoDate(currentDate);
+        // Actualizar ancla al mes del currentDate
+        try {
+          anchorYMRef.current = { y: currentDate.getFullYear(), m: currentDate.getMonth() };
+          setCalendarLabel(calendarApi.view.title);
+        } catch {}
+      }
     }
   }, [currentDate]);
 
@@ -230,16 +328,17 @@ const FullCalendarWrapper = ({
     // Vista inicial y navegación
     initialView: currentView,
     initialDate: currentDate || getCurrentDate(), // CRUCIAL: Establecer fecha inicial
+    fixedWeekCount: false,
 
     // Datos
     events,
 
     // Interactividad
-    selectable: true,
-    selectMirror: true,
+    selectable: !readOnly,
+    selectMirror: !readOnly,
     dayMaxEvents: true,
     weekends: true,
-    editable: true,
+    editable: !readOnly,
     droppable: false,
 
     // Configuración de tiempo
@@ -295,8 +394,8 @@ const FullCalendarWrapper = ({
         </div>
       );
     },
-    eventStartEditable: true,
-    eventDurationEditable: true,
+    eventStartEditable: !readOnly,
+    eventDurationEditable: !readOnly,
     eventClassNames: arg => {
       const s = (arg.event.extendedProps?.status || '').toLowerCase();
       const classes = ['fc-event-base'];
@@ -478,7 +577,7 @@ const FullCalendarWrapper = ({
   }, [onViewChange]);
 
   return (
-    <div className={`fullcalendar-wrapper ${className}`}>
+    <div ref={wrapperRef} className={`fullcalendar-wrapper ${className}`}>
       {loading && (
         <div className='absolute inset-0 bg-black/20 flex items-center justify-center z-10 rounded-lg'>
           <div className='flex items-center space-x-2'>
@@ -487,6 +586,113 @@ const FullCalendarWrapper = ({
           </div>
         </div>
       )}
+
+      {/* Barra de herramientas personalizada superior */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 mb-3 bg-slate-100/60 dark:bg-[#1e1c20]/25 p-2 rounded-xl border border-slate-200/40 dark:border-white/5 backdrop-blur-md">
+        {/* Izquierda: Navegación de Fecha y Acciones principales */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <ShortcutTooltip shortcut="Ctrl + T" description="Ir a hoy">
+            <button
+              type="button"
+              onClick={handleToday}
+              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-xs cursor-pointer"
+            >
+              Hoy
+            </button>
+          </ShortcutTooltip>
+          
+          <div className="flex items-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden shadow-xs">
+            <ShortcutTooltip shortcut="Ctrl + ◀" description="Período anterior">
+              <button
+                type="button"
+                onClick={handlePrev}
+                className="p-1.5 text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors border-r border-slate-200 dark:border-white/10 cursor-pointer"
+                title="Anterior"
+              >
+                <ChevronLeftIcon className="w-3.5 h-3.5" />
+              </button>
+            </ShortcutTooltip>
+            <ShortcutTooltip shortcut="Ctrl + ▶" description="Período siguiente">
+              <button
+                type="button"
+                onClick={handleNext}
+                className="p-1.5 text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                title="Siguiente"
+              >
+                <ChevronRightIcon className="w-3.5 h-3.5" />
+              </button>
+            </ShortcutTooltip>
+          </div>
+
+          {!readOnly && (
+            <>
+              <ShortcutTooltip shortcut="Ctrl + E" description="Crear nuevo evento">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('cadence:new-event'))}
+                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3 text-slate-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nuevo Evento
+                </button>
+              </ShortcutTooltip>
+
+              <ShortcutTooltip shortcut="Ctrl + Shift + E" description="Exportar calendario">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('cadence:calendar-action', { detail: { action: 'export' } }))}
+                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                >
+                  <svg className="w-3.5 h-3.5 text-slate-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Exportar
+                </button>
+              </ShortcutTooltip>
+            </>
+          )}
+
+          <h2 className="text-xs font-bold text-slate-800 dark:text-white capitalize tracking-wide select-none ml-1">
+            {calendarLabel}
+          </h2>
+        </div>
+
+        {/* Derecha: Toggles de Vistas */}
+        <div className="flex items-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-0.5 shadow-xs self-start lg:self-auto">
+          {[
+            { id: 'dayGridMonth', label: 'Mes' },
+            { id: 'timeGridWeek', label: 'Semana' },
+            { id: 'timeGridDay', label: 'Día' },
+            { id: 'listMonth', label: 'Lista' }
+          ].map((viewOpt) => {
+            const active = currentView === viewOpt.id;
+            const shortcuts = {
+              dayGridMonth: 'Ctrl + 1',
+              timeGridWeek: 'Ctrl + 2',
+              timeGridDay: 'Ctrl + 3',
+              listMonth: 'Ctrl + 4',
+            };
+            const shortcut = shortcuts[viewOpt.id];
+            return (
+              <ShortcutTooltip key={viewOpt.id} shortcut={shortcut} description={`Vista ${viewOpt.label.toLowerCase()}`}>
+                <button
+                  type="button"
+                  onClick={() => handleViewSelect(viewOpt.id)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
+                    active
+                      ? 'bg-rose-500 text-white shadow-xs'
+                      : 'text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {viewOpt.label}
+                </button>
+              </ShortcutTooltip>
+            );
+          })}
+        </div>
+      </div>
 
       <FullCalendar ref={calendarRef} {...calendarOptions} />
     </div>

@@ -1,9 +1,10 @@
-import { extractBrandProfileFromContext, searchAndExtractCompanyBrand, analyzeBrandConsistency } from '../services/aiBrand.service.js';
+import { extractBrandProfileFromContext, searchAndExtractCompanyBrand, analyzeBrandConsistency, processBrandDnaChat } from '../services/aiBrand.service.js';
 import { supabaseAdmin, createAuthenticatedClient } from '../config/supabaseClient.js';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 import axios from 'axios';
 import { getInstagramFeedForBrandAnalysis } from '../services/metaAds.service.js';
+import { saveChatMessage } from '../services/chat.service.js';
 
 /**
  * Endpoint para autocompletar la identidad de marca del cliente usando IA
@@ -377,6 +378,139 @@ export const handleAnalyzeBrandConsistency = async (req, res, next) => {
 
   } catch (error) {
     console.error('❌ Error general en handleAnalyzeBrandConsistency:', error);
+    next(error);
+  }
+};
+
+/**
+ * Endpoint para chatear con el estratega AI y actualizar quirúrgicamente el ADN de marca.
+ * POST /api/v1/clients/:clientId/brand-profile/chat-update
+ */
+export const handleChatUpdateBrandProfile = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, error: 'Token de autenticación requerido.' });
+    }
+
+    const { clientId } = req.params;
+    const { userPrompt, chatHistory } = req.body;
+
+    if (!clientId || !userPrompt?.trim()) {
+      return res.status(400).json({ success: false, error: 'clientId y userPrompt son requeridos.' });
+    }
+
+    if (!req.user?.id) {
+      return res.status(401).json({ success: false, error: 'userId no detectado' });
+    }
+
+    // 1. Obtener brand_info actual de la DB
+    const supabaseAuth = createAuthenticatedClient(token);
+    const { data: client, error: clientErr } = await supabaseAuth
+      .from('clients')
+      .select('id, brand_info')
+      .eq('id', clientId)
+      .single();
+
+    if (clientErr || !client) {
+      console.error('❌ Error al validar cliente para chat ADN:', clientErr);
+      return res.status(404).json({ success: false, error: 'Cliente no encontrado.' });
+    }
+
+    const currentBusinessDescription = client.brand_info?.business_description || '';
+
+    // 2. Procesar con IA
+    const chatResult = await processBrandDnaChat(currentBusinessDescription, userPrompt.trim(), chatHistory);
+
+    // 3. Actualizar brand_info en Supabase
+    const nextBrandInfo = {
+      ...(client.brand_info || {}),
+      business_description: chatResult.updated_business_description,
+      last_analyzed_at: new Date().toISOString()
+    };
+
+    const { error: updateErr } = await supabaseAdmin
+      .from('clients')
+      .update({ brand_info: nextBrandInfo })
+      .eq('id', clientId);
+
+    if (updateErr) {
+      console.error('❌ Error al guardar perfil de marca actualizado vía chat:', updateErr);
+      return res.status(500).json({ success: false, error: 'No se pudo guardar la actualización de marca.' });
+    }
+
+    // 4. Guardar mensajes de chat en chat_messages con metadata: { isBrandDnaChat: true }
+    // Mensaje del usuario
+    await saveChatMessage({
+      token,
+      userId: req.user.id,
+      clientId,
+      role: 'user',
+      content: userPrompt.trim(),
+      metadata: { isBrandDnaChat: true }
+    });
+
+    // Respuesta del asistente
+    await saveChatMessage({
+      token,
+      userId: req.user.id,
+      clientId,
+      role: 'assistant',
+      content: chatResult.reply,
+      metadata: { isBrandDnaChat: true }
+    });
+
+    return res.status(200).json({
+      success: true,
+      reply: chatResult.reply,
+      updated_business_description: chatResult.updated_business_description
+    });
+
+  } catch (error) {
+    console.error('❌ Error en handleChatUpdateBrandProfile:', error);
+    next(error);
+  }
+};
+
+/**
+ * Endpoint para obtener el historial de chat de ADN de marca.
+ * GET /api/v1/clients/:clientId/brand-profile/chat-history
+ */
+export const handleGetBrandDnaChatHistory = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, error: 'Token de autenticación requerido.' });
+    }
+
+    const { clientId } = req.params;
+
+    if (!clientId) {
+      return res.status(400).json({ success: false, error: 'clientId requerido' });
+    }
+
+    const supabaseAuth = createAuthenticatedClient(token);
+
+    // Consultar chat_messages de este cliente con metadato isBrandDnaChat: true
+    const { data: messages, error: fetchErr } = await supabaseAuth
+      .from('chat_messages')
+      .select('id, role, content, created_at')
+      .eq('client_id', clientId)
+      .eq('metadata->isBrandDnaChat', true)
+      .order('created_at', { ascending: true });
+
+    if (fetchErr) {
+      console.error('❌ Error al obtener historial de chat ADN:', fetchErr);
+      return res.status(500).json({ success: false, error: 'Error al recuperar el historial.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: messages || []
+    });
+
+  } catch (error) {
+    console.error('❌ Error en handleGetBrandDnaChatHistory:', error);
     next(error);
   }
 };

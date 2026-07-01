@@ -17,7 +17,7 @@ export const AppearanceTab = ({ theme, handleThemeChange, t }) => {
           {/* Modo Oscuro */}
           <button
             type='button'
-            onClick={() => handleThemeChange('dark')}
+            onClick={(e) => handleThemeChange('dark', e)}
             className={`flex flex-col text-left p-5 rounded-2xl border transition duration-200 ${
               theme === 'dark'
                 ? 'bg-surface border-border-strong ring-1 ring-border-strong shadow-md'
@@ -50,7 +50,7 @@ export const AppearanceTab = ({ theme, handleThemeChange, t }) => {
           {/* Modo Claro */}
           <button
             type='button'
-            onClick={() => handleThemeChange('light')}
+            onClick={(e) => handleThemeChange('light', e)}
             className={`flex flex-col text-left p-5 rounded-2xl border transition duration-200 ${
               theme === 'light'
                 ? 'bg-surface border-border-strong ring-1 ring-border-strong shadow-md'

@@ -1,6 +1,7 @@
 // src/pages/TrendsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../hooks';
 import {
   ArrowTrendingUpIcon,
   ArrowPathIcon,
@@ -26,38 +27,41 @@ import { ReportView } from '../components/trends/ReportView.jsx';
 // Sub-components
 // ─────────────────────────────────────────────
 
-const EmptyState = ({ onRun, isRunning }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className='flex flex-col items-center justify-center py-20 text-center bg-[#0F172A]/40 border border-white/[0.06] rounded-2xl p-8 max-w-2xl mx-auto'
-  >
-    <div className='w-16 h-16 rounded-xl bg-slate-800/60 border border-white/[0.08] flex items-center justify-center mb-6'>
-      <ArrowTrendingUpIcon className='h-8 w-8 text-slate-400' />
-    </div>
-    <h3 className='text-base font-bold text-white mb-2'>Sin reportes generados</h3>
-    <p className='text-xs text-slate-400 max-w-sm mb-8 leading-relaxed'>
-      El sistema genera reportes automáticamente cada mañana, o puedes iniciar un análisis global
-      sobre tu marca en este instante.
-    </p>
-    <button
-      onClick={onRun}
-      disabled={isRunning}
-      className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold disabled:opacity-50 transition-colors flex items-center gap-2'
+const EmptyState = ({ onRun, isRunning }) => {
+  const { t } = useLanguage();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className='flex flex-col items-center justify-center py-20 text-center bg-[#0F172A]/40 border border-white/[0.06] rounded-2xl p-8 max-w-2xl mx-auto'
     >
-      {isRunning ? (
-        <ArrowPathIcon className='h-4 w-4 animate-spin' />
-      ) : (
-        <BoltIcon className='h-4 w-4' />
-      )}
-      {isRunning ? 'Buscando tendencias...' : 'Generar tendencias ahora'}
-    </button>
-  </motion.div>
-);
+      <div className='w-16 h-16 rounded-xl bg-slate-800/60 border border-white/[0.08] flex items-center justify-center mb-6'>
+        <ArrowTrendingUpIcon className='h-8 w-8 text-slate-400' />
+      </div>
+      <h3 className='text-base font-bold text-white mb-2'>{t.trends.emptyTitle}</h3>
+      <p className='text-xs text-slate-400 max-w-sm mb-8 leading-relaxed'>
+        {t.trends.emptyDesc}
+      </p>
+      <button
+        onClick={onRun}
+        disabled={isRunning}
+        className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2.5 text-xs font-semibold disabled:opacity-50 transition-colors flex items-center gap-2'
+      >
+        {isRunning ? (
+          <ArrowPathIcon className='h-4 w-4 animate-spin' />
+        ) : (
+          <BoltIcon className='h-4 w-4' />
+        )}
+        {isRunning ? t.trends.emptyActionBtnLoading : t.trends.emptyActionBtn}
+      </button>
+    </motion.div>
+  );
+};
 
 const HistoryItem = ({ report, isActive, onClick }) => {
+  const { t, lang } = useLanguage();
   const title =
-    report.title || `Análisis: ${(report.keywords || []).slice(0, 2).join(', ') || 'General'}`;
+    report.title || `${t.trends.analysis}: ${(report.keywords || []).slice(0, 2).join(', ') || t.trends.general}`;
   return (
     <button
       onClick={onClick}
@@ -82,11 +86,11 @@ const HistoryItem = ({ report, isActive, onClick }) => {
           {(report.keywords || []).slice(0, 2).join(' · ')}
         </span>
         <span className='text-[9px] text-slate-500 whitespace-nowrap font-medium bg-slate-950/40 px-1.5 py-0.5 rounded border border-white/[0.03]'>
-          {new Date(report.generated_at).toLocaleTimeString('es-AR', {
+          {new Date(report.generated_at).toLocaleTimeString(lang === 'es' ? 'es-AR' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
           })}{' '}
-          hs
+          {lang === 'es' ? 'hs' : 'hrs'}
         </span>
       </div>
     </button>
@@ -98,11 +102,8 @@ const HistoryItem = ({ report, isActive, onClick }) => {
 // ─────────────────────────────────────────────
 
 export const TrendsPage = () => {
+  const { t, lang } = useLanguage();
   const [latestReports, setLatestReports] = useState([]);
-  const [clientReports, setClientReports] = useState([]);
-  const [clients, setClients] = useState([]);
-
-  const [selectedClientId, setSelectedClientId] = useState('all');
   const [activeReportId, setActiveReportId] = useState(null);
 
   const [isRunning, setIsRunning] = useState(false);
@@ -111,119 +112,57 @@ export const TrendsPage = () => {
 
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customKeywords, setCustomKeywords] = useState('');
 
   // 1. Cargar info inicial
   const fetchLatestReports = useCallback(async () => {
     try {
       const all = await getLatestTrendReports();
       setLatestReports(all);
-      if (selectedClientId === 'all' && all.length > 0 && !activeReportId) {
+      if (all.length > 0 && !activeReportId) {
         setActiveReportId(all[0].id);
       }
     } catch (e) {
       console.error('Error fetching latest reports', e);
     }
-  }, [selectedClientId, activeReportId]);
-
-  const fetchClientReports = useCallback(async (clientId) => {
-    try {
-      const clientRep = await getTrendReports(clientId, 15);
-      setClientReports(clientRep);
-      if (clientRep.length > 0) {
-        setActiveReportId(clientRep[0].id);
-      } else {
-        setActiveReportId(null);
-      }
-    } catch (e) {
-      console.error('Error fetching client reports', e);
-    }
-  }, []);
-
-  const fetchClients = useCallback(async () => {
-    try {
-      const resp = await apiFetch('/clients');
-      setClients(resp?.data ?? []);
-    } catch (e) {
-      console.error('Error fetching clients list', e);
-    }
-  }, []);
+  }, [activeReportId]);
 
   useEffect(() => {
     const loadInit = async () => {
       setIsLoading(true);
-      await Promise.all([fetchClients(), fetchLatestReports()]);
+      await fetchLatestReports();
       setIsLoading(false);
     };
     loadInit();
-  }, [fetchClients, fetchLatestReports]);
-
-  // Al cambiar el cliente seleccionado
-  useEffect(() => {
-    if (selectedClientId === 'all') {
-      setClientReports([]);
-      if (latestReports.length > 0) {
-        setActiveReportId(latestReports[0].id);
-      }
-    } else {
-      fetchClientReports(selectedClientId);
-    }
-  }, [selectedClientId, latestReports, fetchClientReports]);
+  }, [fetchLatestReports]);
 
   // Polling para tareas activas
   useEffect(() => {
     if (!pollingActive) return;
     const interval = setInterval(async () => {
-      if (selectedClientId === 'all') {
-        await fetchLatestReports();
-      } else {
-        await fetchClientReports(selectedClientId);
-      }
+      await fetchLatestReports();
     }, 5000);
     return () => clearInterval(interval);
-  }, [pollingActive, selectedClientId, fetchClientReports, fetchLatestReports]);
+  }, [pollingActive, fetchLatestReports]);
 
   const handleRunAll = async () => {
     setIsRunning(true);
     setPollingActive(true);
     try {
       await runTrendsNow();
-      toast.success('Análisis global iniciado para todos los clientes de la agencia.', {
+      toast.success(t.trends.globalAnalysisStarted || 'Análisis global de tendencias iniciado.', {
         duration: 4000,
       });
       setTimeout(() => {
         setPollingActive(false);
         setIsRunning(false);
+        fetchLatestReports();
       }, 60000);
     } catch (e) {
-      toast.error('Error al iniciar el análisis: ' + e.message);
+      toast.error(t.trends.errorScan + e.message);
       setIsRunning(false);
       setPollingActive(false);
     }
   };
-
-  const handleRunForClient = async () => {
-    if (!selectedClientId || selectedClientId === 'all') return;
-    setIsRunning(true);
-    setPollingActive(true);
-    try {
-      await runTrendsForClient(selectedClientId, customKeywords);
-      toast.success(
-        'Análisis de tendencias iniciado. Buscando información del último mes...',
-        { duration: 4500 }
-      );
-      setTimeout(() => {
-        setPollingActive(false);
-        setIsRunning(false);
-      }, 45000);
-    } catch (e) {
-      toast.error('Error: ' + e.message);
-      setIsRunning(false);
-      setPollingActive(false);
-    }
-  };
-
-  const handleRun = selectedClientId === 'all' ? handleRunAll : handleRunForClient;
 
   const handleCreateEvent = insight => {
     setSelectedInsight(insight);
@@ -231,19 +170,10 @@ export const TrendsPage = () => {
   };
 
   // Reporte activo a mostrar
-  const activeReport =
-    selectedClientId === 'all'
-      ? latestReports.find(r => r.id === activeReportId) || latestReports[0] || null
-      : clientReports.find(r => r.id === activeReportId) || null;
+  const activeReport = latestReports.find(r => r.id === activeReportId) || latestReports[0] || null;
 
-  const historyList = selectedClientId === 'all' ? latestReports : clientReports;
+  const historyList = latestReports;
   const hasReports = historyList.length > 0;
-
-  // Cliente activo para cálculos de métricas coherentes
-  const activeClient =
-    selectedClientId === 'all'
-      ? clients.find(c => c.id === activeReport?.client_id)
-      : clients.find(c => c.id === selectedClientId);
 
   // Agrupado de historial por fecha
   const groupedReports = groupReportsByDate(historyList);
@@ -261,9 +191,9 @@ export const TrendsPage = () => {
             <ArrowTrendingUpIcon className='h-5 w-5 text-blue-400' />
           </div>
           <div>
-            <h1 className='text-xl font-bold text-white'>Monitoreo General de Tendencias</h1>
+            <h1 className='text-xl font-bold text-white'>{t.trends.globalTitle}</h1>
             <p className='text-xs text-slate-400'>
-              Escaneo web diario mediante inteligencia artificial para tu cartera de clientes
+              {t.trends.globalDesc}
             </p>
           </div>
           {pollingActive && (
@@ -273,59 +203,24 @@ export const TrendsPage = () => {
               className='flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10'
             >
               <span className='w-1.5 h-1.5 rounded-full bg-blue-500' />
-              Escaneando fuentes...
+              {t.trends.scanningSources}
             </motion.div>
           )}
         </div>
 
-        {/* Client selector & Keywords & Trigger button */}
+        {/* Global trigger button */}
         <div className='flex items-center gap-3 flex-wrap w-full sm:w-auto'>
-          {/* Dropdown de Clientes */}
-          <div className='relative w-full sm:w-56'>
-            <ChevronDownIcon className='absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none' />
-            <select
-              value={selectedClientId}
-              onChange={e => {
-                setSelectedClientId(e.target.value);
-                setActiveReportId(null);
-              }}
-              className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-4 pr-10 py-2 text-sm text-white focus:outline-none transition-colors cursor-pointer appearance-none'
-            >
-              <option value='all'>Todos los Clientes (Últimos)</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Keywords (Solo si no es 'all') */}
-          {selectedClientId !== 'all' && (
-            <div className='relative w-full sm:w-56'>
-              <MagnifyingGlassIcon className='absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500' />
-              <input
-                type='text'
-                value={customKeywords}
-                onChange={e => setCustomKeywords(e.target.value)}
-                placeholder='Conceptos customizados...'
-                className='w-full bg-[#1E293B]/40 border border-white/[0.08] focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors'
-                disabled={isRunning}
-              />
-            </div>
-          )}
-
           <button
-            onClick={handleRun}
+            onClick={handleRunAll}
             disabled={isRunning}
-            className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5'
+            className='bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-md'
           >
             {isRunning ? (
               <ArrowPathIcon className='h-4 w-4 animate-spin' />
             ) : (
               <BoltIcon className='h-4 w-4' />
             )}
-            {isRunning ? 'Escaneando...' : selectedClientId === 'all' ? 'Escanear Todo' : 'Buscar Tendencias'}
+            {isRunning ? t.trends.scanningBtn : t.trends.searchBtn}
           </button>
         </div>
       </motion.div>
@@ -335,11 +230,11 @@ export const TrendsPage = () => {
         <div className='flex items-center justify-center py-32'>
           <div className='flex flex-col items-center gap-4'>
             <div className='w-8 h-8 rounded-full border-2 border-slate-500 border-t-transparent animate-spin' />
-            <p className='text-sm text-slate-400'>Recuperando reportes de tendencias...</p>
+            <p className='text-sm text-slate-400'>{t.trends.loadingReports}</p>
           </div>
         </div>
       ) : !hasReports ? (
-        <EmptyState onRun={handleRun} isRunning={isRunning} />
+        <EmptyState onRun={handleRunAll} isRunning={isRunning} />
       ) : (
         <div className='grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start'>
           {/* Grouped History Sidebar */}
@@ -349,7 +244,7 @@ export const TrendsPage = () => {
             className='rounded-xl border border-white/[0.06] bg-[#121A2C]/20 p-4 space-y-4 lg:sticky lg:top-24 max-h-[75vh] overflow-y-auto'
           >
             <p className='text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 border-b border-white/[0.04] pb-2'>
-              Historial de Búsquedas
+              {t.trends.searchHistory}
             </p>
 
             <div className='space-y-4'>
@@ -385,12 +280,12 @@ export const TrendsPage = () => {
                 <ReportView
                   key={activeReport.id}
                   report={activeReport}
-                  client={activeClient}
+                  client={null}
                   onCreateEvent={handleCreateEvent}
                 />
               ) : (
                 <div className='text-center py-20 text-xs text-slate-400'>
-                  Selecciona un reporte del historial para ver el análisis de mercado.
+                  {t.trends.selectReportHistory}
                 </div>
               )}
             </AnimatePresence>
@@ -408,7 +303,7 @@ export const TrendsPage = () => {
               setSelectedInsight(null);
             }}
             insight={selectedInsight}
-            clientId={activeClient?.id}
+            clientId={undefined}
           />
         )}
       </AnimatePresence>

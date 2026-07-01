@@ -128,38 +128,22 @@ export const useNotifications = () => {
 
   // Función para obtener todas las tareas de todos los clientes (Optimizado: en memoria, O(1) red)
   const getAllTasks = useCallback(async () => {
-    if (!isEnabled || !session) return [];
+    if (!isEnabled || !session || !clients.length) return [];
 
-    try {
-      const response = await getClients();
-      const currentClients = response?.data || [];
+    const allTasks = [];
 
-      if (currentClients.length === 0) return [];
-
-      const allTasks = [];
-
-      for (const client of currentClients) {
-        const schedule = client.schedule_items || [];
-        const tasksWithClient = schedule.map(task => ({
-          ...task,
-          clientName: client.name,
-          clientId: client.id,
-        }));
-        allTasks.push(...tasksWithClient);
-      }
-
-      return allTasks;
-    } catch (error) {
-      // Si el error es por token inválido, no loguearlo como error
-      if (error.message?.includes('Token inválido') || error.message?.includes('No autorizado')) {
-        return [];
-      }
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error loading all tasks:', error);
-      }
-      return [];
+    for (const client of clients) {
+      const schedule = client.schedule_items || [];
+      const tasksWithClient = schedule.map(task => ({
+        ...task,
+        clientName: client.name,
+        clientId: client.id,
+      }));
+      allTasks.push(...tasksWithClient);
     }
-  }, [isEnabled, session]);
+
+    return allTasks;
+  }, [isEnabled, session, clients]);
 
   // Función para generar notificaciones
   const generateNotifications = useCallback(async () => {

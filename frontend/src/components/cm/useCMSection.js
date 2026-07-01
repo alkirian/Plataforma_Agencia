@@ -3,22 +3,26 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { apiFetch } from '../../api/apiFetch';
 import { useMetaOAuth } from '../../hooks/useMetaOAuth';
+import { cmCache } from './cmCache';
 
 export const useCMSection = (clientId) => {
-  const [loading, setLoading] = useState(true);
-  const [integration, setIntegration] = useState(null);
+  const cachedIntegrations = cmCache.get(clientId).integrations;
+  const cachedGoogleRules = cmCache.get(clientId).googleRules;
+
+  const [loading, setLoading] = useState(!cachedIntegrations);
+  const [integration, setIntegration] = useState(cachedIntegrations?.meta || null);
   const [connecting, setConnecting] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('inbox'); // 'inbox' | 'posts' | 'ads'
   const [activeNetwork, setActiveNetwork] = useState('meta'); // 'meta' | 'google'
   const [showRulesPanel, setShowRulesPanel] = useState(false);
 
   // Google Ads integration & rules states
-  const [autoOptimizeGoogleAds, setAutoOptimizeGoogleAds] = useState(false);
-  const [maxCpaGoogleUsd, setMaxCpaGoogleUsd] = useState('');
-  const [minRoasGoogle, setMinRoasGoogle] = useState('');
-  const [optimizeActionGoogle, setOptimizeActionGoogle] = useState('notify_only');
+  const [autoOptimizeGoogleAds, setAutoOptimizeGoogleAds] = useState(cachedGoogleRules?.autoOptimizeGoogleAds || false);
+  const [maxCpaGoogleUsd, setMaxCpaGoogleUsd] = useState(cachedGoogleRules?.maxCpaGoogleUsd || '');
+  const [minRoasGoogle, setMinRoasGoogle] = useState(cachedGoogleRules?.minRoasGoogle || '');
+  const [optimizeActionGoogle, setOptimizeActionGoogle] = useState(cachedGoogleRules?.optimizeActionGoogle || 'notify_only');
   const [savingGoogleRules, setSavingGoogleRules] = useState(false);
-  const [googleIntegration, setGoogleIntegration] = useState(null);
+  const [googleIntegration, setGoogleIntegration] = useState(cachedGoogleRules?.googleIntegration || null);
 
   // Meta OAuth hook integration
   const {
@@ -33,25 +37,46 @@ export const useCMSection = (clientId) => {
     setSelectedPageId,
     tempAccessToken,
     handleFacebookOAuth,
+    qrMode,
+    setQrMode,
+    qrCodeUrl,
+    qrLoading,
+    startQrFlow,
+    deviceUserCode,
+    deviceStatus,
   } = useMetaOAuth(clientId, 'cm-oauth-toast');
 
-  const [linkedinIntegration, setLinkedinIntegration] = useState(null);
-  const [tiktokIntegration, setTiktokIntegration] = useState(null);
+  const [linkedinIntegration, setLinkedinIntegration] = useState(cachedIntegrations?.linkedin || null);
+  const [tiktokIntegration, setTiktokIntegration] = useState(cachedIntegrations?.tiktok || null);
   const [connectingLI, setConnectingLI] = useState(false);
   const [connectingTK, setConnectingTK] = useState(false);
 
   // Cargar estado de todas las integraciones
-  const loadAllIntegrations = async () => {
-    try {
+  const loadAllIntegrations = async (forceLoading = false) => {
+    const cached = cmCache.get(clientId).integrations;
+    if (cached && !forceLoading) {
+      setIntegration(cached.meta);
+      setLinkedinIntegration(cached.linkedin);
+      setTiktokIntegration(cached.tiktok);
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+
+    try {
       const [metaRes, liRes, tkRes] = await Promise.all([
         apiFetch(`/clients/${clientId}/meta-integration`).catch(() => null),
         apiFetch(`/clients/${clientId}/linkedin-integration`).catch(() => null),
         apiFetch(`/clients/${clientId}/tiktok-integration`).catch(() => null)
       ]);
-      setIntegration(metaRes?.data || null);
-      setLinkedinIntegration(liRes?.data || null);
-      setTiktokIntegration(tkRes?.data || null);
+      const meta = metaRes?.data || null;
+      const linkedin = liRes?.data || null;
+      const tiktok = tkRes?.data || null;
+
+      setIntegration(meta);
+      setLinkedinIntegration(linkedin);
+      setTiktokIntegration(tiktok);
+      cmCache.setIntegrations(clientId, { meta, linkedin, tiktok });
     } catch (err) {
       console.error('Error al cargar integraciones:', err);
     } finally {
@@ -60,17 +85,45 @@ export const useCMSection = (clientId) => {
   };
 
   const fetchGoogleRules = async () => {
+    const cached = cmCache.get(clientId).googleRules;
+    if (cached) {
+      setAutoOptimizeGoogleAds(cached.autoOptimizeGoogleAds);
+      setMaxCpaGoogleUsd(cached.maxCpaGoogleUsd);
+      setMinRoasGoogle(cached.minRoasGoogle);
+      setOptimizeActionGoogle(cached.optimizeActionGoogle);
+      setGoogleIntegration(cached.googleIntegration);
+    }
+
     try {
       const res = await apiFetch(`/clients/${clientId}/google-integration/rules`);
+      let autoOpt = false;
+      let maxCpa = '';
+      let minRoas = '';
+      let optAction = 'notify_only';
+
       if (res.data) {
-        setAutoOptimizeGoogleAds(res.data.auto_optimize_ads || false);
-        setMaxCpaGoogleUsd(res.data.max_cpa_usd !== null && res.data.max_cpa_usd !== undefined ? String(res.data.max_cpa_usd) : '');
-        setMinRoasGoogle(res.data.min_roas !== null && res.data.min_roas !== undefined ? String(res.data.min_roas) : '');
-        setOptimizeActionGoogle(res.data.optimize_action || 'notify_only');
+        autoOpt = res.data.auto_optimize_ads || false;
+        maxCpa = res.data.max_cpa_usd !== null && res.data.max_cpa_usd !== undefined ? String(res.data.max_cpa_usd) : '';
+        minRoas = res.data.min_roas !== null && res.data.min_roas !== undefined ? String(res.data.min_roas) : '';
+        optAction = res.data.optimize_action || 'notify_only';
+
+        setAutoOptimizeGoogleAds(autoOpt);
+        setMaxCpaGoogleUsd(maxCpa);
+        setMinRoasGoogle(minRoas);
+        setOptimizeActionGoogle(optAction);
       }
       
       const intRes = await apiFetch(`/clients/${clientId}/google-integration`).catch(() => null);
-      setGoogleIntegration(intRes?.data || null);
+      const googleInt = intRes?.data || null;
+      setGoogleIntegration(googleInt);
+
+      cmCache.setGoogleRules(clientId, {
+        autoOptimizeGoogleAds: autoOpt,
+        maxCpaGoogleUsd: maxCpa,
+        minRoasGoogle: minRoas,
+        optimizeActionGoogle: optAction,
+        googleIntegration: googleInt
+      });
     } catch (err) {
       console.error('Error al cargar reglas de Google Ads:', err);
     }
@@ -80,6 +133,28 @@ export const useCMSection = (clientId) => {
     loadAllIntegrations();
     fetchGoogleRules();
   }, [clientId]);
+
+  // Sincronizar integraciones con caché
+  useEffect(() => {
+    if (!loading) {
+      cmCache.setIntegrations(clientId, {
+        meta: integration,
+        linkedin: linkedinIntegration,
+        tiktok: tiktokIntegration
+      });
+    }
+  }, [integration, linkedinIntegration, tiktokIntegration, clientId, loading]);
+
+  // Sincronizar reglas de Google Ads con caché
+  useEffect(() => {
+    cmCache.setGoogleRules(clientId, {
+      autoOptimizeGoogleAds,
+      maxCpaGoogleUsd,
+      minRoasGoogle,
+      optimizeActionGoogle,
+      googleIntegration
+    });
+  }, [autoOptimizeGoogleAds, maxCpaGoogleUsd, minRoasGoogle, optimizeActionGoogle, googleIntegration, clientId]);
 
   // Google Rules Save
   const handleSaveGoogleRules = async () => {
@@ -94,6 +169,13 @@ export const useCMSection = (clientId) => {
           min_roas: minRoasGoogle === '' ? null : parseFloat(minRoasGoogle),
           optimize_action: optimizeActionGoogle,
         })
+      });
+      cmCache.setGoogleRules(clientId, {
+        autoOptimizeGoogleAds,
+        maxCpaGoogleUsd,
+        minRoasGoogle,
+        optimizeActionGoogle,
+        googleIntegration
       });
       toast.success('¡Reglas de Google Ads actualizadas correctamente!', { id: 'save-google-rules-toast' });
     } catch (err) {
@@ -111,6 +193,13 @@ export const useCMSection = (clientId) => {
       setLoading(true);
       await apiFetch(`/clients/${clientId}/google-integration`, { method: 'DELETE' });
       setGoogleIntegration(null);
+      cmCache.setGoogleRules(clientId, {
+        autoOptimizeGoogleAds: false,
+        maxCpaGoogleUsd: '',
+        minRoasGoogle: '',
+        optimizeActionGoogle: 'notify_only',
+        googleIntegration: null
+      });
       toast.success('Google Ads desconectado.');
     } catch (err) {
       toast.error('Error al desconectar Google Ads.');
@@ -343,6 +432,8 @@ export const useCMSection = (clientId) => {
       toast.success('Sesión de Meta y CM Inteligente desconectados.');
       setIntegration(null);
       setOauthStep('connect');
+      cmCache.clear(clientId);
+      window.location.reload();
     } catch (err) {
       toast.error('Error al desconectar la cuenta.');
     } finally {
@@ -401,5 +492,12 @@ export const useCMSection = (clientId) => {
     handleConfirmOnboarding,
     handleDisconnect,
     loadAllIntegrations,
+    qrMode,
+    setQrMode,
+    qrCodeUrl,
+    qrLoading,
+    startQrFlow,
+    deviceUserCode,
+    deviceStatus,
   };
 };

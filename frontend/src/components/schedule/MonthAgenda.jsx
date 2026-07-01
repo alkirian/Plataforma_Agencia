@@ -12,7 +12,17 @@ const formatDayHeader = date => {
 
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
-export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = false }) => {
+const isToday = (dateInput) => {
+  if (!dateInput) return false;
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return false;
+  const today = new Date();
+  return d.getDate() === today.getDate() &&
+         d.getMonth() === today.getMonth() &&
+         d.getFullYear() === today.getFullYear();
+};
+
+export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = false, onPublish }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -259,6 +269,21 @@ export const MonthAgenda = ({ events = [], currentDate, onEventClick, loading = 
                                 <span className='text-[7px] text-[#fe0979] bg-[#fe0979]/15 border border-[#fe0979]/30 px-1 py-0.5 rounded font-extrabold uppercase tracking-wide animate-pulse'>
                                   💬 Ajuste
                                 </span>
+                              )}
+                              {isToday(e.start) && status.toLowerCase() !== 'publicado' && onPublish && (
+                                <button
+                                  type='button'
+                                  onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    onPublish(e.id);
+                                  }}
+                                  className='text-[9px] font-extrabold text-white bg-rose-500 hover:bg-rose-600 px-2 py-0.5 rounded-md transition-all shadow-xs cursor-pointer flex items-center gap-1 animate-pulse hover:animate-none ml-1'
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                  </svg>
+                                  <span>Publicar</span>
+                                </button>
                               )}
                             </div>
                             {e.extendedProps?.originalData?.channel && (

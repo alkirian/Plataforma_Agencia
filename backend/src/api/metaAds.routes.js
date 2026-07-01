@@ -9,7 +9,13 @@ import {
   handleGetClientComments,
   handleReplyToComment,
   handleTweakCommentDraft,
-  handleGetCommentAIDraft
+  handleGetCommentAIDraft,
+  handleGetClientPosts,
+  handleBoostPost,
+  handleGetOptimizationRules,
+  handleSaveOptimizationRules,
+  handleTestMetaCapi,
+  handleSendClientConversionEvent
 } from '../controllers/metaAds.controller.js';
 
 const router = Router({ mergeParams: true }); // Habilitar mergeParams para heredar :clientId
@@ -35,5 +41,11 @@ router.get('/comments', handleGetClientComments);
 router.post('/comments/tweak', handleTweakCommentDraft);
 router.get('/comments/:commentId/draft', handleGetCommentAIDraft);
 router.post('/comments/:commentId/reply', handleReplyToComment);
+router.get('/posts', handleGetClientPosts);
+router.post('/boost', handleBoostPost);
+router.get('/rules', handleGetOptimizationRules);
+router.post('/rules', handleSaveOptimizationRules);
+router.post('/test-capi', handleTestMetaCapi);
+router.post('/conversion', handleSendClientConversionEvent);
 
 export default router;

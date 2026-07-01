@@ -1,6 +1,6 @@
 // src/services/clients.service.js
 
-import { createAuthenticatedClient } from '../config/supabaseClient.js';
+import { createAuthenticatedClient, supabaseAdmin } from '../config/supabaseClient.js';
 import { logActivity } from './activity.service.js';
 import { saveChatMessage } from './chat.service.js';
 
@@ -16,6 +16,7 @@ export const getClientsByAgency = async (agencyId, token) => {
       name,
       industry,
       brand_info,
+      logo_url,
       created_at,
       schedule_items (
         id,
@@ -24,7 +25,8 @@ export const getClientsByAgency = async (agencyId, token) => {
         scheduled_at
       )
     `)
-    .eq('agency_id', agencyId);
+    .eq('agency_id', agencyId)
+    .is('deleted_at', null);
 
   if (error) throw new Error(`Error al obtener los clientes: ${error.message}`);
   return data;
@@ -35,12 +37,23 @@ export const getClientsByAgency = async (agencyId, token) => {
  */
 export const createClient = async (clientData, token) => {
   const supabaseAuth = createAuthenticatedClient(token);
-  const { data, error } = await supabaseAuth.rpc('create_new_client', {
+  const { data: newClientId, error } = await supabaseAuth.rpc('create_new_client', {
     client_name: clientData.name,
     client_industry: clientData.industry,
   });
 
   if (error) throw new Error(`Error al crear el cliente: ${error.message}`);
+
+  // Si se envió logo_url, actualizar el registro con supabaseAdmin
+  if (clientData.logo_url) {
+    const { error: logoError } = await supabaseAdmin
+      .from('clients')
+      .update({ logo_url: clientData.logo_url })
+      .eq('id', newClientId);
+    if (logoError) {
+      console.error('[clients.service] Error al guardar logo en creación:', logoError.message);
+    }
+  }
 
   // Generar onboarding automático de Aura con su primer mensaje de bienvenida
   try {
@@ -194,9 +207,10 @@ export const updateClient = async (clientId, clientData, token, userId = null) =
     .update({
       name: clientData.name !== undefined ? clientData.name : current.name,
       industry: clientData.industry !== undefined ? clientData.industry : current.industry,
+      logo_url: clientData.logo_url !== undefined ? clientData.logo_url : current.logo_url,
     })
     .eq('id', clientId)
-    .select('id, name, industry, agency_id, brand_info, created_at')
+    .select('id, name, industry, agency_id, brand_info, logo_url, created_at')
     .single();
 
   if (error) {
@@ -226,20 +240,19 @@ export const updateClient = async (clientId, clientData, token, userId = null) =
 };
 
 /**
- * Elimina un cliente y todas sus dependencias en cascada.
+ * Elimina un cliente lógicamente (soft-delete / papelera) por 7 días.
  */
 export const deleteClient = async (clientId, token, userId = null) => {
-  const supabaseAuth = createAuthenticatedClient(token);
-
-  // Obtener detalles del cliente para el log de actividad antes de borrarlo
+  // Primero obtener el cliente existente para logging
   const current = await getClientById(clientId, token);
   if (!current) {
     return false;
   }
 
-  const { error } = await supabaseAuth
+  // Marcar como eliminado estableciendo deleted_at a la fecha actual usando supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('clients')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', clientId);
 
   if (error) {
@@ -252,7 +265,83 @@ export const deleteClient = async (clientId, token, userId = null) => {
       agency_id: current.agency_id,
       client_id: clientId,
       user_id: userId,
-      action_type: 'CLIENT_DELETED',
+      action_type: 'CLIENT_SOFT_DELETED',
+      details: {
+        client_name: current.name,
+        client_industry: current.industry,
+      }
+    });
+  }
+
+  return true;
+};
+
+/**
+ * Obtiene todos los clientes en la papelera de una agencia y ejecuta limpieza física (lazy cleanup) de clientes borrados hace >7 días.
+ */
+export const getTrashClients = async (agencyId) => {
+  // 1. Limpieza física: Eliminar permanentemente los clientes cuya eliminación tenga más de 7 días
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const { error: cleanupError } = await supabaseAdmin
+    .from('clients')
+    .delete()
+    .eq('agency_id', agencyId)
+    .not('deleted_at', 'is', null)
+    .lt('deleted_at', sevenDaysAgo.toISOString());
+
+  if (cleanupError) {
+    console.error('[clients.service] Error en la autolimpieza física de la papelera:', cleanupError.message);
+  }
+
+  // 2. Obtener los clientes actualmente en la papelera
+  const { data, error } = await supabaseAdmin
+    .from('clients')
+    .select('id, name, industry, logo_url, deleted_at, created_at')
+    .eq('agency_id', agencyId)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Error al obtener la papelera de clientes: ${error.message}`);
+  }
+
+  return data;
+};
+
+/**
+ * Restaura un cliente que estaba en la papelera.
+ */
+export const restoreClient = async (clientId, token, userId = null) => {
+  // Obtener el cliente desde supabaseAdmin (ya que getClientById/supabaseAuth no lo ve debido a RLS)
+  const { data: current, error: fetchError } = await supabaseAdmin
+    .from('clients')
+    .select('*')
+    .eq('id', clientId)
+    .single();
+
+  if (fetchError || !current) {
+    return false;
+  }
+
+  // Quitar la fecha de eliminación lógica
+  const { error } = await supabaseAdmin
+    .from('clients')
+    .update({ deleted_at: null })
+    .eq('id', clientId);
+
+  if (error) {
+    throw new Error(`Error al restaurar el cliente: ${error.message}`);
+  }
+
+  // Registrar actividad
+  if (userId) {
+    await logActivity({
+      agency_id: current.agency_id,
+      client_id: clientId,
+      user_id: userId,
+      action_type: 'CLIENT_RESTORED',
       details: {
         client_name: current.name,
         client_industry: current.industry,

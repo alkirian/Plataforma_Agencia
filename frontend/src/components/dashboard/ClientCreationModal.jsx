@@ -4,10 +4,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import { createClient, updateClient, updateClientBrandProfile, analyzeBrandConsistency } from '../../api/clients';
+import { createClient, updateClient, updateClientBrandProfile, analyzeBrandConsistency, updateClientCardColor } from '../../api/clients';
 import { useMetaOAuth } from '../../hooks/useMetaOAuth';
 import { apiFetch } from '../../api/apiFetch';
 import { useModalGsap } from '../../hooks/useModalGsap';
+import { compressBrandLogo } from '../../utils/imageCompressor';
+import { extractDominantColor } from '../../utils/colorExtractor';
+import { useLanguage, useEscapeClose } from '../../hooks';
+
 
 // Icons from Heroicons (Outline)
 import {
@@ -24,25 +28,69 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 
-const SUGGESTED_INDUSTRIES = [
-  'Gastronomía',
-  'Moda y Belleza',
-  'Tecnología',
-  'Salud y Fitness',
-  'E-commerce',
-  'Inmobiliaria',
-  'Educación',
-  'Servicios',
-];
+const SUGGESTED_INDUSTRIES_MAP = {
+  es: [
+    'Gastronomía',
+    'Moda y Belleza',
+    'Tecnología',
+    'Salud y Fitness',
+    'E-commerce',
+    'Inmobiliaria',
+    'Educación',
+    'Servicios',
+  ],
+  en: [
+    'Gastronomy',
+    'Fashion & Beauty',
+    'Technology',
+    'Health & Fitness',
+    'E-commerce',
+    'Real Estate',
+    'Education',
+    'Services',
+  ]
+};
 
-const STEPS = [
-  { id: 1, name: 'Identificación' },
-  { id: 2, name: 'Canales Web' },
-  { id: 3, name: 'Conexión Meta' },
-  { id: 4, name: 'Auditoría Aura' },
-];
+const STEPS_MAP = {
+  es: [
+    { id: 1, name: 'Identificación' },
+    { id: 2, name: 'Canales Web' },
+    { id: 3, name: 'Conexión Meta' },
+    { id: 4, name: 'Auditoría Aura' },
+  ],
+  en: [
+    { id: 1, name: 'Identification' },
+    { id: 2, name: 'Web Channels' },
+    { id: 3, name: 'Meta Connection' },
+    { id: 4, name: 'Aura Audit' },
+  ]
+};
+
+const ANALYSIS_LOGS_MAP = {
+  es: [
+    '🔗 Conectando con los canales públicos provistos...',
+    '🌐 Extrayendo estructura web e indexando competidores...',
+    '📸 Analizando feed de Instagram y consistencia de marca...',
+    '🧠 Generando propuesta inicial de ADN y Tono de Voz...',
+    '🧬 Estructurando pilares estratégicos de contenido...',
+    '✨ ¡Auditoría inicial de Aura completada con éxito!',
+  ],
+  en: [
+    '🔗 Connecting with provided public channels...',
+    '🌐 Extracting web structure and indexing competitors...',
+    '📸 Analyzing Instagram feed and brand consistency...',
+    '🧠 Generating initial DNA and Voice Tone proposal...',
+    '🧬 Structuring strategic content pillars...',
+    '✨ Initial Aura Audit completed successfully!',
+  ]
+};
 
 export const ClientCreationModal = ({ isOpen, onClose }) => {
+  const { lang, t } = useLanguage();
+  const SUGGESTED_INDUSTRIES = SUGGESTED_INDUSTRIES_MAP[lang] || SUGGESTED_INDUSTRIES_MAP['es'];
+  const STEPS = STEPS_MAP[lang] || STEPS_MAP['es'];
+  const ANALYSIS_LOGS = ANALYSIS_LOGS_MAP[lang] || ANALYSIS_LOGS_MAP['es'];
+
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -51,6 +99,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
 
   // Call premium GSAP modal transition hook
   useModalGsap(isOpen, backdropRef, modalPanelRef);
+  useEscapeClose(isOpen, onClose);
 
   // Control del Asistente
   const [step, setStep] = useState(1);
@@ -60,6 +109,8 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
   // Paso 1: Datos Básicos
   const [clientName, setClientName] = useState('');
   const [clientIndustry, setClientIndustry] = useState('');
+  const [clientLogo, setClientLogo] = useState(null);
+  const [extractedColor, setExtractedColor] = useState(null);
 
   // Paso 2: Redes y Web
   const [socials, setSocials] = useState({
@@ -75,15 +126,6 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [activeLogIndex, setActiveLogIndex] = useState(0);
 
-  const ANALYSIS_LOGS = [
-    '🔗 Conectando con los canales públicos provistos...',
-    '🌐 Extrayendo estructura web e indexando competidores...',
-    '📸 Analizando feed de Instagram y consistencia de marca...',
-    '🧠 Generando propuesta inicial de ADN y Tono de Voz...',
-    '🧬 Estructurando pilares estratégicos de contenido...',
-    '✨ ¡Auditoría inicial de Aura completada con éxito!',
-  ];
-
   // Integración con Meta Ads/CM usando el hook unificado
   const {
     connecting: connectingOAuth,
@@ -97,6 +139,12 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
     setSelectedPageId,
     tempAccessToken,
     handleFacebookOAuth,
+    qrMode,
+    setQrMode,
+    qrLoading,
+    startQrFlow,
+    deviceUserCode,
+    deviceStatus,
   } = useMetaOAuth(createdClientId, 'modal-meta-oauth-toast');
 
   // Filtrado de industrias sugeridas (solo muestra si el usuario está escribiendo y coincide)
@@ -126,6 +174,8 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
       });
       setAnalysisProgress(0);
       setActiveLogIndex(0);
+      setClientLogo(null);
+      setExtractedColor(null);
     }
   }, [isOpen]);
 
@@ -182,11 +232,20 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
       const rawData = response?.data || response;
       const clientId = typeof rawData === 'string' ? rawData : rawData?.id || rawData;
       setCreatedClientId(clientId);
+
+      if (extractedColor) {
+        updateClientCardColor(clientId, extractedColor).catch(err => console.error("Error updating client color:", err));
+      }
+
       setStep(2);
-      toast.success(`Cliente "${clientName.trim()}" creado de forma básica.`);
+      toast.success(
+        lang === 'es'
+          ? `Cliente "${clientName.trim()}" creado de forma básica.`
+          : `Client "${clientName.trim()}" created successfully.`
+      );
     },
     onError: error => {
-      toast.error(error.message || 'No se pudo crear el cliente.');
+      toast.error(error.message || (lang === 'es' ? 'No se pudo crear el cliente.' : 'Could not create client.'));
     },
   });
 
@@ -194,7 +253,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
   const handleStep1Submit = async e => {
     e.preventDefault();
     if (!clientName.trim()) {
-      toast.error('Por favor escribe un nombre.');
+      toast.error(lang === 'es' ? 'Por favor escribe un nombre.' : 'Please write a brand name.');
       return;
     }
 
@@ -205,11 +264,12 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
         await updateClient(createdClientId, {
           name: clientName.trim(),
           industry: clientIndustry.trim() || null,
+          logo_url: clientLogo,
         });
         queryClient.invalidateQueries({ queryKey: ['clients'] });
         setStep(2);
       } catch (error) {
-        toast.error('Error al actualizar datos básicos.');
+        toast.error(lang === 'es' ? 'Error al actualizar datos básicos.' : 'Error updating basic details.');
       } finally {
         setSavingStep(false);
       }
@@ -217,6 +277,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
       createClientMutation.mutate({
         name: clientName.trim(),
         industry: clientIndustry.trim() || null,
+        logo_url: clientLogo,
       });
     }
   };
@@ -237,10 +298,10 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
       };
 
       await updateClientBrandProfile(createdClientId, payload);
-      toast.success('Canales de identidad digital guardados.');
+      toast.success(lang === 'es' ? 'Canales de identidad digital guardados.' : 'Digital identity channels saved.');
       setStep(3);
     } catch (error) {
-      toast.error('Error al guardar los canales digitales.');
+      toast.error(lang === 'es' ? 'Error al guardar los canales digitales.' : 'Error saving digital channels.');
     } finally {
       setSavingStep(false);
     }
@@ -249,11 +310,11 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
   // SUBMIT DEL PASO 3 (Meta OAuth Connection & Finalize)
   const handleStep3Confirm = async () => {
     if (!selectedAccountId) {
-      toast.error('Por favor selecciona una cuenta publicitaria o presiona Omitir.');
+      toast.error(lang === 'es' ? 'Por favor selecciona una cuenta publicitaria o presiona Omitir.' : 'Please select an ad account or press Skip.');
       return;
     }
     if (!selectedPageId) {
-      toast.error('Por favor selecciona tu página o presiona Omitir.');
+      toast.error(lang === 'es' ? 'Por favor selecciona tu página o presiona Omitir.' : 'Please select your page or press Skip.');
       return;
     }
 
@@ -268,10 +329,10 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
           access_token: tempAccessToken,
         }),
       });
-      toast.success('¡Integración de Meta Ads y CM completada con éxito!');
+      toast.success(lang === 'es' ? '¡Integración de Meta Ads y CM completada con éxito!' : 'Meta Ads & CM integration completed successfully!');
       triggerBackgroundAnalysis();
     } catch (error) {
-      toast.error(error.message || 'No se pudo guardar la vinculación de Meta.');
+      toast.error(error.message || (lang === 'es' ? 'No se pudo guardar la vinculación de Meta.' : 'Could not save Meta integration.'));
     } finally {
       setSavingStep(false);
     }
@@ -350,7 +411,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
             >
               <Dialog.Panel
                 ref={modalPanelRef}
-                className={`w-full bg-[color:var(--color-surface)] border border-[color:var(--color-border-subtle)] rounded-3xl p-6 md:p-8 shadow-2xl transition-all duration-300 relative overflow-hidden ${
+                className={`w-full bg-[color:var(--color-surface)] border border-[color:var(--color-border-subtle)] rounded-3xl p-6 md:p-8 shadow-2xl transition-[max-width] duration-300 relative overflow-hidden ${
                   step === 2 || step === 3 ? 'max-w-2xl' : 'max-w-lg'
                 }`}
               >
@@ -410,20 +471,86 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                       <div className='text-center flex flex-col items-center justify-center'>
                         <Dialog.Title className='text-xl font-extrabold text-[color:var(--color-text-primary)] font-title mb-1.5 flex items-center gap-2 justify-center'>
                           <UserIcon className='w-5 h-5 text-[#0ea5e9]' />
-                          <span>Identificar Nueva Marca</span>
+                          <span>{t.dashboard.createClientTitle || 'Identificar Nueva Marca'}</span>
                         </Dialog.Title>
                       </div>
 
-                      <div className='space-y-6 max-w-sm mx-auto'>
-                        <div className='space-y-2 text-center'>
+                      <div className='space-y-6 max-w-sm mx-auto flex flex-col items-center'>
+                        {/* Logo de la Marca */}
+                        <div className="flex flex-col items-center gap-2">
+                           <label className="text-[10px] font-extrabold uppercase tracking-widest text-[color:var(--color-text-muted)] block text-center">
+                            {t.dashboard.logoLabel || 'Logo de la Marca'}
+                          </label>
+                          <div className="relative group w-20 h-20 rounded-[20px] overflow-hidden border border-[color:var(--color-border-subtle)] flex items-center justify-center bg-[color:var(--color-surface-soft)] shadow-inner">
+                            {clientLogo ? (
+                              <img src={clientLogo} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xl font-black text-[color:var(--color-text-muted)]">
+                                {clientName.substring(0, 2).toUpperCase() || 'CL'}
+                              </span>
+                            )}
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer transition-opacity duration-200">
+                              <span>{lang === 'es' ? 'Subir' : 'Upload'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    try {
+                                      const compressedFile = await compressBrandLogo(file, 400, 0.8);
+                                      const reader = new FileReader();
+                                      reader.onloadend = async () => {
+                                        const result = reader.result;
+                                        setClientLogo(result);
+                                        const color = await extractDominantColor(result);
+                                        if (color) {
+                                          setExtractedColor(color);
+                                          toast.success(lang === 'es' ? 'Color de marca sugerido a partir del logotipo' : 'Suggested brand color from logo');
+                                        }
+                                      };
+                                      reader.readAsDataURL(compressedFile);
+                                    } catch (err) {
+                                      console.error('Error compressing brand logo, using original:', err);
+                                      const reader = new FileReader();
+                                      reader.onloadend = async () => {
+                                        const result = reader.result;
+                                        setClientLogo(result);
+                                        const color = await extractDominantColor(result);
+                                        if (color) {
+                                          setExtractedColor(color);
+                                          toast.success(lang === 'es' ? 'Color de marca sugerido a partir del logotipo' : 'Suggested brand color from logo');
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {clientLogo && (
+                            <button
+                              type="button"
+                              onClick={() => setClientLogo(null)}
+                              className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              {lang === 'es' ? 'Quitar Logo' : 'Remove Logo'}
+                            </button>
+                          )}
+                        </div>
+
+                        <div className='space-y-2 text-center w-full'>
                           <label className='text-[10px] font-extrabold uppercase tracking-widest text-[color:var(--color-text-muted)] block text-center'>
-                            Nombre <span className='text-[#0ea5e9]'>*</span>
+                            {t.dashboard.clientNameLabel || 'Nombre'} <span className='text-[#0ea5e9]'>*</span>
                           </label>
                           <input
                             type='text'
                             className='input-cyber text-center w-full'
                             value={clientName || ''}
                             onChange={e => setClientName(e.target.value)}
+                            placeholder={t.dashboard.clientNamePlaceholder || 'Ej. Starbucks'}
                             required
                             autoFocus
                           />
@@ -431,13 +558,14 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
 
                         <div className='space-y-2 text-center relative'>
                           <label className='text-[10px] font-extrabold uppercase tracking-widest text-[color:var(--color-text-muted)] block text-center'>
-                            Sector o Industria
+                            {t.dashboard.industryLabel || 'Sector o Industria'}
                           </label>
                           <div className='relative'>
                             <input
                               type='text'
                               className='input-cyber text-center w-full'
                               value={clientIndustry || ''}
+                              placeholder={t.dashboard.industryPlaceholder || 'Ej. Tecnología'}
                               onChange={e => setClientIndustry(e.target.value)}
                             />
 
@@ -453,7 +581,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                   >
                                     <span>{ind}</span>
                                     <span className='opacity-0 group-hover:opacity-100 text-[10px] text-[color:var(--color-text-muted)] transition-opacity font-normal'>
-                                      Autocompletar ↵
+                                      {lang === 'es' ? 'Autocompletar ↵' : 'Autocomplete ↵'}
                                     </span>
                                   </button>
                                 ))}
@@ -469,7 +597,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           onClick={onClose}
                           className='btn-cyber border border-[color:var(--color-border-subtle)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)]'
                         >
-                          Cancelar
+                          {t.common.cancel}
                         </button>
                         <button
                           type='submit'
@@ -479,11 +607,11 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           {createClientMutation.isPending || savingStep ? (
                             <>
                               <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                              <span>Creando…</span>
+                              <span>{t.common.saving || 'Creando…'}</span>
                             </>
                           ) : (
                             <>
-                              <span>Siguiente</span>
+                              <span>{lang === 'es' ? 'Siguiente' : 'Next'}</span>
                               <ChevronRightIcon className='w-4 h-4' />
                             </>
                           )}
@@ -500,10 +628,12 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                       <div>
                         <Dialog.Title className='text-xl font-extrabold text-[color:var(--color-text-primary)] font-title mb-1.5 flex items-center gap-2'>
                           <GlobeAltIcon className='w-5 h-5 text-[#0ea5e9]' />
-                          <span>Ecosistema e Identidad Digital</span>
+                          <span>{lang === 'es' ? 'Ecosistema e Identidad Digital' : 'Digital Ecosystem & Identity'}</span>
                         </Dialog.Title>
                         <p className='text-xs text-[color:var(--color-text-muted)] leading-relaxed'>
-                          Carga los canales digitales de tu marca. Aura auditará estos links de forma asíncrona para deducir y armar el ADN, tono de voz y pilares estratégico en segundo plano.
+                          {lang === 'es'
+                            ? 'Carga los canales digitales de tu marca. Aura auditará estos links de forma asíncrona para deducir y armar el ADN, tono de voz y pilares estratégicos en segundo plano.'
+                            : 'Load your brand\'s digital channels. Aura will audit these links asynchronously to deduce and build the brand DNA, voice tone, and strategic pillars in the background.'}
                         </p>
                       </div>
 
@@ -512,7 +642,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                         <div className='space-y-1.5'>
                           <label className='text-[10px] font-extrabold uppercase tracking-widest text-[color:var(--color-text-muted)] flex items-center gap-1.5'>
                             <span className='w-1.5 h-1.5 rounded-full bg-emerald-500' />
-                            Sitio Web Oficial
+                            {lang === 'es' ? 'Sitio Web Oficial' : 'Official Website'}
                           </label>
                           <input
                             type='url'
@@ -575,14 +705,14 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                             className='input-cyber'
                             placeholder='https://linkedin.com/company/nombre'
                             value={socials.linkedin}
-                            onChange={e => setSocials(prev => ({ ...prev, socials: e.target.value }))}
+                            onChange={e => setSocials(prev => ({ ...prev, linkedin: e.target.value }))}
                           />
                         </div>
 
                         <div className='space-y-1.5'>
                           <label className='text-[10px] font-extrabold uppercase tracking-widest text-[color:var(--color-text-muted)] flex items-center gap-1.5'>
                             <span className='w-1.5 h-1.5 rounded-full bg-[#FF0000]' />
-                            YouTube Canal
+                            {lang === 'es' ? 'YouTube Canal' : 'YouTube Channel'}
                           </label>
                           <input
                             type='url'
@@ -601,7 +731,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           className='btn-cyber flex items-center gap-1.5 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)] font-bold cursor-pointer'
                         >
                           <ChevronLeftIcon className='w-4 h-4' />
-                          <span>Atrás</span>
+                          <span>{lang === 'es' ? 'Atrás' : 'Back'}</span>
                         </button>
 
                         <div className='flex gap-3'>
@@ -610,7 +740,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                             onClick={() => setStep(3)}
                             className='btn-cyber text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)] font-bold cursor-pointer'
                           >
-                            Omitir Paso
+                            {lang === 'es' ? 'Omitir Paso' : 'Skip Step'}
                           </button>
                           <button
                             type='submit'
@@ -621,7 +751,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                               <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                             ) : (
                               <>
-                                <span>Siguiente</span>
+                                <span>{lang === 'es' ? 'Siguiente' : 'Next'}</span>
                                 <ChevronRightIcon className='w-4 h-4' />
                               </>
                             )}
@@ -639,10 +769,12 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                       <div>
                         <Dialog.Title className='text-xl font-extrabold text-[color:var(--color-text-primary)] font-title mb-1.5 flex items-center gap-2'>
                           <SparklesIcon className='w-5 h-5 text-[#0ea5e9]' />
-                          <span>Conectar con Meta Ads y CM</span>
+                          <span>{lang === 'es' ? 'Conectar con Meta Ads y CM' : 'Connect with Meta Ads & CM'}</span>
                         </Dialog.Title>
                         <p className='text-xs text-[color:var(--color-text-muted)] leading-relaxed'>
-                          Vincula las cuentas publicitarias y de redes de Meta en un clic para activar campañas automáticas y el auto-respondedor de comentarios de Aura de inmediato.
+                          {lang === 'es'
+                            ? 'Vincula las cuentas publicitarias y de redes de Meta en un clic para activar campañas automáticas y el auto-respondedor de comentarios de Aura de inmediato.'
+                            : 'Link Meta advertising and network accounts in one click to activate automated campaigns and Aura\'s auto-responder for comments immediately.'}
                         </p>
                       </div>
 
@@ -653,41 +785,136 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                         </div>
                         <h4 className='text-xs font-bold text-[color:var(--color-accent-sage)] flex items-center gap-1.5 uppercase tracking-wider'>
                           <ShieldCheckIcon className='w-4 h-4' />
-                          Transparencia y Uso de Datos de Meta:
+                          {lang === 'es' ? 'Transparencia y Uso de Datos de Meta:' : 'Transparency & Meta Data Usage:'}
                         </h4>
                         <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 text-[10.5px] text-[color:var(--color-text-secondary)] leading-relaxed'>
                           <div className='flex gap-2 items-start'>
                             <span className='text-[color:var(--color-accent-sage)] text-xs font-bold'>✓</span>
-                            <span><strong>Auditoría de Ads:</strong> Leeremos métricas de rendimiento y configuraciones de campañas para diagnosticar pauta comercial.</span>
+                            <span>
+                              {lang === 'es'
+                                ? <strong>Auditoría de Ads: Leeremos métricas de rendimiento y configuraciones de campañas para diagnosticar pauta comercial.</strong>
+                                : <strong>Ads Audit: We will read performance metrics and campaign settings to diagnose commercial ads.</strong>}
+                            </span>
                           </div>
                           <div className='flex gap-2 items-start'>
                             <span className='text-[color:var(--color-accent-sage)] text-xs font-bold'>✓</span>
-                            <span><strong>Comentarios en Vivo:</strong> Escucharemos el feedback en tus publicaciones para detectar intenciones y sentimientos.</span>
+                            <span>
+                              {lang === 'es'
+                                ? <strong>Comentarios en Vivo: Escucharemos el feedback en tus publicaciones para detectar intenciones y sentimientos.</strong>
+                                : <strong>Live Comments: We will monitor feedback on your posts to detect intent and sentiments.</strong>}
+                            </span>
                           </div>
                           <div className='flex gap-2 items-start'>
                             <span className='text-[color:var(--color-accent-sage)] text-xs font-bold'>✓</span>
-                            <span><strong>CM Inteligente:</strong> Responderemos las consultas de usuarios usando borradores que tú debes autorizar o editar.</span>
+                            <span>
+                              {lang === 'es'
+                                ? <strong>CM Inteligente: Responderemos las consultas de usuarios usando borradores que tú debes autorizar o editar.</strong>
+                                : <strong>Smart CM: We will reply to user inquiries using drafts that you must authorize or edit.</strong>}
+                            </span>
                           </div>
                           <div className='flex gap-2 items-start'>
                             <span className='text-[color:var(--color-accent-sage)] text-xs font-bold'>✓</span>
-                            <span><strong>Seguridad Cifrada:</strong> Las credenciales OAuth se almacenan encriptadas con protocolo SSL/TLS bajo la seguridad de Supabase.</span>
+                            <span>
+                              {lang === 'es'
+                                ? <strong>Seguridad Cifrada: Las credenciales OAuth se almacenan encriptadas con protocolo SSL/TLS bajo la seguridad de Supabase.</strong>
+                                : <strong>Encrypted Security: OAuth credentials are stored encrypted with SSL/TLS protocol under Supabase security.</strong>}
+                            </span>
                           </div>
                         </div>
                         <div className='text-[10px] text-[color:var(--color-text-muted)] flex items-start gap-1.5 pt-2.5 border-t border-[color:var(--color-border-subtle)]'>
                           <LockClosedIcon className='w-3.5 h-3.5 text-[color:var(--color-accent-sage)]/70 flex-shrink-0' />
-                          <span>Cadence jamás realizará acciones no autorizadas, posts autónomos ni cobrará importes sin tu estricto consentimiento.</span>
+                          <span>
+                            {lang === 'es'
+                              ? 'Cadence jamás realizará acciones no autorizadas, posts autónomos ni cobrará importes sin tu estricto consentimiento.'
+                              : 'Cadence will never perform unauthorized actions, autonomous posts, or charge fees without your strict consent.'}
+                          </span>
                         </div>
                       </div>
 
                       {/* OAuth Status and Flow */}
                       <div className='space-y-4'>
-                        {oauthStep === 'connect' ? (
-                          <div className='max-w-md mx-auto'>
+                        {qrMode ? (
+                          /* VISTA DEVICE LOGIN — el usuario escribe el código en facebook.com/device */
+                          <div className='space-y-5 max-w-md mx-auto text-center flex flex-col items-center p-5 bg-[color:var(--color-surface-soft)] border border-[color:var(--color-border-subtle)] rounded-2xl'>
+                            <div className='bg-[color:var(--color-surface)] border border-purple-500/20 p-4 rounded-2xl flex items-start gap-3 text-left w-full'>
+                              <SparklesIcon className='h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5' />
+                              <p className='text-[11px] text-purple-200 leading-relaxed'>
+                                {lang === 'es'
+                                  ? <>Abre <strong className='text-white'>facebook.com/device</strong> en tu celular e ingresa el siguiente código para vincular tu cuenta.</>
+                                  : <>Open <strong className='text-white'>facebook.com/device</strong> on your phone and enter the following code to link your account.</>}
+                              </p>
+                            </div>
+
+                            {qrLoading ? (
+                              <div className='w-full h-28 bg-[color:var(--color-surface)] rounded-2xl flex items-center justify-center border border-[color:var(--color-border-subtle)] shadow-inner'>
+                                <ArrowPathIcon className='h-8 w-8 animate-spin text-purple-500' />
+                              </div>
+                            ) : (
+                              <div className='w-full flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-br from-purple-900/40 to-indigo-900/30 border-2 border-purple-500/40 rounded-2xl py-5 px-6 shadow-xl shadow-purple-900/20'>
+                                {/* Código QR con user_code pre-completado */}
+                                <div className='relative p-2 bg-white rounded-2xl shadow-md border-2 border-purple-500/20 overflow-hidden flex-shrink-0'>
+                                  <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&color=0b0b14&data=${encodeURIComponent('https://www.facebook.com/device?user_code=' + deviceUserCode)}`}
+                                    alt="Código QR de Conexión"
+                                    className='w-28 h-28 rounded-xl select-none'
+                                  />
+                                </div>
+                                {/* Código de texto */}
+                                <div className='flex-1 text-center sm:text-left'>
+                                  <p className='text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1'>
+                                    {lang === 'es' ? 'Tu código de acceso' : 'Your access code'}
+                                  </p>
+                                  <p className='text-3xl font-black tracking-[0.2em] text-white select-all font-mono'>{deviceUserCode || '------'}</p>
+                                  <p className='text-[9px] text-purple-300/70 mt-2 leading-relaxed'>
+                                    {lang === 'es'
+                                      ? 'Escanea el código QR con tu celular para abrir Facebook con el código ya pre-completado de forma automática.'
+                                      : 'Scan the QR code with your phone to open Facebook with the code already pre-filled automatically.'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            <a
+                              href='https://www.facebook.com/device'
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-bold text-sm py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xl'
+                            >
+                              <svg className='w-4 h-4 fill-current' viewBox='0 0 24 24'>
+                                <path d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' />
+                              </svg>
+                              {lang === 'es' ? 'Abrir facebook.com/device' : 'Open facebook.com/device'}
+                            </a>
+
+                            <div className='flex flex-col items-center gap-1.5'>
+                              <div className='flex items-center gap-2'>
+                                <span className='h-2.5 w-2.5 rounded-full bg-yellow-500 animate-ping' />
+                                <span className='text-xs font-bold text-[color:var(--color-text-primary)]'>
+                                  {lang === 'es' ? 'Esperando que ingreses el código...' : 'Waiting for code entry...'}
+                                </span>
+                              </div>
+                              <span className='text-[10px] text-[color:var(--color-text-muted)] max-w-xs'>
+                                {lang === 'es'
+                                  ? 'Esta pantalla avanzará automáticamente cuando autorices en tu celular.'
+                                  : 'This screen will automatically advance when you authorize on your phone.'}
+                              </span>
+                            </div>
+
                             <button
                               type='button'
-                              onClick={handleFacebookOAuth}
-                              disabled={connectingOAuth || savingStep}
-                              className='w-full bg-[#1877F2] hover:bg-[#1565C0] text-white font-bold text-xs py-3.5 rounded-xl transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 transform hover:scale-[1.01] hover:shadow-[0_0_15px_rgba(24,119,242,0.2)] cursor-pointer'
+                              onClick={() => setQrMode(false)}
+                              className='w-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-surface-soft)] text-[color:var(--color-text-secondary)] font-bold text-xs py-3 rounded-xl transition-all duration-200 cursor-pointer'
+                            >
+                              {lang === 'es' ? 'Cancelar y Volver' : 'Cancel and Go Back'}
+                            </button>
+                          </div>
+                        ) : oauthStep === 'connect' ? (
+                          <div className='max-w-md mx-auto space-y-3.5'>
+                            <button
+                               type='button'
+                               onClick={handleFacebookOAuth}
+                               disabled={connectingOAuth || savingStep}
+                               className='w-full bg-[#1877F2] hover:bg-[#1565C0] text-white font-bold text-xs py-3.5 rounded-xl transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 transform hover:scale-[1.01] hover:shadow-[0_0_15px_rgba(24,119,242,0.2)] cursor-pointer'
                             >
                               {connectingOAuth ? (
                                 <ArrowPathIcon className='h-4 w-4 animate-spin' />
@@ -696,20 +923,39 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                   <path d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' />
                                 </svg>
                               )}
-                              <span>Autorizar y Conectar con Facebook & Meta</span>
+                              <span>{lang === 'es' ? 'Autorizar y Conectar con Facebook & Meta' : 'Authorize & Connect with Facebook & Meta'}</span>
+                            </button>
+
+                            {/* Botón para iniciar flujo Device Login */}
+                            <button
+                              type='button'
+                              onClick={startQrFlow}
+                              disabled={connectingOAuth || savingStep || qrLoading}
+                              className='w-full border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 font-bold text-xs py-3 rounded-xl transition-all duration-200 shadow-lg flex items-center justify-center gap-2 transform hover:scale-[1.01] cursor-pointer'
+                            >
+                              {qrLoading ? (
+                                <ArrowPathIcon className='w-4 h-4 animate-spin text-purple-400' />
+                              ) : (
+                                <svg className='w-4.5 h-4.5 text-purple-400' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth={2}>
+                                  <path strokeLinecap='round' strokeLinejoin='round' d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' />
+                                </svg>
+                              )}
+                              <span>{lang === 'es' ? 'Conectar desde el Celular (sin contraseña)' : 'Connect from Phone (without password)'}</span>
                             </button>
                           </div>
                         ) : (
                           <div className='space-y-4 max-w-lg mx-auto bg-[color:var(--color-surface-soft)] border border-[color:var(--color-border-subtle)] p-5 rounded-2xl'>
                             <div className='flex items-center gap-2 pb-3.5 border-b border-[color:var(--color-border-subtle)]'>
                               <span className='h-2 w-2 rounded-full bg-emerald-500 animate-pulse' />
-                              <span className='text-[10px] font-bold text-emerald-500 uppercase tracking-widest font-mono'>Meta Autenticado</span>
+                              <span className='text-[10px] font-bold text-emerald-500 uppercase tracking-widest font-mono'>
+                                {lang === 'es' ? 'Meta Autenticado' : 'Meta Authenticated'}
+                              </span>
                             </div>
 
                             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                               <div>
                                 <label className='block text-[9px] font-extrabold text-[color:var(--color-text-muted)] uppercase tracking-wider mb-1.5'>
-                                  1. Cuenta Publicitaria (Meta Ads)
+                                  {lang === 'es' ? '1. Cuenta Publicitaria (Meta Ads)' : '1. Ad Account (Meta Ads)'}
                                 </label>
                                 {adAccountsList.length > 0 ? (
                                   <select
@@ -725,14 +971,14 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                   </select>
                                 ) : (
                                   <div className='text-xs text-rose-500 bg-rose-500/5 p-3 rounded-xl border border-rose-500/10'>
-                                    No se hallaron cuentas publicitarias.
+                                    {lang === 'es' ? 'No se hallaron cuentas publicitarias.' : 'No ad accounts found.'}
                                   </div>
                                 )}
                               </div>
 
                               <div>
                                 <label className='block text-[9px] font-extrabold text-[color:var(--color-text-muted)] uppercase tracking-wider mb-1.5'>
-                                  2. Página de FB & Cuenta Instagram
+                                  {lang === 'es' ? '2. Página de FB & Cuenta Instagram' : '2. FB Page & Instagram Account'}
                                 </label>
                                 {pagesList.length > 0 ? (
                                   <select
@@ -748,7 +994,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                   </select>
                                 ) : (
                                   <div className='text-xs text-rose-500 bg-rose-500/5 p-3 rounded-xl border border-rose-500/10'>
-                                    No se hallaron páginas vinculadas.
+                                    {lang === 'es' ? 'No se hallaron páginas vinculadas.' : 'No linked pages found.'}
                                   </div>
                                 )}
                               </div>
@@ -766,7 +1012,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                 ) : (
                                   <>
                                     <CheckIcon className='w-4 h-4' />
-                                    <span>Vincular y Proceder</span>
+                                    <span>{lang === 'es' ? 'Vincular y Proceder' : 'Link & Proceed'}</span>
                                   </>
                                 )}
                               </button>
@@ -775,7 +1021,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                                 onClick={() => setOauthStep('connect')}
                                 className='px-4 border border-[color:var(--color-border-subtle)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-surface-soft)] text-[color:var(--color-text-secondary)] font-bold text-xs rounded-xl transition-all cursor-pointer'
                               >
-                                Atrás
+                                {lang === 'es' ? 'Atrás' : 'Back'}
                               </button>
                             </div>
                           </div>
@@ -790,7 +1036,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           className='btn-cyber flex items-center gap-1.5 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)] font-bold cursor-pointer'
                         >
                           <ChevronLeftIcon className='w-4 h-4' />
-                          <span>Atrás</span>
+                          <span>{lang === 'es' ? 'Atrás' : 'Back'}</span>
                         </button>
 
                         <button
@@ -798,7 +1044,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           onClick={triggerBackgroundAnalysis}
                           className='btn-cyber text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-surface-soft)] font-bold cursor-pointer'
                         >
-                          Omitir y Finalizar
+                          {lang === 'es' ? 'Omitir y Finalizar' : 'Skip & Finish'}
                         </button>
                       </div>
                     </div>
@@ -821,10 +1067,12 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
 
                       <div className='space-y-2.5 max-w-md'>
                         <Dialog.Title className='text-xl font-black text-[color:var(--color-text-primary)] font-title'>
-                          Aura está analizando tu marca
+                          {lang === 'es' ? 'Aura está analizando tu marca' : 'Aura is analyzing your brand'}
                         </Dialog.Title>
                         <p className='text-xs text-[color:var(--color-text-muted)] leading-relaxed px-4'>
-                          Estamos procesando la información del cliente y auditando sus canales públicos en la web. La IA estructurará su ADN de marca en segundo plano.
+                          {lang === 'es'
+                            ? 'Estamos procesando la información del cliente y auditando sus canales públicos en la web. La IA estructurará su ADN de marca en segundo plano.'
+                            : 'We are processing the client\'s information and auditing their public web channels. The AI will structure their brand DNA in the background.'}
                         </p>
                       </div>
 
@@ -837,7 +1085,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           />
                         </div>
                         <div className='flex justify-between text-[9px] font-mono text-[color:var(--color-text-muted)] px-1 uppercase tracking-wider font-semibold'>
-                          <span>Indexando Ecosistema</span>
+                          <span>{lang === 'es' ? 'Indexando Ecosistema' : 'Indexing Ecosystem'}</span>
                           <span>{analysisProgress}%</span>
                         </div>
                       </div>
@@ -857,7 +1105,7 @@ export const ClientCreationModal = ({ isOpen, onClose }) => {
                           onClick={handleFinalizeAndRedirect}
                           className='w-full px-6 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow-[0_4px_14px_rgba(14,165,233,0.3)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:scale-[1.01] transition-transform'
                         >
-                          <span>Acceder de inmediato</span>
+                          <span>{lang === 'es' ? 'Acceder de inmediato' : 'Access immediately'}</span>
                           <ChevronRightIcon className='w-4 h-4' />
                         </button>
                       </div>

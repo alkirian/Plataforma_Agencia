@@ -269,7 +269,8 @@
   flex-grow: 1 !important; /* Rellena todo el alto disponible de la celda */
   display: flex !important;
   align-items: stretch !important;
-  height: 100% !important;
+  height: auto !important; /* Permitir distribución automática sin expandir la celda */
+  min-height: 0 !important;
   width: 100% !important;
   border: 0 !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
@@ -295,7 +296,7 @@
   padding: 6px 8px !important; /* Más espacioso e interactivo */
   box-sizing: border-box !important;
   flex-grow: 1 !important;
-  min-height: 100% !important;
+  min-height: 0 !important; /* Evitar estirar la fila */
 }
 
 /* More link */

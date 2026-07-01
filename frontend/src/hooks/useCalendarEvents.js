@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   getSchedule,
   createScheduleItem,
@@ -9,6 +9,7 @@ import {
 } from '../api/schedule';
 import { TASK_STATES } from '../constants/taskStates';
 import toast from 'react-hot-toast';
+import { playSuccessSound, playUndoSound } from '../utils/soundEffects';
 
 // Caché global en memoria para persistir eventos entre montajes del componente
 const calendarCache = new Map();
@@ -30,6 +31,7 @@ export const useCalendarEvents = clientId => {
   });
 
   const [error, setError] = useState(null);
+  const undoStackRef = useRef([]);
 
   // Transformar datos del backend a formato FullCalendar con mapeo de color directo
   const transformToFullCalendarEvents = scheduleData => {
@@ -145,6 +147,7 @@ export const useCalendarEvents = clientId => {
         });
 
         toast.success('Evento creado exitosamente');
+        playSuccessSound();
         return newEvent;
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {
@@ -210,6 +213,7 @@ export const useCalendarEvents = clientId => {
         });
 
         toast.success('Evento actualizado');
+        playSuccessSound();
         return updatedEvent;
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {
@@ -227,10 +231,56 @@ export const useCalendarEvents = clientId => {
     [clientId]
   );
 
+  // Deshacer la última eliminación
+  const undoLastDeletion = useCallback(async () => {
+    const lastItem = undoStackRef.current.pop();
+    if (!lastItem) return;
+
+    try {
+      const restoredEvent = await createScheduleItem(lastItem.clientId, lastItem.data);
+      setEvents(prev => {
+        const next = [...prev, transformToFullCalendarEvents([restoredEvent])[0]];
+        calendarCache.set(clientId, next);
+        return next;
+      });
+      toast.success('Evento restaurado');
+      playUndoSound();
+    } catch (err) {
+      console.error('Error restoring event:', err);
+      toast.error('Error al restaurar el evento');
+      undoStackRef.current.push(lastItem); // Regresar al stack si falla
+    }
+  }, [clientId]);
+
+  // Escuchar atajo global Ctrl + Z para deshacer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeElement = document.activeElement;
+      const isInput =
+        activeElement &&
+        (activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.contentEditable === 'true' ||
+          activeElement.getAttribute('role') === 'textbox');
+
+      if (isInput) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoLastDeletion();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoLastDeletion]);
+
   // Eliminar evento (Optimistic Update)
   const deleteEvent = useCallback(
     async eventId => {
       let previousEvents = null;
+      const eventToDelete = events.find(event => event.id === eventId);
+      const originalData = eventToDelete?.extendedProps?.originalData;
 
       setEvents(prev => {
         previousEvents = [...prev];
@@ -241,7 +291,28 @@ export const useCalendarEvents = clientId => {
 
       try {
         await deleteScheduleItem(clientId, eventId);
-        toast.success('Evento eliminado');
+        
+        if (originalData) {
+          undoStackRef.current.push({
+            clientId,
+            data: originalData,
+          });
+        }
+
+        toast((t) => 
+          React.createElement('div', { className: 'flex items-center gap-2.5' },
+            React.createElement('span', { className: 'text-xs font-semibold' }, 'Evento eliminado'),
+            React.createElement('button', {
+              onClick: () => {
+                undoLastDeletion();
+                toast.dismiss(t.id);
+              },
+              className: 'px-2 py-1 text-[10px] font-black uppercase tracking-wider bg-accent-lavender text-white rounded hover:bg-opacity-90 transition'
+            }, 'Deshacer')
+          ),
+          { duration: 5000 }
+        );
+
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {
           console.error('[deleteEvent] Error:', err);
@@ -255,7 +326,7 @@ export const useCalendarEvents = clientId => {
         throw err;
       }
     },
-    [clientId]
+    [clientId, events, undoLastDeletion]
   );
 
   // Eliminar todos los eventos de un mes específico

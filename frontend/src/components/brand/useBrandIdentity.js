@@ -1,5 +1,5 @@
 // src/components/brand/useBrandIdentity.js
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   getClientBrandProfile,
@@ -11,6 +11,10 @@ import {
   getBrandAssetsWithPreview,
   uploadBrandAsset,
 } from '../../api/brandAssets';
+import { useLanguage } from '../../hooks';
+import { useDocuments } from '../../hooks/useDocuments';
+import { playSuccessSound } from '../../utils/soundEffects';
+
 
 const DEFAULT_PROFILE = {
   business_description: '',
@@ -52,7 +56,75 @@ const ensureHttpProtocol = (rawUrl = '') => {
 };
 
 export const useBrandIdentity = (clientId) => {
+  const { t, lang } = useLanguage();
+  const { documents, upload: uploadDoc, remove: removeDoc, isLoading: loadingDocs } = useDocuments(clientId);
   const [formData, setFormData] = useState(DEFAULT_PROFILE);
+  const isDirtyRef = useRef(false);
+  const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+
+  const handleAutosave = useCallback(async () => {
+    if (!clientId) return;
+    setAutosaveStatus('saving');
+    try {
+      const reconstructedSourceLinks = [
+        { type: 'instagram', url: formData.instagram_url },
+        { type: 'website', url: formData.website_url },
+        { type: 'tiktok', url: formData.tiktok_url },
+        { type: 'youtube', url: formData.youtube_url },
+        { type: 'facebook', url: formData.facebook_url },
+        { type: 'linkedin', url: formData.linkedin_url },
+      ]
+        .filter((l) => l.url && l.url.trim())
+        .map((l, i) => ({
+          id: `source-link-${l.type}-${i}`,
+          type: l.type,
+          url: ensureHttpProtocol(l.url),
+          notes: '',
+        }));
+
+      const payload = {
+        ...formData,
+        source_links: reconstructedSourceLinks,
+        source_notes: String(formData.source_notes || '').trim(),
+      };
+
+      await updateClientBrandProfile(clientId, payload);
+      setAutosaveStatus('saved');
+      playSuccessSound();
+      isDirtyRef.current = false;
+
+      // Verificar si la marca está 100% completa y disparar evento de celebración
+      const isProfileComplete =
+        formData.business_description?.trim() &&
+        formData.ai_insights?.tone_detected?.trim() &&
+        formData.target_audience?.trim() &&
+        (formData.color_palette?.length > 0) &&
+        (formData.instagram_url || formData.website_url || formData.facebook_url);
+
+      if (isProfileComplete) {
+        window.dispatchEvent(new CustomEvent('cadence:brand-complete', { detail: { clientId } }));
+      }
+
+      // Reset autosaveStatus to 'idle' after 3s
+      setTimeout(() => {
+        setAutosaveStatus('idle');
+      }, 3000);
+
+    } catch (error) {
+      console.error('Autosave error:', error);
+      setAutosaveStatus('error');
+    }
+  }, [clientId, formData]);
+
+  useEffect(() => {
+    if (!isDirtyRef.current) return;
+
+    const timer = setTimeout(() => {
+      handleAutosave();
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [formData, handleAutosave]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -71,17 +143,7 @@ export const useBrandIdentity = (clientId) => {
   // Pestaña activa del espacio de trabajo de la columna derecha ('brief' | 'alerts')
   const [activeTab, setActiveTab] = useState('brief');
 
-  const CONSISTENCY_LOADER_MSGS = [
-    '🔌 Conectando con canales públicos de la marca...',
-    '🌐 Analizando estructura de enlaces y redes sociales...',
-    '🔍 Realizando búsquedas profundas sobre el sector e industria...',
-    '🕷️ Extrayendo y limpiando contenido del sitio web oficial...',
-    '📂 Decodificando documentos de referencia y PDFs...',
-    '🖼️ Procesando elementos gráficos e imágenes...',
-    '🧠 Evaluando la consistencia y ADN de marca...',
-    '⚖️ Cruzando datos y buscando contradicciones...',
-    '✨ Consolidando informe estratégico en la Casilla Única...',
-  ];
+  const CONSISTENCY_LOADER_MSGS = t.brand.consistencyLoaderMsgs;
 
   // Rotador de mensajes de carga
   useEffect(() => {
@@ -94,7 +156,7 @@ export const useBrandIdentity = (clientId) => {
       setLoadingMessageIndex(0);
     }
     return () => clearInterval(interval);
-  }, [isAnalyzingConsistency]);
+  }, [isAnalyzingConsistency, CONSISTENCY_LOADER_MSGS]);
 
   // Carga inicial de datos
   const loadProfile = async () => {
@@ -134,7 +196,7 @@ export const useBrandIdentity = (clientId) => {
         setConsistencyReport(null);
       }
     } catch (error) {
-      toast.error('No se pudo cargar la identidad del cliente.');
+      toast.error(t.brand.errorLoadProfile);
     } finally {
       setLoading(false);
     }
@@ -175,9 +237,9 @@ export const useBrandIdentity = (clientId) => {
       if (!data.analysis_in_progress) {
         setIsAnalyzingConsistency(false);
         if (data.analysis_error) {
-          toast.error(`❌ El análisis falló: ${data.analysis_error}`, { duration: 6000 });
+          toast.error(`${t.brand.analysisFailed}${data.analysis_error}`, { duration: 6000 });
         } else if (data.consistency_report) {
-          toast.success('✨ ¡Análisis completado de fondo y cargado con éxito!', {
+          toast.success(t.brand.analysisCompleted, {
             id: 'bg-analysis-success',
             duration: 5000,
           });
@@ -234,6 +296,27 @@ export const useBrandIdentity = (clientId) => {
     };
   }, [clientId]);
 
+  // Auto-guardado automático de canales y paleta de colores
+  useEffect(() => {
+    if (loading) return;
+
+    const delayDebounceFn = setTimeout(() => {
+      if (!isAnalyzingConsistency) {
+        handleSubmit();
+      }
+    }, 1200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [
+    formData.color_palette,
+    formData.instagram_url,
+    formData.website_url,
+    formData.tiktok_url,
+    formData.facebook_url,
+    formData.linkedin_url,
+    formData.youtube_url,
+  ]);
+
   // Cálculo del porcentaje de completado de identidad
   const completion = useMemo(() => {
     const text = String(formData.business_description || '').trim();
@@ -244,6 +327,7 @@ export const useBrandIdentity = (clientId) => {
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    isDirtyRef.current = true;
   };
 
   const handleConsistencyCheck = async () => {
@@ -269,7 +353,7 @@ export const useBrandIdentity = (clientId) => {
         }));
 
       if (reconstructedSourceLinks.length === 0) {
-        toast.error('Por favor agrega al menos un enlace de canal público antes de analizar.');
+        toast.error(t.brand.errorAddChannel);
         setIsAnalyzingConsistency(false);
         return;
       }
@@ -278,17 +362,17 @@ export const useBrandIdentity = (clientId) => {
 
       if (response?.success) {
         toast.success(
-          response.message || '🧠 ¡Análisis iniciado de fondo de forma segura!',
+          response.message || t.brand.analysisStarted,
           {
             duration: 8000,
             id: 'brand-analysis-started',
           }
         );
       } else {
-        throw new Error(response?.error || 'No se pudo iniciar el diagnóstico.');
+        throw new Error(response?.error || t.brand.errorStartDiagnosis);
       }
     } catch (error) {
-      toast.error(error.message || 'Error al realizar el análisis.');
+      toast.error(error.message || t.brand.errorPerformAnalysis);
       setIsAnalyzingConsistency(false);
     }
   };
@@ -302,24 +386,32 @@ export const useBrandIdentity = (clientId) => {
       return next;
     });
 
-    toast.success('✨ ¡Propuesta armonizada aplicada con éxito!');
+    toast.success(t.brand.harmonizedApplied);
   };
 
-  // Carga de material de referencia
+  // Carga de material de referencia y soporte
   const handleUploadAssets = async (files) => {
     const validFiles = Array.from(files || []);
     if (!validFiles.length) return;
     setUploadingAssets(true);
     try {
       for (const file of validFiles) {
-        await uploadBrandAsset(clientId, file, { asset_type: 'reference' });
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        const isImage = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'].includes(ext);
+
+        if (isImage) {
+          await uploadBrandAsset(clientId, file, { asset_type: 'reference' });
+        } else {
+          await uploadDoc({ file });
+        }
       }
       await loadAssets();
-      toast.success(
-        `¡${validFiles.length} archivo${validFiles.length > 1 ? 's' : ''} cargado${validFiles.length > 1 ? 's' : ''} con éxito!`
-      );
+      const successMsg = lang === 'es'
+        ? `¡${validFiles.length} archivo${validFiles.length > 1 ? 's' : ''} procesado${validFiles.length > 1 ? 's' : ''} con éxito!`
+        : `${validFiles.length} file${validFiles.length > 1 ? 's' : ''} processed successfully!`;
+      toast.success(successMsg);
     } catch (error) {
-      toast.error(error.message || 'No se pudieron subir los archivos.');
+      toast.error(error.message || t.brand.errorUploadFiles);
     } finally {
       setUploadingAssets(false);
     }
@@ -329,9 +421,9 @@ export const useBrandIdentity = (clientId) => {
     try {
       await deleteBrandAsset(clientId, asset.id);
       setBrandAssets((prev) => prev.filter((item) => item.id !== asset.id));
-      toast.success('Archivo eliminado de las referencias.');
+      toast.success(t.brand.assetDeleted);
     } catch (error) {
-      toast.error(error.message || 'No se pudo eliminar el archivo.');
+      toast.error(error.message || t.brand.errorDeleteAsset);
     }
   };
 
@@ -363,13 +455,17 @@ export const useBrandIdentity = (clientId) => {
       };
 
       await updateClientBrandProfile(clientId, payload);
-      toast.success('✨ ¡Identidad de marca guardada con éxito!');
+      toast.success(t.brand.identitySaved);
+      isDirtyRef.current = false;
+      setAutosaveStatus('saved');
+      setTimeout(() => setAutosaveStatus('idle'), 3000);
       setFormData((prev) => ({
         ...prev,
         source_links: reconstructedSourceLinks,
       }));
     } catch (error) {
-      toast.error(error.message || 'No se pudo guardar la identidad.');
+      toast.error(error.message || t.brand.errorSaveIdentity);
+      setAutosaveStatus('error');
     } finally {
       setSaving(false);
     }
@@ -378,28 +474,29 @@ export const useBrandIdentity = (clientId) => {
   // Manejo de paleta manual de colores
   const handleAddColor = (newHexColor) => {
     if (!newHexColor || !/^#[0-9A-Fa-f]{6}$/.test(newHexColor)) {
-      toast.error('Color hexadecimal inválido.');
+      toast.error(t.brand.errorInvalidHex);
       return;
     }
     const normalizedColor = newHexColor.toUpperCase();
     if (formData.color_palette.includes(normalizedColor)) {
-      toast.error('Este color ya existe en tu paleta.');
+      toast.error(t.brand.errorColorExists);
       return;
     }
     const updatedPalette = [...formData.color_palette, normalizedColor];
     handleChange('color_palette', updatedPalette);
-    toast.success(`Color ${normalizedColor} añadido.`);
+    const addedMsg = lang === 'es' ? `Color ${normalizedColor} añadido.` : `Color ${normalizedColor} added.`;
+    toast.success(addedMsg);
   };
 
   const handleRemoveColor = (hexColorToRemove) => {
     const updatedPalette = formData.color_palette.filter((color) => color !== hexColorToRemove);
     handleChange('color_palette', updatedPalette);
-    toast.success('Color eliminado de la paleta.');
+    toast.success(t.brand.colorRemoved);
   };
 
   const handleUpdateColor = (index, newHexColor) => {
     if (!newHexColor || !/^#[0-9A-Fa-f]{6}$/.test(newHexColor)) {
-      toast.error('Color hexadecimal inválido.');
+      toast.error(t.brand.errorInvalidHex);
       return;
     }
     const normalizedColor = newHexColor.toUpperCase();
@@ -407,19 +504,20 @@ export const useBrandIdentity = (clientId) => {
     // Check if the color already exists at another index
     const exists = formData.color_palette.some((color, idx) => color === normalizedColor && idx !== index);
     if (exists) {
-      toast.error('Este color ya existe en tu paleta.');
+      toast.error(t.brand.errorColorExists);
       return;
     }
 
     const updatedPalette = [...formData.color_palette];
     updatedPalette[index] = normalizedColor;
     handleChange('color_palette', updatedPalette);
-    toast.success(`Color actualizado a ${normalizedColor}.`);
+    const updatedMsg = lang === 'es' ? `Color actualizado a ${normalizedColor}.` : `Color updated to ${normalizedColor}.`;
+    toast.success(updatedMsg);
   };
 
   return {
     formData,
-    loading,
+    loading: loading || loadingDocs,
     saving,
     consistencyReport,
     isAnalyzingConsistency,
@@ -429,8 +527,6 @@ export const useBrandIdentity = (clientId) => {
     loadingAssets,
     uploadingAssets,
     isDragging,
-    activeTab,
-    setActiveTab,
     setIsDragging,
     completion,
     CONSISTENCY_LOADER_MSGS,
@@ -443,5 +539,9 @@ export const useBrandIdentity = (clientId) => {
     handleAddColor,
     handleRemoveColor,
     handleUpdateColor,
+    documents,
+    loadingDocs,
+    handleDeleteDoc: removeDoc,
+    autosaveStatus,
   };
 };

@@ -8,23 +8,33 @@ import {
   UserCircleIcon,
   BellIcon,
   ArrowTrendingUpIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline';
 import { CyberButton } from '../ui';
+import { useEscapeClose, useTheme } from '../../hooks';
 
 export const MobileMenu = ({
   isOpen,
   onClose,
   userEmail,
+  profile,
   onLogout,
   notifications,
   onNotificationsClick,
 }) => {
+  const { theme, toggleTheme } = useTheme();
+  useEscapeClose(isOpen, onClose);
   const location = useLocation();
+
+  const isOwnBusiness = profile?.agencies?.agency_type === 'own_business';
+  const cachedClientId = localStorage.getItem('cadence_last_active_client_id');
+  const dashboardPath = isOwnBusiness && cachedClientId ? `/clients/${cachedClientId}` : '/dashboard';
 
   const menuItems = [
     {
       label: 'Dashboard',
-      path: '/dashboard',
+      path: dashboardPath,
       icon: HomeIcon,
       shortcut: 'Alt+D',
     },
@@ -43,7 +53,7 @@ export const MobileMenu = ({
   ];
 
   const isActiveRoute = path => {
-    return location.pathname === path || (path === '/dashboard' && location.pathname === '/');
+    return location.pathname === path || ((path === '/dashboard' || path === dashboardPath) && location.pathname === '/');
   };
 
   return (
@@ -128,6 +138,31 @@ export const MobileMenu = ({
                   <div className='flex-1'>
                     <div className='font-medium'>Notificaciones</div>
                     <div className='text-xs text-text-muted mt-0.5'>Alt+N</div>
+                  </div>
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={(e) => {
+                    toggleTheme(e);
+                  }}
+                  className='flex items-center space-x-4 p-4 rounded-xl transition-all duration-200 text-text-muted hover:bg-surface-soft hover:text-text-primary w-full'
+                  aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+                >
+                  <div>
+                    {theme === 'dark' ? (
+                      <SunIcon className='h-6 w-6' />
+                    ) : (
+                      <MoonIcon className='h-6 w-6' />
+                    )}
+                  </div>
+                  <div className='flex-1 text-left'>
+                    <div className='font-medium'>
+                      {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+                    </div>
+                    <div className='text-xs text-text-muted mt-0.5'>
+                      {theme === 'dark' ? 'Cambiar a diseño claro' : 'Cambiar a diseño oscuro'}
+                    </div>
                   </div>
                 </button>
               </nav>

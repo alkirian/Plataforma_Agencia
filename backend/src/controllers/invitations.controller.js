@@ -315,7 +315,7 @@ export const handleResolveInviteLink = async (req, res, next) => {
  */
 export const handleAcceptInviteLink = async (req, res, next) => {
   try {
-    const { code } = req.body;
+    const { code, role } = req.body;
     const userId = req.user.id;
     const email = req.user.email;
 
@@ -326,7 +326,7 @@ export const handleAcceptInviteLink = async (req, res, next) => {
       });
     }
 
-    const result = await acceptInviteLink(userId, email, code);
+    const result = await acceptInviteLink(userId, email, code, role);
 
     res.status(200).json({
       success: true,

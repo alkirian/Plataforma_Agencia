@@ -35,53 +35,45 @@ export const useModalGsap = (isOpen, backdropRef, panelRef, options = {}) => {
         return false;
       }
 
-      // 1. Instantly hide elements synchronously to prevent any visual "flash" (flicker)
-      gsap.set(backdrop, { opacity: 0 });
-      gsap.set(panel, { opacity: 0 });
+      // 1. Instantly hide and position elements synchronously to prevent any visual "flash" (flicker)
+      gsap.set(backdrop, {
+        opacity: 0,
+        backdropFilter: 'blur(0px)',
+        webkitBackdropFilter: 'blur(0px)',
+      });
+      gsap.set(panel, {
+        opacity: 0,
+        scale: 0.88,
+        y: 40,
+        rotateX: -12,
+        transformOrigin: 'top center',
+        filter: 'blur(10px)',
+      });
 
       // 2. Backdrop Animation: Fade-in and progressive backdrop blur
-      gsap.fromTo(
-        backdrop,
-        {
-          opacity: 0,
-          backdropFilter: 'blur(0px)',
-          webkitBackdropFilter: 'blur(0px)',
-        },
-        {
-          opacity: 1,
-          backdropFilter: 'blur(8px)',
-          webkitBackdropFilter: 'blur(8px)',
-          duration: 0.4,
-          ease: 'power2.out',
-        }
-      );
+      gsap.to(backdrop, {
+        opacity: 1,
+        backdropFilter: 'blur(8px)',
+        webkitBackdropFilter: 'blur(8px)',
+        duration: 0.4,
+        ease: 'power2.out',
+      });
 
       // 3. Modal Panel Animation: Premium 3D Elastic Pop + Blur Reveal
       if (panel.parentElement) {
         gsap.set(panel.parentElement, { perspective: 1200 });
       }
 
-      gsap.fromTo(
-        panel,
-        {
-          opacity: 0,
-          scale: 0.88,
-          y: 40,
-          rotateX: -12,
-          transformOrigin: 'top center',
-          filter: 'blur(10px)',
-        },
-        {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          rotateX: 0,
-          filter: 'blur(0px)',
-          duration: duration,
-          ease: ease,
-          clearProps: 'transform,filter', // Clear inline props on complete to maintain responsive layout
-        }
-      );
+      gsap.to(panel, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        rotateX: 0,
+        filter: 'blur(0px)',
+        duration: duration,
+        ease: ease,
+        clearProps: 'transform,filter', // Clear inline props on complete to maintain responsive layout
+      });
 
       // 4. Staggered inner elements reveal
       if (animateContent) {

@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useModalGsap } from '../../hooks/useModalGsap';
+import { useLanguage, useEscapeClose } from '../../hooks';
 
 const normalizeHeader = value =>
   String(value || '')
@@ -245,11 +246,13 @@ const parseDocx = async file => {
 };
 
 export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
+  const { t, lang } = useLanguage();
   const backdropRef = useRef(null);
   const modalPanelRef = useRef(null);
 
   // Call premium GSAP modal transition hook
   useModalGsap(isOpen, backdropRef, modalPanelRef);
+  useEscapeClose(isOpen, onClose);
 
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState([]);
@@ -282,16 +285,16 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
         });
       }
       if (!parsed.length) {
-        toast.error('No se encontraron filas validas para importar.');
+        toast.error(t.schedule.importModal.errorNoRows);
         setRows([]);
         setFileName(file.name);
         return;
       }
       setRows(parsed);
       setFileName(file.name);
-      toast.success(`${parsed.length} filas listas para importar.`);
+      toast.success(`${parsed.length} ${t.schedule.importModal.successReady}`);
     } catch (error) {
-      toast.error('No se pudo leer el archivo.');
+      toast.error(t.schedule.importModal.errorReadFile);
       setRows([]);
       setFileName(file.name || '');
     }
@@ -312,12 +315,12 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
     setIsImporting(true);
     try {
       await onImport(rows);
-      toast.success('Importacion completada.');
+      toast.success(t.schedule.importModal.successImport);
       setRows([]);
       setFileName('');
       onClose();
     } catch (_error) {
-      toast.error('Falló la importacion.');
+      toast.error(t.schedule.importModal.errorImport);
     } finally {
       setIsImporting(false);
     }
@@ -352,20 +355,20 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
               <Dialog.Panel ref={modalPanelRef} className='w-full max-w-4xl rounded-xl border border-[color:var(--color-border-subtle)] bg-surface-strong p-5 shadow-2xl'>
                 <div className='flex items-center justify-between'>
                   <Dialog.Title className='text-xl font-semibold text-text-primary'>
-                    Importar cronograma
+                    {t.schedule.importModal.title}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
                     className='rounded-md px-2 py-1 text-sm text-text-muted hover:bg-white/5 hover:text-text-primary'
                   >
-                    Cerrar
+                    {t.schedule.importModal.close}
                   </button>
                 </div>
 
                 <div className='mt-4 rounded-lg border border-dashed border-[color:var(--color-border-subtle)] bg-surface-soft p-4'>
                   <label className='block cursor-pointer text-sm text-text-primary'>
                     <span className='inline-flex rounded-md border border-[color:var(--color-border-subtle)] px-3 py-2 hover:bg-white/5'>
-                      Seleccionar .csv o .txt
+                      {t.schedule.importModal.selectFile}
                     </span>
                     <input
                       type='file'
@@ -378,16 +381,15 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
                     />
                   </label>
                   <p className='mt-2 text-xs text-text-muted'>
-                    Formato recomendado CSV: `Fecha,Copy,Media,Estado` (hora/canal opcionales). TXT
-                    o DOCX: `fecha|hora|copy|media|canal|estado`.
+                    {t.schedule.importModal.description}
                   </p>
-                  {fileName && <p className='mt-2 text-xs text-text-muted'>Archivo: {fileName}</p>}
+                  {fileName && <p className='mt-2 text-xs text-text-muted'>{t.schedule.importModal.fileLabel}: {fileName}</p>}
                 </div>
 
                 {debugInfo && rows.length === 0 && (
                   <div className='mt-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-100'>
-                    <p className='font-semibold'>Diagnostico de lectura</p>
-                    <p className='mt-1'>Modo: {debugInfo.mode}</p>
+                    <p className='font-semibold'>{t.schedule.importModal.diagnostics}</p>
+                    <p className='mt-1'>{t.schedule.importModal.modeLabel}: {debugInfo.mode}</p>
                     {debugInfo.tableRows && (
                       <pre className='mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-black/20 p-2'>
                         {JSON.stringify(debugInfo.tableRows.slice(0, 6), null, 2)}
@@ -409,7 +411,7 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
                 {rows.length > 0 && (
                   <div className='mt-4'>
                     <div className='mb-2 text-sm text-text-muted'>
-                      {rows.length} filas detectadas.{' '}
+                      {rows.length} {t.schedule.importModal.rowsDetected}.{' '}
                       {Object.entries(summary)
                         .map(([channel, count]) => `${channel}: ${count}`)
                         .join(' · ')}
@@ -418,10 +420,10 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
                       <table className='w-full text-left text-xs'>
                         <thead className='bg-surface-soft text-text-muted'>
                           <tr>
-                            <th className='px-3 py-2'>Fecha</th>
-                            <th className='px-3 py-2'>Titulo</th>
-                            <th className='px-3 py-2'>Canal</th>
-                            <th className='px-3 py-2'>Estado</th>
+                            <th className='px-3 py-2'>{t.schedule.importModal.colDate}</th>
+                            <th className='px-3 py-2'>{t.schedule.importModal.colTitle}</th>
+                            <th className='px-3 py-2'>{t.schedule.importModal.colChannel}</th>
+                            <th className='px-3 py-2'>{t.schedule.importModal.colStatus}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -433,7 +435,7 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
                               className='border-t border-[color:var(--color-border-subtle)] text-text-primary'
                             >
                               <td className='px-3 py-2'>
-                                {new Date(row.scheduled_at).toLocaleString('es-ES')}
+                                {new Date(row.scheduled_at).toLocaleString(lang === 'es' ? 'es-ES' : 'en-US')}
                               </td>
                               <td className='px-3 py-2'>{row.title}</td>
                               <td className='px-3 py-2'>{row.channel}</td>
@@ -451,14 +453,14 @@ export const ScheduleImportModal = ({ isOpen, onClose, onImport }) => {
                     onClick={onClose}
                     className='rounded-md border border-[color:var(--color-border-subtle)] px-4 py-2 text-sm text-text-muted hover:text-text-primary'
                   >
-                    Cancelar
+                    {t.common.cancel}
                   </button>
                   <button
                     onClick={runImport}
                     disabled={!canImport}
                     className='btn-cyber rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-60'
                   >
-                    {isImporting ? 'Importando...' : 'Importar al calendario'}
+                    {isImporting ? t.schedule.importModal.importing : t.schedule.importModal.importBtn}
                   </button>
                 </div>
               </Dialog.Panel>

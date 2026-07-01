@@ -48,8 +48,11 @@ export const uploadBrandAsset = async (clientId, file, options = {}) => {
     }
   }
 
-  const safeName = fileToUpload.name.replace(/\s+/g, '-');
-  const storagePath = `${clientId}/${Date.now()}-${safeName}`;
+  const fileExt = fileToUpload.name.includes('.') ? fileToUpload.name.split('.').pop() : 'bin';
+  const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID 
+    ? crypto.randomUUID() 
+    : 'brand-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+  const storagePath = `${clientId}/${uniqueId}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(storagePath, fileToUpload);
   if (uploadError) throw uploadError;

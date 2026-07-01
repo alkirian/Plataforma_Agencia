@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { useLanguage } from '../../hooks';
 import { apiFetch } from '../../api/apiFetch';
+import { cmCache } from './cmCache';
 import {
   ArrowPathIcon,
   MegaphoneIcon,
@@ -10,8 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const PromotePostSubTab = ({ clientId, integration }) => {
-  const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const { t, lang } = useLanguage();
+  const cachedPosts = cmCache.get(clientId).posts;
+  const [posts, setPosts] = useState(cachedPosts || []);
+  const [loadingPosts, setLoadingPosts] = useState(!cachedPosts);
   const [expandedPostId, setExpandedPostId] = useState('');
   
   // Boost form states
@@ -21,15 +25,22 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
   const [boostingPostId, setBoostingPostId] = useState('');
 
   const fetchPosts = async () => {
-    setLoadingPosts(true);
+    const cached = cmCache.get(clientId).posts;
+    if (cached) {
+      setPosts(cached);
+      setLoadingPosts(false);
+    } else {
+      setLoadingPosts(true);
+    }
     try {
       const res = await apiFetch(`/clients/${clientId}/meta-integration/posts`);
       if (res?.data) {
         setPosts(res.data);
+        cmCache.setPosts(clientId, res.data);
       }
     } catch (err) {
       console.error(err);
-      toast.error('No se pudieron cargar las publicaciones orgánicas.');
+      toast.error(t.cm.loadPostsError);
     } finally {
       setLoadingPosts(false);
     }
@@ -41,13 +52,22 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
     }
   }, [integration, clientId]);
 
+  // Sincronizar posts con caché
+  useEffect(() => {
+    if (posts && posts.length > 0) {
+      cmCache.setPosts(clientId, posts);
+    }
+  }, [posts, clientId]);
+
   const handleExpandPost = (post) => {
     if (expandedPostId === post.id) {
       setExpandedPostId('');
     } else {
       setExpandedPostId(post.id);
       setBoostCampaignName(
-        `Promoción: ${post.caption ? post.caption.substring(0, 30) : 'Post sin texto'} (${new Date().toLocaleDateString()})`
+        t.cm.promoteTitle
+          .replace('{text}', post.caption ? post.caption.substring(0, 30) : t.cm.postNoText)
+          .replace('{date}', new Date().toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US'))
       );
     }
   };
@@ -65,11 +85,11 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
           platform: post.platform,
         }),
       });
-      toast.success('¡Campaña de promoción creada y lanzada con éxito!');
+      toast.success(t.cm.promoteSuccess);
       setExpandedPostId('');
     } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Error al lanzar la promoción en Meta Ads.');
+      toast.error(err.message || t.cm.promoteError);
     } finally {
       setBoostingPostId('');
     }
@@ -79,9 +99,9 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
     return (
       <div className="max-w-md mx-auto text-center p-8 bg-surface border border-border-subtle rounded-2xl flex flex-col items-center gap-4 shadow-sm mt-12">
         <MegaphoneIcon className="h-10 w-10 text-emerald-400" />
-        <h3 className="text-base font-bold text-text-primary">Conecta Meta para continuar</h3>
+        <h3 className="text-base font-bold text-text-primary">{t.cm.connectMetaToContinue}</h3>
         <p className="text-xs text-text-muted leading-relaxed">
-          Para ver tus publicaciones orgánicas y promocionarlas en Meta Ads, primero debes conectar tu cuenta.
+          {t.cm.connectMetaDesc}
         </p>
       </div>
     );
@@ -92,17 +112,17 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
       <div className="bg-surface border border-border-subtle rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div>
           <h3 className="text-sm font-bold text-text-primary font-title">
-            Publicaciones Orgánicas
+            {t.cm.organicPostsTitle}
           </h3>
           <p className="text-[10px] text-text-muted mt-0.5">
-            Selecciona una publicación activa en tus redes para promocionarla directamente en Meta Ads
+            {t.cm.organicPostsDesc}
           </p>
         </div>
         <button
           onClick={fetchPosts}
           disabled={loadingPosts}
           className="btn-cyber p-2 flex items-center justify-center cursor-pointer"
-          title="Actualizar publicaciones"
+          title={t.cm.refreshPosts}
         >
           <ArrowPathIcon className={`h-4 w-4 ${loadingPosts ? 'animate-spin' : ''}`} />
         </button>
@@ -112,7 +132,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
         <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted bg-surface border border-border-subtle rounded-2xl h-64">
           <ArrowPathIcon className="h-6 w-6 animate-spin text-emerald-400 mb-2" />
           <p className="text-xs font-semibold tracking-wider uppercase text-text-muted/65">
-            Cargando publicaciones...
+            {t.cm.loadingPosts}
           </p>
         </div>
       ) : posts.length > 0 ? (
@@ -140,7 +160,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                         {post.platform}
                       </span>
                       <span className="text-[10px] text-text-muted">
-                        {new Date(post.createdAt).toLocaleDateString('es-ES', {
+                        {new Date(post.createdAt).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric'
@@ -154,7 +174,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                       onClick={e => e.stopPropagation()}
                       className="text-[10px] text-accent-blue hover:underline font-bold"
                     >
-                      Ver en red social ↗
+                      {t.cm.viewOnSocial}
                     </a>
                   </div>
 
@@ -171,15 +191,15 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
 
                   {/* Texto/Caption */}
                   <div className="text-xs text-text-secondary leading-relaxed font-medium pl-0.5 whitespace-pre-wrap select-text">
-                    {post.caption || <span className="italic text-text-muted">Sin texto</span>}
+                    {post.caption || <span className="italic text-text-muted">{t.cm.postNoText}</span>}
                   </div>
 
                   {/* Estadísticas de engagement */}
                   <div className="flex items-center justify-between pt-3 border-t border-border-subtle/50 mt-1">
                     <div className="flex items-center gap-4 text-[10px] text-text-muted font-bold">
-                      <span>👍 {post.likesCount || 0} Likes</span>
-                      <span>💬 {post.commentsCount || 0} Comentarios</span>
-                      <span>🔄 {post.sharesCount || 0} Compartidos</span>
+                      <span>👍 {post.likesCount || 0} {t.cm.likes}</span>
+                      <span>💬 {post.commentsCount || 0} {t.cm.comments}</span>
+                      <span>🔄 {post.sharesCount || 0} {t.cm.shares}</span>
                     </div>
                     
                     <button
@@ -190,7 +210,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                       className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all duration-150 cursor-pointer shadow-md"
                     >
                       <MegaphoneIcon className="w-3.5 h-3.5" />
-                      <span>{isExpanded ? 'Cancelar' : 'Promocionar'}</span>
+                      <span>{isExpanded ? t.cm.cancelBtn : t.cm.promoteBtn}</span>
                     </button>
                   </div>
                 </div>
@@ -209,9 +229,9 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                         <div className="flex items-start gap-2.5">
                           <MegaphoneIcon className="h-5 w-5 text-emerald-400 mt-0.5 flex-shrink-0" />
                           <div>
-                            <h4 className="text-xs font-bold text-text-primary font-title">Configurar Campaña de Promoción</h4>
+                            <h4 className="text-xs font-bold text-text-primary font-title">{t.cm.configureBoostTitle}</h4>
                             <p className="text-[10px] text-text-muted mt-0.5">
-                              Se creará automáticamente una campaña de tráfico en tu cuenta de Meta Ads usando este post como anuncio.
+                              {t.cm.configureBoostDesc}
                             </p>
                           </div>
                         </div>
@@ -219,13 +239,13 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="flex flex-col gap-1.5">
                             <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                              Nombre de la Campaña
+                              {t.cm.campaignNameLabel}
                             </label>
                             <input
                               type="text"
                               value={boostCampaignName}
                               onChange={e => setBoostCampaignName(e.target.value)}
-                              placeholder="Nombre de la campaña..."
+                              placeholder={t.cm.campaignNamePlaceholder}
                               className="w-full bg-surface border border-border-subtle rounded-xl px-3.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
                             />
                           </div>
@@ -233,7 +253,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex flex-col gap-1.5">
                               <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                                Presupuesto Total (USD)
+                                {t.cm.budgetLabel}
                               </label>
                               <input
                                 type="number"
@@ -247,7 +267,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
 
                             <div className="flex flex-col gap-1.5">
                               <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                                Duración (Días)
+                                {t.cm.durationLabel}
                               </label>
                               <input
                                 type="number"
@@ -263,7 +283,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
 
                         <div className="flex items-center justify-between pt-3 border-t border-border-subtle/50 mt-1">
                           <span className="text-[10px] text-text-muted font-medium">
-                            Inversión diaria estimada: <strong className="text-text-primary">${boostDurationDays > 0 ? (boostTotalBudget / boostDurationDays).toFixed(2) : '0.00'} USD/día</strong>
+                            {t.cm.dailyInvestmentEst}<strong className="text-text-primary">${boostDurationDays > 0 ? (boostTotalBudget / boostDurationDays).toFixed(2) : '0.00'} {t.cm.usdPerDay}</strong>
                           </span>
                           
                           <div className="flex gap-2">
@@ -271,7 +291,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                               onClick={() => setExpandedPostId('')}
                               className="text-xs font-bold text-text-muted hover:text-text-primary px-3 py-2 rounded-xl transition-all cursor-pointer"
                             >
-                              Cancelar
+                              {t.cm.cancelBtn}
                             </button>
                             <button
                               onClick={() => handleBoostSubmit(post)}
@@ -283,7 +303,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
                               ) : (
                                 <CheckIcon className="h-4 w-4" />
                               )}
-                              <span>Confirmar y Lanzar</span>
+                              <span>{t.cm.confirmAndLaunch}</span>
                             </button>
                           </div>
                         </div>
@@ -297,7 +317,7 @@ export const PromotePostSubTab = ({ clientId, integration }) => {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center p-12 text-center text-text-muted bg-surface border border-border-subtle rounded-2xl h-64">
-          <p className="text-xs font-medium text-text-muted">No se encontraron publicaciones orgánicas activas.</p>
+          <p className="text-xs font-medium text-text-muted">{t.cm.noPosts}</p>
         </div>
       )}
     </div>
